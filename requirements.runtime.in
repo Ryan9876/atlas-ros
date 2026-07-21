@@ -1,0 +1,6 @@
+# Runtime dependency resolution input.
+# Exact versions are intentionally pinned; requirements.runtime.lock is generated
+# by scripts/refresh_dependency_lock.sh and must include SHA-256 hashes.
+pydantic==2.13.4
+PyYAML==6.0.3
+platformdirs==4.10.0

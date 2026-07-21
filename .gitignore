@@ -1,0 +1,15 @@
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.coverage
+.mypy_cache/
+.ruff_cache/
+dist/
+build/
+*.db
+*.sqlite*
+.env
+.deps/
+.atlas-runtime/
+release/*.zip
