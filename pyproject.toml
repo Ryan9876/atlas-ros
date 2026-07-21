@@ -42,6 +42,8 @@ line-length = 100
 select = ["E", "F", "I", "UP", "B", "SIM"]
 
 [tool.ruff.lint.per-file-ignores]
+# This generator embeds immutable, human-readable restoration documents.  Keep
+# executable code linted normally while allowing long policy/document literals.
 "tools/assemble_v410_restoration.py" = ["E501"]
 
 [tool.mypy]

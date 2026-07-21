@@ -1,0 +1,44 @@
+workflow: W04 Todoist-to-Notion Reconciliation
+mode: attended
+field_authority:
+  todoist:
+    - execution_due_date
+    - execution_priority
+    - task_completion
+    - subtask_completion
+    - atlas_prefixed_comments
+    - work_section_state
+  notion:
+    - management_priority
+    - definition_of_done
+    - accountable_owner
+    - portfolio_relationships
+    - risk_severity
+execution_steps:
+  priority:
+    blank_means: inherit_parent_action
+    explicit_value: overrides_parent
+    values: [P1, P2, P3, P4]
+  state_values: [Ready, In Progress, Waiting, Blocked, Delegated, Review, Complete]
+commands:
+  prefix: "@atlas"
+  supported:
+    - update
+    - delegate
+    - risk
+    - blocker
+    - dependency
+    - issue
+    - unblock
+    - checkpoint
+risk_routing:
+  production_data_source: 3f873502-8717-4ab2-9080-df07b7c4aeae
+  idempotency_key: todoist_comment_id
+  link_parent_action: true
+  link_execution_step: true
+conflicts:
+  create_operations_record: true
+  prohibit_silent_overwrite: true
+checkpoint:
+  default_lookback_days: 7
+  full_reconciliation_days: 42

@@ -1,0 +1,20 @@
+version: 2
+projects: [Work, Personal]
+prohibited_labels: [1on1, ROS]
+mode: attended_review_first
+work_sections:
+  ordered:
+    - Leadership & Team
+    - Active Projects
+    - Operations
+    - Waiting on Others
+    - Development & Learning
+  rules:
+    Leadership & Team: people leadership, coaching, staffing, team meetings, and performance outcomes
+    Active Projects: multi-step deliverables or outcomes lasting more than one execution cycle
+    Operations: Ryan-owned operational work that can advance now and normally completes within one or two days
+    Waiting on Others: temporary state for work that cannot advance until another person, team, vendor, approval, or dependency responds
+    Development & Learning: training, certification, skill building, and professional development
+  transitions:
+    - Waiting on Others returns to Operations or Active Projects when the dependency clears
+    - Waiting on Others is a temporary execution state, not a permanent work category

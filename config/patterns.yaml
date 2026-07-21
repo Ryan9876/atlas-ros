@@ -1,0 +1,9 @@
+version: 1
+patterns:
+  investigation: [define question, gather evidence, analyze, decide, document]
+  pilot_or_deployment: [define outcome, plan, validate readiness, implement, verify, close]
+  migration_or_retirement: [define scope, prepare rollback, execute, verify, retire]
+  data_reconciliation: [define source, compare, reconcile, validate, evidence]
+  blocker_resolution: [identify blocker, assign owner, resolve, validate, close]
+  vendor_or_cross_team_coordination: [define dependency, align owners, track checkpoint, confirm outcome]
+

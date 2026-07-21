@@ -1,0 +1,13 @@
+version: 1
+allowed: [action, project, delegated_work, risk, decision, reference, needs_clarification]
+destinations:
+  action: action_records
+  project: portfolio_projects
+  delegated_work: delegated_work
+  risk: risks_and_blockers
+  decision: decision_log
+  reference: universal_inbox
+  needs_clarification: universal_inbox
+forbidden_routes: [inbox_to_todoist]
+confidence_threshold: 0.75
+

@@ -1,0 +1,1 @@
+{"bomFormat":"CycloneDX","specVersion":"1.5","version":1,"metadata":{"component":{"type":"application","name":"atlas-ros","version":"4.5.2"}},"components":[{"type":"library","name":"pydantic","version":"2.x"},{"type":"library","name":"PyYAML","version":"6.x"},{"type":"library","name":"platformdirs","version":"4.x"}]}

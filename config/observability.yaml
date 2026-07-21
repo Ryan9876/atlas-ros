@@ -1,0 +1,4 @@
+version: 1
+allowed_fields: [event_id, correlation_id, event_type, timestamp, workflow, status, error_class, duration_ms, attempt]
+forbidden_fields: [content, raw_capture, token, password, authorization, email, body]
+
