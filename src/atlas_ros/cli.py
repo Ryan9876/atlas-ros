@@ -9,13 +9,13 @@ from pathlib import Path
 from atlas_ros.adapters.notion import LiveNotionAdapter
 from atlas_ros.adapters.todoist import LiveTodoistAdapter
 from atlas_ros.domain.models import Action
-from atlas_ros.intelligence.dataset import validate_files
 from atlas_ros.intelligence.calibration import (
     IntelligenceCalibrationEngine,
     load_calibration_cases,
     load_calibration_report,
     load_intelligence_judgments,
 )
+from atlas_ros.intelligence.dataset import validate_files
 from atlas_ros.intelligence.evaluation import BenchmarkRunner
 from atlas_ros.intelligence.io import load_results
 from atlas_ros.release.tooling import checksums, inventory, verify

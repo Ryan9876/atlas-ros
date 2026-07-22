@@ -3,7 +3,6 @@ from pathlib import Path
 from atlas_ros.intelligence.dataset import EvaluationSetValidator, validate_files
 from atlas_ros.intelligence.models import EvaluationCase, EvaluationDimension
 
-
 ROOT = Path(__file__).parents[2]
 CASES = ROOT / "evaluation/ryan-intelligence-evaluation-set/v1.0/cases.json"
 BASELINE = ROOT / "evaluation/ryan-intelligence-evaluation-set/v1.0/baseline-v4.5.3.json"

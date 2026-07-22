@@ -5,7 +5,11 @@ from pathlib import Path
 
 from atlas_ros.intelligence.release_control_center import ControlCenterStatus, ReleaseControlCenter
 from atlas_ros.intelligence.release_readiness import GateStatus
-from atlas_ros.intelligence.validation_workbench import GateResult, WorkbenchDecision, WorkbenchReport
+from atlas_ros.intelligence.validation_workbench import (
+    GateResult,
+    WorkbenchDecision,
+    WorkbenchReport,
+)
 
 
 def report(status: GateStatus, decision: WorkbenchDecision) -> WorkbenchReport:

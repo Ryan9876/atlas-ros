@@ -3,7 +3,12 @@ from datetime import UTC, datetime
 import pytest
 
 from atlas_ros.intelligence.evaluation import BenchmarkRunner
-from atlas_ros.intelligence.models import EvaluationCase, EvaluationDimension, EvaluationResult, MetricScore
+from atlas_ros.intelligence.models import (
+    EvaluationCase,
+    EvaluationDimension,
+    EvaluationResult,
+    MetricScore,
+)
 from atlas_ros.intelligence.release_readiness import (
     AdversarialRequirement,
     BenchmarkDataset,

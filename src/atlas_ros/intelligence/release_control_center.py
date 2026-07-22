@@ -3,10 +3,10 @@ from __future__ import annotations
 import hashlib
 import html
 import json
+from collections.abc import Mapping
 from datetime import UTC, datetime
 from enum import StrEnum
 from pathlib import Path
-from typing import Mapping
 
 from pydantic import BaseModel, ConfigDict, Field
 

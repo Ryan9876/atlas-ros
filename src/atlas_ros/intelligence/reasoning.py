@@ -1,10 +1,8 @@
 from __future__ import annotations
 
-import math
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from enum import StrEnum
-from typing import Sequence
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 

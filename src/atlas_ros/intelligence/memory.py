@@ -2,11 +2,11 @@ from __future__ import annotations
 
 import math
 import sqlite3
+from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from enum import StrEnum
 from pathlib import Path
-from typing import Iterable, Sequence
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator

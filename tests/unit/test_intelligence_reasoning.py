@@ -13,7 +13,12 @@ from atlas_ros.intelligence.reasoning import (
     ReasoningRequest,
 )
 from atlas_ros.intelligence.record_store import SQLiteIntelligenceRecordStore
-from atlas_ros.intelligence.records import AuthorityLevel, ContextSnapshot, EvidenceEnvelope, ValidationStatus
+from atlas_ros.intelligence.records import (
+    AuthorityLevel,
+    ContextSnapshot,
+    EvidenceEnvelope,
+    ValidationStatus,
+)
 
 NOW = datetime(2026, 7, 22, 6, 0, tzinfo=UTC)
 HASH = "sha256:" + "a" * 64

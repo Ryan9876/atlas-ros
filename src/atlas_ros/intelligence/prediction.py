@@ -1,10 +1,10 @@
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from enum import StrEnum
 from statistics import fmean
-from typing import Sequence
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 

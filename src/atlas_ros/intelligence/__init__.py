@@ -1,3 +1,14 @@
+from atlas_ros.intelligence.memory import (
+    ConflictState,
+    GovernedMemoryStore,
+    MemoryEntry,
+    MemoryEvaluation,
+    MemoryPolicy,
+    MemoryTier,
+    PrivacyClass,
+    RetrievalQuery,
+    RetrievalResult,
+)
 from atlas_ros.intelligence.prediction import (
     CalibrationEvaluator,
     CalibrationObservation,
@@ -19,17 +30,6 @@ from atlas_ros.intelligence.reasoning import (
     ReasoningRequest,
     ReasoningTrace,
     ScoredOption,
-)
-from atlas_ros.intelligence.memory import (
-    ConflictState,
-    GovernedMemoryStore,
-    MemoryEntry,
-    MemoryEvaluation,
-    MemoryPolicy,
-    MemoryTier,
-    PrivacyClass,
-    RetrievalQuery,
-    RetrievalResult,
 )
 from atlas_ros.intelligence.records import (
     CanonicalRecord,

@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import hashlib
 import json
+from collections.abc import Mapping, Sequence
 from datetime import UTC, datetime
 from enum import StrEnum
-from typing import Mapping, Sequence
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 

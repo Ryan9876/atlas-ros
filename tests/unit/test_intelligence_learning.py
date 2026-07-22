@@ -5,7 +5,11 @@ import pytest
 from atlas_ros.intelligence.learning import GovernedLearningEngine, LearningPolicy, ProposalStatus
 from atlas_ros.intelligence.record_store import SQLiteIntelligenceRecordStore
 from atlas_ros.intelligence.records import (
-    AuthorityLevel, EvidenceEnvelope, LearningEvent, PredictionRecord, ValidationStatus,
+    AuthorityLevel,
+    EvidenceEnvelope,
+    LearningEvent,
+    PredictionRecord,
+    ValidationStatus,
 )
 
 

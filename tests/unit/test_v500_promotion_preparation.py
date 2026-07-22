@@ -1,6 +1,8 @@
 import json
 from pathlib import Path
+
 from atlas_ros.intelligence.calibration import load_calibration_cases
+
 
 def test_ryan_evaluation_set_v1_has_promotion_scale_and_domain_coverage():
     path=Path("benchmarks/ryan-intelligence-evaluation-set-v1.json")

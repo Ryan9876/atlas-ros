@@ -3,13 +3,13 @@ from __future__ import annotations
 import hashlib
 import json
 from collections import Counter, defaultdict
+from collections.abc import Iterable, Sequence
 from datetime import UTC, datetime
 from enum import StrEnum
 from pathlib import Path
 from statistics import fmean
-from typing import Iterable, Mapping, Sequence
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field
 
 Score = float
 
