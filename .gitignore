@@ -13,3 +13,5 @@ build/
 .deps/
 .atlas-runtime/
 release/*.zip
+*$py.class
+*.egg-info/
