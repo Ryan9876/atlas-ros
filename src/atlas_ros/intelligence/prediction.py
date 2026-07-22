@@ -183,14 +183,23 @@ class GovernedPredictionEngine:
                     ),
                 )
             )
-        usable = [item for item in assessments if item.usable]
+        usable_assessments = [
+            item for item in assessments if item.usable
+        ]
         strength = (
-            sum(item.authority_score * item.confidence for item in usable) / len(usable)
-            if usable
+            sum(
+                item.authority_score * item.confidence
+                for item in usable_assessments
+            )
+            / len(usable_assessments)
+            if usable_assessments
             else 0.0
         )
         width = request.confidence_high - request.confidence_low
-        issued = bool(usable) and strength >= request.minimum_evidence_strength
+        issued = (
+            bool(usable_assessments)
+            and strength >= request.minimum_evidence_strength
+        )
         explanation = (
             "Forecast issued from qualified evidence with explicit probability and interval."
             if issued

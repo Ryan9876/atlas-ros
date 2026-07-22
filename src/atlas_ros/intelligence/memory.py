@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import math
 import sqlite3
+from typing import cast
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
@@ -292,7 +293,7 @@ class GovernedMemoryStore:
             privacy=PrivacyClass(str(row[5])),
             subject=str(row[6]),
             tags=tuple(filter(None, str(row[7]).split("\u001f"))),
-            salience=float(row[8]),
+            salience=float(cast(float | int | str, row[8])),
             retained_at=datetime.fromisoformat(str(row[9])),
             expires_at=datetime.fromisoformat(str(row[10])) if row[10] else None,
             conflict_state=ConflictState(str(row[11])),

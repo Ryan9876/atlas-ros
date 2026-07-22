@@ -155,10 +155,18 @@ class GovernedReasoningEngine:
         total_weight = sum(item.weight for item in request.criteria)
         scored: list[ScoredOption] = []
         for option in request.options:
-            usable = [assessments[ref] for ref in option.evidence_refs if assessments[ref].usable]
+            usable_assessments = [
+                assessments[ref]
+                for ref in option.evidence_refs
+                if assessments[ref].usable
+            ]
             evidence_strength = (
-                sum(item.authority_score * item.confidence for item in usable) / len(usable)
-                if usable
+                sum(
+                    item.authority_score * item.confidence
+                    for item in usable_assessments
+                )
+                / len(usable_assessments)
+                if usable_assessments
                 else 0.0
             )
             contributions: dict[str, float] = {}

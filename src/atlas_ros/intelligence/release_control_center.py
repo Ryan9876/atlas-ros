@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import html
 import json
+from typing import cast
 from collections.abc import Mapping
 from datetime import UTC, datetime
 from enum import StrEnum
@@ -118,7 +119,7 @@ class ReleaseControlCenter:
             f"<td>{html.escape(str(row['gate']))}</td>"
             f"<td>{self._badge(str(row['status']))}</td>"
             f"<td>{'Yes' if row['blocking'] else 'No'}</td>"
-            f"<td>{float(row['duration_seconds']):.3f}s</td>"
+            f"<td>{float(cast(float | int | str, row['duration_seconds'])):.3f}s</td>"
             f"<td>{html.escape(str(row['reason']))}</td>"
             "</tr>"
             for row in snapshot.gate_rows
@@ -128,7 +129,7 @@ class ReleaseControlCenter:
             "<tr>"
             f"<td>{html.escape(str(a['relative_path']))}</td>"
             f"<td><code>{html.escape(str(a['sha256']))}</code></td>"
-            f"<td>{int(a['size_bytes']):,}</td>"
+            f"<td>{int(cast(int | str, a['size_bytes'])):,}</td>"
             "</tr>"
             for a in snapshot.artifacts
         )

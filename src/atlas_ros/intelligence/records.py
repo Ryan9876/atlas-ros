@@ -274,5 +274,9 @@ _RECORD_TYPES: dict[RecordKind, type[CanonicalRecord]] = {
 
 
 def parse_record(payload: dict[str, Any]) -> CanonicalRecordType:
-    kind = RecordKind(payload.get("kind"))
+    kind_value = payload.get("kind")
+    if not isinstance(kind_value, str):
+        raise ValueError("Record payload is missing a valid 'kind' field")
+
+    kind = RecordKind(kind_value)
     return _RECORD_TYPES[kind].model_validate(payload)  # type: ignore[return-value]
