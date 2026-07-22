@@ -17,6 +17,6 @@ Write-capable commands default to dry-run or require explicit confirmation. The 
 
 ## Validation
 
-The v4.5.2 candidate passed Ruff, strict MyPy, 58 tests, 86.30% branch coverage, source and wheel builds, clean-wheel installation, packaged configuration smoke testing, dependency-lock validation, vulnerability-exception validation, and release checksum verification.
+The v4.5.2 release passed Ruff, strict MyPy, 58 tests, 86.30% branch coverage, source and wheel builds, clean-wheel installation, packaged configuration smoke testing, dependency-lock validation, vulnerability-exception validation, and release checksum verification.
 
 See `docs/operations/OPERATIONS_RUNBOOK.md`, `docs/migration/MIGRATION_PLAN.md`, and `release/RELEASE_MANIFEST.md`.
