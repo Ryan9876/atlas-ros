@@ -1,0 +1,38 @@
+{
+  "release": "Atlas ROS v5.0",
+  "base_authority": "Atlas ROS v4.5.3",
+  "immediate_rollback_on_promotion": "Atlas ROS v4.5.3",
+  "status": "blocked",
+  "promotion_authorized": false,
+  "benchmark_case_count": 60,
+  "benchmark_domains": [
+    "action_recommendation",
+    "decision_recommendation",
+    "evidence_quality",
+    "explanation_quality",
+    "learning_effectiveness",
+    "priority_recommendation",
+    "risk_prediction",
+    "root_cause_hypothesis"
+  ],
+  "dataset_fingerprint": "0cd3430d3711df8e5e936b30eef92f7bb69ee904ce5ae343f177e313259a99f5",
+  "completed_gates": [
+    "60-case benchmark corpus",
+    "eight-domain coverage",
+    "authority references",
+    "adversarial cases",
+    "deterministic evidence builder",
+    "150 tests",
+    "89.51% branch coverage"
+  ],
+  "blocking_gates": [
+    "expert-reviewed judgments not supplied",
+    "Ruff not rerun in fully provisioned CI",
+    "strict MyPy not rerun in fully provisioned CI",
+    "package build and clean-wheel validation not rerun",
+    "dependency audit not rerun",
+    "independent review not supplied",
+    "full Atlas restoration validation not completed in this session"
+  ],
+  "required_decision": "None yet. Complete blocking gates before requesting explicit promotion authorization."
+}
