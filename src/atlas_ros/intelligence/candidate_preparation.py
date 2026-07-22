@@ -22,6 +22,11 @@ class ReviewDisposition(StrEnum):
     NOT_COMPLETED = "not_completed"
 
 
+class ReviewPath(StrEnum):
+    INDEPENDENT = "independent"
+    SOLO_MAINTAINER = "solo_maintainer"
+
+
 class PreparationDecision(StrEnum):
     BLOCKED = "blocked"
     DEVELOPMENT_COMPLETE = "development_complete"
@@ -54,11 +59,15 @@ class IndependentReview(BaseModel):
     disposition: ReviewDisposition
     findings: tuple[str, ...] = ()
     evidence_reference: str = Field(min_length=1)
+    review_path: ReviewPath = ReviewPath.INDEPENDENT
+    checklist_evidence: tuple[str, ...] = ()
 
     @model_validator(mode="after")
-    def require_findings_for_changes(self) -> IndependentReview:
+    def validate_review_evidence(self) -> IndependentReview:
         if self.disposition is ReviewDisposition.CHANGES_REQUIRED and not self.findings:
             raise ValueError("changes-required review must include findings")
+        if self.review_path is ReviewPath.SOLO_MAINTAINER and not self.checklist_evidence:
+            raise ValueError("solo-maintainer review must include checklist evidence")
         return self
 
 
@@ -78,12 +87,14 @@ class CandidatePreparationPolicy(BaseModel):
             "benchmark_corpus",
             "adversarial_corpus",
             "regression_baseline",
-            "independent_review",
+            "governed_review",
             "artifact_integrity",
         }
     )
     minimum_approved_reviews: int = Field(default=1, ge=1)
     require_candidate_ready_assessment: bool = True
+    allow_solo_maintainer_review: bool = True
+    solo_maintainer_identity: str | None = None
 
 
 class CandidateEvidencePacket(BaseModel):
@@ -154,6 +165,16 @@ class CandidatePreparationEngine:
                 problems.append(f"checksum mismatch for {name}")
         return tuple(problems)
 
+    def _review_is_eligible(self, review: IndependentReview) -> bool:
+        if review.disposition is not ReviewDisposition.APPROVED:
+            return False
+        if review.review_path is ReviewPath.INDEPENDENT:
+            return True
+        if not self.policy.allow_solo_maintainer_review:
+            return False
+        identity = self.policy.solo_maintainer_identity
+        return identity is None or review.reviewer.casefold() == identity.casefold()
+
     def prepare(
         self,
         *,
@@ -175,9 +196,7 @@ class CandidatePreparationEngine:
                 and item.status is not GateStatus.PASS
             )
         )
-        approved_reviews = sum(
-            review.disposition is ReviewDisposition.APPROVED for review in reviews
-        )
+        approved_reviews = sum(self._review_is_eligible(review) for review in reviews)
         blocking: list[str] = []
         if missing:
             blocking.extend(f"required gate missing: {name}" for name in missing)
@@ -185,11 +204,11 @@ class CandidatePreparationEngine:
             blocking.extend(f"required gate not passed: {name}" for name in failed)
         if approved_reviews < self.policy.minimum_approved_reviews:
             blocking.append(
-                "approved independent reviews "
+                "approved governed reviews "
                 f"{approved_reviews}/{self.policy.minimum_approved_reviews}"
             )
         if any(review.disposition is ReviewDisposition.CHANGES_REQUIRED for review in reviews):
-            blocking.append("independent review requires changes")
+            blocking.append("governed review requires changes")
         if (
             self.policy.require_candidate_ready_assessment
             and readiness.decision is not ReadinessDecision.CANDIDATE_READY
