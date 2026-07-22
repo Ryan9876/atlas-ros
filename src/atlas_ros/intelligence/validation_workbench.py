@@ -93,21 +93,54 @@ class WorkbenchReport(BaseModel):
 
 
 DEFAULT_GATES: tuple[GateDefinition, ...] = (
-    GateDefinition(name="ruff", command=(sys.executable, "-m", "ruff", "check", "."), required_executable="ruff"),
-    GateDefinition(name="mypy_strict", command=(sys.executable, "-m", "mypy", "src"), required_executable="mypy"),
+    GateDefinition(
+        name="ruff",
+        command=(sys.executable, "-m", "ruff", "check", "."),
+        required_executable="ruff",
+    ),
+    GateDefinition(
+        name="mypy_strict",
+        command=(sys.executable, "-m", "mypy", "src"),
+        required_executable="mypy",
+    ),
     GateDefinition(name="tests", command=(sys.executable, "-m", "pytest")),
-    GateDefinition(name="source_wheel_build", command=(sys.executable, "-m", "build"), required_executable="build"),
-    GateDefinition(name="dependency_lock", command=(sys.executable, "scripts/validate_dependency_lock.py")),
-    GateDefinition(name="vulnerability_exceptions", command=(sys.executable, "scripts/validate_vulnerability_exceptions.py")),
-    GateDefinition(name="dependency_security", command=(sys.executable, "-m", "pip_audit", "-r", "requirements.runtime.lock"), required_executable="pip_audit"),
-    GateDefinition(name="benchmark_corpus", kind=GateKind.FILE, required_path="config/intelligence-evaluation.yaml"),
-    GateDefinition(name="candidate_preparation", kind=GateKind.FILE, required_path="docs/CANDIDATE_PREPARATION.md"),
-    GateDefinition(name="independent_review", kind=GateKind.MANUAL, description="Independent architecture, security, and governance review."),
+    GateDefinition(
+        name="source_wheel_build",
+        command=(sys.executable, "-m", "build"),
+        required_executable="build",
+    ),
+    GateDefinition(
+        name="dependency_lock", command=(sys.executable, "scripts/validate_dependency_lock.py")
+    ),
+    GateDefinition(
+        name="vulnerability_exceptions",
+        command=(sys.executable, "scripts/validate_vulnerability_exceptions.py"),
+    ),
+    GateDefinition(
+        name="dependency_security",
+        command=(sys.executable, "-m", "pip_audit", "-r", "requirements.runtime.lock"),
+        required_executable="pip_audit",
+    ),
+    GateDefinition(
+        name="benchmark_corpus",
+        kind=GateKind.FILE,
+        required_path="config/intelligence-evaluation.yaml",
+    ),
+    GateDefinition(
+        name="candidate_preparation",
+        kind=GateKind.FILE,
+        required_path="docs/CANDIDATE_PREPARATION.md",
+    ),
+    GateDefinition(
+        name="independent_review",
+        kind=GateKind.MANUAL,
+        description="Independent architecture, security, and governance review.",
+    ),
 )
 
 
 class ReleaseValidationWorkbench:
-    """Runs release validation gates and emits deterministic evidence without promotion authority."""
+    """Run validation gates and emit evidence without promotion authority."""
 
     def __init__(self, project_root: Path, output_root: Path | None = None) -> None:
         self.project_root = project_root.resolve()
@@ -116,7 +149,12 @@ class ReleaseValidationWorkbench:
     @staticmethod
     def _module_available(name: str) -> bool:
         probe = subprocess.run(
-            [sys.executable, "-c", f"import importlib.util; raise SystemExit(0 if importlib.util.find_spec('{name}') else 1)"],
+            [
+                sys.executable,
+                "-c",
+                "import importlib.util; "
+                f"raise SystemExit(0 if importlib.util.find_spec('{name}') else 1)",
+            ],
             capture_output=True,
             text=True,
             check=False,
@@ -167,7 +205,12 @@ class ReleaseValidationWorkbench:
                     )
                     exit_code = proc.returncode
                     log_path.write_text(
-                        "$ " + " ".join(gate.command) + "\n\nSTDOUT\n" + proc.stdout + "\nSTDERR\n" + proc.stderr,
+                        "$ "
+                        + " ".join(gate.command)
+                        + "\n\nSTDOUT\n"
+                        + proc.stdout
+                        + "\nSTDERR\n"
+                        + proc.stderr,
                         encoding="utf-8",
                     )
                     status = GateStatus.PASS if proc.returncode == 0 else GateStatus.FAIL
@@ -219,13 +262,24 @@ class ReleaseValidationWorkbench:
         ]
         for result in report.results:
             lines.append(
-                f"| {result.name} | {result.status.value} | {'yes' if result.blocking else 'no'} | {result.reason or ''} |"
+                f"| {result.name} | {result.status.value} | "
+                f"{'yes' if result.blocking else 'no'} | "
+                f"{result.reason or ''} |"
             )
         lines.extend(["", "## Blocking reasons", ""])
         lines.extend(f"- {reason}" for reason in report.blocking_reasons)
         if not report.blocking_reasons:
             lines.append("- None")
-        lines.extend(["", "## Boundary", "", "This report validates evidence only. It cannot create a Candidate or promote a release.", ""])
+        lines.extend(
+            [
+                "",
+                "## Boundary",
+                "",
+                "This report validates evidence only. It cannot create a Candidate "
+                "or promote a release.",
+                "",
+            ]
+        )
         return "\n".join(lines)
 
     def run(
@@ -294,7 +348,9 @@ class ReleaseValidationWorkbench:
         md_path.write_text(self._markdown(report), encoding="utf-8")
         checksums = "\n".join(f"{a.sha256}  {a.relative_path}" for a in report.artifacts) + "\n"
         (run_dir / "CHECKSUMS.sha256").write_text(checksums, encoding="utf-8")
-        (run_dir / "REPORT_FINGERPRINT.sha256").write_text(report.fingerprint + "\n", encoding="utf-8")
+        (run_dir / "REPORT_FINGERPRINT.sha256").write_text(
+            report.fingerprint + "\n", encoding="utf-8"
+        )
         return report
 
 

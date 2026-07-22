@@ -150,7 +150,9 @@ class CalibrationRegressionReport(BaseModel):
 
 def _fingerprint_cases(cases: Sequence[CalibrationCase]) -> str:
     payload = [case.model_dump(mode="json") for case in sorted(cases, key=lambda item: item.id)]
-    return hashlib.sha256(json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+    return hashlib.sha256(
+        json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
+    ).hexdigest()
 
 
 def _macro_prf(expected: Sequence[str], predicted: Sequence[str]) -> tuple[float, float, float]:
@@ -171,7 +173,9 @@ def _macro_prf(expected: Sequence[str], predicted: Sequence[str]) -> tuple[float
     return fmean(precisions), fmean(recalls), fmean(f1s)
 
 
-def _bins(outcomes: Sequence[CaseOutcome], policy: IntelligenceCalibrationPolicy) -> tuple[CalibrationBin, ...]:
+def _bins(
+    outcomes: Sequence[CaseOutcome], policy: IntelligenceCalibrationPolicy
+) -> tuple[CalibrationBin, ...]:
     bins: list[CalibrationBin] = []
     width = 1.0 / policy.calibration_bins
     for index in range(policy.calibration_bins):
@@ -268,7 +272,9 @@ class IntelligenceCalibrationEngine:
         predicted = [item.judgment.predicted_label for item in outcomes]
         precision, recall, f1 = _macro_prf(expected, predicted)
         bins = _bins(outcomes, self.policy)
-        reviewer = [item.reviewer_accepted for item in outcomes if item.reviewer_accepted is not None]
+        reviewer = [
+            item.reviewer_accepted for item in outcomes if item.reviewer_accepted is not None
+        ]
         return DomainCalibration(
             domain=domain,
             case_count=len(outcomes),
@@ -281,7 +287,9 @@ class IntelligenceCalibrationEngine:
                 for item in outcomes
             ),
             expected_calibration_error=_expected_calibration_error(bins, len(outcomes)),
-            hallucination_rate=fmean(1.0 if item.judgment.hallucination else 0.0 for item in outcomes),
+            hallucination_rate=fmean(
+                1.0 if item.judgment.hallucination else 0.0 for item in outcomes
+            ),
             evidence_completeness=fmean(item.judgment.evidence_completeness for item in outcomes),
             explanation_quality=fmean(item.judgment.explanation_score for item in outcomes),
             reviewer_acceptance_rate=(
@@ -317,8 +325,7 @@ class IntelligenceCalibrationEngine:
         violations: list[str] = []
         overall_accuracy = fmean(1.0 if item.correct else 0.0 for item in outcomes)
         overall_brier = fmean(
-            (item.judgment.confidence - (1.0 if item.correct else 0.0)) ** 2
-            for item in outcomes
+            (item.judgment.confidence - (1.0 if item.correct else 0.0)) ** 2 for item in outcomes
         )
         overall_ece = _expected_calibration_error(overall_bins, len(outcomes))
         hallucination_rate = fmean(1.0 if item.judgment.hallucination else 0.0 for item in outcomes)
@@ -368,8 +375,12 @@ class IntelligenceCalibrationEngine:
             raise ValueError("calibration reports are from different datasets")
         violations: list[str] = []
         accuracy_delta = current.overall_accuracy - baseline.overall_accuracy
-        ece_delta = current.overall_expected_calibration_error - baseline.overall_expected_calibration_error
-        hallucination_delta = current.overall_hallucination_rate - baseline.overall_hallucination_rate
+        ece_delta = (
+            current.overall_expected_calibration_error - baseline.overall_expected_calibration_error
+        )
+        hallucination_delta = (
+            current.overall_hallucination_rate - baseline.overall_hallucination_rate
+        )
         if accuracy_delta < -self.policy.maximum_accuracy_regression:
             violations.append("accuracy regression exceeds policy")
         if ece_delta > self.policy.maximum_expected_calibration_error:

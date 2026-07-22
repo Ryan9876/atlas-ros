@@ -17,9 +17,7 @@ def sha(path: Path) -> str:
 
 def main() -> int:
     if len(sys.argv) != 4:
-        raise SystemExit(
-            "usage: prepare_v500_promotion.py CASES CALIBRATION_REPORT OUTPUT_DIR"
-        )
+        raise SystemExit("usage: prepare_v500_promotion.py CASES CALIBRATION_REPORT OUTPUT_DIR")
 
     cases_path = Path(sys.argv[1])
     report_path = Path(sys.argv[2])
@@ -33,10 +31,7 @@ def main() -> int:
     if len(cases) < 50:
         blockers.append("benchmark corpus has fewer than 50 cases")
     if not report.release_eligible:
-        blockers.extend(
-            report.blocking_violations
-            or ("calibration report not release eligible",)
-        )
+        blockers.extend(report.blocking_violations or ("calibration report not release eligible",))
 
     status = "candidate_ready_for_independent_review" if not blockers else "blocked"
     payload = {
@@ -49,9 +44,7 @@ def main() -> int:
         "dataset_fingerprint": report.dataset_fingerprint,
         "calibration_fingerprint": report.fingerprint,
         "blockers": blockers,
-        "required_next_action": (
-            "independent reviewer approval and full provisioned CI"
-        ),
+        "required_next_action": ("independent reviewer approval and full provisioned CI"),
     }
 
     target = output_dir / "V500_PROMOTION_READINESS.json"

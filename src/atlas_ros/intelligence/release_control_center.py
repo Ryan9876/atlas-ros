@@ -3,11 +3,11 @@ from __future__ import annotations
 import hashlib
 import html
 import json
-from typing import cast
 from collections.abc import Mapping
 from datetime import UTC, datetime
 from enum import StrEnum
 from pathlib import Path
+from typing import cast
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -50,7 +50,9 @@ class ControlCenterSnapshot(BaseModel):
     @property
     def fingerprint(self) -> str:
         payload = self.model_dump(mode="json", exclude={"generated_at"})
-        return hashlib.sha256(json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+        return hashlib.sha256(
+            json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
+        ).hexdigest()
 
 
 class ReleaseControlCenter:
@@ -124,7 +126,10 @@ class ReleaseControlCenter:
             "</tr>"
             for row in snapshot.gate_rows
         )
-        blockers = "".join(f"<li>{html.escape(item)}</li>" for item in snapshot.blocker_queue) or "<li>None</li>"
+        blockers = (
+            "".join(f"<li>{html.escape(item)}</li>" for item in snapshot.blocker_queue)
+            or "<li>None</li>"
+        )
         artifacts = "\n".join(
             "<tr>"
             f"<td>{html.escape(str(a['relative_path']))}</td>"
@@ -136,16 +141,13 @@ class ReleaseControlCenter:
         intelligence_panel = ""
         if snapshot.intelligence_health:
             health_rows = "".join(
-                "<tr>"
-                f"<td>{html.escape(str(key))}</td>"
-                f"<td>{html.escape(str(value))}</td>"
-                "</tr>"
+                f"<tr><td>{html.escape(str(key))}</td><td>{html.escape(str(value))}</td></tr>"
                 for key, value in sorted(snapshot.intelligence_health.items())
             )
             intelligence_panel = (
                 '<section class="card section"><h2>Intelligence calibration</h2>'
-                '<table><thead><tr><th>Metric</th><th>Value</th></tr></thead>'
-                f'<tbody>{health_rows}</tbody></table></section>'
+                "<table><thead><tr><th>Metric</th><th>Value</th></tr></thead>"
+                f"<tbody>{health_rows}</tbody></table></section>"
             )
         status_class = "ok" if snapshot.status is ControlCenterStatus.CANDIDATE_READY else "bad"
         return f"""<!doctype html>
@@ -161,7 +163,7 @@ table{{width:100%;border-collapse:collapse}} th,td{{padding:10px;border-bottom:1
 .section{{margin-top:18px}} .status{{font-size:20px;font-weight:800}} ul{{margin-bottom:0}} @media(max-width:800px){{.grid{{grid-template-columns:1fr 1fr}}}}
 </style></head><body><main>
 <h1>Atlas ROS Release Control Center</h1><div class="muted">Read-only evidence dashboard · Run {html.escape(snapshot.run_id)}</div>
-<div class="section card"><div class="status {status_class}">{html.escape(snapshot.status.value.replace('_',' ').upper())}</div>
+<div class="section card"><div class="status {status_class}">{html.escape(snapshot.status.value.replace("_", " ").upper())}</div>
 <p>Development release: <strong>{html.escape(snapshot.release_id)}</strong> · Active production: <strong>{html.escape(snapshot.active_release)}</strong> · Rollback: <strong>{html.escape(snapshot.rollback_release)}</strong></p>
 <p>Promotion authority: <strong>NOT GRANTED</strong></p></div>
 <div class="grid">
@@ -192,7 +194,9 @@ table{{width:100%;border-collapse:collapse}} th,td{{padding:10px;border-bottom:1
                         "release_eligible": payload.get("release_eligible", False),
                         "overall_accuracy": payload.get("overall_accuracy", "n/a"),
                         "macro_f1": payload.get("overall_macro_f1", "n/a"),
-                        "calibration_error": payload.get("overall_expected_calibration_error", "n/a"),
+                        "calibration_error": payload.get(
+                            "overall_expected_calibration_error", "n/a"
+                        ),
                         "hallucination_rate": payload.get("overall_hallucination_rate", "n/a"),
                         "fingerprint": hashlib.sha256(
                             json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
@@ -201,7 +205,11 @@ table{{width:100%;border-collapse:collapse}} th,td{{padding:10px;border-bottom:1
                 }
             )
         output_dir.mkdir(parents=True, exist_ok=True)
-        (output_dir / "release-control-center.json").write_text(snapshot.model_dump_json(indent=2), encoding="utf-8")
+        (output_dir / "release-control-center.json").write_text(
+            snapshot.model_dump_json(indent=2), encoding="utf-8"
+        )
         (output_dir / "index.html").write_text(self.render_html(snapshot), encoding="utf-8")
-        (output_dir / "CONTROL_CENTER_FINGERPRINT.sha256").write_text(snapshot.fingerprint + "\n", encoding="utf-8")
+        (output_dir / "CONTROL_CENTER_FINGERPRINT.sha256").write_text(
+            snapshot.fingerprint + "\n", encoding="utf-8"
+        )
         return snapshot

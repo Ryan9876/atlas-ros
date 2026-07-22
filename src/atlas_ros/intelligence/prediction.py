@@ -157,7 +157,9 @@ class GovernedPredictionEngine:
     def __init__(self, record_store: SQLiteIntelligenceRecordStore) -> None:
         self.record_store = record_store
 
-    def issue(self, request: ForecastRequest, *, created_at: datetime | None = None) -> ForecastOutcome:
+    def issue(
+        self, request: ForecastRequest, *, created_at: datetime | None = None
+    ) -> ForecastOutcome:
         created = created_at or datetime.now(UTC)
         if request.expires_at <= created:
             raise ValueError("forecast expiration must be after creation")
@@ -183,23 +185,15 @@ class GovernedPredictionEngine:
                     ),
                 )
             )
-        usable_assessments = [
-            item for item in assessments if item.usable
-        ]
+        usable_assessments = [item for item in assessments if item.usable]
         strength = (
-            sum(
-                item.authority_score * item.confidence
-                for item in usable_assessments
-            )
+            sum(item.authority_score * item.confidence for item in usable_assessments)
             / len(usable_assessments)
             if usable_assessments
             else 0.0
         )
         width = request.confidence_high - request.confidence_low
-        issued = (
-            bool(usable_assessments)
-            and strength >= request.minimum_evidence_strength
-        )
+        issued = bool(usable_assessments) and strength >= request.minimum_evidence_strength
         explanation = (
             "Forecast issued from qualified evidence with explicit probability and interval."
             if issued
@@ -242,7 +236,9 @@ class GovernedPredictionEngine:
                 created_at=observation.observed_at,
                 observed_outcome=f"invalid forecast: {observation.notes or observation.source}",
                 prediction_ref=prediction.ref(),
-                delta_analysis="Forecast excluded from calibration because outcome validity failed.",
+                delta_analysis=(
+                    "Forecast excluded from calibration because outcome validity failed."
+                ),
                 confidence_before=prediction.probability,
                 confidence_after=prediction.probability,
                 model_version=model_version,
@@ -278,7 +274,9 @@ class GovernedPredictionEngine:
 
 class CalibrationEvaluator:
     @staticmethod
-    def report(observations: Sequence[CalibrationObservation], *, bin_count: int = 10) -> CalibrationReport:
+    def report(
+        observations: Sequence[CalibrationObservation], *, bin_count: int = 10
+    ) -> CalibrationReport:
         if bin_count < 1:
             raise ValueError("bin_count must be positive")
         if not observations:
@@ -299,7 +297,8 @@ class CalibrationEvaluator:
             members = [
                 item
                 for item in observations
-                if lower <= item.probability < upper or (index == bin_count - 1 and item.probability == 1.0)
+                if lower <= item.probability < upper
+                or (index == bin_count - 1 and item.probability == 1.0)
             ]
             if not members:
                 continue

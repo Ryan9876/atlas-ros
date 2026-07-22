@@ -56,7 +56,11 @@ class PatternUpdateProposal(BaseModel):
 
     @model_validator(mode="after")
     def approval_consistency(self) -> PatternUpdateProposal:
-        approved = self.status in {ProposalStatus.APPROVED, ProposalStatus.APPLIED, ProposalStatus.ROLLED_BACK}
+        approved = self.status in {
+            ProposalStatus.APPROVED,
+            ProposalStatus.APPLIED,
+            ProposalStatus.ROLLED_BACK,
+        }
         if approved != bool(self.approved_by and self.approved_at):
             raise ValueError("approved status requires approval identity and timestamp")
         return self
@@ -97,7 +101,9 @@ class ProposalOutcome:
 class GovernedLearningEngine:
     """Proposes, approves, applies, and rolls back bounded learning updates."""
 
-    def __init__(self, record_store: SQLiteIntelligenceRecordStore, policy: LearningPolicy | None = None) -> None:
+    def __init__(
+        self, record_store: SQLiteIntelligenceRecordStore, policy: LearningPolicy | None = None
+    ) -> None:
         self.record_store = record_store
         self.policy = policy or LearningPolicy()
 
@@ -122,7 +128,10 @@ class GovernedLearningEngine:
         mean_gain = fmean(event.confidence_after - event.confidence_before for event in events)
         if abs(mean_gain) < self.policy.minimum_mean_confidence_gain:
             return ProposalOutcome(None, "observed confidence change below policy threshold")
-        bounded = max(-self.policy.maximum_confidence_step, min(self.policy.maximum_confidence_step, mean_gain))
+        bounded = max(
+            -self.policy.maximum_confidence_step,
+            min(self.policy.maximum_confidence_step, mean_gain),
+        )
         proposed = max(0.0, min(1.0, current_value + bounded))
         proposal = PatternUpdateProposal(
             created_at=created_at or datetime.now(UTC),
@@ -130,7 +139,10 @@ class GovernedLearningEngine:
             target=target,
             current_value=current_value,
             proposed_value=proposed,
-            rationale=f"{len(events)} eligible outcomes support bounded confidence adjustment {bounded:+.4f}.",
+            rationale=(
+                f"{len(events)} eligible outcomes support bounded confidence "
+                f"adjustment {bounded:+.4f}."
+            ),
             evidence_refs=tuple(evidence_refs),
             source_event_refs=tuple(event.ref() for event in events),
             expected_quality_gain=min(1.0, abs(mean_gain)),
@@ -138,21 +150,27 @@ class GovernedLearningEngine:
         )
         return ProposalOutcome(proposal, "proposal created")
 
-    def approve(self, proposal: PatternUpdateProposal, *, approver: str, approved_at: datetime | None = None) -> PatternUpdateProposal:
+    def approve(
+        self, proposal: PatternUpdateProposal, *, approver: str, approved_at: datetime | None = None
+    ) -> PatternUpdateProposal:
         if proposal.status is not ProposalStatus.DRAFT:
             raise ValueError("only draft proposals can be approved")
-        return proposal.model_copy(update={
-            "status": ProposalStatus.APPROVED,
-            "approved_by": approver,
-            "approved_at": approved_at or datetime.now(UTC),
-        })
+        return proposal.model_copy(
+            update={
+                "status": ProposalStatus.APPROVED,
+                "approved_by": approver,
+                "approved_at": approved_at or datetime.now(UTC),
+            }
+        )
 
     def reject(self, proposal: PatternUpdateProposal) -> PatternUpdateProposal:
         if proposal.status is not ProposalStatus.DRAFT:
             raise ValueError("only draft proposals can be rejected")
         return proposal.model_copy(update={"status": ProposalStatus.REJECTED})
 
-    def apply(self, proposal: PatternUpdateProposal, *, applied_at: datetime | None = None) -> tuple[PatternUpdateProposal, AppliedUpdate]:
+    def apply(
+        self, proposal: PatternUpdateProposal, *, applied_at: datetime | None = None
+    ) -> tuple[PatternUpdateProposal, AppliedUpdate]:
         if self.policy.require_human_approval and proposal.status is not ProposalStatus.APPROVED:
             raise PermissionError("approved proposal required before application")
         if proposal.status not in {ProposalStatus.DRAFT, ProposalStatus.APPROVED}:
@@ -167,7 +185,13 @@ class GovernedLearningEngine:
         )
         return proposal.model_copy(update={"status": ProposalStatus.APPLIED}), applied
 
-    def rollback(self, proposal: PatternUpdateProposal, applied: AppliedUpdate, *, rolled_back_at: datetime | None = None) -> tuple[PatternUpdateProposal, AppliedUpdate]:
+    def rollback(
+        self,
+        proposal: PatternUpdateProposal,
+        applied: AppliedUpdate,
+        *,
+        rolled_back_at: datetime | None = None,
+    ) -> tuple[PatternUpdateProposal, AppliedUpdate]:
         if proposal.status is not ProposalStatus.APPLIED:
             raise ValueError("only applied proposals can be rolled back")
         if applied.proposal_id != proposal.proposal_id:
@@ -179,18 +203,38 @@ class GovernedLearningEngine:
         )
 
     @staticmethod
-    def evaluate(events: Sequence[LearningEvent], proposals: Sequence[PatternUpdateProposal], updates: Sequence[AppliedUpdate]) -> LearningQualityReport:
+    def evaluate(
+        events: Sequence[LearningEvent],
+        proposals: Sequence[PatternUpdateProposal],
+        updates: Sequence[AppliedUpdate],
+    ) -> LearningQualityReport:
         eligible = [event for event in events if event.learning_eligible]
         gains = [event.confidence_after - event.confidence_before for event in eligible]
-        approved = [p for p in proposals if p.status in {ProposalStatus.APPROVED, ProposalStatus.APPLIED, ProposalStatus.ROLLED_BACK}]
+        approved = [
+            p
+            for p in proposals
+            if p.status
+            in {ProposalStatus.APPROVED, ProposalStatus.APPLIED, ProposalStatus.ROLLED_BACK}
+        ]
         rolled_back = [u for u in updates if u.rolled_back_at is not None]
         eligibility_rate = len(eligible) / len(events) if events else 0.0
         approval_rate = len(approved) / len(proposals) if proposals else 0.0
         rollback_rate = len(rolled_back) / len(updates) if updates else 0.0
         mean_gain = fmean(gains) if gains else 0.0
-        quality = max(0.0, min(1.0, 0.45 * eligibility_rate + 0.35 * max(0.0, mean_gain) + 0.20 * (1.0 - rollback_rate)))
+        quality = max(
+            0.0,
+            min(
+                1.0,
+                0.45 * eligibility_rate + 0.35 * max(0.0, mean_gain) + 0.20 * (1.0 - rollback_rate),
+            ),
+        )
         return LearningQualityReport(
-            event_count=len(events), eligible_count=len(eligible), eligibility_rate=eligibility_rate,
-            mean_confidence_gain=mean_gain, proposal_count=len(proposals), approval_rate=approval_rate,
-            rollback_rate=rollback_rate, quality_score=quality,
+            event_count=len(events),
+            eligible_count=len(eligible),
+            eligibility_rate=eligibility_rate,
+            mean_confidence_gain=mean_gain,
+            proposal_count=len(proposals),
+            approval_rate=approval_rate,
+            rollback_rate=rollback_rate,
+            quality_score=quality,
         )

@@ -12,7 +12,11 @@ def main() -> int:
     parser.add_argument("--release-id", default="Atlas ROS v5.0")
     parser.add_argument("--project-root", type=Path, default=Path.cwd())
     parser.add_argument("--output-root", type=Path)
-    parser.add_argument("--manual-evidence", type=Path, help="JSON mapping of manual gate names to evidence references")
+    parser.add_argument(
+        "--manual-evidence",
+        type=Path,
+        help="JSON mapping of manual gate names to evidence references",
+    )
     parser.add_argument("--package", action="store_true")
     args = parser.parse_args()
     evidence = {}

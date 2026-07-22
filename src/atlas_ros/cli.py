@@ -190,7 +190,6 @@ def connectivity_check(keychain: bool) -> None:
     )
 
 
-
 def intelligence_evaluate(results_file: Path) -> None:
     report = BenchmarkRunner().run(load_results(results_file))
     print(report.model_dump_json())
@@ -214,13 +213,17 @@ def intelligence_compare_calibration(baseline_file: Path, current_file: Path) ->
 
 def intelligence_validate_set(cases_file: Path, results_file: Path | None) -> None:
     validation = validate_files(cases_file, results_file)
-    print(json.dumps({
-        "valid": validation.valid,
-        "case_count": validation.case_count,
-        "result_count": validation.result_count,
-        "covered_dimensions": [item.value for item in validation.covered_dimensions],
-        "errors": list(validation.errors),
-    }))
+    print(
+        json.dumps(
+            {
+                "valid": validation.valid,
+                "case_count": validation.case_count,
+                "result_count": validation.result_count,
+                "covered_dimensions": [item.value for item in validation.covered_dimensions],
+                "errors": list(validation.errors),
+            }
+        )
+    )
     if not validation.valid:
         raise ValueError("intelligence evaluation set validation failed")
 

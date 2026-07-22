@@ -11,6 +11,7 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 Probability = Annotated[float, Field(ge=0.0, le=1.0)]
 
+
 class RecordKind(StrEnum):
     EVIDENCE = "evidence_envelope"
     CONTEXT = "context_snapshot"
@@ -219,7 +220,10 @@ class DecisionRecord(CanonicalRecord):
 
     @model_validator(mode="after")
     def validate_decision_references(self) -> Self:
-        if self.recommendation_ref and self.recommendation_ref.kind is not RecordKind.RECOMMENDATION:
+        if (
+            self.recommendation_ref
+            and self.recommendation_ref.kind is not RecordKind.RECOMMENDATION
+        ):
             raise ValueError("recommendation_ref must reference a recommendation record")
         if any(ref.kind is not RecordKind.EVIDENCE for ref in self.evidence_refs):
             raise ValueError("decision evidence_refs must reference evidence envelopes")

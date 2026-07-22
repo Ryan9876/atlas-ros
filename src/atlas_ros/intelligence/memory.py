@@ -2,12 +2,12 @@ from __future__ import annotations
 
 import math
 import sqlite3
-from typing import cast
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from enum import StrEnum
 from pathlib import Path
+from typing import cast
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
@@ -195,7 +195,8 @@ class GovernedMemoryStore:
                 raise ValueError("record confidence is below memory threshold")
             if (
                 self.policy.governed_requires_verified
-                and record.source_authority in {
+                and record.source_authority
+                in {
                     AuthorityLevel.PRIMARY,
                     AuthorityLevel.AUTHORITATIVE_APPLICATION,
                     AuthorityLevel.GOVERNED_INTERNAL,
@@ -342,7 +343,9 @@ class GovernedMemoryStore:
                     matched_terms=matched,
                 )
             )
-        results.sort(key=lambda item: (-item.score, item.entry.retained_at, str(item.entry.memory_id)))
+        results.sort(
+            key=lambda item: (-item.score, item.entry.retained_at, str(item.entry.memory_id))
+        )
         return tuple(results[: query.limit])
 
     def mark_conflict(self, first: UUID, second: UUID, confirmed: bool = False) -> None:
@@ -366,7 +369,8 @@ class GovernedMemoryStore:
             raise ValueError("memory is not in conflict")
         with sqlite3.connect(self.path) as connection:
             connection.execute(
-                "UPDATE memory_entries SET conflict_state = ?, superseded_by = ? WHERE memory_id = ?",
+                "UPDATE memory_entries SET conflict_state = ?, "
+                "superseded_by = ? WHERE memory_id = ?",
                 (ConflictState.RESOLVED.value, str(winner), str(superseded)),
             )
             connection.execute(
@@ -382,7 +386,9 @@ class GovernedMemoryStore:
             )
             return int(cursor.rowcount)
 
-    def evaluate(self, *, allowed_privacy: Iterable[PrivacyClass], as_of: datetime) -> MemoryEvaluation:
+    def evaluate(
+        self, *, allowed_privacy: Iterable[PrivacyClass], as_of: datetime
+    ) -> MemoryEvaluation:
         allowed = set(allowed_privacy)
         with sqlite3.connect(self.path) as connection:
             rows = connection.execute("SELECT * FROM memory_entries").fetchall()
@@ -426,7 +432,7 @@ class GovernedMemoryStore:
     def _confidence(record: CanonicalRecordType) -> float:
         for field in ("confidence", "probability", "confidence_after"):
             value = getattr(record, field, None)
-            if isinstance(value, (float, int)):
+            if isinstance(value, float | int):
                 return float(value)
         if isinstance(record, EvidenceEnvelope):
             return record.confidence

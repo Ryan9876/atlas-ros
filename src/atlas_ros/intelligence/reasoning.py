@@ -126,7 +126,9 @@ class GovernedReasoningEngine:
     def __init__(self, record_store: SQLiteIntelligenceRecordStore) -> None:
         self.record_store = record_store
 
-    def evaluate(self, request: ReasoningRequest, *, created_at: datetime | None = None) -> ReasoningOutcome:
+    def evaluate(
+        self, request: ReasoningRequest, *, created_at: datetime | None = None
+    ) -> ReasoningOutcome:
         context = self.record_store.resolve(request.context_ref)
         if not isinstance(context, ContextSnapshot):
             raise ValueError("context_ref must resolve to ContextSnapshot")
@@ -143,7 +145,11 @@ class GovernedReasoningEngine:
                     record.validation_status is not ValidationStatus.REJECTED
                     and record.confidence >= request.minimum_evidence_confidence
                 )
-                reason = "usable verified or qualified evidence" if usable else "rejected or below confidence threshold"
+                reason = (
+                    "usable verified or qualified evidence"
+                    if usable
+                    else "rejected or below confidence threshold"
+                )
                 assessments[ref] = EvidenceAssessment(
                     evidence_ref=ref,
                     authority_score=_AUTHORITY[record.source_authority],
@@ -156,15 +162,10 @@ class GovernedReasoningEngine:
         scored: list[ScoredOption] = []
         for option in request.options:
             usable_assessments = [
-                assessments[ref]
-                for ref in option.evidence_refs
-                if assessments[ref].usable
+                assessments[ref] for ref in option.evidence_refs if assessments[ref].usable
             ]
             evidence_strength = (
-                sum(
-                    item.authority_score * item.confidence
-                    for item in usable_assessments
-                )
+                sum(item.authority_score * item.confidence for item in usable_assessments)
                 / len(usable_assessments)
                 if usable_assessments
                 else 0.0
@@ -173,7 +174,9 @@ class GovernedReasoningEngine:
             utility = 0.0
             for criterion in request.criteria:
                 raw = option.scores[criterion.name]
-                normalized = raw if criterion.direction is CriterionDirection.MAXIMIZE else 1.0 - raw
+                normalized = (
+                    raw if criterion.direction is CriterionDirection.MAXIMIZE else 1.0 - raw
+                )
                 contribution = normalized * criterion.weight / total_weight
                 contributions[criterion.name] = contribution
                 utility += contribution
@@ -190,7 +193,10 @@ class GovernedReasoningEngine:
         scored.sort(key=lambda item: (-item.adjusted_score, item.option))
         best, second = scored[0], scored[1]
         margin = best.adjusted_score - second.adjusted_score
-        uncertainty = min(1.0, 1.0 - best.evidence_strength + max(0.0, request.minimum_recommendation_margin - margin))
+        uncertainty = min(
+            1.0,
+            1.0 - best.evidence_strength + max(0.0, request.minimum_recommendation_margin - margin),
+        )
         abstained = best.evidence_strength == 0.0 or margin < request.minimum_recommendation_margin
         if abstained:
             explanation = (
@@ -208,8 +214,12 @@ class GovernedReasoningEngine:
             )
             return ReasoningOutcome(trace=trace, recommendation=None)
         selected = next(option for option in request.options if option.option == best.option)
-        all_refs = tuple(dict.fromkeys(ref for option in request.options for ref in option.evidence_refs))
-        confidence = max(0.0, min(1.0, best.evidence_strength * (0.5 + 0.5 * min(1.0, margin / 0.25))))
+        all_refs = tuple(
+            dict.fromkeys(ref for option in request.options for ref in option.evidence_refs)
+        )
+        confidence = max(
+            0.0, min(1.0, best.evidence_strength * (0.5 + 0.5 * min(1.0, margin / 0.25)))
+        )
         rationale = (
             f"{best.option} ranked first with adjusted score {best.adjusted_score:.3f}, "
             f"a {margin:.3f} margin over the next option, and evidence strength "
@@ -250,4 +260,7 @@ class GovernedReasoningEngine:
             return max(0.0, 1.0 - trace.uncertainty) * 0.5
         top = trace.ranked_options[0]
         explanation_score = 1.0 if trace.explanation else 0.0
-        return min(1.0, 0.5 * top.adjusted_score + 0.3 * (1.0 - trace.uncertainty) + 0.2 * explanation_score)
+        return min(
+            1.0,
+            0.5 * top.adjusted_score + 0.3 * (1.0 - trace.uncertainty) + 0.2 * explanation_score,
+        )

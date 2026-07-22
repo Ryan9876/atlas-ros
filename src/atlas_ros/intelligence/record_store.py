@@ -103,7 +103,14 @@ class SQLiteIntelligenceRecordStore:
         staged = {record.record_id: record for record in materialized}
         for record in materialized:
             direct_refs = list(record.links)
-            for field_name in ("evidence_refs", "context_ref", "recommendation_ref", "prediction_ref", "decision_ref", "supersedes"):
+            for field_name in (
+                "evidence_refs",
+                "context_ref",
+                "recommendation_ref",
+                "prediction_ref",
+                "decision_ref",
+                "supersedes",
+            ):
                 value = getattr(record, field_name, None)
                 if value is None:
                     continue

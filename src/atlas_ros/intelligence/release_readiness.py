@@ -44,7 +44,10 @@ class BenchmarkDataset(BaseModel):
         payload = {
             "dataset_id": self.dataset_id,
             "version": self.version,
-            "cases": [case.model_dump(mode="json") for case in sorted(self.cases, key=lambda item: item.id)],
+            "cases": [
+                case.model_dump(mode="json")
+                for case in sorted(self.cases, key=lambda item: item.id)
+            ],
         }
         encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
         return hashlib.sha256(encoded).hexdigest()
@@ -119,7 +122,9 @@ class IntelligenceReleaseReadiness:
     """Applies fixed, non-self-modifying gates to v5 intelligence evidence."""
 
     @staticmethod
-    def compare_regression(report: EvaluationReport, baseline: RegressionBaseline, dataset: BenchmarkDataset) -> RegressionReport:
+    def compare_regression(
+        report: EvaluationReport, baseline: RegressionBaseline, dataset: BenchmarkDataset
+    ) -> RegressionReport:
         if baseline.dataset_fingerprint != dataset.fingerprint:
             raise ValueError("regression baseline does not match benchmark dataset")
         current = {item.dimension: item.score for item in report.dimensions}
@@ -142,8 +147,13 @@ class IntelligenceReleaseReadiness:
         )
 
     @staticmethod
-    def assess_adversarial_coverage(dataset: BenchmarkDataset, requirements: Sequence[AdversarialRequirement]) -> AdversarialCoverageReport:
-        counts = {requirement.tag: sum(requirement.tag in case.tags for case in dataset.cases) for requirement in requirements}
+    def assess_adversarial_coverage(
+        dataset: BenchmarkDataset, requirements: Sequence[AdversarialRequirement]
+    ) -> AdversarialCoverageReport:
+        counts = {
+            requirement.tag: sum(requirement.tag in case.tags for case in dataset.cases)
+            for requirement in requirements
+        }
         missing = tuple(
             f"{requirement.tag}: {counts[requirement.tag]}/{requirement.minimum_cases}"
             for requirement in requirements
@@ -187,4 +197,6 @@ class IntelligenceReleaseReadiness:
             decision = ReadinessDecision.DEVELOPMENT_VALIDATED
         else:
             decision = ReadinessDecision.CANDIDATE_READY
-        return ReadinessAssessment(decision=decision, blocking_reasons=tuple(blocking), evidence=evidence)
+        return ReadinessAssessment(
+            decision=decision, blocking_reasons=tuple(blocking), evidence=evidence
+        )

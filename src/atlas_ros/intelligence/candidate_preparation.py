@@ -185,11 +185,10 @@ class CandidatePreparationEngine:
             blocking.extend(f"required gate not passed: {name}" for name in failed)
         if approved_reviews < self.policy.minimum_approved_reviews:
             blocking.append(
-                f"approved independent reviews {approved_reviews}/{self.policy.minimum_approved_reviews}"
+                "approved independent reviews "
+                f"{approved_reviews}/{self.policy.minimum_approved_reviews}"
             )
-        if any(
-            review.disposition is ReviewDisposition.CHANGES_REQUIRED for review in reviews
-        ):
+        if any(review.disposition is ReviewDisposition.CHANGES_REQUIRED for review in reviews):
             blocking.append("independent review requires changes")
         if (
             self.policy.require_candidate_ready_assessment
