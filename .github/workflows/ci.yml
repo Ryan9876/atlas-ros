@@ -17,7 +17,7 @@ jobs:
         id: ruff
         run: |
           set -o pipefail
-          ruff check . --output-format=concise 2>&1 | tee ruff-output.txt
+          ruff check . --fix --diff 2>&1 | tee ruff-output.txt
       - name: Retain Ruff diagnostics
         if: failure() && steps.ruff.outcome == 'failure'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
