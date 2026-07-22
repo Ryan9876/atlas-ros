@@ -1,6 +1,6 @@
 # Atlas ROS v4.5.2 Release Manifest
 
-Status: Validated production candidate. Promotion requires successful authority-record readback.
+Status: Active production release after publication and authority-record readback.
 
 Base authority: Atlas ROS v4.5.1. Immediate immutable rollback upon promotion: Atlas ROS v4.5.1.
 
