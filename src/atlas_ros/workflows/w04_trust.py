@@ -6,11 +6,11 @@ from typing import Any
 from atlas_ros.adapters.notion import NotionPage
 from atlas_ros.adapters.todoist import TodoistComment, TodoistTask
 from atlas_ros.workflows.w04_reconciliation import (
+    _extract_plain,
     AtlasCommand,
     MutationType,
     ReconciliationMutation,
     TodoistReconciliationService as BaseTodoistReconciliationService,
-    _extract_plain,
 )
 
 
