@@ -11,7 +11,9 @@ from atlas_ros.intelligence.models import (
 )
 
 
-def result(*, trust: float = 1.0, decision: float = 0.9, violations: tuple[str, ...] = ()) -> EvaluationResult:
+def result(
+    *, trust: float = 1.0, decision: float = 0.9, violations: tuple[str, ...] = ()
+) -> EvaluationResult:
     return EvaluationResult(
         case_id="case-1",
         evaluator_version="rie-1.0",

@@ -20,7 +20,9 @@ from atlas_ros.intelligence.release_readiness import (
 )
 
 
-def readiness(decision: ReadinessDecision = ReadinessDecision.CANDIDATE_READY) -> ReadinessAssessment:
+def readiness(
+    decision: ReadinessDecision = ReadinessDecision.CANDIDATE_READY,
+) -> ReadinessAssessment:
     evidence = ReleaseEvidence(
         release_id="v5.0",
         dataset_fingerprint="a" * 64,

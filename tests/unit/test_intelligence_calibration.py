@@ -13,7 +13,9 @@ from atlas_ros.intelligence.calibration import (
 )
 
 
-def case(case_id: str, expected: str = "p1", domain: IntelligenceDomain = IntelligenceDomain.PRIORITY) -> CalibrationCase:
+def case(
+    case_id: str, expected: str = "p1", domain: IntelligenceDomain = IntelligenceDomain.PRIORITY
+) -> CalibrationCase:
     return CalibrationCase(
         id=case_id,
         title=f"case {case_id}",
@@ -24,7 +26,9 @@ def case(case_id: str, expected: str = "p1", domain: IntelligenceDomain = Intell
     )
 
 
-def judgment(case_id: str, predicted: str = "p1", confidence: float = 0.92, *, hallucination: bool = False) -> IntelligenceJudgment:
+def judgment(
+    case_id: str, predicted: str = "p1", confidence: float = 0.92, *, hallucination: bool = False
+) -> IntelligenceJudgment:
     return IntelligenceJudgment(
         case_id=case_id,
         evaluator_version="rie-cal-1.0",
@@ -41,7 +45,10 @@ def judgment(case_id: str, predicted: str = "p1", confidence: float = 0.92, *, h
 
 def test_calibration_report_accepts_strong_judgments() -> None:
     engine = IntelligenceCalibrationEngine(IntelligenceCalibrationPolicy(minimum_cases=2))
-    report = engine.run((case("c1"), case("c2", domain=IntelligenceDomain.DECISION)), (judgment("c1"), judgment("c2")))
+    report = engine.run(
+        (case("c1"), case("c2", domain=IntelligenceDomain.DECISION)),
+        (judgment("c1"), judgment("c2")),
+    )
     assert report.release_eligible
     assert report.overall_accuracy == pytest.approx(1.0)
     assert report.overall_expected_calibration_error == pytest.approx(0.08)
@@ -51,7 +58,9 @@ def test_calibration_report_accepts_strong_judgments() -> None:
 
 def test_low_accuracy_blocks_release_eligibility() -> None:
     engine = IntelligenceCalibrationEngine(IntelligenceCalibrationPolicy(minimum_cases=2))
-    report = engine.run((case("c1"), case("c2")), (judgment("c1", predicted="p3", confidence=0.9), judgment("c2")))
+    report = engine.run(
+        (case("c1"), case("c2")), (judgment("c1", predicted="p3", confidence=0.9), judgment("c2"))
+    )
     assert not report.release_eligible
     assert "overall accuracy below policy" in report.blocking_violations
 
@@ -83,7 +92,9 @@ def test_fixed_evaluator_version_required() -> None:
 
 
 def test_regression_comparison_blocks_accuracy_loss() -> None:
-    engine = IntelligenceCalibrationEngine(IntelligenceCalibrationPolicy(minimum_cases=2, maximum_accuracy_regression=0.01))
+    engine = IntelligenceCalibrationEngine(
+        IntelligenceCalibrationPolicy(minimum_cases=2, maximum_accuracy_regression=0.01)
+    )
     cases = (case("c1"), case("c2"))
     baseline = engine.run(cases, (judgment("c1"), judgment("c2")))
     current = engine.run(cases, (judgment("c1"), judgment("c2", predicted="p3", confidence=0.95)))

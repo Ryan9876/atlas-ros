@@ -70,4 +70,7 @@ def test_deterministic_evidence_package(tmp_path: Path) -> None:
     (run / "a.txt").write_text("a", encoding="utf-8")
     first = package_evidence(run, tmp_path / "first.zip")
     second = package_evidence(run, tmp_path / "second.zip")
-    assert hashlib.sha256(first.read_bytes()).hexdigest() == hashlib.sha256(second.read_bytes()).hexdigest()
+    assert (
+        hashlib.sha256(first.read_bytes()).hexdigest()
+        == hashlib.sha256(second.read_bytes()).hexdigest()
+    )

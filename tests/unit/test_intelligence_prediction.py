@@ -21,7 +21,7 @@ NOW = datetime(2026, 7, 22, 8, 0, tzinfo=UTC)
 HASH = "sha256:" + "b" * 64
 
 
-def ev(n: int, confidence: float = .9, status: ValidationStatus = ValidationStatus.VERIFIED):
+def ev(n: int, confidence: float = 0.9, status: ValidationStatus = ValidationStatus.VERIFIED):
     return EvidenceEnvelope(
         record_id=UUID(f"00000000-0000-4000-a000-{n:012d}"),
         created_at=NOW,
@@ -45,9 +45,9 @@ def setup(tmp_path: Path):
 def request(evidence, **kwargs):
     values = dict(
         prediction="Milestone will complete on schedule",
-        probability=.75,
-        confidence_low=.55,
-        confidence_high=.9,
+        probability=0.75,
+        confidence_low=0.55,
+        confidence_high=0.9,
         expires_at=NOW + timedelta(days=14),
         evidence_refs=(evidence.ref(),),
     )
@@ -61,13 +61,13 @@ def test_issue_forecast_from_qualified_evidence(tmp_path: Path):
     assert outcome.trace.issued
     assert outcome.prediction is not None
     assert outcome.prediction.verify_integrity()
-    assert outcome.prediction.probability == .75
+    assert outcome.prediction.probability == 0.75
 
 
 def test_withhold_forecast_when_evidence_is_weak(tmp_path: Path):
     store = SQLiteIntelligenceRecordStore(tmp_path / "records.db")
     store.initialize()
-    weak = ev(2, confidence=.2, status=ValidationStatus.REJECTED)
+    weak = ev(2, confidence=0.2, status=ValidationStatus.REJECTED)
     store.append(weak)
     outcome = GovernedPredictionEngine(store).issue(request(weak), created_at=NOW)
     assert not outcome.trace.issued
@@ -78,7 +78,7 @@ def test_withhold_forecast_when_evidence_is_weak(tmp_path: Path):
 def test_request_rejects_invalid_interval(tmp_path: Path):
     _, evidence = setup(tmp_path)
     with pytest.raises(ValidationError, match="inside confidence interval"):
-        request(evidence, probability=.9, confidence_low=.1, confidence_high=.8)
+        request(evidence, probability=0.9, confidence_low=0.1, confidence_high=0.8)
 
 
 def test_issue_rejects_expired_horizon(tmp_path: Path):
@@ -104,7 +104,7 @@ def test_capture_positive_outcome_and_learning_event(tmp_path: Path):
     )
     assert calibration is not None
     assert calibration.actual == 1
-    assert calibration.brier_score == pytest.approx(.0625)
+    assert calibration.brier_score == pytest.approx(0.0625)
     assert learning.learning_eligible
     assert learning.verify_integrity()
 
@@ -146,12 +146,12 @@ def obs(n: int, probability: float, actual: int, covered: bool = True):
 
 
 def test_calibration_report_and_quality():
-    report = CalibrationEvaluator.report((obs(1, .8, 1), obs(2, .2, 0), obs(3, .7, 1)))
+    report = CalibrationEvaluator.report((obs(1, 0.8, 1), obs(2, 0.2, 0), obs(3, 0.7, 1)))
     assert report.count == 3
-    assert report.brier_score < .1
+    assert report.brier_score < 0.1
     assert report.interval_coverage == 1
     assert report.expected_calibration_error >= 0
-    assert CalibrationEvaluator.predictive_quality(report) > .8
+    assert CalibrationEvaluator.predictive_quality(report) > 0.8
 
 
 def test_empty_report_and_invalid_bin_count():
@@ -163,17 +163,20 @@ def test_empty_report_and_invalid_bin_count():
 
 
 def test_drift_detection_stable_warning_and_drift():
-    baseline = tuple(obs(i, .9 if i % 2 else .1, 1 if i % 2 else 0) for i in range(1, 7))
-    stable = tuple(obs(i + 10, .89 if i % 2 else .11, 1 if i % 2 else 0) for i in range(1, 7))
-    bad = tuple(obs(i + 20, .9 if i % 2 else .1, 0 if i % 2 else 1) for i in range(1, 7))
-    assert CalibrationEvaluator.detect_drift(baseline[:2], stable[:2]).status is DriftStatus.INSUFFICIENT_DATA
+    baseline = tuple(obs(i, 0.9 if i % 2 else 0.1, 1 if i % 2 else 0) for i in range(1, 7))
+    stable = tuple(obs(i + 10, 0.89 if i % 2 else 0.11, 1 if i % 2 else 0) for i in range(1, 7))
+    bad = tuple(obs(i + 20, 0.9 if i % 2 else 0.1, 0 if i % 2 else 1) for i in range(1, 7))
+    assert (
+        CalibrationEvaluator.detect_drift(baseline[:2], stable[:2]).status
+        is DriftStatus.INSUFFICIENT_DATA
+    )
     assert CalibrationEvaluator.detect_drift(baseline, stable).status is DriftStatus.STABLE
     assert CalibrationEvaluator.detect_drift(baseline, bad).status is DriftStatus.DRIFT
     warning = CalibrationEvaluator.detect_drift(
         baseline,
         stable,
-        warning_threshold=.001,
-        drift_threshold=.9,
+        warning_threshold=0.001,
+        drift_threshold=0.9,
     )
     assert warning.status is DriftStatus.WARNING
 

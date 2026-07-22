@@ -42,6 +42,8 @@ line-length = 100
 select = ["E", "F", "I", "UP", "B", "SIM"]
 
 [tool.ruff.lint.per-file-ignores]
+"tests/unit/test_cli.py" = ["E501"]
+"tests/unit/test_release_control_center.py" = ["E501"]
 "src/atlas_ros/intelligence/__init__.py" = ["E402"]
 "src/atlas_ros/intelligence/release_control_center.py" = ["E501"]
 "tools/assemble_v410_restoration.py" = ["E501"]

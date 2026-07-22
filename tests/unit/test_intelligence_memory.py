@@ -15,7 +15,10 @@ from atlas_ros.intelligence.memory import (
     PrivacyClass,
     RetrievalQuery,
 )
-from atlas_ros.intelligence.record_store import SQLiteIntelligenceRecordStore
+from atlas_ros.intelligence.record_store import (
+    RecordNotFoundError,
+    SQLiteIntelligenceRecordStore,
+)
 from atlas_ros.intelligence.records import (
     AuthorityLevel,
     ContextSnapshot,
@@ -27,7 +30,9 @@ NOW = datetime(2026, 7, 22, 5, 0, tzinfo=UTC)
 HASH = "sha256:" + "a" * 64
 
 
-def evidence(record_id: int, authority: AuthorityLevel, confidence: float = 0.9) -> EvidenceEnvelope:
+def evidence(
+    record_id: int, authority: AuthorityLevel, confidence: float = 0.9
+) -> EvidenceEnvelope:
     return EvidenceEnvelope(
         record_id=UUID(f"00000000-0000-4000-8000-{record_id:012d}"),
         created_at=NOW,
@@ -77,7 +82,9 @@ def test_context_is_working_memory_and_expires(tmp_path: Path) -> None:
         decision_horizon="current session",
     )
     records.append(item)
-    entry = memory.retain(item, subject="current objective", privacy=PrivacyClass.PERSONAL, retained_at=NOW)
+    entry = memory.retain(
+        item, subject="current objective", privacy=PrivacyClass.PERSONAL, retained_at=NOW
+    )
     assert entry.tier is MemoryTier.WORKING
     assert entry.expires_at == NOW + timedelta(hours=24)
     assert memory.purge_expired(NOW + timedelta(days=2)) == 1
@@ -96,8 +103,20 @@ def test_retrieval_honors_privacy_and_authority_ranking(tmp_path: Path) -> None:
     primary = evidence(4, AuthorityLevel.PRIMARY, confidence=0.95)
     inferred = evidence(5, AuthorityLevel.INFERRED, confidence=0.95)
     records.append_many((primary, inferred))
-    memory.retain(primary, subject="release status", privacy=PrivacyClass.INTERNAL, tags=("release",), retained_at=NOW)
-    memory.retain(inferred, subject="release guess", privacy=PrivacyClass.PERSONAL, tags=("release",), retained_at=NOW)
+    memory.retain(
+        primary,
+        subject="release status",
+        privacy=PrivacyClass.INTERNAL,
+        tags=("release",),
+        retained_at=NOW,
+    )
+    memory.retain(
+        inferred,
+        subject="release guess",
+        privacy=PrivacyClass.PERSONAL,
+        tags=("release",),
+        retained_at=NOW,
+    )
     internal = memory.retrieve(RetrievalQuery(text="release", as_of=NOW))
     assert [item.entry.memory_id for item in internal] == [primary.record_id]
     all_results = memory.retrieve(
@@ -116,8 +135,20 @@ def test_conflicts_are_hidden_until_resolved(tmp_path: Path) -> None:
     first = evidence(6, AuthorityLevel.USER_PROVIDED)
     second = evidence(7, AuthorityLevel.PRIMARY)
     records.append_many((first, second))
-    memory.retain(first, subject="project status", privacy=PrivacyClass.INTERNAL, tags=("status",), retained_at=NOW)
-    memory.retain(second, subject="project status", privacy=PrivacyClass.INTERNAL, tags=("status",), retained_at=NOW)
+    memory.retain(
+        first,
+        subject="project status",
+        privacy=PrivacyClass.INTERNAL,
+        tags=("status",),
+        retained_at=NOW,
+    )
+    memory.retain(
+        second,
+        subject="project status",
+        privacy=PrivacyClass.INTERNAL,
+        tags=("status",),
+        retained_at=NOW,
+    )
     memory.mark_conflict(first.record_id, second.record_id, confirmed=True)
     assert memory.retrieve(RetrievalQuery(text="status", as_of=NOW)) == ()
     memory.resolve_conflict(first.record_id, second.record_id)
@@ -142,9 +173,11 @@ def test_memory_evaluation_detects_privacy_boundary(tmp_path: Path) -> None:
 def test_retention_is_idempotent_and_record_backed(tmp_path: Path) -> None:
     records, memory = stores(tmp_path)
     item = evidence(9, AuthorityLevel.PRIMARY)
-    with pytest.raises(Exception):
+    with pytest.raises(RecordNotFoundError):
         memory.retain(item, subject="not persisted", privacy=PrivacyClass.INTERNAL, retained_at=NOW)
     records.append(item)
     first = memory.retain(item, subject="persisted", privacy=PrivacyClass.INTERNAL, retained_at=NOW)
-    second = memory.retain(item, subject="ignored duplicate", privacy=PrivacyClass.INTERNAL, retained_at=NOW)
+    second = memory.retain(
+        item, subject="ignored duplicate", privacy=PrivacyClass.INTERNAL, retained_at=NOW
+    )
     assert first == second
