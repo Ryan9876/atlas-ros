@@ -9,6 +9,15 @@ from pathlib import Path
 from atlas_ros.adapters.notion import LiveNotionAdapter
 from atlas_ros.adapters.todoist import LiveTodoistAdapter
 from atlas_ros.domain.models import Action
+from atlas_ros.intelligence.dataset import validate_files
+from atlas_ros.intelligence.calibration import (
+    IntelligenceCalibrationEngine,
+    load_calibration_cases,
+    load_calibration_report,
+    load_intelligence_judgments,
+)
+from atlas_ros.intelligence.evaluation import BenchmarkRunner
+from atlas_ros.intelligence.io import load_results
 from atlas_ros.release.tooling import checksums, inventory, verify
 from atlas_ros.runtime.database import RuntimeDatabase
 from atlas_ros.workflows import (
@@ -181,6 +190,41 @@ def connectivity_check(keychain: bool) -> None:
     )
 
 
+
+def intelligence_evaluate(results_file: Path) -> None:
+    report = BenchmarkRunner().run(load_results(results_file))
+    print(report.model_dump_json())
+
+
+def intelligence_calibrate(cases_file: Path, judgments_file: Path) -> None:
+    report = IntelligenceCalibrationEngine().run(
+        load_calibration_cases(cases_file),
+        load_intelligence_judgments(judgments_file),
+    )
+    print(report.model_dump_json())
+
+
+def intelligence_compare_calibration(baseline_file: Path, current_file: Path) -> None:
+    report = IntelligenceCalibrationEngine().compare_regression(
+        load_calibration_report(baseline_file),
+        load_calibration_report(current_file),
+    )
+    print(report.model_dump_json())
+
+
+def intelligence_validate_set(cases_file: Path, results_file: Path | None) -> None:
+    validation = validate_files(cases_file, results_file)
+    print(json.dumps({
+        "valid": validation.valid,
+        "case_count": validation.case_count,
+        "result_count": validation.result_count,
+        "covered_dimensions": [item.value for item in validation.covered_dimensions],
+        "errors": list(validation.errors),
+    }))
+    if not validation.valid:
+        raise ValueError("intelligence evaluation set validation failed")
+
+
 def release_inventory(root: Path = Path(".")) -> None:
     print("\n".join(path.relative_to(root).as_posix() for path in inventory(root)))
 
@@ -229,6 +273,19 @@ def main() -> None:
     dec.add_argument("--delegation-reviewed", action="store_true")
     dec.add_argument("--delegated-work-required", action="store_true")
     dec.add_argument("--delegated-work", action="store_true")
+    intelligence = sub.add_parser("intelligence")
+    intelligence_sub = intelligence.add_subparsers(dest="intelligence_command", required=True)
+    evaluate = intelligence_sub.add_parser("evaluate")
+    evaluate.add_argument("results_file", type=Path)
+    validate_set = intelligence_sub.add_parser("validate-set")
+    validate_set.add_argument("cases_file", type=Path)
+    validate_set.add_argument("--results-file", type=Path)
+    calibrate = intelligence_sub.add_parser("calibrate")
+    calibrate.add_argument("cases_file", type=Path)
+    calibrate.add_argument("judgments_file", type=Path)
+    compare_calibration = intelligence_sub.add_parser("compare-calibration")
+    compare_calibration.add_argument("baseline_file", type=Path)
+    compare_calibration.add_argument("current_file", type=Path)
     rel = sub.add_parser("release")
     relsub = rel.add_subparsers(dest="release_command")
     for command in ("inventory", "checksums", "verify"):
@@ -248,6 +305,14 @@ def main() -> None:
         )
     elif args.command == "connectivity":
         connectivity_check(args.keychain)
+    elif args.command == "intelligence" and args.intelligence_command == "evaluate":
+        intelligence_evaluate(args.results_file)
+    elif args.command == "intelligence" and args.intelligence_command == "validate-set":
+        intelligence_validate_set(args.cases_file, args.results_file)
+    elif args.command == "intelligence" and args.intelligence_command == "calibrate":
+        intelligence_calibrate(args.cases_file, args.judgments_file)
+    elif args.command == "intelligence" and args.intelligence_command == "compare-calibration":
+        intelligence_compare_calibration(args.baseline_file, args.current_file)
     elif args.command == "decompose":
         decompose(
             args.action_id,
