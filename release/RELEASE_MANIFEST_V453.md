@@ -1,6 +1,6 @@
 # Atlas ROS v4.5.3 Release Manifest
 
-Status: Release candidate pending package publication, full validation, and authority-record readback.
+Status: Active production release after publication and authority-record readback.
 
 Base authority: Atlas ROS v4.5.2. Immediate immutable rollback upon promotion: Atlas ROS v4.5.2.
 
@@ -16,4 +16,4 @@ The readable published workspace is valid when this manifest, the validation rep
 
 This release does not activate autonomous scheduling, messaging, email, calendar actions, deletion, or unattended consequential automation.
 
-Promotion authority: Ryan Smith, authorized 2026-07-21; effective only after all promotion gates pass.
+Promotion authority: Ryan Smith, 2026-07-22.
