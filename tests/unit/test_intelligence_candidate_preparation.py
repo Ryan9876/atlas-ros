@@ -6,9 +6,11 @@ import pytest
 from atlas_ros.intelligence.candidate_preparation import (
     ArtifactDigest,
     CandidatePreparationEngine,
+    CandidatePreparationPolicy,
     IndependentReview,
     PreparationDecision,
     ReviewDisposition,
+    ReviewPath,
     ValidationExecution,
 )
 from atlas_ros.intelligence.release_readiness import (
@@ -51,6 +53,21 @@ def review(disposition: ReviewDisposition = ReviewDisposition.APPROVED) -> Indep
     )
 
 
+def solo_review(reviewer: str = "Ryan9876") -> IndependentReview:
+    return IndependentReview(
+        reviewer=reviewer,
+        reviewed_at=datetime.now(UTC),
+        disposition=ReviewDisposition.APPROVED,
+        evidence_reference="pr-5-self-review",
+        review_path=ReviewPath.SOLO_MAINTAINER,
+        checklist_evidence=(
+            "changed files reviewed",
+            "CI and test evidence reviewed",
+            "artifact and rollback controls reviewed",
+        ),
+    )
+
+
 def test_digest_file_is_deterministic(tmp_path: Path) -> None:
     path = tmp_path / "artifact.txt"
     path.write_text("atlas")
@@ -75,6 +92,17 @@ def test_changes_required_review_requires_findings() -> None:
             reviewed_at=datetime.now(UTC),
             disposition=ReviewDisposition.CHANGES_REQUIRED,
             evidence_reference="review",
+        )
+
+
+def test_solo_review_requires_checklist_evidence() -> None:
+    with pytest.raises(ValueError, match="must include checklist evidence"):
+        IndependentReview(
+            reviewer="Ryan9876",
+            reviewed_at=datetime.now(UTC),
+            disposition=ReviewDisposition.APPROVED,
+            evidence_reference="review",
+            review_path=ReviewPath.SOLO_MAINTAINER,
         )
 
 
@@ -114,7 +142,7 @@ def test_changes_required_review_blocks_candidate() -> None:
         artifacts=(),
     )
     assert result.decision is PreparationDecision.BLOCKED
-    assert "independent review requires changes" in result.blocking_reasons
+    assert "governed review requires changes" in result.blocking_reasons
 
 
 def test_non_candidate_readiness_blocks_candidate() -> None:
@@ -141,6 +169,45 @@ def test_complete_evidence_is_proposable_not_promoted() -> None:
     assert not result.blocking_reasons
     assert not result.promotion_authorized
     assert len(result.packet.fingerprint) == 64
+
+
+def test_solo_maintainer_review_can_satisfy_governed_review() -> None:
+    policy = CandidatePreparationPolicy(solo_maintainer_identity="Ryan9876")
+    result = CandidatePreparationEngine(policy).prepare(
+        release_id="v5.0",
+        readiness=readiness(),
+        executions=executions(),
+        reviews=(solo_review(),),
+        artifacts=(),
+    )
+    assert result.decision is PreparationDecision.PROPOSABLE_CANDIDATE
+    assert not result.blocking_reasons
+
+
+def test_solo_maintainer_identity_mismatch_blocks_candidate() -> None:
+    policy = CandidatePreparationPolicy(solo_maintainer_identity="Ryan9876")
+    result = CandidatePreparationEngine(policy).prepare(
+        release_id="v5.0",
+        readiness=readiness(),
+        executions=executions(),
+        reviews=(solo_review("someone-else"),),
+        artifacts=(),
+    )
+    assert result.decision is PreparationDecision.BLOCKED
+    assert "approved governed reviews 0/1" in result.blocking_reasons
+
+
+def test_solo_maintainer_review_can_be_disabled() -> None:
+    policy = CandidatePreparationPolicy(allow_solo_maintainer_review=False)
+    result = CandidatePreparationEngine(policy).prepare(
+        release_id="v5.0",
+        readiness=readiness(),
+        executions=executions(),
+        reviews=(solo_review(),),
+        artifacts=(),
+    )
+    assert result.decision is PreparationDecision.BLOCKED
+    assert "approved governed reviews 0/1" in result.blocking_reasons
 
 
 def test_packet_rejects_duplicate_gate_names() -> None:
