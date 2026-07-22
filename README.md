@@ -1,25 +1,22 @@
-# Atlas ROS Python Platform — Candidate v4.2.0-rc.5
+# Atlas ROS Python Platform — v4.5.2
 
-An inactive, policy-driven candidate that preserves Drive as release authority, Notion as dynamic management authority, Todoist as execution authority, and SQLite as non-authoritative local runtime state.
+Atlas ROS is the policy-driven executable core for the Atlas Ryan Operating System. Google Drive remains release authority, Notion remains dynamic management authority, Todoist remains attended execution authority, and SQLite remains non-authoritative local runtime state.
 
 ## Safety
 
-All write-capable commands default to dry-run. `atlas todoist apply` rejects execution unless explicitly confirmed and an adapter configured for writes is provided. This candidate contains no production credentials or embedded production IDs.
+Write-capable commands default to dry-run or require explicit confirmation. The platform does not embed production credentials or private signing material. Autonomous scheduling, messaging, email, calendar actions, deletion, and unattended consequential automation remain inactive.
 
-## Live adapters
+## Core controls
 
-The Notion and Todoist adapters are typed REST clients with explicit timeouts, redacted errors,
-readback, and stable Todoist idempotency keys. They read credentials only from
-`ATLAS_NOTION_TOKEN` and `ATLAS_TODOIST_TOKEN`; configure those through approved runtime credential
-storage, never source control or SQLite. A confirmed W03 apply validates the live destination and
-readback before recording a Notion linkage.
+- Exact Todoist `**Objective:**` and `**Done when:**` description contract for parent tasks and subtasks.
+- Full-field W03 creation, repair, ordering, validation, and readback.
+- Retry-safe W04 reconciliation with snapshot-consistent checkpoints.
+- Governed risk, blocker, dependency, and issue synchronization.
+- Durable SQLite/outbox behavior, redacted adapter failures, and provider-host restrictions.
+- Deterministic dependency locking, dual-service advisory auditing, SBOM, checksums, and retained CI evidence.
 
-On macOS, `atlas connectivity --keychain` reads the two named Keychain entries for the current
-user and performs only two read-only calls: Notion's current-integration identity and Todoist's
-project list. It creates, changes, or deletes nothing.
+## Validation
 
-## Commands
+The v4.5.2 candidate passed Ruff, strict MyPy, 58 tests, 86.30% branch coverage, source and wheel builds, clean-wheel installation, packaged configuration smoke testing, dependency-lock validation, vulnerability-exception validation, and release checksum verification.
 
-`atlas initialize`, `atlas status`, `atlas validate --full`, `atlas health --json`, `atlas capture`, `atlas route`, `atlas decompose`, `atlas todoist plan`, `atlas todoist validate`, `atlas todoist reconcile`, `atlas release inventory`, `atlas release checksums`, `atlas release verify`, `atlas release candidate`, `atlas release preflight`, and `atlas release restore-test`.
-
-See `docs/operations/OPERATIONS_RUNBOOK.md` and `docs/migration/MIGRATION_PLAN.md`.
+See `docs/operations/OPERATIONS_RUNBOOK.md`, `docs/migration/MIGRATION_PLAN.md`, and `release/RELEASE_MANIFEST.md`.
