@@ -38,14 +38,29 @@ def action_rules() -> list[Rule]:
             "Create or use the Portfolio Project record.",
         ),
         Rule(
-            "ACTION_DELEGATION_SEPARATION",
-            "Delegated work separation",
-            "Delegated technical work must be represented separately before execution readiness.",
+            "ACTION_DELEGATION_REVIEWED",
+            "Delegation reviewed",
+            "Execution-ready actions require an explicit delegation review.",
             "config/readiness.yaml",
             "delegation",
             Severity.ERROR,
             Action,
-            lambda a: not a.execution_ready or a.delegated_work_present,
+            lambda a: not a.execution_ready or a.delegation_reviewed or a.delegated_work_present,
+            "Confirm whether delegated technical work is required.",
+        ),
+        Rule(
+            "ACTION_REQUIRED_DELEGATION_SEPARATED",
+            "Required delegated work separation",
+            "When delegated technical work is required, it must be represented separately.",
+            "config/readiness.yaml",
+            "delegation",
+            Severity.ERROR,
+            Action,
+            lambda a: (
+                not a.execution_ready
+                or not a.delegated_work_required
+                or a.delegated_work_present
+            ),
             "Create or link the Delegated Work record.",
         ),
     ]

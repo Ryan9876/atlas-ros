@@ -61,6 +61,8 @@ class Action(BaseModel):
     definition_of_done: str = Field(default="", max_length=10_000)
     execution_ready: bool = False
     classification: Classification = Classification.ACTION
+    delegation_reviewed: bool = False
+    delegated_work_required: bool = False
     delegated_work_present: bool = False
     todoist_project: str = "Work"
     todoist_section: str = ""

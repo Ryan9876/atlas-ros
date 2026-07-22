@@ -21,7 +21,6 @@ from atlas_ros.workflows.reconciliation_state import NotionReconciliationStateSt
 
 
 def runtime() -> RuntimeDatabase:
-    # Explicit override supports managed or read-only home directories.
     root = Path(os.environ.get("ATLAS_RUNTIME_DIR", Path.cwd() / ".atlas-runtime"))
     database = RuntimeDatabase(root / "runtime.db")
     database.initialize()
@@ -30,17 +29,21 @@ def runtime() -> RuntimeDatabase:
 
 def status() -> None:
     print(
-        "candidate status: inactive; production authority must be resolved by "
-        "configured read-only adapters"
+        "runtime status: production-capable attended executable; "
+        "live release authority must be resolved from Google Drive and Notion"
     )
 
 
 def initialize(json_output: bool = False) -> None:
-    payload = {"status": "candidate_initialized", "writes": False, "authority": "adapter-required"}
+    payload = {
+        "status": "runtime_initialized",
+        "writes": False,
+        "authority": "live-authority-read-required",
+    }
     print(
         json.dumps(payload)
         if json_output
-        else "Candidate initialized locally; no production authority was modified."
+        else "Runtime initialized locally; no production authority was modified."
     )
 
 
@@ -55,6 +58,8 @@ def decompose(
     owner: str = "",
     definition_of_done: str = "",
     execution_ready: bool = False,
+    delegation_reviewed: bool = False,
+    delegated_work_required: bool = False,
     delegated_work: bool = False,
 ) -> None:
     report = DecompositionService().readiness(
@@ -64,6 +69,8 @@ def decompose(
             owner=owner,
             definition_of_done=definition_of_done,
             execution_ready=execution_ready,
+            delegation_reviewed=delegation_reviewed or delegated_work,
+            delegated_work_required=delegated_work_required,
             delegated_work_present=delegated_work,
         )
     )
@@ -76,7 +83,9 @@ def todoist_plan(
     owner: str,
     definition_of_done: str,
     execution_ready: bool = True,
-    delegated_work: bool = True,
+    delegation_reviewed: bool = True,
+    delegated_work_required: bool = False,
+    delegated_work: bool = False,
 ) -> None:
     plan = TodoistService().plan(
         Action(
@@ -85,6 +94,8 @@ def todoist_plan(
             owner=owner,
             definition_of_done=definition_of_done,
             execution_ready=execution_ready,
+            delegation_reviewed=delegation_reviewed or delegated_work,
+            delegated_work_required=delegated_work_required,
             delegated_work_present=delegated_work,
         )
     )
@@ -93,7 +104,7 @@ def todoist_plan(
 
 def todoist_apply() -> None:
     raise PermissionError(
-        "Production apply is intentionally unavailable in this inactive candidate."
+        "Direct W03 apply is not exposed by this CLI; use the attended connector workflow."
     )
 
 
@@ -147,7 +158,6 @@ def todoist_reconcile(*, apply: bool, full: bool, task_id: str, keychain: bool) 
 
 
 def connectivity_check(keychain: bool) -> None:
-    """Run only read-only provider requests to validate local credentials."""
     account = os.environ.get("USER") or getpass.getuser()
     if keychain:
         if not account:
@@ -216,6 +226,8 @@ def main() -> None:
     dec.add_argument("--owner", default="")
     dec.add_argument("--definition-of-done", default="")
     dec.add_argument("--execution-ready", action="store_true")
+    dec.add_argument("--delegation-reviewed", action="store_true")
+    dec.add_argument("--delegated-work-required", action="store_true")
     dec.add_argument("--delegated-work", action="store_true")
     rel = sub.add_parser("release")
     relsub = rel.add_subparsers(dest="release_command")
@@ -243,6 +255,8 @@ def main() -> None:
             args.owner,
             args.definition_of_done,
             args.execution_ready,
+            args.delegation_reviewed,
+            args.delegated_work_required,
             args.delegated_work,
         )
     elif args.command == "release" and args.release_command == "inventory":
