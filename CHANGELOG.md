@@ -1,5 +1,17 @@
 # Changelog
 
+## 4.5.2 - 2026-07-21
+
+- Add the complete executable Atlas ROS implementation and packaged policy configuration.
+- Enforce exact bold `**Objective:**` and `**Done when:**` headings for Todoist parent tasks and subtasks.
+- Create, repair, order, and fully read back governed Todoist task trees before synchronization succeeds.
+- Make W04 command groups retry-safe and checkpoint advancement snapshot-consistent.
+- Implement risk, blocker, dependency, and issue reconciliation with parent and Execution Step linkage.
+- Add durable SQLite/outbox controls, adapter hardening, redacted errors, and provider-host restrictions.
+- Add deterministic dependency locking, dual-service vulnerability auditing, SBOM, release checksums, and retained CI evidence.
+- Validate with Ruff, strict MyPy, 58 tests, 86.30% branch coverage, clean package installation, and packaged-policy smoke testing.
+- Designate Atlas ROS v4.5.1 as the immediate immutable rollback baseline.
+
 ## 4.5.0 - 2026-07-21
 
 - Standardize Todoist Work sections as Leadership & Team, Active Projects, Operations, Waiting on Others, and Development & Learning.
