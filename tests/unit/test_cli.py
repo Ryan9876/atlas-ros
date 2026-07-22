@@ -17,7 +17,7 @@ def test_status_and_initialize(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
     run_cli(monkeypatch, "status")
-    assert "inactive" in capsys.readouterr().out
+    assert "production-capable" in capsys.readouterr().out
     run_cli(monkeypatch, "initialize", "--json")
     assert '"writes": false' in capsys.readouterr().out
 
@@ -74,7 +74,7 @@ def test_release_cli_round_trip(
 
 
 def test_todoist_apply_stays_denied() -> None:
-    with pytest.raises(PermissionError, match="unavailable"):
+    with pytest.raises(PermissionError, match="not exposed"):
         cli.todoist_apply()
 
 
