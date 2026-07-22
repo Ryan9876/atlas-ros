@@ -40,7 +40,8 @@ def load_governed_review(path: Path | None) -> dict[str, Any] | None:
     }
     missing = sorted(required - review.keys())
     if missing:
-        raise ValueError(f"governed review evidence missing fields: {', '.join(missing)}")
+        missing_fields = ", ".join(missing)
+        raise ValueError(f"governed review evidence missing fields: {missing_fields}")
     if review["path"] not in GOVERNED_REVIEW_PATHS:
         raise ValueError("governed review path must be independent or solo_maintainer")
     if review["status"] != "approved":
@@ -71,7 +72,9 @@ def main() -> int:
     if len(cases) < 50:
         blockers.append("benchmark corpus has fewer than 50 cases")
     if not report.release_eligible:
-        blockers.extend(report.blocking_violations or ("calibration report not release eligible",))
+        blockers.extend(
+            report.blocking_violations or ("calibration report not release eligible",)
+        )
 
     if blockers:
         status = "blocked"
@@ -81,7 +84,9 @@ def main() -> int:
         required_next_action = "complete governed review and full provisioned CI"
     else:
         status = "proposable_candidate"
-        required_next_action = "verify full provisioned CI and request explicit promotion authorization"
+        required_next_action = (
+            "verify full provisioned CI and request explicit promotion authorization"
+        )
 
     payload = {
         "release": "Atlas ROS v5.0",
