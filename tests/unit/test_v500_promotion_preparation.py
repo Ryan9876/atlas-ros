@@ -32,6 +32,7 @@ def test_ryan_evaluation_set_v1_has_promotion_scale_and_domain_coverage():
 def test_solo_maintainer_review_evidence_is_accepted(tmp_path: Path):
     module = _load_promotion_module()
     review_path = tmp_path / "review.json"
+    reviewed_head_sha = "9f77e83889052876d1d299629e7ee7f3cbfafe6a"
     review_path.write_text(
         json.dumps(
             {
@@ -39,7 +40,7 @@ def test_solo_maintainer_review_evidence_is_accepted(tmp_path: Path):
                 "reviewer": "Ryan9876",
                 "status": "approved",
                 "evidence_reference": "GitHub PR #5 comment 5048550568",
-                "reviewed_head_sha": "9f77e83889052876d1d299629e7ee7f3cbfafe6a",
+                "reviewed_head_sha": reviewed_head_sha,
                 "checklist_evidence": ["scope reviewed", "CI passed"],
             }
         ),
@@ -56,6 +57,7 @@ def test_solo_maintainer_review_evidence_is_accepted(tmp_path: Path):
 def test_solo_maintainer_review_requires_checklist(tmp_path: Path):
     module = _load_promotion_module()
     review_path = tmp_path / "review.json"
+    reviewed_head_sha = "9f77e83889052876d1d299629e7ee7f3cbfafe6a"
     review_path.write_text(
         json.dumps(
             {
@@ -63,7 +65,7 @@ def test_solo_maintainer_review_requires_checklist(tmp_path: Path):
                 "reviewer": "Ryan9876",
                 "status": "approved",
                 "evidence_reference": "GitHub PR #5 comment 5048550568",
-                "reviewed_head_sha": "9f77e83889052876d1d299629e7ee7f3cbfafe6a",
+                "reviewed_head_sha": reviewed_head_sha,
                 "checklist_evidence": [],
             }
         ),
