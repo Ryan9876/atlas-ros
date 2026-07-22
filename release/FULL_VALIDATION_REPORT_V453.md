@@ -1,13 +1,14 @@
 # Atlas ROS v4.5.3 Full Validation Report
 
-Date: 2026-07-21
+Date: 2026-07-22
 
 Current result: CANDIDATE VALIDATED — PROMOTION PENDING PUBLICATION AND AUTHORITY READBACK
 
 ## Completed gates
 
 - Authorized P0 trust-and-correctness scope implemented.
-- Pull request review boundary preserved; PR #1 merged to main only after CI success.
+- Implementation PR #1 merged to main only after CI success.
+- Release PR #2 passed independent CI and dependency-security validation before merge.
 - Ruff: PASS.
 - Strict MyPy: PASS.
 - Pytest: 65 passed.
