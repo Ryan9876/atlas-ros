@@ -1,7 +1,9 @@
 name: release-candidate
 on:
   push:
-    branches: [atlas/release-v453]
+    branches: [atlas/release-v453-final]
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 permissions:
   contents: read
