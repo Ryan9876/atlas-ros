@@ -1,0 +1,68 @@
+name: release-candidate
+on:
+  push:
+    branches: [atlas/release-v453]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build-and-verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with: {persist-credentials: false}
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with: {python-version: '3.12.10', cache: pip}
+      - run: python -m pip install --upgrade pip && pip install -e '.[dev]'
+      - run: ruff check .
+      - run: mypy src
+      - run: pytest
+      - name: Generate canonical source manifest
+        run: |
+          rm -f release/CHECKSUMS.sha256
+          atlas release checksums --root . --checksum-file release/CHECKSUMS.sha256
+          atlas release verify --root . --checksum-file release/CHECKSUMS.sha256
+      - name: Build source and wheel
+        run: python -m build
+      - name: Verify extracted source manifest
+        run: |
+          mkdir -p extracted
+          tar -xzf dist/atlas_ros-4.5.3.tar.gz -C extracted
+          test -f extracted/atlas_ros-4.5.3/release/CHECKSUMS.sha256
+          PYTHONPATH=extracted/atlas_ros-4.5.3/src \
+            python -m atlas_ros.cli release verify \
+            --root extracted/atlas_ros-4.5.3 \
+            --checksum-file extracted/atlas_ros-4.5.3/release/CHECKSUMS.sha256
+      - name: Clean wheel install and policy smoke test
+        run: |
+          python -m venv clean-wheel
+          clean-wheel/bin/python -m pip install --disable-pip-version-check dist/atlas_ros-4.5.3-py3-none-any.whl
+          clean-wheel/bin/python -c "from atlas_ros.config.loader import load_config; assert load_config('readiness')['version'] == 2"
+          clean-wheel/bin/atlas status
+      - name: Assemble release publication set
+        run: |
+          mkdir -p publication
+          cp dist/atlas_ros-4.5.3.tar.gz publication/
+          cp dist/atlas_ros-4.5.3-py3-none-any.whl publication/
+          cp release/RELEASE_MANIFEST.md publication/
+          cp release/RELEASE_MANIFEST_V453.md publication/
+          cp release/FULL_VALIDATION_REPORT_V453.md publication/
+          cp release/DEPENDENCY_SECURITY_GATE_STATUS.md publication/
+          cp release/SBOM.cdx.json publication/
+          cp release/CHECKSUMS.sha256 publication/SOURCE_CHECKSUMS.sha256
+          cp requirements.runtime.lock publication/
+          cp security/vulnerability-exceptions.yml publication/
+          (cd publication && sha256sum * > CHECKSUMS.sha256)
+          zip -q -r Atlas_ROS_v4.5.3_release_package.zip publication
+          sha256sum Atlas_ROS_v4.5.3_release_package.zip > Atlas_ROS_v4.5.3_release_package.zip.sha256
+      - name: Retain release candidate
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: atlas-ros-v4.5.3-release-candidate
+          path: |
+            publication/
+            Atlas_ROS_v4.5.3_release_package.zip
+            Atlas_ROS_v4.5.3_release_package.zip.sha256
+          if-no-files-found: error
+          retention-days: 90
