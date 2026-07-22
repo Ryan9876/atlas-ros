@@ -1,11 +1,19 @@
-# Atlas ROS v4.5.2 Candidate Release Manifest
+# Atlas ROS v4.5.2 Release Manifest
 
-Status: Validated candidate; not promoted.
-Base authority: Atlas ROS v4.5.1. Proposed rollback: Atlas ROS v4.5.1 authority records with v4.5.0 executable baseline.
-Release class: Material hardening and executable contract remediation.
+Status: Validated production candidate. Promotion requires successful authority-record readback.
 
-This candidate supplies the executable implementation missing from v4.5.1, packages policy configuration, enforces the Todoist Objective/Done-when contract, creates and verifies ordered task trees, makes W04 command processing retry-safe, uses snapshot-consistent checkpoints, implements risk/dependency/issue reconciliation, strengthens adapter and release security, and adds migration, durability, and regression coverage.
+Base authority: Atlas ROS v4.5.1. Immediate immutable rollback upon promotion: Atlas ROS v4.5.1.
 
-Validation gates: Ruff, strict MyPy, 58 tests, 86.30% branch coverage, source and wheel builds, clean-wheel installation, packaged-policy smoke test, checksum verification, and independent re-review.
+Release class: Material executable hardening and contract remediation.
 
-No autonomous scheduling, messaging, email, calendar, deletion, or unattended consequential automation is activated.
+This release supplies the executable implementation and packaged policy configuration for the Atlas ROS v4.5 operating model. It enforces the Todoist `**Objective:**` and `**Done when:**` content contract, creates and verifies ordered parent/subtask trees, makes W04 command processing retry-safe, uses snapshot-consistent checkpoints, implements risk/dependency/issue reconciliation, strengthens adapter and release security, and adds migration, durability, and regression coverage.
+
+Required production integrations remain Google Drive, Notion, and Todoist. Integration Inventory authority: https://app.notion.com/p/8ba4fafb5ce244ef9add3013aff3746b
+
+Validation gates: Ruff, strict MyPy, 58 tests, branch coverage above the 85% threshold, source and wheel builds, clean-wheel installation, packaged-policy smoke test, deterministic dependency-lock validation, vulnerability-exception validation, current advisory-policy enforcement in GitHub Actions, checksum verification, and full release review.
+
+The readable published workspace is valid when this manifest, the validation report, dependency-security evidence, SBOM, checksums, source distribution, and wheel are readable and post-write readback succeeds. Secrets and private signing material are excluded.
+
+This release does not activate autonomous scheduling, messaging, email, calendar actions, deletion, or unattended consequential automation.
+
+Promotion authority: Ryan Smith, 2026-07-21.
