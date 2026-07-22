@@ -1,4 +1,3 @@
-version: 1
-execution_ready_requires: [ryan_owner, definition_of_done, decomposition_passed, action_not_project, delegated_work_separated]
+version: 2
+execution_ready_requires: [ryan_owner, definition_of_done, decomposition_passed, action_not_project, delegation_reviewed, delegated_work_separated_when_required]
 due_date_requires_evidence: true
-
