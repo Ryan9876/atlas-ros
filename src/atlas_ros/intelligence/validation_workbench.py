@@ -132,9 +132,9 @@ DEFAULT_GATES: tuple[GateDefinition, ...] = (
         required_path="docs/CANDIDATE_PREPARATION.md",
     ),
     GateDefinition(
-        name="independent_review",
+        name="governed_review",
         kind=GateKind.MANUAL,
-        description="Independent architecture, security, and governance review.",
+        description="Independent or documented solo-maintainer governed release review.",
     ),
 )
 

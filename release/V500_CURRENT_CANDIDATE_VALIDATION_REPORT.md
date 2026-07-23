@@ -30,8 +30,8 @@ remains the immediate immutable rollback.
 |---|---|---|
 | Ruff | PASS | Entire repository |
 | Strict MyPy | PASS | 55 source files |
-| Full regression suite | PASS | 239 tests |
-| Branch coverage | PASS | 89.05%, threshold 85% |
+| Full regression suite | PASS | 240 tests |
+| Branch coverage | PASS | 89.07%, threshold 85% |
 | Source and wheel build | PASS | `atlas-ros==5.0.0rc1` |
 | Clean-wheel install and packaged-policy smoke | PASS | Fresh Python 3.12 environment |
 | Extracted-source install smoke | PASS | Built source distribution |
@@ -41,11 +41,11 @@ remains the immediate immutable rollback.
 | OSV advisory audit | PASS | No known vulnerabilities |
 | Current deterministic SBOM | PASS | CycloneDX 1.5; locked runtime graph |
 | Benchmark corpus execution | PASS as pipeline smoke test | 60 deterministic generated judgments |
-| Independent governed diff review | NOT RUN | Awaiting Ryan's approval checkpoint |
+| Governed release review | NOT RUN | Solo-maintainer review required after source freeze |
 
-The Release Validation Workbench passed every executable gate it ran and reported
-`blocked` solely because independent governed review was not supplied. That is the
-correct result at this checkpoint.
+The Release Validation Workbench passed every executable gate it ran. Governed
+review remains a manual blocking gate and may be satisfied through Ryan's
+documented solo-maintainer review after source freeze.
 
 ## Calibration integrity finding
 
@@ -58,12 +58,15 @@ The current generated calibration report is correctly not release eligible:
 
 - Brier score: 0.2347099697 (above policy).
 - Expected calibration error: 0.48446875 (above policy).
-- Expert reviewer acceptance: missing for all 60 cases.
 - All eight domain calibration-error gates failed.
 
-The default calibration policy now blocks release eligibility when any case lacks
-explicit expert reviewer acceptance or is rejected. Confidence was not inflated to
-make the generated data pass.
+Ryan waived case-level expert acceptance as a release-blocking gate for v5.0.
+Reviewer acceptance remains recorded as advisory evidence. The waiver does not
+alter any quantitative threshold and does not make this calibration report
+release eligible; the Brier, overall calibration-error, and eight domain
+calibration-error failures remain blocking. Confidence was not inflated to make
+the generated data pass. The authority is Decision Log record
+[`V4D-12`](https://app.notion.com/p/3a6b8344ad2c81cba4a7fc8c951b6335).
 
 ## Candidate decision
 
@@ -72,9 +75,9 @@ the repository's software-quality, packaging, dependency, and security gates.
 Candidate designation remains blocked pending:
 
 1. Ryan's review of this diff and authorization to commit/push.
-2. Case-level expert review and acceptance of benchmark judgments, or replacement
-   with an independently labeled evaluation corpus.
-3. A final governed release review after source freeze.
+2. Quantitative benchmark calibration gates passing with evidence appropriate to
+   the candidate's intended production scope.
+3. A final solo-maintainer governed release review after source freeze.
 
 Production promotion remains a separate transaction requiring explicit approval
 and live authority readback. No production authority was changed.

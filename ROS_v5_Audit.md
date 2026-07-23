@@ -89,7 +89,7 @@ Architectural ownership is preserved:
 | Critical | Orchestration did not persist recommendation, policy evaluations, or final governance | Corrected and verified by end-to-end persistence/readback test |
 | High | New public inference, governance, and orchestration interfaces were not exported | Corrected; 106/106 exports resolve |
 | High | Published RecordRef schema enums covered six kinds while runtime supported thirteen | Corrected and regression-tested against the runtime enum |
-| High | Generated benchmark judgments could be treated as release evidence without expert acceptance | Corrected; the default calibration policy now blocks missing or rejected expert review |
+| High | Generated benchmark judgments could be mistaken for independent accuracy evidence | Contained; reports identify generated judgments as pipeline-smoke evidence, while quantitative calibration gates remain blocking |
 | Medium | GitHub and uploaded branch histories diverge | Functionally reconciled; final history reconciliation remains a pre-commit step |
 
 ## Open technical-debt and release-evidence register
@@ -98,7 +98,7 @@ Architectural ownership is preserved:
 |---|---|---|---|
 | P0 | Full current validation and deterministic build evidence | Blocking | Complete in this work session |
 | P0 | Independent governed review of the final uncommitted diff | Blocking for Candidate proposal | Present final diff and validation evidence to Ryan before commit |
-| P0 | The generated benchmark maps each intelligence domain to a fixed governed label, so its perfect accuracy is pipeline-smoke evidence rather than independent intelligence evidence | Blocking for calibration-based release eligibility | Obtain case-level expert judgments and acceptance; retain generated output only as a deterministic smoke test |
+| P0 | The generated benchmark maps each intelligence domain to a fixed governed label, so its perfect accuracy is pipeline-smoke evidence rather than independent intelligence evidence | Blocking while quantitative calibration thresholds fail | Produce calibration evidence appropriate to the intended production scope; retain generated output only as a deterministic smoke test |
 | P1 | Existing v5 milestone and promotion reports predate the decision pipeline | Stale evidence; cannot support Candidate status | Regenerate candidate evidence after source freeze |
 | P1 | GitHub branch history lacks the uploaded local commits; upload lacks GitHub's final Ruff-only history | Push hazard | Reconcile intentionally during approved commit/push workflow |
 | P2 | Canonical-record documentation previously described only the initial six records | Documentation drift | Correct in this candidate |
@@ -112,8 +112,8 @@ Architectural ownership is preserved:
 | M0 Repository baseline audit | Complete | High | Keep this report current through source freeze | Critical |
 | M1 Candidate reconciliation | Complete in worktree | High | Approved commit/history reconciliation | Critical |
 | M2 Governed intelligence pipeline | Implemented and locally validated | High | Final regression and review evidence | Critical |
-| M3 Candidate hardening | Implemented; one governed evidence gate remains blocked | High | Expert benchmark review and final diff review | Critical |
-| M4 v5.0 release review | Pending | High | Current reports, final diff, independent review, go/no-go | Critical |
+| M3 Candidate hardening | Implemented; governed evidence gates remain blocked | High | Quantitative calibration and final solo-maintainer review | Critical |
+| M4 v5.0 release review | Pending | High | Current reports, final diff, solo-maintainer review, go/no-go | Critical |
 | M5 Production promotion | Not authorized | High | Separate explicit Ryan authorization and authority transaction | Critical |
 | Post-v5 knowledge/causal graph | Partial foundation | Medium | Graph persistence, temporal ontology, causal confirmation lifecycle | High |
 | Post-v5 planning and cognitive-load governor | Partial foundation | Medium | Goal decomposition, constrained planning, question budget, interruption controls | High |

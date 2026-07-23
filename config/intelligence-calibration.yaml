@@ -1,4 +1,4 @@
-policy_version: rie-calibration-1.0
+policy_version: rie-calibration-1.1
 minimum_accuracy: 0.85
 minimum_macro_f1: 0.80
 maximum_brier_score: 0.16
@@ -6,6 +6,7 @@ maximum_expected_calibration_error: 0.10
 maximum_hallucination_rate: 0.01
 minimum_evidence_completeness: 0.95
 minimum_explanation_quality: 0.85
+require_reviewer_acceptance: false
 maximum_accuracy_regression: 0.01
 calibration_bins: 10
 domains:

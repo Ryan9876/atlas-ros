@@ -106,7 +106,7 @@ class IntelligenceCalibrationPolicy(BaseModel):
     maximum_hallucination_rate: float = Field(default=0.01, ge=0.0, le=1.0)
     minimum_evidence_completeness: float = Field(default=0.95, ge=0.0, le=1.0)
     minimum_explanation_quality: float = Field(default=0.85, ge=0.0, le=1.0)
-    require_reviewer_acceptance: bool = True
+    require_reviewer_acceptance: bool = False
     maximum_accuracy_regression: float = Field(default=0.01, ge=0.0, le=1.0)
     minimum_cases: int = Field(default=1, ge=1)
     calibration_bins: int = Field(default=10, ge=2, le=20)

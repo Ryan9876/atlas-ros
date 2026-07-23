@@ -72,8 +72,20 @@ def test_hallucination_blocks_release_eligibility() -> None:
     assert "hallucination rate above policy" in report.blocking_violations
 
 
-def test_missing_reviewer_acceptance_blocks_release_eligibility() -> None:
+def test_missing_reviewer_acceptance_is_advisory_by_default() -> None:
     engine = IntelligenceCalibrationEngine(IntelligenceCalibrationPolicy(minimum_cases=1))
+    unreviewed = judgment("c1").model_copy(update={"accepted_by_reviewer": None})
+    report = engine.run((case("c1"),), (unreviewed,))
+
+    assert report.release_eligible
+    assert report.domains[0].reviewer_acceptance_rate is None
+    assert not any("reviewer" in item for item in report.blocking_violations)
+
+
+def test_explicit_reviewer_acceptance_policy_blocks_missing_review() -> None:
+    engine = IntelligenceCalibrationEngine(
+        IntelligenceCalibrationPolicy(minimum_cases=1, require_reviewer_acceptance=True)
+    )
     unreviewed = judgment("c1").model_copy(update={"accepted_by_reviewer": None})
     report = engine.run((case("c1"),), (unreviewed,))
 
@@ -81,8 +93,10 @@ def test_missing_reviewer_acceptance_blocks_release_eligibility() -> None:
     assert "expert reviewer acceptance missing for 1 case(s)" in report.blocking_violations
 
 
-def test_reviewer_rejection_blocks_release_eligibility() -> None:
-    engine = IntelligenceCalibrationEngine(IntelligenceCalibrationPolicy(minimum_cases=1))
+def test_explicit_reviewer_acceptance_policy_blocks_rejection() -> None:
+    engine = IntelligenceCalibrationEngine(
+        IntelligenceCalibrationPolicy(minimum_cases=1, require_reviewer_acceptance=True)
+    )
     rejected = judgment("c1").model_copy(update={"accepted_by_reviewer": False})
     report = engine.run((case("c1"),), (rejected,))
 

@@ -14,4 +14,7 @@ A blocked run exits with status 2. A fully validated run exits with status 0.
 
 Each run produces command logs, JSON and Markdown reports, SHA-256 checksums, a report fingerprint, and an optional deterministic evidence archive.
 
-Manual gates, including independent review, remain `not_run` unless explicit evidence references are provided through a JSON file passed with `--manual-evidence`.
+Manual gates, including governed review, remain `not_run` unless explicit evidence
+references are provided through a JSON file passed with `--manual-evidence`.
+Governed review may use either the independent or documented solo-maintainer path
+defined by Candidate policy.
