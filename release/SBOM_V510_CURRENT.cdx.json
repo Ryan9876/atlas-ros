@@ -1,0 +1,29 @@
+{
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.5",
+  "version": 1,
+  "metadata": {
+    "component": {
+      "bom-ref": "pkg:pypi/atlas-ros@5.1.0rc1",
+      "type": "application",
+      "name": "atlas-ros",
+      "version": "5.1.0rc1",
+      "purl": "pkg:pypi/atlas-ros@5.1.0rc1"
+    }
+  },
+  "components": [
+    {"bom-ref":"pkg:pypi/annotated-types@0.7.0","type":"library","name":"annotated-types","version":"0.7.0","purl":"pkg:pypi/annotated-types@0.7.0"},
+    {"bom-ref":"pkg:pypi/platformdirs@4.10.0","type":"library","name":"platformdirs","version":"4.10.0","purl":"pkg:pypi/platformdirs@4.10.0"},
+    {"bom-ref":"pkg:pypi/pydantic@2.13.4","type":"library","name":"pydantic","version":"2.13.4","purl":"pkg:pypi/pydantic@2.13.4"},
+    {"bom-ref":"pkg:pypi/pydantic-core@2.46.4","type":"library","name":"pydantic-core","version":"2.46.4","purl":"pkg:pypi/pydantic-core@2.46.4"},
+    {"bom-ref":"pkg:pypi/pyyaml@6.0.3","type":"library","name":"PyYAML","version":"6.0.3","purl":"pkg:pypi/pyyaml@6.0.3"},
+    {"bom-ref":"pkg:pypi/typing-extensions@4.15.0","type":"library","name":"typing-extensions","version":"4.15.0","purl":"pkg:pypi/typing-extensions@4.15.0"},
+    {"bom-ref":"pkg:pypi/typing-inspection@0.4.2","type":"library","name":"typing-inspection","version":"0.4.2","purl":"pkg:pypi/typing-inspection@0.4.2"}
+  ],
+  "dependencies": [
+    {"ref":"pkg:pypi/atlas-ros@5.1.0rc1","dependsOn":["pkg:pypi/platformdirs@4.10.0","pkg:pypi/pydantic@2.13.4","pkg:pypi/pyyaml@6.0.3"]},
+    {"ref":"pkg:pypi/pydantic@2.13.4","dependsOn":["pkg:pypi/annotated-types@0.7.0","pkg:pypi/pydantic-core@2.46.4","pkg:pypi/typing-extensions@4.15.0","pkg:pypi/typing-inspection@0.4.2"]},
+    {"ref":"pkg:pypi/pydantic-core@2.46.4","dependsOn":["pkg:pypi/typing-extensions@4.15.0"]},
+    {"ref":"pkg:pypi/typing-inspection@0.4.2","dependsOn":["pkg:pypi/typing-extensions@4.15.0"]}
+  ]
+}
