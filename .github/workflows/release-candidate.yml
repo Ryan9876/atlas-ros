@@ -100,10 +100,34 @@ jobs:
       - name: Verify extracted source manifest
         run: |
           set -euo pipefail
-          mkdir -p extracted
+          mkdir -p extracted source-verification
           tar -xzf "dist/${ATLAS_SDIST}" -C extracted
           test -f "extracted/${ATLAS_SOURCE_DIR}/release/CHECKSUMS.sha256"
-          PYTHONPATH="extracted/${ATLAS_SOURCE_DIR}/src" python -m atlas_ros.cli release verify --root "extracted/${ATLAS_SOURCE_DIR}" --checksum-file "extracted/${ATLAS_SOURCE_DIR}/release/CHECKSUMS.sha256"
+          PYTHONPATH="extracted/${ATLAS_SOURCE_DIR}/src" python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          from atlas_ros.release.tooling import verify
+
+          root = Path("extracted") / os.environ["ATLAS_SOURCE_DIR"]
+          checksum_file = root / "release" / "CHECKSUMS.sha256"
+          errors = verify(root, checksum_file)
+          Path("source-verification/mismatches.json").write_text(
+              json.dumps({"valid": not errors, "mismatches": errors}, indent=2) + "\n",
+              encoding="utf-8",
+          )
+          if errors:
+              raise SystemExit(1)
+          PY
+
+      - name: Retain source verification diagnostics
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: v510-source-verification
+          path: source-verification/mismatches.json
+          if-no-files-found: warn
+          retention-days: 7
 
       - name: Clean wheel install and policy smoke test
         run: |
