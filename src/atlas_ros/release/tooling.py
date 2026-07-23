@@ -18,6 +18,12 @@ def inventory(root: Path) -> list[Path]:
         ".mypy_cache",
         ".pytest_cache",
         ".ruff_cache",
+        "audit",
+        "test-results",
+        "candidate-evidence",
+        "publication",
+        "extracted",
+        "clean-wheel",
     }
     return sorted(
         path
@@ -25,7 +31,7 @@ def inventory(root: Path) -> list[Path]:
         if path.is_file()
         and not (excluded & set(path.parts))
         and not any(part.startswith(".venv") for part in path.parts)
-        and path.name != "CHECKSUMS.sha256"
+        and path.name not in {"CHECKSUMS.sha256", "PKG-INFO"}
         and not path.name.endswith(".zip.sha256")
         and path.suffix not in {".zip", ".whl", ".gz"}
     )

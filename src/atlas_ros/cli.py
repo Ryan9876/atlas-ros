@@ -57,8 +57,20 @@ def initialize(json_output: bool = False) -> None:
     )
 
 
-def capture(content: str, source: str = "cli") -> None:
-    item = CaptureService(runtime()).capture(content, source)
+def capture(
+    content: str,
+    source: str = "cli",
+    due_date_input: str = "",
+    delegation_input: str = "",
+    additional_context: str = "",
+) -> None:
+    item = CaptureService(runtime()).capture(
+        content,
+        source,
+        due_date_input=due_date_input,
+        delegation_input=delegation_input,
+        additional_context=additional_context,
+    )
     print(item.model_dump_json())
 
 
@@ -272,6 +284,9 @@ def main() -> None:
     cap = sub.add_parser("capture")
     cap.add_argument("content")
     cap.add_argument("--source", default="cli")
+    cap.add_argument("--due-date", default="")
+    cap.add_argument("--delegate-to", default="")
+    cap.add_argument("--context", default="")
     todoist_cmd = sub.add_parser("todoist")
     todoist_sub = todoist_cmd.add_subparsers(dest="todoist_command", required=True)
     reconcile = todoist_sub.add_parser("reconcile")
@@ -318,7 +333,13 @@ def main() -> None:
     elif args.command == "initialize":
         initialize(args.json)
     elif args.command == "capture":
-        capture(args.content, args.source)
+        capture(
+            args.content,
+            args.source,
+            due_date_input=args.due_date,
+            delegation_input=args.delegate_to,
+            additional_context=args.context,
+        )
     elif args.command == "todoist" and args.todoist_command == "reconcile":
         todoist_reconcile(
             apply=args.apply, full=args.full, task_id=args.task, keychain=args.keychain
