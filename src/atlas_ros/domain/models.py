@@ -35,6 +35,9 @@ class Capture(BaseModel):
     correlation_id: UUID = Field(default_factory=uuid4)
     content: str = Field(min_length=1, max_length=100_000)
     source: str = "cli"
+    due_date_input: str = Field(default="", max_length=500)
+    delegation_input: str = Field(default="", max_length=500)
+    additional_context: str = Field(default="", max_length=10_000)
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
