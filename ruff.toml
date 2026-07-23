@@ -1,4 +1,0 @@
-extend = "pyproject.toml"
-
-[lint.per-file-ignores]
-"src/atlas_ros/workflows/w03_todoist.py" = ["E501"]
