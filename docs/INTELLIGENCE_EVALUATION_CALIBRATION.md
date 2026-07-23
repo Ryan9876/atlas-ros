@@ -12,6 +12,20 @@ The framework separates three objects:
 2. **IntelligenceJudgment** — Atlas output for the case, including predicted label, confidence, evidence references, explanation quality, evidence completeness, and hallucination flag.
 3. **IntelligenceCalibrationReport** — deterministic aggregate quality report with release-blocking policy checks.
 
+### Confidence semantics
+
+`IntelligenceJudgment.confidence` is the evaluator's confidence that its selected
+label is correct. For a recommendation, it is the leading option's share of all
+non-negative adjusted option scores. This makes the value comparable with the
+binary correctness outcome used by Brier score and expected calibration error.
+The corrected mapping is evaluator version `rie-cal-2.1`.
+
+This is intentionally separate from `RecommendationRecord.confidence`, which is
+an absolute action-safety score derived from evidence strength, claim strength,
+graph support, and decision margin. Calibration must not treat that conservative
+safety score as a probability that the selected label is correct. For an
+abstention, judgment confidence uses the reasoning trace's uncertainty.
+
 ## Metrics
 
 The framework computes:

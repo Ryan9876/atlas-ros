@@ -22,7 +22,11 @@ def case(
         domain=domain,
         expected_label=DOMAIN_LABELS[domain],
         scenario=("Use the supplied governed authority to select the appropriate response."),
-        authority_refs=("authoritative policy", "system state"),
+        authority_refs=(
+            "authoritative policy",
+            "system state",
+            "release manifest",
+        ),
     )
 
 
@@ -54,7 +58,10 @@ def test_runner_and_calibration_work_end_to_end() -> None:
     assert len(judgments) == len(cases)
     assert report.case_count == len(cases)
     assert report.overall_accuracy == 1.0
+    assert report.overall_brier_score <= 0.16
+    assert report.overall_expected_calibration_error <= 0.10
     assert report.overall_hallucination_rate == 0.0
+    assert report.release_eligible
 
 
 def test_evaluator_does_not_read_expected_label() -> None:

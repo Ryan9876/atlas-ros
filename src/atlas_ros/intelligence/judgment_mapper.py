@@ -28,11 +28,7 @@ class JudgmentMapper:
 
         decision_quality = GovernedReasoningEngine.decision_quality(trace)
         explanation_score = self._explanation_score(outcome)
-        confidence = (
-            outcome.recommendation.confidence
-            if outcome.recommendation is not None
-            else max(0.0, 1.0 - trace.uncertainty) * 0.5
-        )
+        confidence = self._selection_confidence(outcome)
 
         hallucination = predicted_label not in compiled.permitted_labels
 
@@ -54,6 +50,31 @@ class JudgmentMapper:
             hallucination=hallucination,
             notes=notes,
         )
+
+    @staticmethod
+    def _selection_confidence(outcome: ReasoningOutcome) -> float:
+        """Return confidence that the evaluator selected the correct label.
+
+        Recommendation confidence is an absolute action-safety score. It
+        intentionally includes evidence, claim, and graph-support penalties,
+        so it must not be interpreted as the probability that the leading
+        option outranked its alternatives correctly. Calibration judgments
+        instead use the leading option's share of the non-negative adjusted
+        scores.
+        """
+
+        trace = outcome.trace
+        if outcome.recommendation is None:
+            return trace.uncertainty
+
+        adjusted_scores = tuple(
+            max(0.0, option.adjusted_score) for option in trace.ranked_options
+        )
+        score_total = sum(adjusted_scores)
+        if not adjusted_scores or score_total <= 0.0:
+            return 0.0
+
+        return adjusted_scores[0] / score_total
 
     @staticmethod
     def _explanation_score(outcome: ReasoningOutcome) -> float:

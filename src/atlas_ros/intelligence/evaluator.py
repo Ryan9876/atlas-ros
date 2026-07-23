@@ -14,7 +14,7 @@ from atlas_ros.intelligence.calibration import (
 from atlas_ros.intelligence.judgment_mapper import JudgmentMapper
 from atlas_ros.intelligence.reasoning import GovernedReasoningEngine
 
-DEFAULT_EVALUATOR_VERSION = "rie-cal-2.0"
+DEFAULT_EVALUATOR_VERSION = "rie-cal-2.1"
 
 
 class IntelligenceEvaluator:
