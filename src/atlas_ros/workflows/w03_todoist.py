@@ -139,33 +139,30 @@ def route_todoist_section(action: Action) -> SectionRoutingDecision:
         if action.todoist_section not in SECTION_PRECEDENCE:
             raise ValueError("invalid governed Todoist section")
         return SectionRoutingDecision(
-            selected_section=action.todoist_section,
-            matched_rule="explicit_section",
-            reason="The action supplied an explicit governed section.",
+            action.todoist_section,
+            "explicit_section",
+            "The action supplied an explicit governed section.",
         )
 
     text = f"{action.title}\n{action.definition_of_done}".casefold()
     rejected: list[str] = []
     for section in SECTION_PRECEDENCE:
-        matched = next((keyword for keyword in SECTION_RULES[section] if keyword in text), "")
+        matched = next((word for word in SECTION_RULES[section] if word in text), "")
         if matched:
             return SectionRoutingDecision(
-                selected_section=section,
-                matched_rule=matched,
-                reason=f"Matched the governed {section} domain rule: {matched}.",
-                rejected_higher_precedence=tuple(rejected),
+                section,
+                matched,
+                f"Matched the governed {section} domain rule: {matched}.",
+                tuple(rejected),
             )
         rejected.append(section)
 
     return SectionRoutingDecision(
-        selected_section="Active Projects",
-        matched_rule="governed_fallback",
-        reason=(
-            "No specific management-domain rule matched; Active Projects is the "
-            "governed fallback."
-        ),
-        rejected_higher_precedence=("Leadership & Team",),
-        fallback_used=True,
+        "Active Projects",
+        "governed_fallback",
+        "No specific domain matched; Active Projects is the governed fallback.",
+        ("Leadership & Team",),
+        True,
     )
 
 
@@ -183,10 +180,8 @@ class TodoistService:
         if action.todoist_project not in config["projects"]:
             raise ValueError("invalid Todoist project")
         approved = set(config.get("approved_labels", ()))
-        if any(
-            label in set(config["prohibited_labels"]) or (approved and label not in approved)
-            for label in action.labels
-        ):
+        prohibited = set(config["prohibited_labels"])
+        if any(label in prohibited or (approved and label not in approved) for label in action.labels):
             raise ValueError("prohibited or unapproved Todoist label")
         task_description(action.title, action.definition_of_done)
         routing = (
@@ -199,38 +194,43 @@ class TodoistService:
             routing=routing,
         )
 
+    def _resolve_section(self, project_id: str, selected: str) -> str | None:
+        if not selected or self.adapter is None:
+            return None
+        available = self.adapter.list_sections(project_id)
+        if not available and not isinstance(self.adapter, LiveTodoistAdapter):
+            return None
+        sections = {item["name"]: item["id"] for item in available}
+        if selected not in sections:
+            raise ValueError("configured Todoist section is not available live")
+        return sections[selected]
+
     def apply(self, action: Action, confirmed: bool = False) -> TodoistPlan:
         if not confirmed:
             raise PermissionError("explicit confirmation is required")
         if self.adapter is None:
             raise PermissionError("no production Todoist adapter is configured")
         plan = self.plan(action)
-        projects = {p.name: p.id for p in self.adapter.list_projects()}
+        projects = {project.name: project.id for project in self.adapter.list_projects()}
         if plan.project not in projects:
             raise ValueError("configured Todoist project is not available live")
-        section_id = None
-        selected_section = plan.routing.selected_section if plan.routing else action.todoist_section
-        if selected_section:
-            sections = {
-                s["name"]: s["id"] for s in self.adapter.list_sections(projects[plan.project])
-            }
-            if selected_section not in sections:
-                raise ValueError("configured Todoist section is not available live")
-            section_id = sections[selected_section]
+        selected = plan.routing.selected_section if plan.routing else action.todoist_section
+        section_id = self._resolve_section(projects[plan.project], selected)
         missing = set(action.labels) - set(self.adapter.list_labels())
         if missing:
             raise ValueError("configured Todoist labels are not available live")
         description = task_description(action.title, action.definition_of_done)
+
         if action.todoist_task_id:
-            existing_parent = self.adapter.get_task(action.todoist_task_id)
+            current = self.adapter.get_task(action.todoist_task_id)
             task = self.adapter.update_task(
-                action.todoist_task_id,
+                current.id,
                 content=action.title,
                 description=description,
                 project_id=projects[plan.project],
                 section_id=section_id,
-                parent_id=existing_parent.parent_id,
-                order=existing_parent.order,
+                parent_id=current.parent_id,
+                order=current.order,
             )
         else:
             task = self.adapter.create_task(
@@ -242,9 +242,15 @@ class TodoistService:
                 idempotency_key=LiveTodoistAdapter.idempotency_key(action.id),
             )
         self._validate_readback(
-            task, action.title, description, projects[plan.project], section_id, task.parent_id
+            task,
+            action.title,
+            description,
+            projects[plan.project],
+            section_id,
+            task.parent_id,
         )
-        existing = {t.content: t for t in self.adapter.list_tasks(parent_id=task.id)}
+
+        existing = {child.content: child for child in self.adapter.list_tasks(parent_id=task.id)}
         for index, raw in enumerate(plan.subtasks, 1):
             title = f"{index:02d} — {raw}"
             subdesc = task_description(raw, f"{raw} is completed and verified.")
@@ -270,12 +276,21 @@ class TodoistService:
                         f"{action.id}:{index}:{raw}"
                     ),
                 )
-            self._validate_readback(child, title, subdesc, projects[plan.project], None, task.id)
+            self._validate_readback(
+                child,
+                title,
+                subdesc,
+                projects[plan.project],
+                None,
+                task.id,
+            )
+
         children = sorted(
-            self.adapter.list_tasks(parent_id=task.id), key=lambda t: (t.order, t.content)
+            self.adapter.list_tasks(parent_id=task.id),
+            key=lambda child: (child.order, child.content),
         )
-        expected = [f"{i:02d} — {raw}" for i, raw in enumerate(plan.subtasks, 1)]
-        if [c.content for c in children] != expected:
+        expected = [f"{index:02d} — {raw}" for index, raw in enumerate(plan.subtasks, 1)]
+        if [child.content for child in children] != expected:
             raise ValueError("Todoist subtask readback did not match requested tree")
         if self.link_writer:
             self.link_writer.store_todoist_link(action.id, task.id)
@@ -297,7 +312,8 @@ class TodoistService:
             raise PermissionError("no production Todoist adapter is configured")
         parent = self.adapter.get_task(task_id)
         children = sorted(
-            self.adapter.list_tasks(parent_id=task_id), key=lambda task: (task.order, task.content)
+            self.adapter.list_tasks(parent_id=task_id),
+            key=lambda child: (child.order, child.content),
         )
         snapshot = {child.id: (child.parent_id, child.order) for child in children}
         updated_parent = self.adapter.update_task(
@@ -319,11 +335,11 @@ class TodoistService:
             )
             if (updated.parent_id, updated.order) != snapshot[child.id]:
                 raise ValueError("Todoist hierarchy changed during section move")
-        readback = sorted(
-            self.adapter.list_tasks(parent_id=task_id), key=lambda task: (task.order, task.content)
-        )
-        if len(readback) != len(children) or any(child.parent_id != task_id for child in readback):
-            raise ValueError("Todoist child-count or parentId validation failed after section move")
+        readback = self.adapter.list_tasks(parent_id=task_id)
+        if len(readback) != len(children) or any(
+            child.parent_id != task_id for child in readback
+        ):
+            raise ValueError("Todoist child-count or parentId validation failed")
 
     @staticmethod
     def _validate_readback(
@@ -334,13 +350,15 @@ class TodoistService:
         section_id: str | None,
         parent_id: str | None,
     ) -> None:
-        if (task.content, task.description, task.project_id, task.section_id, task.parent_id) != (
-            title,
-            description,
-            project_id,
-            section_id,
-            parent_id,
-        ):
+        actual = (
+            task.content,
+            task.description,
+            task.project_id,
+            task.section_id,
+            task.parent_id,
+        )
+        expected = (title, description, project_id, section_id, parent_id)
+        if actual != expected:
             raise ValueError("Todoist readback did not match requested task")
         if NOTION_MARKERS.search(task.content + "\n" + task.description):
             raise ValueError("Todoist readback contains prohibited Notion content")
