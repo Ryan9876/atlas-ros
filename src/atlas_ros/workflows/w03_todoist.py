@@ -181,7 +181,11 @@ class TodoistService:
             raise ValueError("invalid Todoist project")
         approved = set(config.get("approved_labels", ()))
         prohibited = set(config["prohibited_labels"])
-        if any(label in prohibited or (approved and label not in approved) for label in action.labels):
+        invalid_label = any(
+            label in prohibited or (approved and label not in approved)
+            for label in action.labels
+        )
+        if invalid_label:
             raise ValueError("prohibited or unapproved Todoist label")
         task_description(action.title, action.definition_of_done)
         routing = (
