@@ -139,12 +139,14 @@ jobs:
           clean-wheel/bin/atlas status
 
       - name: Generate commit-bound candidate evidence
+        env:
+          ATLAS_CANDIDATE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         run: |
           set -euo pipefail
           python scripts/build_v500_candidate_evidence.py \
             --project-root . \
             --output-dir candidate-evidence \
-            --head-sha "${GITHUB_SHA}" \
+            --head-sha "${ATLAS_CANDIDATE_SHA}" \
             --workflow-run-id "${GITHUB_RUN_ID}" \
             --cases benchmarks/ryan-intelligence-evaluation-set-v1.json \
             --junit test-results/pytest.xml \

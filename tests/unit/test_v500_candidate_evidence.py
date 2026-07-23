@@ -52,3 +52,10 @@ def test_candidate_evidence_is_bound_to_current_commit(tmp_path: Path) -> None:
     assert "Atlas ROS v5.0 Release Candidate" in manifest
     assert "243 tests" in report
     assert "507f694" not in json.dumps(status)
+
+
+def test_workflow_uses_source_head_not_pull_request_merge_sha() -> None:
+    workflow = Path(".github/workflows/release-candidate.yml").read_text()
+
+    assert "github.event.pull_request.head.sha || github.sha" in workflow
+    assert '--head-sha "${ATLAS_CANDIDATE_SHA}"' in workflow
