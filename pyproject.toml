@@ -47,7 +47,7 @@ select = ["E", "F", "I", "UP", "B", "SIM"]
 "src/atlas_ros/intelligence/__init__.py" = ["E402"]
 "src/atlas_ros/intelligence/release_control_center.py" = ["E501"]
 "src/atlas_ros/workflows/w03_todoist.py" = ["E501"]
-"scripts/build_v500_candidate_evidence.py" = ["E501"]
+"scripts/build_v510_candidate_evidence.py" = ["E501"]
 "tools/assemble_v410_restoration.py" = ["E501"]
 
 [tool.mypy]
