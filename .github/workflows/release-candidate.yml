@@ -118,7 +118,7 @@ jobs:
           ATLAS_CANDIDATE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         run: |
           set -euo pipefail
-          python scripts/build_v500_candidate_evidence.py \
+          python scripts/build_v510_candidate_evidence.py \
             --project-root . \
             --output-dir candidate-evidence \
             --head-sha "${ATLAS_CANDIDATE_SHA}" \
