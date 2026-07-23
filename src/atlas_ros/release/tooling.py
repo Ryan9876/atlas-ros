@@ -18,6 +18,12 @@ def inventory(root: Path) -> list[Path]:
         ".mypy_cache",
         ".pytest_cache",
         ".ruff_cache",
+        "audit",
+        "test-results",
+        "candidate-evidence",
+        "publication",
+        "extracted",
+        "clean-wheel",
     }
     return sorted(
         path
