@@ -117,7 +117,9 @@ def _validate_done_when(done_when: str) -> str:
     if len(lines) > 1:
         raise ValueError("Two or more Done when criteria must be separate Markdown bullets")
     if MULTI_CRITERION_PROSE.search(lines[0]):
-        raise ValueError("Multiple Done when criteria cannot be comma- or semicolon-separated prose")
+        raise ValueError(
+            "Multiple Done when criteria cannot be comma- or semicolon-separated prose"
+        )
     return lines[0]
 
 
@@ -158,7 +160,10 @@ def route_todoist_section(action: Action) -> SectionRoutingDecision:
     return SectionRoutingDecision(
         selected_section="Active Projects",
         matched_rule="governed_fallback",
-        reason="No specific management-domain rule matched; Active Projects is the governed fallback.",
+        reason=(
+            "No specific management-domain rule matched; Active Projects is the "
+            "governed fallback."
+        ),
         rejected_higher_precedence=("Leadership & Team",),
         fallback_used=True,
     )
@@ -184,8 +189,15 @@ class TodoistService:
         ):
             raise ValueError("prohibited or unapproved Todoist label")
         task_description(action.title, action.definition_of_done)
-        routing = route_todoist_section(action) if action.todoist_project == "Work" else None
-        return TodoistPlan(action.id, action.todoist_project, report.proposed_subtasks, routing=routing)
+        routing = (
+            route_todoist_section(action) if action.todoist_project == "Work" else None
+        )
+        return TodoistPlan(
+            action.id,
+            action.todoist_project,
+            report.proposed_subtasks,
+            routing=routing,
+        )
 
     def apply(self, action: Action, confirmed: bool = False) -> TodoistPlan:
         if not confirmed:
@@ -267,9 +279,18 @@ class TodoistService:
             raise ValueError("Todoist subtask readback did not match requested tree")
         if self.link_writer:
             self.link_writer.store_todoist_link(action.id, task.id)
-        return TodoistPlan(action.id, plan.project, plan.subtasks, False, task.id, plan.routing)
+        return TodoistPlan(
+            action.id,
+            plan.project,
+            plan.subtasks,
+            False,
+            task.id,
+            plan.routing,
+        )
 
-    def move_task_group(self, task_id: str, target_section_id: str, confirmed: bool = False) -> None:
+    def move_task_group(
+        self, task_id: str, target_section_id: str, confirmed: bool = False
+    ) -> None:
         if not confirmed:
             raise PermissionError("explicit confirmation is required")
         if self.adapter is None:
