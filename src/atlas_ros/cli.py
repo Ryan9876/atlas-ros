@@ -17,6 +17,7 @@ from atlas_ros.intelligence.calibration import (
 )
 from atlas_ros.intelligence.dataset import validate_files
 from atlas_ros.intelligence.evaluation import BenchmarkRunner
+from atlas_ros.intelligence.evaluator import IntelligenceEvaluationRunner
 from atlas_ros.intelligence.io import load_results
 from atlas_ros.release.tooling import checksums, inventory, verify
 from atlas_ros.runtime.database import RuntimeDatabase
@@ -195,6 +196,19 @@ def intelligence_evaluate(results_file: Path) -> None:
     print(report.model_dump_json())
 
 
+def intelligence_generate_judgments(cases_file: Path, output_file: Path) -> None:
+    judgments = IntelligenceEvaluationRunner().run(load_calibration_cases(cases_file))
+    output_file.parent.mkdir(parents=True, exist_ok=True)
+    output_file.write_text(
+        json.dumps(
+            [judgment.model_dump(mode="json") for judgment in judgments],
+            indent=2,
+        )
+        + "\n"
+    )
+    print(output_file)
+
+
 def intelligence_calibrate(cases_file: Path, judgments_file: Path) -> None:
     report = IntelligenceCalibrationEngine().run(
         load_calibration_cases(cases_file),
@@ -280,6 +294,9 @@ def main() -> None:
     intelligence_sub = intelligence.add_subparsers(dest="intelligence_command", required=True)
     evaluate = intelligence_sub.add_parser("evaluate")
     evaluate.add_argument("results_file", type=Path)
+    generate_judgments = intelligence_sub.add_parser("generate-judgments")
+    generate_judgments.add_argument("cases_file", type=Path)
+    generate_judgments.add_argument("output_file", type=Path)
     validate_set = intelligence_sub.add_parser("validate-set")
     validate_set.add_argument("cases_file", type=Path)
     validate_set.add_argument("--results-file", type=Path)
@@ -310,6 +327,11 @@ def main() -> None:
         connectivity_check(args.keychain)
     elif args.command == "intelligence" and args.intelligence_command == "evaluate":
         intelligence_evaluate(args.results_file)
+    elif (
+        args.command == "intelligence"
+        and args.intelligence_command == "generate-judgments"
+    ):
+        intelligence_generate_judgments(args.cases_file, args.output_file)
     elif args.command == "intelligence" and args.intelligence_command == "validate-set":
         intelligence_validate_set(args.cases_file, args.results_file)
     elif args.command == "intelligence" and args.intelligence_command == "calibrate":

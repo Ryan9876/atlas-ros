@@ -25,7 +25,7 @@ The framework computes:
 - Hallucination rate
 - Evidence completeness
 - Explanation quality
-- Reviewer acceptance rate when supplied
+- Reviewer acceptance rate
 - Per-domain performance
 - Regression against a previous calibration report
 
@@ -40,11 +40,12 @@ Release eligibility is blocked when:
 - Hallucination rate exceeds policy.
 - Evidence completeness falls below policy.
 - Explanation quality falls below policy.
+- Any case lacks explicit expert reviewer acceptance or is rejected by its reviewer.
 - Any domain-specific accuracy or calibration gate fails.
 
 ## Governance boundary
 
-The framework measures intelligence quality. It cannot promote a release, approve a Candidate, change production authority, or alter learning policy. Calibration results may be consumed by the Release Control Center as read-only intelligence-health evidence.
+The framework measures intelligence quality. It cannot promote a release, approve a Candidate, change production authority, or alter learning policy. Generated judgments are deterministic pipeline-smoke evidence, not independent accuracy evidence; every case requires explicit expert reviewer acceptance under the default release policy. Calibration results may be consumed by the Release Control Center as read-only intelligence-health evidence.
 
 ## CLI
 

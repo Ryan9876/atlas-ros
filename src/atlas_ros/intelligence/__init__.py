@@ -1,3 +1,7 @@
+from atlas_ros.intelligence.decision import (
+    DecisionOutcome,
+    GovernedDecisionPipeline,
+)
 from atlas_ros.intelligence.memory import (
     ConflictState,
     GovernedMemoryStore,
@@ -32,7 +36,11 @@ from atlas_ros.intelligence.reasoning import (
     ScoredOption,
 )
 from atlas_ros.intelligence.records import (
+    AssumptionRecord,
+    AssumptionStatus,
     CanonicalRecord,
+    ClaimRecord,
+    ClaimType,
     ContextSnapshot,
     DecisionRecord,
     EvidenceEnvelope,
@@ -60,6 +68,8 @@ __all__ = [
     "ReasoningRequest",
     "ReasoningTrace",
     "ScoredOption",
+    "DecisionOutcome",
+    "GovernedDecisionPipeline",
     "ConflictState",
     "GovernedMemoryStore",
     "MemoryEntry",
@@ -69,7 +79,11 @@ __all__ = [
     "PrivacyClass",
     "RetrievalQuery",
     "RetrievalResult",
+    "AssumptionRecord",
+    "AssumptionStatus",
     "CanonicalRecord",
+    "ClaimRecord",
+    "ClaimType",
     "ContextSnapshot",
     "DecisionRecord",
     "EvidenceEnvelope",
@@ -188,4 +202,79 @@ __all__ += [
     "ControlCenterStatus",
     "GateSummary",
     "ReleaseControlCenter",
+]
+
+
+from atlas_ros.intelligence.claim_graph import (
+    ClaimAssessmentEngine,
+    ClaimConflict,
+    ClaimRelation,
+    ClaimRelationType,
+    OptionClaimGraphAssessment,
+)
+
+__all__ += [
+    "ClaimAssessmentEngine",
+    "ClaimConflict",
+    "ClaimRelation",
+    "ClaimRelationType",
+    "OptionClaimGraphAssessment",
+]
+
+from atlas_ros.intelligence.inference import (
+    GovernedInferenceEngine,
+    InferenceOutcome,
+    InferenceRequest,
+    valid_inference_premise_kind,
+)
+from atlas_ros.intelligence.orchestration import (
+    IntelligenceOrchestrator,
+    IntelligenceOutcome,
+    IntelligenceState,
+)
+from atlas_ros.intelligence.records import (
+    InferenceMethod,
+    InferenceRule,
+    InferenceStep,
+    InferenceTraceRecord,
+)
+
+__all__ += [
+    "GovernedInferenceEngine",
+    "InferenceRequest",
+    "InferenceMethod",
+    "InferenceOutcome",
+    "InferenceRule",
+    "InferenceStep",
+    "InferenceTraceRecord",
+    "valid_inference_premise_kind",
+    "IntelligenceOrchestrator",
+    "IntelligenceOutcome",
+    "IntelligenceState",
+]
+
+from atlas_ros.intelligence.decision_governance import (
+    GovernanceOutcome,
+    GovernedDecisionEngine,
+    PolicyResult,
+    default_governance_policies,
+)
+from atlas_ros.intelligence.records import (
+    DecisionDisposition,
+    DecisionGovernanceRecord,
+    GovernancePolicyRecord,
+    PolicyEvaluationOutcome,
+    PolicyEvaluationRecord,
+)
+
+__all__ += [
+    "GovernanceOutcome",
+    "GovernedDecisionEngine",
+    "PolicyResult",
+    "default_governance_policies",
+    "DecisionDisposition",
+    "DecisionGovernanceRecord",
+    "GovernancePolicyRecord",
+    "PolicyEvaluationOutcome",
+    "PolicyEvaluationRecord",
 ]

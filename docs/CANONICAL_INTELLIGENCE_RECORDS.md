@@ -44,6 +44,26 @@ Records the decision owner, selected option, expected outcome, success metrics, 
 
 Records the observed outcome, prediction and/or decision linkage, delta analysis, confidence change, eligible pattern updates, model version, and explicit learning eligibility. Ineligible events cannot modify learned patterns.
 
+### ClaimRecord and AssumptionRecord
+
+Keep evidence-backed claims distinct from provisional assumptions. Both carry explicit confidence and validation state; verified assumptions require governed evidence or claim references.
+
+### InferenceRule and InferenceTraceRecord
+
+Define versionable inference behavior and preserve every premise, step, conclusion, confidence calculation, and validation outcome. An inference conclusion remains a claim and cannot become authority merely because it was derived.
+
+### GovernancePolicyRecord and PolicyEvaluationRecord
+
+Represent active decision policies separately from reasoning. Each evaluation binds one persisted policy to a governed subject, evidence, confidence, outcome, reason, and failure disposition.
+
+### DecisionGovernanceRecord
+
+Records the final allow, abstain, escalate, evidence, clarification, deny, or defer disposition. `permitted` is true only for an allow disposition, and all policy evaluations remain linked and independently auditable.
+
+## Governed pipeline
+
+`IntelligenceOrchestrator` coordinates `evidence → claims → inference → reasoning → governance → decision`. `GovernedReasoningEngine` retains ownership of reasoning, `GovernedDecisionEngine` retains ownership of policy governance, and `GovernedDecisionPipeline` remains the coordinating facade between them. Inference conclusions are attached only to explicitly named target options before reasoning. Produced inference, recommendation, policy-evaluation, and governance records are persisted through the append-only store.
+
 ## Persistence contract
 
 `SQLiteIntelligenceRecordStore` provides an append-only local reference implementation:

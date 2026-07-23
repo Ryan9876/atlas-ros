@@ -68,7 +68,14 @@
         "prediction_record",
         "recommendation_record",
         "decision_record",
-        "learning_event"
+        "learning_event",
+        "claim_record",
+        "assumption_record",
+        "inference_rule",
+        "inference_trace",
+        "governance_policy_record",
+        "policy_evaluation_record",
+        "decision_governance_record"
       ],
       "title": "RecordKind",
       "type": "string"

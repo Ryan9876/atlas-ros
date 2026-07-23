@@ -1,4 +1,3 @@
-# ruff: noqa: I001
 from __future__ import annotations
 
 import hashlib
@@ -7,8 +6,10 @@ import sys
 from pathlib import Path
 from typing import Any
 
-from atlas_ros.intelligence.calibration import load_calibration_cases, load_calibration_report
-
+from atlas_ros.intelligence.calibration import (
+    load_calibration_cases,
+    load_calibration_report,
+)
 
 GOVERNED_REVIEW_PATHS = {"independent", "solo_maintainer"}
 

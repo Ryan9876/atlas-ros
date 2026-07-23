@@ -72,6 +72,24 @@ def test_hallucination_blocks_release_eligibility() -> None:
     assert "hallucination rate above policy" in report.blocking_violations
 
 
+def test_missing_reviewer_acceptance_blocks_release_eligibility() -> None:
+    engine = IntelligenceCalibrationEngine(IntelligenceCalibrationPolicy(minimum_cases=1))
+    unreviewed = judgment("c1").model_copy(update={"accepted_by_reviewer": None})
+    report = engine.run((case("c1"),), (unreviewed,))
+
+    assert not report.release_eligible
+    assert "expert reviewer acceptance missing for 1 case(s)" in report.blocking_violations
+
+
+def test_reviewer_rejection_blocks_release_eligibility() -> None:
+    engine = IntelligenceCalibrationEngine(IntelligenceCalibrationPolicy(minimum_cases=1))
+    rejected = judgment("c1").model_copy(update={"accepted_by_reviewer": False})
+    report = engine.run((case("c1"),), (rejected,))
+
+    assert not report.release_eligible
+    assert "expert reviewer rejected 1 case(s)" in report.blocking_violations
+
+
 def test_duplicate_cases_are_rejected() -> None:
     engine = IntelligenceCalibrationEngine(IntelligenceCalibrationPolicy(minimum_cases=1))
     with pytest.raises(ValueError, match="duplicate calibration case ids"):

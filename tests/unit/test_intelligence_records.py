@@ -25,6 +25,7 @@ from atlas_ros.intelligence.records import (
     ProvenanceHop,
     RecommendationOption,
     RecommendationRecord,
+    RecordKind,
     ValidationStatus,
     parse_record,
 )
@@ -235,3 +236,13 @@ def test_json_payload_rejects_unknown_record_kind() -> None:
     payload["kind"] = "unknown"
     with pytest.raises(ValueError):
         parse_record(payload)
+
+
+def test_published_record_reference_schemas_cover_all_runtime_kinds() -> None:
+    expected = {kind.value for kind in RecordKind}
+    schema_paths = sorted(Path("schemas/intelligence").glob("*.schema.json"))
+
+    assert schema_paths
+    for schema_path in schema_paths:
+        schema = json.loads(schema_path.read_text(encoding="utf-8"))
+        assert set(schema["$defs"]["RecordKind"]["enum"]) == expected

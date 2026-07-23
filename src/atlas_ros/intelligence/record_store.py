@@ -105,6 +105,10 @@ class SQLiteIntelligenceRecordStore:
             direct_refs = list(record.links)
             for field_name in (
                 "evidence_refs",
+                "claim_refs",
+                "premise_refs",
+                "rule_ref",
+                "conclusion_ref",
                 "context_ref",
                 "recommendation_ref",
                 "prediction_ref",

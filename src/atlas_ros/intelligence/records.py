@@ -19,6 +19,13 @@ class RecordKind(StrEnum):
     RECOMMENDATION = "recommendation_record"
     DECISION = "decision_record"
     LEARNING = "learning_event"
+    CLAIM = "claim_record"
+    ASSUMPTION = "assumption_record"
+    INFERENCE_RULE = "inference_rule"
+    INFERENCE_TRACE = "inference_trace"
+    GOVERNANCE_POLICY = "governance_policy_record"
+    POLICY_EVALUATION = "policy_evaluation_record"
+    DECISION_GOVERNANCE = "decision_governance_record"
 
 
 class LifecycleState(StrEnum):
@@ -127,6 +134,250 @@ class EvidenceEnvelope(CanonicalRecord):
     source_locator: str = ""
     source_content_hash: str = Field(pattern=r"^sha256:[0-9a-f]{64}$")
     citation: str = ""
+
+
+class ClaimType(StrEnum):
+    FACT = "fact"
+    INTERPRETATION = "interpretation"
+    CONSTRAINT = "constraint"
+    OUTCOME = "outcome"
+
+
+class AssumptionStatus(StrEnum):
+    VERIFIED = "verified"
+    PARTIAL = "partial"
+    UNVERIFIED = "unverified"
+    REJECTED = "rejected"
+
+
+class ClaimRecord(CanonicalRecord):
+    KIND: ClassVar[RecordKind] = RecordKind.CLAIM
+
+    kind: Literal[RecordKind.CLAIM] = RecordKind.CLAIM
+    statement: str = Field(min_length=1)
+    claim_type: ClaimType = ClaimType.FACT
+    confidence: Probability
+    validation_status: ValidationStatus
+    evidence_refs: tuple[RecordRef, ...] = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def validate_claim_references(self) -> Self:
+        if any(ref.kind is not RecordKind.EVIDENCE for ref in self.evidence_refs):
+            raise ValueError("claim evidence_refs must reference evidence envelopes")
+        return self
+
+
+class AssumptionRecord(CanonicalRecord):
+    KIND: ClassVar[RecordKind] = RecordKind.ASSUMPTION
+
+    kind: Literal[RecordKind.ASSUMPTION] = RecordKind.ASSUMPTION
+    assumption: str = Field(min_length=1)
+    confidence: Probability
+    status: AssumptionStatus = AssumptionStatus.UNVERIFIED
+    evidence_refs: tuple[RecordRef, ...] = ()
+    claim_refs: tuple[RecordRef, ...] = ()
+
+    @model_validator(mode="after")
+    def validate_assumption_references(self) -> Self:
+        if any(ref.kind is not RecordKind.EVIDENCE for ref in self.evidence_refs):
+            raise ValueError("assumption evidence_refs must reference evidence envelopes")
+        if any(ref.kind is not RecordKind.CLAIM for ref in self.claim_refs):
+            raise ValueError("assumption claim_refs must reference claim records")
+        if self.status is AssumptionStatus.VERIFIED and not (self.evidence_refs or self.claim_refs):
+            raise ValueError("verified assumptions require evidence or claim references")
+        return self
+
+
+class InferenceMethod(StrEnum):
+    DEDUCTIVE = "deductive"
+    INDUCTIVE = "inductive"
+    ABDUCTIVE = "abductive"
+
+
+class InferenceStep(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    sequence: int = Field(ge=1)
+    premise_ref: RecordRef
+    description: str = Field(min_length=1)
+    confidence: Probability
+    validation_status: ValidationStatus
+
+
+class InferenceRule(CanonicalRecord):
+    KIND: ClassVar[RecordKind] = RecordKind.INFERENCE_RULE
+
+    kind: Literal[RecordKind.INFERENCE_RULE] = RecordKind.INFERENCE_RULE
+    name: str = Field(min_length=1)
+    description: str = Field(min_length=1)
+    method: InferenceMethod
+    minimum_premises: int = Field(default=1, ge=1)
+    reliability: Probability
+    active: bool = True
+
+
+class InferenceTraceRecord(CanonicalRecord):
+    KIND: ClassVar[RecordKind] = RecordKind.INFERENCE_TRACE
+
+    kind: Literal[RecordKind.INFERENCE_TRACE] = RecordKind.INFERENCE_TRACE
+    rule_ref: RecordRef
+    premise_refs: tuple[RecordRef, ...] = Field(min_length=1)
+    conclusion_ref: RecordRef
+    steps: tuple[InferenceStep, ...] = Field(min_length=1)
+    confidence: Probability
+    validation_status: ValidationStatus
+    valid: bool
+    explanation: str = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def validate_inference_references(self) -> Self:
+        if self.rule_ref.kind is not RecordKind.INFERENCE_RULE:
+            raise ValueError("rule_ref must reference an inference rule")
+        if self.conclusion_ref.kind is not RecordKind.CLAIM:
+            raise ValueError("conclusion_ref must reference a claim record")
+
+        permitted = {
+            RecordKind.CLAIM,
+            RecordKind.ASSUMPTION,
+            RecordKind.INFERENCE_TRACE,
+        }
+        if any(ref.kind not in permitted for ref in self.premise_refs):
+            raise ValueError("premise_refs must reference claims, assumptions, or inference traces")
+
+        if len(self.premise_refs) != len(set(self.premise_refs)):
+            raise ValueError("inference premise references must be unique")
+
+        sequences = tuple(step.sequence for step in self.steps)
+        expected = tuple(range(1, len(self.steps) + 1))
+        if sequences != expected:
+            raise ValueError("inference step sequence must be contiguous")
+
+        if tuple(step.premise_ref for step in self.steps) != self.premise_refs:
+            raise ValueError("inference steps must correspond to premise_refs")
+
+        if self.validation_status is ValidationStatus.REJECTED and self.valid:
+            raise ValueError("rejected inference traces cannot be valid")
+
+        return self
+
+
+class DecisionDisposition(StrEnum):
+    ALLOW = "allow"
+    ABSTAIN = "abstain"
+    ESCALATE = "escalate"
+    REQUEST_EVIDENCE = "request_evidence"
+    REQUEST_CLARIFICATION = "request_clarification"
+    DENY = "deny"
+    DEFER = "defer"
+
+
+class PolicyEvaluationOutcome(StrEnum):
+    PASS = "pass"
+    FAIL = "fail"
+    NOT_APPLICABLE = "not_applicable"
+
+
+class GovernancePolicyRecord(CanonicalRecord):
+    KIND: ClassVar[RecordKind] = RecordKind.GOVERNANCE_POLICY
+
+    kind: Literal[RecordKind.GOVERNANCE_POLICY] = RecordKind.GOVERNANCE_POLICY
+    policy_key: str = Field(min_length=1)
+    name: str = Field(min_length=1)
+    description: str = Field(min_length=1)
+    failure_disposition: DecisionDisposition
+    priority: int = Field(default=100, ge=0)
+    parameters: dict[str, str | int | float | bool] = Field(default_factory=dict)
+    active: bool = True
+
+
+class PolicyEvaluationRecord(CanonicalRecord):
+    KIND: ClassVar[RecordKind] = RecordKind.POLICY_EVALUATION
+
+    kind: Literal[RecordKind.POLICY_EVALUATION] = RecordKind.POLICY_EVALUATION
+    policy_ref: RecordRef
+    subject_ref: RecordRef
+    outcome: PolicyEvaluationOutcome
+    disposition: DecisionDisposition
+    reason: str = Field(min_length=1)
+    evidence_refs: tuple[RecordRef, ...] = ()
+    confidence: Probability
+
+    @model_validator(mode="after")
+    def validate_policy_evaluation(self) -> Self:
+        if self.policy_ref.kind is not RecordKind.GOVERNANCE_POLICY:
+            raise ValueError("policy_ref must reference a governance policy")
+        if self.subject_ref.kind not in {
+            RecordKind.RECOMMENDATION,
+            RecordKind.CONTEXT,
+            RecordKind.DECISION,
+            RecordKind.INFERENCE_TRACE,
+        }:
+            raise ValueError(
+                "subject_ref must reference a recommendation, context, decision, or inference trace"
+            )
+        if any(ref.kind is not RecordKind.EVIDENCE for ref in self.evidence_refs):
+            raise ValueError("policy evaluation evidence_refs must reference evidence envelopes")
+        if self.outcome is PolicyEvaluationOutcome.PASS:
+            if self.disposition is not DecisionDisposition.ALLOW:
+                raise ValueError("passing policy evaluations must use ALLOW disposition")
+        elif self.outcome is PolicyEvaluationOutcome.NOT_APPLICABLE:
+            if self.disposition is not DecisionDisposition.ALLOW:
+                raise ValueError("not-applicable policy evaluations must use ALLOW disposition")
+        elif self.disposition is DecisionDisposition.ALLOW:
+            raise ValueError("failed policy evaluations cannot use ALLOW disposition")
+
+        required_links = {
+            self.policy_ref,
+            self.subject_ref,
+            *self.evidence_refs,
+        }
+        if not required_links.issubset(set(self.links)):
+            raise ValueError(
+                "policy evaluation links must include policy, subject, and evidence references"
+            )
+        return self
+
+
+class DecisionGovernanceRecord(CanonicalRecord):
+    KIND: ClassVar[RecordKind] = RecordKind.DECISION_GOVERNANCE
+
+    kind: Literal[RecordKind.DECISION_GOVERNANCE] = RecordKind.DECISION_GOVERNANCE
+    context_ref: RecordRef
+    recommendation_ref: RecordRef | None = None
+    policy_evaluation_refs: tuple[RecordRef, ...] = Field(min_length=1)
+    disposition: DecisionDisposition
+    permitted: bool
+    explanation: str = Field(min_length=1)
+    evidence_refs: tuple[RecordRef, ...] = ()
+
+    @model_validator(mode="after")
+    def validate_decision_governance(self) -> Self:
+        if self.context_ref.kind is not RecordKind.CONTEXT:
+            raise ValueError("context_ref must reference a context snapshot")
+        if (
+            self.recommendation_ref is not None
+            and self.recommendation_ref.kind is not RecordKind.RECOMMENDATION
+        ):
+            raise ValueError("recommendation_ref must reference a recommendation record")
+        if any(ref.kind is not RecordKind.POLICY_EVALUATION for ref in self.policy_evaluation_refs):
+            raise ValueError("policy_evaluation_refs must reference policy evaluation records")
+        if len(self.policy_evaluation_refs) != len(set(self.policy_evaluation_refs)):
+            raise ValueError("policy evaluation references must be unique")
+        if any(ref.kind is not RecordKind.EVIDENCE for ref in self.evidence_refs):
+            raise ValueError("governance evidence_refs must reference evidence envelopes")
+        if self.permitted != (self.disposition is DecisionDisposition.ALLOW):
+            raise ValueError("permitted must be true only for ALLOW disposition")
+
+        direct_refs = {
+            self.context_ref,
+            *self.policy_evaluation_refs,
+            *self.evidence_refs,
+        }
+        if self.recommendation_ref is not None:
+            direct_refs.add(self.recommendation_ref)
+        if not direct_refs.issubset(set(self.links)):
+            raise ValueError("decision governance links must include all governed references")
+        return self
 
 
 class ContextSnapshot(CanonicalRecord):
@@ -265,6 +516,13 @@ CanonicalRecordType = (
     | RecommendationRecord
     | DecisionRecord
     | LearningEvent
+    | ClaimRecord
+    | AssumptionRecord
+    | InferenceRule
+    | InferenceTraceRecord
+    | GovernancePolicyRecord
+    | PolicyEvaluationRecord
+    | DecisionGovernanceRecord
 )
 
 _RECORD_TYPES: dict[RecordKind, type[CanonicalRecord]] = {
@@ -274,6 +532,13 @@ _RECORD_TYPES: dict[RecordKind, type[CanonicalRecord]] = {
     RecordKind.RECOMMENDATION: RecommendationRecord,
     RecordKind.DECISION: DecisionRecord,
     RecordKind.LEARNING: LearningEvent,
+    RecordKind.CLAIM: ClaimRecord,
+    RecordKind.ASSUMPTION: AssumptionRecord,
+    RecordKind.INFERENCE_RULE: InferenceRule,
+    RecordKind.INFERENCE_TRACE: InferenceTraceRecord,
+    RecordKind.GOVERNANCE_POLICY: GovernancePolicyRecord,
+    RecordKind.POLICY_EVALUATION: PolicyEvaluationRecord,
+    RecordKind.DECISION_GOVERNANCE: DecisionGovernanceRecord,
 }
 
 

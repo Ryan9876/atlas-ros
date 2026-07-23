@@ -106,6 +106,7 @@ class IntelligenceCalibrationPolicy(BaseModel):
     maximum_hallucination_rate: float = Field(default=0.01, ge=0.0, le=1.0)
     minimum_evidence_completeness: float = Field(default=0.95, ge=0.0, le=1.0)
     minimum_explanation_quality: float = Field(default=0.85, ge=0.0, le=1.0)
+    require_reviewer_acceptance: bool = True
     maximum_accuracy_regression: float = Field(default=0.01, ge=0.0, le=1.0)
     minimum_cases: int = Field(default=1, ge=1)
     calibration_bins: int = Field(default=10, ge=2, le=20)
@@ -345,6 +346,21 @@ class IntelligenceCalibrationEngine:
             violations.append("evidence completeness below policy")
         if explanation_quality < self.policy.minimum_explanation_quality:
             violations.append("explanation quality below policy")
+        if self.policy.require_reviewer_acceptance:
+            missing_reviews = sum(
+                item.reviewer_accepted is None for item in outcomes
+            )
+            rejected_reviews = sum(
+                item.reviewer_accepted is False for item in outcomes
+            )
+            if missing_reviews:
+                violations.append(
+                    f"expert reviewer acceptance missing for {missing_reviews} case(s)"
+                )
+            if rejected_reviews:
+                violations.append(
+                    f"expert reviewer rejected {rejected_reviews} case(s)"
+                )
         for domain in domain_reports:
             if domain.accuracy < self.policy.minimum_accuracy:
                 violations.append(f"{domain.domain.value} accuracy below policy")
