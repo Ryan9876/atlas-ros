@@ -69,7 +69,12 @@ jobs:
           mypy src
 
       - name: Test with branch coverage
-        run: pytest
+        run: |
+          set -euo pipefail
+          mkdir -p test-results
+          pytest \
+            --junitxml=test-results/pytest.xml \
+            --cov-report=json:test-results/coverage.json
 
       - name: Validate dependency policy and advisories
         run: |
@@ -133,28 +138,42 @@ jobs:
             "from atlas_ros.config.loader import load_config; assert load_config('readiness')['version'] == 2"
           clean-wheel/bin/atlas status
 
+      - name: Generate commit-bound candidate evidence
+        run: |
+          set -euo pipefail
+          python scripts/build_v500_candidate_evidence.py \
+            --project-root . \
+            --output-dir candidate-evidence \
+            --head-sha "${GITHUB_SHA}" \
+            --workflow-run-id "${GITHUB_RUN_ID}" \
+            --cases benchmarks/ryan-intelligence-evaluation-set-v1.json \
+            --junit test-results/pytest.xml \
+            --coverage test-results/coverage.json \
+            --source-manifest release/CHECKSUMS.sha256 \
+            --sbom release/SBOM_V500_CURRENT.cdx.json
+
       - name: Assemble immutable v5 candidate publication set
         run: |
           set -euo pipefail
           mkdir -p publication/audit
           cp "dist/${ATLAS_SDIST}" publication/
           cp "dist/${ATLAS_WHEEL}" publication/
-          cp release/RELEASE_MANIFEST.md publication/
-          cp release/V500_PROMOTION_PREPARATION_REPORT.md publication/
-          cp release/V500_PROMOTION_PREPARATION_CHECKSUMS.sha256 publication/
+          cp candidate-evidence/RELEASE_MANIFEST_V500_CANDIDATE.md \
+            publication/RELEASE_MANIFEST.md
+          cp candidate-evidence/V500_PROMOTION_PREPARATION_REPORT.md publication/
+          cp candidate-evidence/V500_PROMOTION_PREPARATION_STATUS.json publication/
+          cp candidate-evidence/V500_PROMOTION_PREPARATION_STATUS.sha256 publication/
+          cp candidate-evidence/V500_RELEASE_VALIDATION_WORKBENCH_REPORT.md publication/
+          cp candidate-evidence/V500_CALIBRATION_REPORT.json publication/
           cp release/V500_INTELLIGENCE_CALIBRATION_REPORT.md publication/
           cp release/V500_INTELLIGENCE_CALIBRATION_CHECKSUMS.sha256 publication/
           cp release/V500_RELEASE_CONTROL_CENTER_REPORT.md publication/
-          cp release/V500_RELEASE_VALIDATION_WORKBENCH_REPORT.md publication/
-          cp release/DEPENDENCY_SECURITY_GATE_STATUS.md publication/
-          cp release/SBOM.cdx.json publication/
+          cp release/SBOM_V500_CURRENT.cdx.json publication/SBOM.cdx.json
           cp release/CHECKSUMS.sha256 publication/SOURCE_CHECKSUMS.sha256
           cp requirements.runtime.lock publication/
           cp security/vulnerability-exceptions.yml publication/
           cp audit/pip-audit-pypi.json publication/audit/
           cp audit/pip-audit-osv.json publication/audit/
-          cp promotion-output/V500_PROMOTION_PREPARATION_STATUS.json publication/
-          cp promotion-output/V500_PROMOTION_PREPARATION_STATUS.sha256 publication/
           (
             cd publication
             find . -type f ! -name CHECKSUMS.sha256 -print0 \
