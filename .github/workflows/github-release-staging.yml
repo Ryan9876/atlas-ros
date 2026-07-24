@@ -15,7 +15,7 @@ on:
         required: true
         type: string
       tag:
-        description: Draft release tag, for example v5.2.0-rc.1
+        description: Draft release tag, for example v5.3.0-rc.1
         required: true
         type: string
       release_name:
@@ -34,11 +34,9 @@ on:
 permissions:
   actions: read
   contents: write
-  issues: write
-  pull-requests: write
 
 concurrency:
-  group: github-release-staging-v5.2.0-rc.1
+  group: github-release-staging-v5.3.0-rc.1
   cancel-in-progress: false
 
 jobs:
@@ -46,15 +44,15 @@ jobs:
     if: >-
       github.event_name == 'workflow_dispatch' ||
       (github.event.workflow_run.conclusion == 'success' &&
-       github.event.workflow_run.head_branch == 'release/v5.1-candidate')
+       github.event.workflow_run.head_branch == 'release/v5.3-candidate')
     runs-on: ubuntu-24.04
     timeout-minutes: 20
 
     env:
       RUN_ID: ${{ github.event.workflow_run.id || inputs.candidate_run_id }}
-      ARTIFACT_NAME: ${{ inputs.artifact_name || 'atlas-ros-v5.2.0rc1-release-candidate' }}
-      TAG: ${{ inputs.tag || 'v5.2.0-rc.1' }}
-      RELEASE_NAME: ${{ inputs.release_name || 'Atlas ROS v5.2.0 Compatibility Release Candidate 1' }}
+      ARTIFACT_NAME: ${{ inputs.artifact_name || 'atlas-ros-v5.3.0rc1-release-candidate' }}
+      TAG: ${{ inputs.tag || 'v5.3.0-rc.1' }}
+      RELEASE_NAME: ${{ inputs.release_name || 'Atlas ROS v5.3.0 Classification Intelligence Release Candidate 1' }}
       TARGET_COMMITISH: ${{ github.event.workflow_run.head_sha || inputs.target_commitish }}
       EXPECTED_PACKAGE_SHA256: ${{ inputs.expected_package_sha256 }}
 
@@ -138,7 +136,7 @@ jobs:
           test -n "${source_archive}"
           python -m venv restored-venv
           restored-venv/bin/pip install --disable-pip-version-check "${source_archive}"
-          restored-venv/bin/python -c "import atlas_ros; from atlas_ros.capabilities import ExecutionPlanner"
+          restored-venv/bin/python -c "import atlas_ros; from atlas_ros.capabilities import ExecutionPlanner, ManagementReasoningEngine, ResponsibilityClassifier"
 
       - name: Verify draft release metadata
         env:
@@ -146,10 +144,4 @@ jobs:
         run: |
           set -euo pipefail
           gh release view "${TAG}" --repo "${GITHUB_REPOSITORY}" --json isDraft,tagName,targetCommitish --jq 'select(.isDraft == true and .tagName == env.TAG and .targetCommitish == env.TARGET_COMMITISH)'
-
-      - name: Record staging receipt on migration PR
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          gh pr comment 10 --repo "${GITHUB_REPOSITORY}" --body "Draft GitHub Release staging passed for \`${TAG}\`. Candidate run: \`${RUN_ID}\`. Target: \`${TARGET_COMMITISH}\`. Package SHA-256: \`${PACKAGE_SHA256}\`. Release assets were uploaded, downloaded, checksum-verified, and restored without Google Drive. Production promotion remains unauthorized."
+          echo "Draft release staged, downloaded, checksum-verified, and restored without Drive. Publication remains inactive until Ryan explicitly authorizes promotion."
