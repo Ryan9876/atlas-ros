@@ -1,0 +1,239 @@
+{
+  "$defs": {
+    "CandidateType": {
+      "enum": [
+        "parent_outcome",
+        "independently_executable_action",
+        "checklist_candidate",
+        "decision",
+        "approval",
+        "evidence_requirement",
+        "governance_requirement",
+        "dependency",
+        "risk_response",
+        "conditional_future_action",
+        "reference_information"
+      ],
+      "title": "CandidateType",
+      "type": "string"
+    },
+    "CompletionState": {
+      "enum": [
+        "outstanding",
+        "complete",
+        "recurring",
+        "unknown"
+      ],
+      "title": "CompletionState",
+      "type": "string"
+    },
+    "HorizonState": {
+      "enum": [
+        "current",
+        "next",
+        "conditional",
+        "future",
+        "blocked",
+        "completed",
+        "not_applicable"
+      ],
+      "title": "HorizonState",
+      "type": "string"
+    }
+  },
+  "$id": "https://atlas-ros.local/schemas/execution/execution-candidate-v2.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "ambiguities": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Ambiguities",
+      "type": "array"
+    },
+    "assumptions": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Assumptions",
+      "type": "array"
+    },
+    "can_remain_embedded": {
+      "default": false,
+      "title": "Can Remain Embedded",
+      "type": "boolean"
+    },
+    "candidate_digest": {
+      "maxLength": 64,
+      "minLength": 64,
+      "title": "Candidate Digest",
+      "type": "string"
+    },
+    "candidate_id": {
+      "maxLength": 256,
+      "minLength": 1,
+      "title": "Candidate Id",
+      "type": "string"
+    },
+    "candidate_type": {
+      "$ref": "#/$defs/CandidateType"
+    },
+    "completion_state": {
+      "$ref": "#/$defs/CompletionState",
+      "default": "outstanding"
+    },
+    "confidence": {
+      "default": 1.0,
+      "maximum": 1,
+      "minimum": 0,
+      "title": "Confidence",
+      "type": "number"
+    },
+    "contract_version": {
+      "const": 2,
+      "default": 2,
+      "title": "Contract Version",
+      "type": "integer"
+    },
+    "correlation_id": {
+      "format": "uuid",
+      "title": "Correlation Id",
+      "type": "string"
+    },
+    "dependency_references": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Dependency References",
+      "type": "array"
+    },
+    "done_when": {
+      "default": "",
+      "maxLength": 10000,
+      "title": "Done When",
+      "type": "string"
+    },
+    "earliest_executable_horizon": {
+      "$ref": "#/$defs/HorizonState",
+      "default": "current"
+    },
+    "evidence": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Evidence",
+      "type": "array"
+    },
+    "execution_ready": {
+      "default": false,
+      "title": "Execution Ready",
+      "type": "boolean"
+    },
+    "existing_representation_hints": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Existing Representation Hints",
+      "type": "array"
+    },
+    "improves_execution_clarity": {
+      "default": true,
+      "title": "Improves Execution Clarity",
+      "type": "boolean"
+    },
+    "independently_executable": {
+      "default": true,
+      "title": "Independently Executable",
+      "type": "boolean"
+    },
+    "owner": {
+      "default": "",
+      "maxLength": 200,
+      "title": "Owner",
+      "type": "string"
+    },
+    "proposed_objective": {
+      "maxLength": 10000,
+      "minLength": 1,
+      "title": "Proposed Objective",
+      "type": "string"
+    },
+    "recurrence_required": {
+      "default": false,
+      "title": "Recurrence Required",
+      "type": "boolean"
+    },
+    "responsibility_domain": {
+      "default": "",
+      "maxLength": 200,
+      "title": "Responsibility Domain",
+      "type": "string"
+    },
+    "source_item_id": {
+      "default": "",
+      "maxLength": 256,
+      "title": "Source Item Id",
+      "type": "string"
+    },
+    "source_management_reference": {
+      "maxLength": 500,
+      "minLength": 1,
+      "title": "Source Management Reference",
+      "type": "string"
+    },
+    "source_provenance": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Source Provenance",
+      "type": "array"
+    },
+    "source_section": {
+      "default": "",
+      "maxLength": 200,
+      "title": "Source Section",
+      "type": "string"
+    },
+    "title": {
+      "maxLength": 500,
+      "minLength": 1,
+      "title": "Title",
+      "type": "string"
+    },
+    "trigger": {
+      "default": "",
+      "maxLength": 2000,
+      "title": "Trigger",
+      "type": "string"
+    },
+    "trigger_satisfied": {
+      "default": false,
+      "title": "Trigger Satisfied",
+      "type": "boolean"
+    },
+    "workstream": {
+      "default": "",
+      "maxLength": 200,
+      "title": "Workstream",
+      "type": "string"
+    }
+  },
+  "required": [
+    "candidate_id",
+    "correlation_id",
+    "source_management_reference",
+    "candidate_type",
+    "title",
+    "proposed_objective",
+    "candidate_digest"
+  ],
+  "title": "ExecutionCandidate",
+  "type": "object"
+}

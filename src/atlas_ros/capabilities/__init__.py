@@ -12,7 +12,13 @@ from atlas_ros.models import (
     PlanningModelRegistry,
     load_default_registries,
 )
-from atlas_ros.planning import ExecutionPlanner
+from atlas_ros.planning import (
+    DuplicateAnalyzer,
+    ExecutionCandidateExtractor,
+    ExecutionPlanner,
+    ExistingRepresentationMatcher,
+    ProgressiveHorizonPolicy,
+)
 from atlas_ros.services import ExecutionReconciliationService, RecordRoutingService
 from atlas_ros.workflows.w01_capture import CaptureService
 from atlas_ros.workflows.w03_todoist import TodoistService
@@ -23,6 +29,10 @@ __all__ = [
     "ClassificationExplainability",
     "DecompositionService",
     "ExecutionPlanner",
+    "ExecutionCandidateExtractor",
+    "DuplicateAnalyzer",
+    "ExistingRepresentationMatcher",
+    "ProgressiveHorizonPolicy",
     "ExecutionReconciliationService",
     "KnowledgeCompositionEngine",
     "KnowledgeDependencyResolver",
