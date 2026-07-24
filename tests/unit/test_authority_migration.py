@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Literal
 
 import pytest
@@ -100,7 +100,7 @@ def test_inventory_summary_and_duplicate_ids_are_governed() -> None:
 
     with pytest.raises(ValidationError, match="duplicate item ids"):
         DriveInventory(
-            generated_at=datetime.now(timezone.utc).isoformat(),
+            generated_at=datetime.now(UTC).isoformat(),
             source_folder_id="root",
             items=[inventory.items[0], inventory.items[0]],
             summary={"bootstrap": 2},
@@ -127,7 +127,7 @@ def test_registry_rejects_duplicate_record_ids() -> None:
     )
     with pytest.raises(ValidationError, match="duplicate record ids"):
         ImplementationRegistry(
-            generated_at=datetime.now(timezone.utc).isoformat(),
+            generated_at=datetime.now(UTC).isoformat(),
             candidate_version="5.2.0.dev0",
             source_head="working-tree",
             records=[record, record],
