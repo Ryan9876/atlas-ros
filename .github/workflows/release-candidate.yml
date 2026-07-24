@@ -5,7 +5,7 @@ on:
     branches:
       - release/v5.3-candidate
   pull_request:
-    branches: [release/v5.3-candidate]
+    branches: [main]
   workflow_dispatch:
 
 permissions:
