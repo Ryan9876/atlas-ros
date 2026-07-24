@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from atlas_ros.adapters.llm import LLMAdapter
 from atlas_ros.domain.models import Action, Capture, ReadinessReport, RoutingRecommendation
 from atlas_ros.runtime.database import RuntimeDatabase
 from atlas_ros.workflows.w01_capture import CaptureService
@@ -35,11 +36,11 @@ class W01CaptureFacade:
 class W02RoutingFacade:
     """Compatibility facade preserving the current W02 routing contract."""
 
-    def __init__(self) -> None:
-        self._service = RoutingService()
+    def __init__(self, adapter: LLMAdapter) -> None:
+        self._service = RoutingService(adapter)
 
-    def route(self, capture: Capture) -> RoutingRecommendation:
-        return self._service.route(capture)
+    def plan(self, capture: Capture) -> RoutingRecommendation:
+        return self._service.plan(capture)
 
 
 class W03ADecompositionFacade:
