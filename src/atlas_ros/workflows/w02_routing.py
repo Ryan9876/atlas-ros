@@ -1,33 +1,20 @@
 from __future__ import annotations
 
 from atlas_ros.adapters.llm import LLMAdapter
-from atlas_ros.config.loader import load_config
-from atlas_ros.domain.models import Capture, Classification, RoutingRecommendation
+from atlas_ros.domain.models import Capture, RoutingRecommendation
+from atlas_ros.engines.management_reasoning import ManagementReasoningEngine
+from atlas_ros.services.record_routing import RecordRoutingService
 
 
 class RoutingService:
+    """Legacy W02 facade over separated reasoning and routing capabilities."""
+
     def __init__(self, adapter: LLMAdapter) -> None:
         self.adapter = adapter
+        self.reasoning_engine = ManagementReasoningEngine(adapter)
+        self.routing_service = RecordRoutingService()
 
     def plan(self, capture: Capture) -> RoutingRecommendation:
         recommendation = self.adapter.recommend_route(capture)
-        config = load_config("classifications")
-        allowed = set(config["allowed"])
-        if recommendation.classification.value not in allowed:
-            raise ValueError("AI proposed prohibited classification")
-        expected = config["destinations"][recommendation.classification.value]
-        if recommendation.destination != expected:
-            raise ValueError("AI proposed invalid destination")
-        if (
-            recommendation.clarification_required
-            or recommendation.confidence < config["confidence_threshold"]
-            or recommendation.ambiguities
-        ):
-            return recommendation.model_copy(
-                update={
-                    "classification": Classification.NEEDS_CLARIFICATION,
-                    "destination": "universal_inbox",
-                    "clarification_required": True,
-                }
-            )
-        return recommendation
+        reasoning = self.reasoning_engine.from_recommendation(capture, recommendation)
+        return self.routing_service.apply(recommendation, reasoning)
