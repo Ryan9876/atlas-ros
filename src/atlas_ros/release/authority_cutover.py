@@ -164,12 +164,14 @@ def reconcile_development_records(
         if github[record_id].digest != notion[record_id].digest
     )
     matched = tuple(record_id for record_id in shared if record_id not in drifted)
+    github_only = tuple(sorted(github.keys() - notion.keys()))
+    notion_only = tuple(sorted(notion.keys() - github.keys()))
     record_digests = {record_id: github[record_id].digest for record_id in sorted(github)}
-    canonical = {
+    canonical: dict[str, object] = {
         "source_head": source_head,
         "matched": matched,
-        "github_only": tuple(sorted(github.keys() - notion.keys())),
-        "notion_only": tuple(sorted(notion.keys() - github.keys())),
+        "github_only": github_only,
+        "notion_only": notion_only,
         "drifted": drifted,
         "record_digests": record_digests,
     }
@@ -178,8 +180,13 @@ def reconcile_development_records(
     ).hexdigest()
     return DevelopmentRecordReconciliation(
         generated_at=datetime.now(UTC).isoformat(),
+        source_head=source_head,
+        matched=matched,
+        github_only=github_only,
+        notion_only=notion_only,
+        drifted=drifted,
+        record_digests=record_digests,
         report_sha256=report_sha256,
-        **canonical,
     )
 
 
