@@ -121,6 +121,12 @@ jobs:
         run: |
           set -euo pipefail
           mapfile -d '' assets < <(find verified-candidate/publication -type f -print0 | sort -z)
+          duplicate_basenames="$(printf '%s\n' "${assets[@]##*/}" | sort | uniq -d)"
+          if [[ -n "${duplicate_basenames}" ]]; then
+            echo "release assets contain duplicate basenames that GitHub would flatten:" >&2
+            echo "${duplicate_basenames}" >&2
+            exit 1
+          fi
           gh release upload "${TAG}" --repo "${GITHUB_REPOSITORY}" --clobber "${PACKAGE}" "${PACKAGE}.sha256" "${assets[@]}"
 
       - name: Download and verify published assets
@@ -136,6 +142,16 @@ jobs:
           test "$(sha256sum "${downloaded_package}" | awk '{print $1}')" = "${PACKAGE_SHA256}"
           (cd release-readback && sha256sum -c "$(basename "${downloaded_package}").sha256")
           test -f release-readback/CHECKSUMS.sha256
+          while read -r _ expected_path; do
+            expected_path="${expected_path#\*}"
+            expected_path="${expected_path#./}"
+            if [[ "${expected_path}" == */* && ! -f "release-readback/${expected_path}" ]]; then
+              flattened_path="release-readback/$(basename "${expected_path}")"
+              test -f "${flattened_path}"
+              mkdir -p "release-readback/$(dirname "${expected_path}")"
+              mv "${flattened_path}" "release-readback/${expected_path}"
+            fi
+          done < release-readback/CHECKSUMS.sha256
           (cd release-readback && sha256sum -c CHECKSUMS.sha256)
 
       - name: Prove restoration without Drive
