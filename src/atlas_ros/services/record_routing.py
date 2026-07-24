@@ -1,10 +1,14 @@
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
+from typing import Any
 
 from atlas_ros.config.loader import load_config
 from atlas_ros.contracts import ReasoningPackage
 from atlas_ros.domain.models import Classification, RoutingRecommendation
+
+ConfigLoader = Callable[[str], dict[str, Any]]
 
 
 @dataclass(frozen=True)
@@ -18,8 +22,11 @@ class RoutingDecision:
 class RecordRoutingService:
     """Applies deterministic record-placement policy to reasoning output."""
 
+    def __init__(self, config_loader: ConfigLoader = load_config) -> None:
+        self._config_loader = config_loader
+
     def decide(self, reasoning: ReasoningPackage) -> RoutingDecision:
-        config = load_config("classifications")
+        config = self._config_loader("classifications")
         allowed = set(config["allowed"])
         if reasoning.classification not in allowed:
             raise ValueError("reasoning proposed prohibited classification")
