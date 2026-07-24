@@ -14,9 +14,9 @@ from atlas_ros.intelligence.calibration import IntelligenceCalibrationEngine, lo
 from atlas_ros.intelligence.evaluator import IntelligenceEvaluationRunner
 
 SHA_PATTERN = re.compile(r"^[0-9a-f]{40}$")
-RELEASE_NAME = "Atlas ROS v5.1.1"
-EVIDENCE_PREFIX = "V510"
-BASE_AUTHORITY = "Atlas ROS v5.1"
+RELEASE_NAME = "Atlas ROS v5.2.0"
+EVIDENCE_PREFIX = "V520"
+BASE_AUTHORITY = "Atlas ROS v5.1.1"
 
 
 def sha256(path: Path) -> str:
@@ -54,8 +54,8 @@ def build_evidence(
 
     output_dir.mkdir(parents=True, exist_ok=True)
     version = _project_version(project_root)
-    if not version.startswith("5.1."):
-        raise ValueError(f"expected an Atlas ROS v5.1 package version, got {version}")
+    if not version.startswith("5.2."):
+        raise ValueError(f"expected an Atlas ROS v5.2 package version, got {version}")
 
     test_count = _test_count(junit_path)
     coverage = json.loads(coverage_path.read_text(encoding="utf-8"))
@@ -199,7 +199,7 @@ This report cannot authorize promotion.
 
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description="Build commit-bound Atlas ROS v5.1.1 candidate evidence"
+        description="Build commit-bound Atlas ROS v5.2.0 candidate evidence"
     )
     parser.add_argument("--project-root", type=Path, default=Path.cwd())
     parser.add_argument("--output-dir", type=Path, required=True)

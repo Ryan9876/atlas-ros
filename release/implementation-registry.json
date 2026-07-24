@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-07-24T14:55:00Z",
+  "candidate_version": "5.2.0rc1",
+  "source_head": "58a0d4d225fa9c44d4616a45bce7c89d2596da82",
+  "records": [
+    {
+      "record_id": "IDEA-8",
+      "title": "Release-Gated Development Record Reconciliation",
+      "disposition": "fully_implemented",
+      "implemented_scope": "Bidirectional GitHub/Notion development-record snapshots, deterministic record digests, drift detection, checksum-covered reconciliation reports, release-gated validation, and readback contracts.",
+      "remaining_scope": "",
+      "evidence": ["PR #10", "src/atlas_ros/release/authority_cutover.py", "tests/unit/test_authority_cutover.py"]
+    },
+    {
+      "record_id": "IDEA-11",
+      "title": "GitHub-First Authority Migration and Drive Dependency Reduction",
+      "disposition": "partially_implemented",
+      "implemented_scope": "Recursive Drive inventory and parent-closure contracts, checksum-bound GitHub representation requirements, fixed bootstrap and Drive allowlist enforcement, draft GitHub Release asset publication, release download/readback verification, and restoration proof without Drive.",
+      "remaining_scope": "Populate the complete recursive representation ledger from retained historical Drive assets and verify the staged draft release before the separately authorized authority promotion and post-promotion readback.",
+      "evidence": ["PR #10", "src/atlas_ros/release/authority_cutover.py", ".github/workflows/github-release-staging.yml", "tests/unit/test_authority_cutover.py"]
+    },
+    {
+      "record_id": "IDEA-10",
+      "title": "Capability-Based ROS Architecture Migration and W-Convention Retirement",
+      "disposition": "in_progress",
+      "implemented_scope": "Phases 1 through 7 development cutover: canonical semantic contracts and capabilities, compatibility facades, separated reasoning/routing/knowledge/management/planning/orchestration/provider/reconciliation responsibilities, semantic capability export surface, W-import architecture gate, archival mapping, and rollback-preserving aliases.",
+      "remaining_scope": "Responsibility-first reasoning expansion, stable compatibility release promotion, and separately authorized removal of W-number aliases.",
+      "evidence": ["PR #10", "src/atlas_ros/capabilities/__init__.py", "docs/migration/W_WORKFLOW_ARCHIVAL_MAPPING.md", "tests/test_phase7_semantic_cutover.py"]
+    },
+    {
+      "record_id": "IDEA-9",
+      "title": "Task Economy and Execution Projection Guardrails",
+      "disposition": "fully_implemented",
+      "implemented_scope": "Provider-independent Execution Planner, projection guardrails, explainability, duplicate suppression, progressive execution horizon, and review gates.",
+      "remaining_scope": "",
+      "evidence": ["PR #10", "src/atlas_ros/planning/execution.py", "tests/test_execution_planner.py"]
+    },
+    {
+      "record_id": "IDEA-5",
+      "title": "Enforce Todoist Done When bullet formatting at the write boundary",
+      "disposition": "unaffected",
+      "implemented_scope": "Delivered in Atlas ROS v5.1 and preserved through the provider adapter boundary.",
+      "remaining_scope": "",
+      "evidence": []
+    },
+    {
+      "record_id": "IDEA-6",
+      "title": "W03 Todoist Section Routing by Management Domain",
+      "disposition": "unaffected",
+      "implemented_scope": "Delivered in Atlas ROS v5.1 and preserved through W03 compatibility delegation.",
+      "remaining_scope": "",
+      "evidence": []
+    },
+    {
+      "record_id": "IDEA-7",
+      "title": "Preserve Todoist parent-subtask hierarchy during section moves",
+      "disposition": "unaffected",
+      "implemented_scope": "Delivered in Atlas ROS v5.1 and preserved by provider-adapter move-group readback validation.",
+      "remaining_scope": "",
+      "evidence": []
+    }
+  ]
+}
