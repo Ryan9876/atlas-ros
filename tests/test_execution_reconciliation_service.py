@@ -22,7 +22,6 @@ class MemoryStateStore:
         self.value = value
 
 
-
 def service_with_state() -> tuple[ExecutionReconciliationService, MemoryStateStore]:
     service = object.__new__(ExecutionReconciliationService)
     state = MemoryStateStore()
@@ -41,12 +40,12 @@ def empty_plan(*, conflicts: tuple[str, ...] = ()) -> ReconciliationPlan:
 def test_conflicts_restore_checkpoint() -> None:
     service, state = service_with_state()
     original = state.checkpoint()
-    state.set_checkpoint(datetime(2026, 7, 24, tzinfo=UTC))
-    with patch.object(
-        TodoistReconciliationService,
-        "apply",
-        return_value=ReconciliationResult(1, 0, 1, 0, 0),
-    ):
+
+    def legacy_apply(*args: object, **kwargs: object) -> ReconciliationResult:
+        state.set_checkpoint(datetime(2026, 7, 24, tzinfo=UTC))
+        return ReconciliationResult(1, 0, 1, 0, 0)
+
+    with patch.object(TodoistReconciliationService, "apply", side_effect=legacy_apply):
         result = service.apply(empty_plan(conflicts=("conflict",)), confirmed=True)
     assert result.conflicts == 1
     assert state.checkpoint() == original
