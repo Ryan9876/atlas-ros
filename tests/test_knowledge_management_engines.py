@@ -37,8 +37,12 @@ def test_team_operating_model_fixture_composes_without_execution() -> None:
         (
             PlanningModel(
                 model_id="team-operating-model",
-                responsibility_template="Lead the {cadence} operating review for the {audience}",
-                outcome_template="The team aligns on {priority} priorities and accountable next actions",
+                responsibility_template=(
+                    "Lead the {cadence} operating review for the {audience}"
+                ),
+                outcome_template=(
+                    "The team aligns on {priority} priorities and accountable next actions"
+                ),
                 default_owner="Ryan",
                 default_workstream="Leadership & Team",
             ),
