@@ -158,7 +158,11 @@ def reconcile_development_records(
     github = {record.record_id: record for record in github_records}
     notion = {record.record_id: record for record in notion_records}
     shared = sorted(github.keys() & notion.keys())
-    drifted = tuple(record_id for record_id in shared if github[record_id].digest != notion[record_id].digest)
+    drifted = tuple(
+        record_id
+        for record_id in shared
+        if github[record_id].digest != notion[record_id].digest
+    )
     matched = tuple(record_id for record_id in shared if record_id not in drifted)
     record_digests = {record_id: github[record_id].digest for record_id in sorted(github)}
     canonical = {
