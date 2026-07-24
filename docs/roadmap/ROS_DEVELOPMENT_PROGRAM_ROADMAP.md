@@ -6,6 +6,12 @@ Status: Approved development roadmap. Production promotion remains Ryan-only.
 
 This roadmap reconciles every current Atlas Development Idea and Atlas Development Initiative into the governed implementation sequence. It is the planning authority for development scope, sequencing, dependencies, regression preservation, and release traceability. It does not itself activate production changes.
 
+## Final roadmap release designation
+
+Completion of all approved roadmap waves is formally designated **Atlas ROS v6.0.0**.
+
+Atlas ROS v5.2.0 remains the current Active production authority. Intermediate compatibility or incremental releases may be issued when required for phased delivery, validation, rollback safety, or migration control. This designation does not itself promote or activate v6.0.0; production promotion remains Ryan-only and requires the complete governed release process.
+
 ## Governing principles
 
 - GitHub becomes the canonical software, documentation, release, validation, restoration, and recovery authority before modular architecture implementation begins.
@@ -148,7 +154,7 @@ Deliverables:
 - Semantic workflows become canonical.
 - W-number interfaces retire only after at least one stable compatibility release and verified rollback.
 
-Exit condition: GitHub, Notion, release evidence, implementation registry, and production state agree.
+Exit condition: GitHub, Notion, release evidence, implementation registry, and production state agree, and the completed roadmap is eligible for governed promotion as **Atlas ROS v6.0.0**.
 
 ## Mandatory regression baseline
 
