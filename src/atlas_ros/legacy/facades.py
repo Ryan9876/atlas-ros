@@ -1,12 +1,16 @@
 from __future__ import annotations
 
+from typing import Any
+
 from atlas_ros.adapters.llm import LLMAdapter
 from atlas_ros.domain.models import Action, Capture, ReadinessReport, RoutingRecommendation
 from atlas_ros.runtime.database import RuntimeDatabase
+from atlas_ros.services.execution_reconciliation import ExecutionReconciliationService
 from atlas_ros.workflows.w01_capture import CaptureService
 from atlas_ros.workflows.w02_routing import RoutingService
 from atlas_ros.workflows.w03_todoist import TodoistPlan, TodoistService
 from atlas_ros.workflows.w03a_decomposition import DecompositionService
+from atlas_ros.workflows.w04_reconciliation import ReconciliationPlan, ReconciliationResult
 
 
 class W01CaptureFacade:
@@ -61,3 +65,21 @@ class W03TodoistFacade:
 
     def plan(self, action: Action) -> TodoistPlan:
         return self._service.plan(action)
+
+
+class W04ReconciliationFacade:
+    """Compatibility facade delegating W04 to the semantic reconciliation service."""
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        self._service = ExecutionReconciliationService(*args, **kwargs)
+
+    def plan(self, *, full: bool = False, task_id: str = "") -> ReconciliationPlan:
+        return self._service.plan(full=full, task_id=task_id)
+
+    def apply(
+        self,
+        plan: ReconciliationPlan,
+        *,
+        confirmed: bool = False,
+    ) -> ReconciliationResult:
+        return self._service.apply(plan, confirmed=confirmed)
