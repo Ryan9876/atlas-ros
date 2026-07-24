@@ -1,22 +1,14 @@
 from __future__ import annotations
 
-from atlas_ros.adapters.llm import LLMAdapter
 from atlas_ros.contracts import CaptureEnvelope, ReasoningPackage
 from atlas_ros.domain.models import Capture, RoutingRecommendation
 
 
 class ManagementReasoningEngine:
-    """Produces provider-independent reasoning without deciding record placement policy."""
+    """Produces provider-independent reasoning without connector or adapter access."""
 
-    def __init__(self, adapter: LLMAdapter) -> None:
-        self._adapter = adapter
-
-    def reason(self, capture: Capture) -> ReasoningPackage:
-        recommendation = self._adapter.recommend_route(capture)
-        return self.from_recommendation(capture, recommendation)
-
-    @staticmethod
-    def from_recommendation(
+    def reason(
+        self,
         capture: Capture,
         recommendation: RoutingRecommendation,
     ) -> ReasoningPackage:
