@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-07-24T14:55:00Z",
+  "generated_at": "2026-07-24T15:05:00Z",
   "candidate_version": "5.2.0rc1",
-  "source_head": "58a0d4d225fa9c44d4616a45bce7c89d2596da82",
+  "source_head": "4960f8c4c0d08e0bce408408bc6cb797cc150b92",
   "records": [
     {
       "record_id": "IDEA-8",
