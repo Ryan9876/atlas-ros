@@ -26,6 +26,8 @@ jobs:
           path: ruff-output.txt
           if-no-files-found: error
           retention-days: 7
+      - name: Validate architecture boundaries
+        run: python scripts/validate_architecture.py
       - run: mypy src
       - run: pytest
       - run: python -m build
