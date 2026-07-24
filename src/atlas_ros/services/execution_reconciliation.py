@@ -2,12 +2,13 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from atlas_ros.contracts import ReconciliationResult as CanonicalReconciliationResult
-from atlas_ros.workflows.w04_reconciliation import (
-    ReconciliationPlan,
-    ReconciliationResult as LegacyReconciliationResult,
-    TodoistReconciliationService,
-)
+from atlas_ros import contracts
+from atlas_ros.workflows import w04_reconciliation
+
+ReconciliationPlan = w04_reconciliation.ReconciliationPlan
+LegacyReconciliationResult = w04_reconciliation.ReconciliationResult
+TodoistReconciliationService = w04_reconciliation.TodoistReconciliationService
+CanonicalReconciliationResult = contracts.ReconciliationResult
 
 
 @dataclass(frozen=True)
