@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import re
 from collections import Counter
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import StrEnum
 from pathlib import Path
 from typing import Literal
@@ -107,12 +107,14 @@ class ImplementationRecord(BaseModel):
             ImplementationDisposition.IN_PROGRESS,
         } and not self.evidence:
             raise ValueError(f"{self.record_id} requires implementation evidence")
-        if self.disposition == ImplementationDisposition.PARTIALLY_IMPLEMENTED:
-            if not self.implemented_scope or not self.remaining_scope:
-                raise ValueError(
-                    f"{self.record_id} partial implementation requires "
-                    "implemented and remaining scope"
-                )
+        if (
+            self.disposition == ImplementationDisposition.PARTIALLY_IMPLEMENTED
+            and (not self.implemented_scope or not self.remaining_scope)
+        ):
+            raise ValueError(
+                f"{self.record_id} partial implementation requires "
+                "implemented and remaining scope"
+            )
         if self.disposition == ImplementationDisposition.FULLY_IMPLEMENTED and self.remaining_scope:
             raise ValueError(f"{self.record_id} is fully implemented but has remaining scope")
         return self
@@ -251,7 +253,7 @@ def build_drive_inventory(
     ]
     summary = dict(Counter(item.drive_retention.value for item in classified))
     return DriveInventory(
-        generated_at=datetime.now(timezone.utc).isoformat(),
+        generated_at=datetime.now(UTC).isoformat(),
         source_folder_id=source_folder_id,
         items=classified,
         summary=summary,
