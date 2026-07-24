@@ -1,0 +1,137 @@
+name: v530-stage-once
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  actions: read
+  contents: write
+  issues: write
+  pull-requests: write
+
+concurrency:
+  group: v530-stage-once
+  cancel-in-progress: false
+
+jobs:
+  stage:
+    if: contains(github.event.head_commit.message, '[execute-v530-stage]')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      ARTIFACT_ID: '8605295031'
+      CANDIDATE_RUN_ID: '30115235749'
+      TARGET_COMMITISH: '6380c79974bcd499a5694982210f86431e85dec4'
+      EXPECTED_PACKAGE_SHA256: '3fe3dafe2723b5be881830fbd7ef4c74ebe0dad5ae7e1c1ed5a6a60ccabdcb53'
+      TAG: 'v5.3.0-rc.1'
+      RELEASE_NAME: 'Atlas ROS v5.3.0 Classification Intelligence Release Candidate 1'
+    steps:
+      - name: Record staging start
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh pr comment 13 --repo "${GITHUB_REPOSITORY}" --body "v5.3.0rc1 staging started. Staging run: \`${GITHUB_RUN_ID}\`. Artifact ID: \`${ARTIFACT_ID}\`. Candidate run: \`${CANDIDATE_RUN_ID}\`. Target: \`${TARGET_COMMITISH}\`."
+
+      - name: Check out candidate source
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          ref: ${{ env.TARGET_COMMITISH }}
+          persist-credentials: false
+
+      - name: Download exact validated artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          curl --fail --location --silent --show-error \
+            --header "Authorization: Bearer ${GH_TOKEN}" \
+            --header "Accept: application/vnd.github+json" \
+            --header "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/artifacts/${ARTIFACT_ID}/zip" \
+            --output candidate-artifact.zip
+          mkdir candidate
+          unzip -q candidate-artifact.zip -d candidate
+
+      - name: Verify candidate and publication checksums
+        run: |
+          set -euo pipefail
+          package="$(find candidate -maxdepth 3 -type f -name 'Atlas_ROS_v5.3.0rc1_release_candidate.zip' -print -quit)"
+          test -n "${package}"
+          test -f "${package}.sha256"
+          (cd "$(dirname "${package}")" && sha256sum -c "$(basename "${package}").sha256")
+          actual_sha256="$(sha256sum "${package}" | awk '{print $1}')"
+          test "${actual_sha256}" = "${EXPECTED_PACKAGE_SHA256}"
+          mkdir verified-candidate
+          unzip -q "${package}" -d verified-candidate
+          (cd verified-candidate/publication && sha256sum -c CHECKSUMS.sha256)
+          printf 'PACKAGE=%s\n' "${package}" >> "${GITHUB_ENV}"
+          printf 'PACKAGE_SHA256=%s\n' "${actual_sha256}" >> "${GITHUB_ENV}"
+
+      - name: Create or update draft GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          notes_file="verified-candidate/publication/RELEASE_MANIFEST.md"
+          if gh release view "${TAG}" --repo "${GITHUB_REPOSITORY}" >/dev/null 2>&1; then
+            gh release edit "${TAG}" --repo "${GITHUB_REPOSITORY}" --draft --title "${RELEASE_NAME}" --target "${TARGET_COMMITISH}" --notes-file "${notes_file}"
+          else
+            gh release create "${TAG}" --repo "${GITHUB_REPOSITORY}" --draft --title "${RELEASE_NAME}" --target "${TARGET_COMMITISH}" --notes-file "${notes_file}"
+          fi
+
+      - name: Upload checksum-bound assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mapfile -d '' assets < <(find verified-candidate/publication -type f -print0 | sort -z)
+          gh release upload "${TAG}" --repo "${GITHUB_REPOSITORY}" --clobber "${PACKAGE}" "${PACKAGE}.sha256" "${assets[@]}"
+
+      - name: Download and verify authoritative published package
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir release-readback
+          gh release download "${TAG}" --repo "${GITHUB_REPOSITORY}" \
+            --pattern 'Atlas_ROS_v5.3.0rc1_release_candidate.zip' \
+            --pattern 'Atlas_ROS_v5.3.0rc1_release_candidate.zip.sha256' \
+            --dir release-readback
+          downloaded_package="release-readback/Atlas_ROS_v5.3.0rc1_release_candidate.zip"
+          test -f "${downloaded_package}"
+          test -f "${downloaded_package}.sha256"
+          test "$(sha256sum "${downloaded_package}" | awk '{print $1}')" = "${PACKAGE_SHA256}"
+          (cd release-readback && sha256sum -c Atlas_ROS_v5.3.0rc1_release_candidate.zip.sha256)
+          mkdir published-candidate
+          unzip -q "${downloaded_package}" -d published-candidate
+          (cd published-candidate/publication && sha256sum -c CHECKSUMS.sha256)
+
+      - name: Prove Drive-independent restoration
+        run: |
+          set -euo pipefail
+          source_archive="published-candidate/publication/atlas_ros-5.3.0rc1.tar.gz"
+          test -f "${source_archive}"
+          python -m venv restored-venv
+          restored-venv/bin/pip install --disable-pip-version-check "${source_archive}"
+          restored-venv/bin/python -c "import atlas_ros; from atlas_ros.capabilities import ExecutionPlanner, ManagementReasoningEngine, ResponsibilityClassifier"
+          restored-venv/bin/python -c "from atlas_ros.config.loader import load_config; assert load_config('classification-intelligence')['version'] == 1"
+
+      - name: Verify draft metadata
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view "${TAG}" --repo "${GITHUB_REPOSITORY}" --json isDraft,tagName,targetCommitish --jq 'select(.isDraft == true and .tagName == env.TAG and .targetCommitish == env.TARGET_COMMITISH)'
+
+      - name: Record staging success
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh pr comment 13 --repo "${GITHUB_REPOSITORY}" --body "Draft GitHub Release staging passed for \`${TAG}\`. Staging run: \`${GITHUB_RUN_ID}\`. Artifact ID: \`${ARTIFACT_ID}\`. Candidate run: \`${CANDIDATE_RUN_ID}\`. Target: \`${TARGET_COMMITISH}\`. Package SHA-256: \`${PACKAGE_SHA256}\`. The authoritative package was uploaded, downloaded, checksum-verified with its internal publication set, and restored without Google Drive, including Classification Intelligence imports and configuration. Production promotion remains unauthorized."
+
+      - name: Record staging failure
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh pr comment 13 --repo "${GITHUB_REPOSITORY}" --body "v5.3.0rc1 staging failed. Staging run: \`${GITHUB_RUN_ID}\`. Artifact ID: \`${ARTIFACT_ID}\`. Candidate run: \`${CANDIDATE_RUN_ID}\`. Target: \`${TARGET_COMMITISH}\`. Production promotion remains blocked."
