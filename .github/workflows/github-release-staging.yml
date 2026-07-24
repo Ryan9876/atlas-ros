@@ -1,6 +1,9 @@
 name: github-release-staging
 
 on:
+  workflow_run:
+    workflows: [release-candidate]
+    types: [completed]
   workflow_dispatch:
     inputs:
       candidate_run_id:
@@ -33,34 +36,42 @@ permissions:
   contents: write
 
 concurrency:
-  group: github-release-staging-${{ inputs.tag }}
+  group: github-release-staging-v5.2.0-rc.1
   cancel-in-progress: false
 
 jobs:
   stage-draft-release:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.head_branch == 'release/v5.1-candidate')
     runs-on: ubuntu-24.04
     timeout-minutes: 20
+
+    env:
+      RUN_ID: ${{ github.event.workflow_run.id || inputs.candidate_run_id }}
+      ARTIFACT_NAME: ${{ inputs.artifact_name || 'atlas-ros-v5.2.0rc1-release-candidate' }}
+      TAG: ${{ inputs.tag || 'v5.2.0-rc.1' }}
+      RELEASE_NAME: ${{ inputs.release_name || 'Atlas ROS v5.2.0 Compatibility Release Candidate 1' }}
+      TARGET_COMMITISH: ${{ github.event.workflow_run.head_sha || inputs.target_commitish }}
+      EXPECTED_PACKAGE_SHA256: ${{ inputs.expected_package_sha256 }}
 
     steps:
       - name: Check out release tooling
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
         with:
-          ref: ${{ inputs.target_commitish }}
+          ref: ${{ env.TARGET_COMMITISH }}
           persist-credentials: false
 
       - name: Download validated candidate artifact
         env:
           GH_TOKEN: ${{ github.token }}
-          RUN_ID: ${{ inputs.candidate_run_id }}
-          ARTIFACT_NAME: ${{ inputs.artifact_name }}
         run: |
           set -euo pipefail
           mkdir -p candidate
           gh run download "${RUN_ID}" --repo "${GITHUB_REPOSITORY}" --name "${ARTIFACT_NAME}" --dir candidate
 
       - name: Verify candidate package and publication checksums
-        env:
-          EXPECTED_PACKAGE_SHA256: ${{ inputs.expected_package_sha256 }}
         run: |
           set -euo pipefail
           package="$(find candidate -maxdepth 3 -type f -name 'Atlas_ROS_v*_release_candidate.zip' -print -quit)"
@@ -83,9 +94,6 @@ jobs:
       - name: Create or update draft GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG: ${{ inputs.tag }}
-          RELEASE_NAME: ${{ inputs.release_name }}
-          TARGET_COMMITISH: ${{ inputs.target_commitish }}
         run: |
           set -euo pipefail
           notes_file="verified-candidate/publication/RELEASE_MANIFEST.md"
@@ -98,7 +106,6 @@ jobs:
       - name: Upload checksum-bound draft release assets
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG: ${{ inputs.tag }}
         run: |
           set -euo pipefail
           mapfile -d '' assets < <(find verified-candidate/publication -type f -print0 | sort -z)
@@ -107,7 +114,6 @@ jobs:
       - name: Download and verify published assets
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG: ${{ inputs.tag }}
         run: |
           set -euo pipefail
           rm -rf release-readback
@@ -135,8 +141,6 @@ jobs:
       - name: Verify draft release metadata
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG: ${{ inputs.tag }}
-          TARGET_COMMITISH: ${{ inputs.target_commitish }}
         run: |
           set -euo pipefail
           gh release view "${TAG}" --repo "${GITHUB_REPOSITORY}" --json isDraft,tagName,targetCommitish --jq 'select(.isDraft == true and .tagName == env.TAG and .targetCommitish == env.TARGET_COMMITISH)'
