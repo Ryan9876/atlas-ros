@@ -83,6 +83,20 @@ jobs:
           pip-audit --disable-pip --require-hashes --no-deps --vulnerability-service osv --requirement requirements.runtime.lock --format json --output audit/pip-audit-osv.json
           python scripts/evaluate_dependency_audit.py audit/pip-audit-pypi.json audit/pip-audit-osv.json
 
+      - name: Validate authority-migration records
+        run: |
+          set -euo pipefail
+          mkdir -p authority-migration-evidence
+          atlas release classify-drive-inventory \
+            release/authority-migration/drive-root-items.json \
+            authority-migration-evidence/drive-root-inventory.json \
+            --source-folder-id 1TG_2OP6iZpCmih734SumSsi62gOQ1zH4 \
+            --bootstrap-file-id 1F8fXT9oLtXnorbyL--5Vw0Ajo6MyW0Xk
+          atlas release validate-drive-inventory \
+            authority-migration-evidence/drive-root-inventory.json
+          atlas release validate-implementation-registry \
+            release/implementation-registry.json
+
       - name: Generate canonical source manifest
         run: |
           set -euo pipefail
@@ -169,6 +183,11 @@ jobs:
           cp release/CHECKSUMS.sha256 publication/SOURCE_CHECKSUMS.sha256
           cp requirements.runtime.lock publication/
           cp security/vulnerability-exceptions.yml publication/
+          mkdir -p publication/authority-migration
+          cp release/implementation-registry.json publication/authority-migration/
+          cp authority-migration-evidence/drive-root-inventory.json publication/authority-migration/
+          cp schemas/release/implementation-registry.schema.json publication/authority-migration/
+          cp schemas/release/drive-authority-inventory.schema.json publication/authority-migration/
           cp audit/pip-audit-pypi.json publication/audit/
           cp audit/pip-audit-osv.json publication/audit/
           (
