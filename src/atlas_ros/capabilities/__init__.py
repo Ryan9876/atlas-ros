@@ -1,9 +1,9 @@
 from atlas_ros.engines import (
     ClassificationExplainability,
     KnowledgeCompositionEngine,
-    ManagerIntentInferer,
     ManagementReasoningEngine,
     ManagementStructureEngine,
+    ManagerIntentInferer,
     ResponsibilityClassifier,
 )
 from atlas_ros.planning import ExecutionPlanner
