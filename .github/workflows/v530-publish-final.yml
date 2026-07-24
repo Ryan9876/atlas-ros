@@ -1,0 +1,134 @@
+name: v530-publish-final
+
+on:
+  push:
+    branches: [staging/v530-merge-ready]
+
+permissions:
+  actions: read
+  contents: write
+  issues: write
+  pull-requests: write
+
+concurrency:
+  group: v530-publish-final
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: contains(github.event.head_commit.message, '[publish-v5.3.0]')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      ARTIFACT_ID: '8605808728'
+      CANDIDATE_RUN_ID: '30116944152'
+      CANDIDATE_HEAD: '2ae2a63a7bc17db57dffa6058e430c33502bf8e6'
+      PRODUCTION_SOURCE: '718de0decd2a994bf917db2282188bc26be6c9b2'
+      EXPECTED_PACKAGE_SHA256: 'fb3b62fdc5047ea6a615966556a5889f43865016254edcc177b858d86f551f30'
+      FINAL_TAG: 'v5.3.0'
+      FINAL_NAME: 'Atlas ROS v5.3.0 — Classification Intelligence'
+    steps:
+      - name: Record publication start
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh pr comment 13 --repo "${GITHUB_REPOSITORY}" --body "Atlas ROS v5.3.0 final publication started. Run: \`${GITHUB_RUN_ID}\`. Production source: \`${PRODUCTION_SOURCE}\`. Candidate artifact: \`${ARTIFACT_ID}\`."
+
+      - name: Check out final production source
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          ref: ${{ env.PRODUCTION_SOURCE }}
+          persist-credentials: false
+
+      - name: Verify final source identity
+        run: |
+          set -euo pipefail
+          grep -F 'version = "5.3.0"' pyproject.toml
+          grep -F '# Atlas ROS v5.3.0 Release Manifest' release/RELEASE_MANIFEST.md
+          grep -F "${CANDIDATE_HEAD}" release/RELEASE_MANIFEST.md
+
+      - name: Download exact validated candidate artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          curl --fail --location --silent --show-error \
+            --header "Authorization: Bearer ${GH_TOKEN}" \
+            --header "Accept: application/vnd.github+json" \
+            --header "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/artifacts/${ARTIFACT_ID}/zip" \
+            --output candidate-artifact.zip
+          mkdir candidate
+          unzip -q candidate-artifact.zip -d candidate
+
+      - name: Verify exact candidate package
+        run: |
+          set -euo pipefail
+          package="$(find candidate -maxdepth 3 -type f -name 'Atlas_ROS_v5.3.0rc1_release_candidate.zip' -print -quit)"
+          test -n "${package}"
+          test -f "${package}.sha256"
+          (cd "$(dirname "${package}")" && sha256sum -c "$(basename "${package}").sha256")
+          actual_sha256="$(sha256sum "${package}" | awk '{print $1}')"
+          test "${actual_sha256}" = "${EXPECTED_PACKAGE_SHA256}"
+          mkdir verified-candidate
+          unzip -q "${package}" -d verified-candidate
+          (cd verified-candidate/publication && sha256sum -c CHECKSUMS.sha256)
+          printf 'PACKAGE=%s\n' "${package}" >> "${GITHUB_ENV}"
+          printf 'PACKAGE_SHA256=%s\n' "${actual_sha256}" >> "${GITHUB_ENV}"
+
+      - name: Publish final GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          notes_file="release/RELEASE_MANIFEST.md"
+          if gh release view "${FINAL_TAG}" --repo "${GITHUB_REPOSITORY}" >/dev/null 2>&1; then
+            gh release edit "${FINAL_TAG}" --repo "${GITHUB_REPOSITORY}" --draft=false --title "${FINAL_NAME}" --target "${PRODUCTION_SOURCE}" --notes-file "${notes_file}"
+          else
+            gh release create "${FINAL_TAG}" --repo "${GITHUB_REPOSITORY}" --title "${FINAL_NAME}" --target "${PRODUCTION_SOURCE}" --notes-file "${notes_file}"
+          fi
+          mapfile -d '' assets < <(find verified-candidate/publication -type f -print0 | sort -z)
+          gh release upload "${FINAL_TAG}" --repo "${GITHUB_REPOSITORY}" --clobber "${PACKAGE}" "${PACKAGE}.sha256" "${assets[@]}"
+
+      - name: Verify final release metadata and package readback
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh release view "${FINAL_TAG}" --repo "${GITHUB_REPOSITORY}" --json isDraft,tagName,targetCommitish --jq 'select(.isDraft == false and .tagName == env.FINAL_TAG and .targetCommitish == env.PRODUCTION_SOURCE)'
+          mkdir release-readback
+          gh release download "${FINAL_TAG}" --repo "${GITHUB_REPOSITORY}" \
+            --pattern 'Atlas_ROS_v5.3.0rc1_release_candidate.zip' \
+            --pattern 'Atlas_ROS_v5.3.0rc1_release_candidate.zip.sha256' \
+            --dir release-readback
+          downloaded_package="release-readback/Atlas_ROS_v5.3.0rc1_release_candidate.zip"
+          test -f "${downloaded_package}"
+          test -f "${downloaded_package}.sha256"
+          test "$(sha256sum "${downloaded_package}" | awk '{print $1}')" = "${PACKAGE_SHA256}"
+          (cd release-readback && sha256sum -c Atlas_ROS_v5.3.0rc1_release_candidate.zip.sha256)
+          mkdir published-candidate
+          unzip -q "${downloaded_package}" -d published-candidate
+          (cd published-candidate/publication && sha256sum -c CHECKSUMS.sha256)
+
+      - name: Prove final Drive-independent restoration
+        run: |
+          set -euo pipefail
+          source_archive="published-candidate/publication/atlas_ros-5.3.0rc1.tar.gz"
+          test -f "${source_archive}"
+          python -m venv restored-venv
+          restored-venv/bin/pip install --disable-pip-version-check "${source_archive}"
+          restored-venv/bin/python -c "import atlas_ros; from atlas_ros.capabilities import ExecutionPlanner, ManagementReasoningEngine, ResponsibilityClassifier"
+          restored-venv/bin/python -c "from atlas_ros.config.loader import load_config; assert load_config('classification-intelligence')['version'] == 1"
+
+      - name: Record publication success
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh pr comment 13 --repo "${GITHUB_REPOSITORY}" --body "Atlas ROS v5.3.0 final publication passed. Run: \`${GITHUB_RUN_ID}\`. Final tag: \`${FINAL_TAG}\`. Production source: \`${PRODUCTION_SOURCE}\`. Candidate artifact: \`${ARTIFACT_ID}\`. Package SHA-256: \`${PACKAGE_SHA256}\`. Final assets were published, downloaded, checksum-verified, and restored without Google Drive."
+
+      - name: Record publication failure
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh pr comment 13 --repo "${GITHUB_REPOSITORY}" --body "Atlas ROS v5.3.0 final publication failed. Run: \`${GITHUB_RUN_ID}\`. Production state updates remain blocked pending correction."
