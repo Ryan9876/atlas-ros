@@ -29,14 +29,14 @@ class ContractEnvelope(BaseModel):
 
 
 class CaptureEnvelope(ContractEnvelope):
-    contract_kind: Literal[ContractKind.CAPTURE] = ContractKind.CAPTURE
+    contract_kind: ContractKind = ContractKind.CAPTURE
     content: str = Field(min_length=1, max_length=100_000)
     source: str = Field(default="unknown", min_length=1, max_length=200)
     context: dict[str, Any] = Field(default_factory=dict)
 
 
 class ReasoningPackage(ContractEnvelope):
-    contract_kind: Literal[ContractKind.REASONING] = ContractKind.REASONING
+    contract_kind: ContractKind = ContractKind.REASONING
     classification: str = Field(min_length=1, max_length=100)
     destination: str = Field(min_length=1, max_length=200)
     confidence: float = Field(ge=0, le=1)
@@ -46,14 +46,14 @@ class ReasoningPackage(ContractEnvelope):
 
 
 class KnowledgePackage(ContractEnvelope):
-    contract_kind: Literal[ContractKind.KNOWLEDGE] = ContractKind.KNOWLEDGE
+    contract_kind: ContractKind = ContractKind.KNOWLEDGE
     module_ids: list[str] = Field(default_factory=list)
     facts: dict[str, Any] = Field(default_factory=dict)
     unresolved_questions: list[str] = Field(default_factory=list)
 
 
 class ManagementPackage(ContractEnvelope):
-    contract_kind: Literal[ContractKind.MANAGEMENT] = ContractKind.MANAGEMENT
+    contract_kind: ContractKind = ContractKind.MANAGEMENT
     responsibility: str = Field(min_length=1, max_length=500)
     desired_outcome: str = Field(min_length=1, max_length=10_000)
     owner: str = ""
@@ -72,7 +72,7 @@ class ExecutionStep(BaseModel):
 
 
 class ExecutionPlan(ContractEnvelope):
-    contract_kind: Literal[ContractKind.EXECUTION_PLAN] = ContractKind.EXECUTION_PLAN
+    contract_kind: ContractKind = ContractKind.EXECUTION_PLAN
     action_id: str = Field(min_length=1, max_length=256)
     objective: str = Field(min_length=1, max_length=10_000)
     destination: str = Field(min_length=1, max_length=200)
@@ -88,7 +88,7 @@ class ExecutionPlan(ContractEnvelope):
 
 
 class ExecutionReceipt(ContractEnvelope):
-    contract_kind: Literal[ContractKind.EXECUTION_RECEIPT] = ContractKind.EXECUTION_RECEIPT
+    contract_kind: ContractKind = ContractKind.EXECUTION_RECEIPT
     action_id: str = Field(min_length=1, max_length=256)
     provider: str = Field(min_length=1, max_length=100)
     provider_object_id: str = Field(min_length=1, max_length=500)
@@ -104,7 +104,7 @@ class ExecutionReceipt(ContractEnvelope):
 
 
 class ReconciliationResult(ContractEnvelope):
-    contract_kind: Literal[ContractKind.RECONCILIATION] = ContractKind.RECONCILIATION
+    contract_kind: ContractKind = ContractKind.RECONCILIATION
     object_id: str = Field(min_length=1, max_length=500)
     consistent: bool
     mismatches: list[str] = Field(default_factory=list)
