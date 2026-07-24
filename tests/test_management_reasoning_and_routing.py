@@ -27,8 +27,8 @@ def recommendation(
 
 def test_management_reasoning_is_provider_independent() -> None:
     capture = Capture(content="Prepare the operating review")
-    engine = ManagementReasoningEngine(FixtureLLMAdapter(recommendation()))
-    package = engine.reason(capture)
+    proposed = recommendation()
+    package = ManagementReasoningEngine().reason(capture, proposed)
     assert package.classification == "action"
     assert package.destination == "action_records"
     assert package.correlation_id == capture.correlation_id
@@ -38,7 +38,7 @@ def test_management_reasoning_is_provider_independent() -> None:
 def test_record_routing_fails_closed_for_low_confidence() -> None:
     capture = Capture(content="Maybe follow up on this")
     proposed = recommendation(confidence=0.5)
-    reasoning = ManagementReasoningEngine.from_recommendation(capture, proposed)
+    reasoning = ManagementReasoningEngine().reason(capture, proposed)
     routed = RecordRoutingService().apply(proposed, reasoning)
     assert routed.classification == Classification.NEEDS_CLARIFICATION
     assert routed.destination == "universal_inbox"
@@ -48,7 +48,7 @@ def test_record_routing_fails_closed_for_low_confidence() -> None:
 def test_record_routing_rejects_invalid_destination() -> None:
     capture = Capture(content="Prepare the operating review")
     proposed = recommendation(destination="portfolio_projects")
-    reasoning = ManagementReasoningEngine.from_recommendation(capture, proposed)
+    reasoning = ManagementReasoningEngine().reason(capture, proposed)
     with pytest.raises(ValueError, match="invalid destination"):
         RecordRoutingService().apply(proposed, reasoning)
 
@@ -57,7 +57,7 @@ def test_legacy_w02_matches_semantic_path() -> None:
     capture = Capture(content="Prepare the operating review")
     proposed = recommendation()
     legacy = RoutingService(FixtureLLMAdapter(proposed)).plan(capture)
-    reasoning = ManagementReasoningEngine.from_recommendation(capture, proposed)
+    reasoning = ManagementReasoningEngine().reason(capture, proposed)
     semantic = RecordRoutingService().apply(proposed, reasoning)
     differential = RoutingShadowComparator().compare(legacy, semantic)
     assert differential.equivalent is True
