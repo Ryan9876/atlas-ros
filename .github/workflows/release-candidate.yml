@@ -3,9 +3,9 @@ name: release-candidate
 on:
   push:
     branches:
-      - release/v5.1-candidate
+      - release/v5.3-candidate
   pull_request:
-    branches: [release/v5.1-candidate]
+    branches: [release/v5.3-candidate]
   workflow_dispatch:
 
 permissions:
@@ -73,6 +73,14 @@ jobs:
           mkdir -p test-results
           pytest --junitxml=test-results/pytest.xml --cov-report=json:test-results/coverage.json
 
+      - name: Evaluate Classification Intelligence
+        run: |
+          set -euo pipefail
+          mkdir -p classification-evidence
+          python scripts/evaluate_classification_intelligence.py \
+            --dataset benchmarks/classification-intelligence-v1.json \
+            --output classification-evidence/CLASSIFICATION_INTELLIGENCE_REPORT.json
+
       - name: Validate dependency policy and advisories
         run: |
           set -euo pipefail
@@ -138,7 +146,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: v520-source-verification
+          name: v530-source-verification
           path: source-verification/mismatches.json
           if-no-files-found: warn
           retention-days: 7
@@ -148,7 +156,7 @@ jobs:
           set -euo pipefail
           python -m venv clean-wheel
           clean-wheel/bin/python -m pip install --disable-pip-version-check "dist/${ATLAS_WHEEL}"
-          clean-wheel/bin/python -c "from atlas_ros.config.loader import load_config; assert load_config('readiness')['version'] == 2"
+          clean-wheel/bin/python -c "from atlas_ros.config.loader import load_config; assert load_config('readiness')['version'] == 2; assert load_config('classification-intelligence')['version'] == 1"
           clean-wheel/bin/atlas status
 
       - name: Generate commit-bound candidate evidence
@@ -156,30 +164,34 @@ jobs:
           ATLAS_CANDIDATE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         run: |
           set -euo pipefail
-          python scripts/build_v510_candidate_evidence.py \
+          python scripts/build_v530_candidate_evidence.py \
             --project-root . \
             --output-dir candidate-evidence \
             --head-sha "${ATLAS_CANDIDATE_SHA}" \
             --workflow-run-id "${GITHUB_RUN_ID}" \
             --cases benchmarks/ryan-intelligence-evaluation-set-v1.json \
+            --classification-report classification-evidence/CLASSIFICATION_INTELLIGENCE_REPORT.json \
             --junit test-results/pytest.xml \
             --coverage test-results/coverage.json \
             --source-manifest release/CHECKSUMS.sha256 \
-            --sbom release/SBOM_V510_CURRENT.cdx.json
+            --sbom release/SBOM_V530_CURRENT.cdx.json
 
-      - name: Assemble immutable v5.2 candidate publication set
+      - name: Assemble immutable v5.3 candidate publication set
         run: |
           set -euo pipefail
           mkdir -p publication/audit
           cp "dist/${ATLAS_SDIST}" publication/
           cp "dist/${ATLAS_WHEEL}" publication/
-          cp candidate-evidence/RELEASE_MANIFEST_V520_CANDIDATE.md publication/RELEASE_MANIFEST.md
-          cp candidate-evidence/V520_PROMOTION_PREPARATION_REPORT.md publication/
-          cp candidate-evidence/V520_PROMOTION_PREPARATION_STATUS.json publication/
-          cp candidate-evidence/V520_PROMOTION_PREPARATION_STATUS.sha256 publication/
-          cp candidate-evidence/V520_RELEASE_VALIDATION_WORKBENCH_REPORT.md publication/
-          cp candidate-evidence/V520_CALIBRATION_REPORT.json publication/
-          cp release/SBOM_V510_CURRENT.cdx.json publication/SBOM.cdx.json
+          cp candidate-evidence/RELEASE_MANIFEST_V530_CANDIDATE.md publication/RELEASE_MANIFEST.md
+          cp candidate-evidence/V530_PROMOTION_PREPARATION_REPORT.md publication/
+          cp candidate-evidence/V530_PROMOTION_PREPARATION_STATUS.json publication/
+          cp candidate-evidence/V530_PROMOTION_PREPARATION_STATUS.sha256 publication/
+          cp candidate-evidence/V530_RELEASE_VALIDATION_WORKBENCH_REPORT.md publication/
+          cp candidate-evidence/V530_CALIBRATION_REPORT.json publication/
+          cp candidate-evidence/V530_CLASSIFICATION_INTELLIGENCE_REPORT.json publication/
+          cp release/RELEASE_SCOPE_V530.md publication/
+          cp release/RELEASE_NOTES_V530.md publication/
+          cp release/SBOM_V530_CURRENT.cdx.json publication/SBOM.cdx.json
           cp release/CHECKSUMS.sha256 publication/SOURCE_CHECKSUMS.sha256
           cp requirements.runtime.lock publication/
           cp security/vulnerability-exceptions.yml publication/
@@ -197,7 +209,7 @@ jobs:
           zip -q -X -r "${ATLAS_PACKAGE_BASENAME}.zip" publication
           sha256sum "${ATLAS_PACKAGE_BASENAME}.zip" > "${ATLAS_PACKAGE_BASENAME}.zip.sha256"
 
-      - name: Retain v5.2 release candidate evidence
+      - name: Retain v5.3 release candidate evidence
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: atlas-ros-v${{ env.ATLAS_RELEASE_LABEL }}-release-candidate
