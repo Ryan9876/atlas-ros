@@ -9,10 +9,17 @@ from .models import (
     ExecutionReceipt,
     ExecutionStep,
     KnowledgePackage,
+    KnowledgePackageV2,
     ManagementPackage,
+    ManagementPackageV2,
+    ManagementSection,
+    PlanningModelCandidate,
     ReasoningPackage,
     ReasoningPackageV2,
+    ReasoningPackageV3,
     ReconciliationResult,
+    ValidationResult,
+    deterministic_digest,
 )
 
 __all__ = [
@@ -26,8 +33,15 @@ __all__ = [
     "ExecutionReceipt",
     "ExecutionStep",
     "KnowledgePackage",
+    "KnowledgePackageV2",
     "ManagementPackage",
+    "ManagementPackageV2",
+    "ManagementSection",
+    "PlanningModelCandidate",
     "ReasoningPackage",
     "ReasoningPackageV2",
+    "ReasoningPackageV3",
     "ReconciliationResult",
+    "ValidationResult",
+    "deterministic_digest",
 ]

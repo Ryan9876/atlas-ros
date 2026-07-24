@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "cases": [
+    {
+      "case_id": "complete-team-model",
+      "known_inputs": {
+        "owner": "Ryan",
+        "responsibility": "Lead the network services team operating model",
+        "desired_outcome": "A reviewed and measurable operating model exists",
+        "services": ["network operations", "network engineering"],
+        "service_owner": "Ryan",
+        "review_cadence": "quarterly",
+        "metric_owner": "service owners",
+        "metric_source": "service health dashboard",
+        "effective_date": "2026-08-01",
+        "next_review_date": "2026-11-01"
+      },
+      "expected_lifecycle": "structurally_complete",
+      "expected_sections": 14,
+      "expected_missing_context": 0
+    },
+    {
+      "case_id": "incomplete-team-model",
+      "known_inputs": {},
+      "expected_lifecycle": "decision_required",
+      "expected_sections": 14,
+      "minimum_missing_context": 6
+    }
+  ]
+}

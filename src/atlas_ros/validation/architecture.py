@@ -16,6 +16,16 @@ LEGACY_IMPORT_ALLOWLIST = {
     "legacy/facades.py",
     "services/execution_reconciliation.py",
 }
+NON_EXECUTING_ENGINES = {
+    "engines/knowledge_composition.py",
+    "engines/management_structure.py",
+}
+FORBIDDEN_NON_EXECUTING_SYMBOLS = {
+    "ExecutionPlan",
+    "ExecutionStep",
+    "TodoistAdapter",
+    "NotionAdapter",
+}
 
 
 def imported_modules(path: Path) -> set[str]:
@@ -57,6 +67,35 @@ def validate(root: Path = PACKAGE_ROOT) -> list[dict[str, str]]:
                         "path": path.as_posix(),
                         "import": module,
                         "rule": "new internal code must use semantic capability imports",
+                    }
+                )
+        if relative in NON_EXECUTING_ENGINES:
+            tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+            names = {
+                alias.name
+                for node in ast.walk(tree)
+                if isinstance(node, ast.Import | ast.ImportFrom)
+                for alias in node.names
+            }
+            for symbol in sorted(names & FORBIDDEN_NON_EXECUTING_SYMBOLS):
+                violations.append(
+                    {
+                        "path": path.as_posix(),
+                        "import": symbol,
+                        "rule": "knowledge and structure engines must remain non-executing",
+                    }
+                )
+            literals = {
+                node.value
+                for node in ast.walk(tree)
+                if isinstance(node, ast.Constant) and isinstance(node.value, str)
+            }
+            if "team-operating-model" in literals:
+                violations.append(
+                    {
+                        "path": path.as_posix(),
+                        "import": "team-operating-model",
+                        "rule": "generic engines must not hard-code a planning model",
                     }
                 )
     return violations

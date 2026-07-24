@@ -1,9 +1,24 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-07-24T17:50:00Z",
-  "candidate_version": "5.3.0rc1",
-  "source_head": "release/v5.3-candidate",
+  "generated_at": "2026-07-24T20:00:00Z",
+  "candidate_version": "5.4.0rc1",
+  "source_head": "agent/knowledge-composition-phase2",
   "records": [
+    {
+      "record_id": "IDEA-4",
+      "title": "Knowledge Composition Engine and Management Structure Framework",
+      "disposition": "fully_implemented",
+      "implemented_scope": "Roadmap Wave 3 is implemented as versioned declarative Planning Model and Knowledge Module registries, deterministic dependency resolution, explicit Reasoning Package V3 selection, Knowledge Package V2, generic Management Package V2 construction, provenance, completeness, governance, compatibility guards, observability, schemas, evaluation, documentation, package validation, and Drive-independent restoration.",
+      "remaining_scope": "",
+      "evidence": [
+        "src/atlas_ros/models/registries.py",
+        "src/atlas_ros/models/dependency_resolution.py",
+        "src/atlas_ros/engines/knowledge_composition.py",
+        "src/atlas_ros/engines/management_structure.py",
+        "docs/architecture/KNOWLEDGE_COMPOSITION_AND_MANAGEMENT_STRUCTURE.md",
+        "tests/test_knowledge_management_v2.py"
+      ]
+    },
     {
       "record_id": "ATI-1",
       "title": "W02 Classification Intelligence Evolution",
@@ -83,13 +98,16 @@
       "record_id": "IDEA-10",
       "title": "Capability-Based ROS Architecture Migration and W-Convention Retirement",
       "disposition": "in_progress",
-      "implemented_scope": "Phases 1 through 7 development cutover: canonical semantic contracts and capabilities, compatibility facades, separated reasoning/routing/knowledge/management/planning/orchestration/provider/reconciliation responsibilities, semantic capability export surface, W-import architecture gate, archival mapping, and rollback-preserving aliases. Classification Intelligence development now adds responsibility-aware reasoning, explainability, intent inference, shadow evidence, and controlled semantic modes.",
-      "remaining_scope": "Remaining roadmap waves, governed v5.3 compatibility release promotion, and separately authorized W-number retirement only after stable rollback evidence.",
+      "implemented_scope": "Phases 1 through 7 development cutover and roadmap Wave 3 Knowledge Composition and Management Structure are implemented behind semantic capability surfaces with compatibility facades, architecture gates, archival mapping, and rollback-preserving aliases.",
+      "remaining_scope": "Remaining roadmap waves and separately authorized W-number retirement only after stable rollback evidence. This candidate does not retire compatibility interfaces.",
       "evidence": [
-        "PR #10",
         "src/atlas_ros/capabilities/__init__.py",
+        "src/atlas_ros/engines/knowledge_composition.py",
+        "src/atlas_ros/engines/management_structure.py",
         "docs/migration/W_WORKFLOW_ARCHIVAL_MAPPING.md",
-        "tests/test_phase7_semantic_cutover.py"
+        "docs/migration/KNOWLEDGE_MANAGEMENT_V2_MIGRATION.md",
+        "tests/test_phase7_semantic_cutover.py",
+        "tests/test_knowledge_management_v2.py"
       ]
     },
     {

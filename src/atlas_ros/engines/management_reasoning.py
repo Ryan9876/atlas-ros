@@ -1,7 +1,13 @@
 from __future__ import annotations
 
 from atlas_ros.config.loader import load_config
-from atlas_ros.contracts import CaptureEnvelope, ReasoningPackage, ReasoningPackageV2
+from atlas_ros.contracts import (
+    CaptureEnvelope,
+    PlanningModelCandidate,
+    ReasoningPackage,
+    ReasoningPackageV2,
+    ReasoningPackageV3,
+)
 from atlas_ros.domain.models import (
     Capture,
     ChallengeStatus,
@@ -72,9 +78,7 @@ class ManagementReasoningEngine:
         if assessment.responsibility_domain is ResponsibilityDomain.UNRESOLVED:
             fallback_reason = "No governed responsibility signal was strong enough to classify."
         elif assessment.confidence < confidence_threshold:
-            fallback_reason = (
-                "Responsibility confidence is below the governed canonical threshold."
-            )
+            fallback_reason = "Responsibility confidence is below the governed canonical threshold."
         elif assessment.ambiguities:
             fallback_reason = "Conflicting responsibility evidence requires attended review."
 
@@ -102,9 +106,7 @@ class ManagementReasoningEngine:
             workstream=assessment.workstream.value,
             activity_summary=activity,
             operating_context=operating_context,
-            operating_context_confidence=(
-                intent.confidence if operating_context else 0.0
-            ),
+            operating_context_confidence=(intent.confidence if operating_context else 0.0),
             confidence=assessment.confidence,
             decisive_evidence=evidence,
             rationale=[explanation],
@@ -123,6 +125,55 @@ class ManagementReasoningEngine:
             owner="Ryan",
             ambiguities=list(reasoning.ambiguities),
             clarification_required=reasoning.requires_human_decision,
+        )
+
+    @staticmethod
+    def select_planning_model(
+        reasoning: ReasoningPackageV2,
+        *,
+        normalized_intent: str,
+        management_pattern: str,
+        candidates: tuple[PlanningModelCandidate, ...],
+        selected_model_id: str,
+        selected_version_constraint: str = "*",
+        selection_method: str = "user_selected",
+        selection_confidence: float = 1.0,
+        selection_rationale: str,
+        assumptions: tuple[str, ...] = (),
+        constraints: tuple[str, ...] = (),
+        stakeholders: tuple[str, ...] = (),
+        known_inputs: dict[str, object] | None = None,
+        unresolved_questions: tuple[str, ...] = (),
+    ) -> ReasoningPackageV3:
+        """Add an authoritative planning selection without changing v2 semantics."""
+        if selection_method not in {"inferred", "user_selected", "policy_selected"}:
+            raise ValueError(f"unsupported selection method: {selection_method}")
+        alternatives = tuple(
+            candidate.model_id
+            for candidate in candidates
+            if candidate.model_id != selected_model_id
+        )
+        return ReasoningPackageV3(
+            correlation_id=reasoning.correlation_id,
+            created_at=reasoning.created_at,
+            source_component="engines.management_reasoning",
+            classification=reasoning.classification,
+            destination=reasoning.destination,
+            normalized_intent=normalized_intent,
+            management_pattern=management_pattern,
+            candidate_planning_models=candidates,
+            selected_planning_model_id=selected_model_id,
+            selected_planning_model_version_constraint=selected_version_constraint,
+            selection_method=selection_method,  # type: ignore[arg-type]
+            selection_confidence=selection_confidence,
+            selection_rationale=selection_rationale,
+            alternatives_considered=alternatives,
+            planning_assumptions=assumptions,
+            planning_constraints=constraints,
+            known_stakeholders=stakeholders,
+            known_inputs=known_inputs or {},
+            unresolved_planning_questions=unresolved_questions,
+            requires_human_decision=bool(unresolved_questions),
         )
 
     @staticmethod
