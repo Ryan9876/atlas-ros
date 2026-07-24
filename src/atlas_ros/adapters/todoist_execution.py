@@ -17,7 +17,12 @@ class TodoistExecutionAdapter:
     def __init__(self, provider: TodoistAdapter) -> None:
         self._provider = provider
 
-    def resolve_target(self, project: str, section: str, labels: tuple[str, ...]) -> TodoistExecutionTarget:
+    def resolve_target(
+        self,
+        project: str,
+        section: str,
+        labels: tuple[str, ...],
+    ) -> TodoistExecutionTarget:
         projects = {item.name: item.id for item in self._provider.list_projects()}
         if project not in projects:
             raise ValueError("configured Todoist project is not available live")
@@ -64,7 +69,14 @@ class TodoistExecutionAdapter:
                 description=description,
                 idempotency_key=LiveTodoistAdapter.idempotency_key(action_id),
             )
-        self.verify_task(task, title, description, target.project_id, target.section_id, task.parent_id)
+        self.verify_task(
+            task,
+            title,
+            description,
+            target.project_id,
+            target.section_id,
+            task.parent_id,
+        )
         return task
 
     def upsert_child(
@@ -104,7 +116,10 @@ class TodoistExecutionAdapter:
         return child
 
     def children_by_content(self, parent_id: str) -> dict[str, TodoistTask]:
-        return {task.content: task for task in self._provider.list_tasks(parent_id=parent_id)}
+        return {
+            task.content: task
+            for task in self._provider.list_tasks(parent_id=parent_id)
+        }
 
     def verify_tree(self, parent_id: str, expected_titles: list[str]) -> None:
         children = sorted(
@@ -141,7 +156,9 @@ class TodoistExecutionAdapter:
             if (updated.parent_id, updated.order) != snapshot[child.id]:
                 raise ValueError("Todoist hierarchy changed during section move")
         readback = self._provider.list_tasks(parent_id=task_id)
-        if len(readback) != len(children) or any(child.parent_id != task_id for child in readback):
+        if len(readback) != len(children) or any(
+            child.parent_id != task_id for child in readback
+        ):
             raise ValueError("Todoist child-count or parentId validation failed")
 
     @staticmethod
@@ -153,7 +170,13 @@ class TodoistExecutionAdapter:
         section_id: str | None,
         parent_id: str | None,
     ) -> None:
-        actual = (task.content, task.description, task.project_id, task.section_id, task.parent_id)
+        actual = (
+            task.content,
+            task.description,
+            task.project_id,
+            task.section_id,
+            task.parent_id,
+        )
         expected = (title, description, project_id, section_id, parent_id)
         if actual != expected:
             raise ValueError("Todoist readback did not match requested task")
