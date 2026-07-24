@@ -78,12 +78,17 @@ class ExecutionPlan(ContractEnvelope):
     destination: str = Field(min_length=1, max_length=200)
     steps: list[ExecutionStep] = Field(default_factory=list)
     authorized: bool = False
+    projection_explanation: str = ""
+    non_projection_reasons: list[str] = Field(default_factory=list)
+    review_required: bool = False
 
     @model_validator(mode="after")
     def validate_step_sequence(self) -> ExecutionPlan:
         sequence = [step.sequence for step in self.steps]
         if sequence != list(range(1, len(sequence) + 1)):
             raise ValueError("execution steps must use contiguous one-based sequence")
+        if self.authorized:
+            raise ValueError("execution planner cannot authorize provider writes")
         return self
 
 
