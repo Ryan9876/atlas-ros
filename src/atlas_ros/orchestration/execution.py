@@ -36,7 +36,11 @@ class ExecutionRequest:
     subtask_descriptions: tuple[str, ...]
 
     def __post_init__(self) -> None:
-        if not self.action_id.strip() or not self.title.strip() or not self.description.strip():
+        if (
+            not self.action_id.strip()
+            or not self.title.strip()
+            or not self.description.strip()
+        ):
             raise ValueError("execution request requires action id, title, and description")
         if len(self.subtasks) != len(self.subtask_descriptions):
             raise ValueError("subtask titles and descriptions must have equal length")
@@ -103,7 +107,9 @@ class ExecutionOrchestrator:
                 state=TransactionState.FAILED,
                 error=str(exc),
             )
-            raise RuntimeError(f"execution transaction {transaction.transaction_id} failed") from exc
+            raise RuntimeError(
+                f"execution transaction {transaction.transaction_id} failed"
+            ) from exc
 
         transaction = ExecutionTransaction(
             transaction_id=transaction_id,
@@ -140,7 +146,9 @@ class ExecutionOrchestrator:
         try:
             self._adapter.move_group(task_id, target_section_id)
         except Exception as exc:
-            raise RuntimeError(f"execution transaction {transaction_id} failed") from exc
+            raise RuntimeError(
+                f"execution transaction {transaction_id} failed"
+            ) from exc
         return ExecutionTransaction(
             transaction_id=transaction_id,
             action_id=task_id,
