@@ -1,0 +1,144 @@
+name: github-release-staging
+
+on:
+  workflow_dispatch:
+    inputs:
+      candidate_run_id:
+        description: GitHub Actions run containing the validated release-candidate artifact
+        required: true
+        type: string
+      artifact_name:
+        description: Exact release-candidate artifact name
+        required: true
+        type: string
+      tag:
+        description: Draft release tag, for example v5.2.0-rc.1
+        required: true
+        type: string
+      release_name:
+        description: Human-readable draft release name
+        required: true
+        type: string
+      target_commitish:
+        description: Commit or branch that the draft release must target
+        required: true
+        type: string
+      expected_package_sha256:
+        description: Optional expected combined-package SHA-256
+        required: false
+        type: string
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: github-release-staging-${{ inputs.tag }}
+  cancel-in-progress: false
+
+jobs:
+  stage-draft-release:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out release tooling
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          ref: ${{ inputs.target_commitish }}
+          persist-credentials: false
+
+      - name: Download validated candidate artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_ID: ${{ inputs.candidate_run_id }}
+          ARTIFACT_NAME: ${{ inputs.artifact_name }}
+        run: |
+          set -euo pipefail
+          mkdir -p candidate
+          gh run download "${RUN_ID}" \
+            --repo "${GITHUB_REPOSITORY}" \
+            --name "${ARTIFACT_NAME}" \
+            --dir candidate
+
+      - name: Verify candidate package and publication checksums
+        env:
+          EXPECTED_PACKAGE_SHA256: ${{ inputs.expected_package_sha256 }}
+        run: |
+          set -euo pipefail
+          package="$(find candidate -maxdepth 3 -type f -name 'Atlas_ROS_v*_release_candidate.zip' -print -quit)"
+          checksum_file="${package}.sha256"
+          test -n "${package}"
+          test -f "${checksum_file}"
+          (
+            cd "$(dirname "${package}")"
+            sha256sum -c "$(basename "${checksum_file}")"
+          )
+          actual_sha256="$(sha256sum "${package}" | awk '{print $1}')"
+          if [[ -n "${EXPECTED_PACKAGE_SHA256}" && "${actual_sha256}" != "${EXPECTED_PACKAGE_SHA256}" ]]; then
+            echo "candidate package digest mismatch" >&2
+            exit 1
+          fi
+          rm -rf verified-candidate
+          mkdir verified-candidate
+          unzip -q "${package}" -d verified-candidate
+          (
+            cd verified-candidate/publication
+            sha256sum -c CHECKSUMS.sha256
+          )
+          printf 'PACKAGE=%s\n' "${package}" >> "${GITHUB_ENV}"
+          printf 'PACKAGE_SHA256=%s\n' "${actual_sha256}" >> "${GITHUB_ENV}"
+
+      - name: Create or update draft GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.tag }}
+          RELEASE_NAME: ${{ inputs.release_name }}
+          TARGET_COMMITISH: ${{ inputs.target_commitish }}
+        run: |
+          set -euo pipefail
+          notes_file="verified-candidate/publication/RELEASE_MANIFEST.md"
+          if gh release view "${TAG}" --repo "${GITHUB_REPOSITORY}" >/dev/null 2>&1; then
+            gh release edit "${TAG}" \
+              --repo "${GITHUB_REPOSITORY}" \
+              --draft \
+              --title "${RELEASE_NAME}" \
+              --target "${TARGET_COMMITISH}" \
+              --notes-file "${notes_file}"
+          else
+            gh release create "${TAG}" \
+              --repo "${GITHUB_REPOSITORY}" \
+              --draft \
+              --title "${RELEASE_NAME}" \
+              --target "${TARGET_COMMITISH}" \
+              --notes-file "${notes_file}"
+          fi
+
+      - name: Upload checksum-bound draft release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.tag }}
+        run: |
+          set -euo pipefail
+          mapfile -d '' assets < <(
+            find verified-candidate/publication -type f -print0 | sort -z
+          )
+          gh release upload "${TAG}" \
+            --repo "${GITHUB_REPOSITORY}" \
+            --clobber \
+            "${PACKAGE}" \
+            "${PACKAGE}.sha256" \
+            "${assets[@]}"
+
+      - name: Verify draft release metadata
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.tag }}
+          TARGET_COMMITISH: ${{ inputs.target_commitish }}
+        run: |
+          set -euo pipefail
+          gh release view "${TAG}" \
+            --repo "${GITHUB_REPOSITORY}" \
+            --json isDraft,tagName,targetCommitish \
+            --jq 'select(.isDraft == true and .tagName == env.TAG and .targetCommitish == env.TARGET_COMMITISH)'
+          echo "Draft release staged. Publication remains inactive until Ryan explicitly authorizes promotion."
