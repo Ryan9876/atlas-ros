@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import hashlib
+import json
 from datetime import UTC, datetime
 from enum import StrEnum
 from typing import Any, Literal
@@ -102,6 +104,55 @@ class ReasoningPackageV2(BaseModel):
         )
 
 
+class PlanningModelCandidate(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    model_id: str = Field(min_length=1, max_length=200)
+    version_constraint: str = Field(default="*", min_length=1, max_length=100)
+    confidence: float = Field(ge=0, le=1)
+    rationale: str = Field(min_length=1, max_length=2_000)
+
+
+class ReasoningPackageV3(BaseModel):
+    """Planning-selection contract consumed by knowledge composition."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    contract_version: Literal[3] = 3
+    contract_kind: ContractKind = ContractKind.REASONING
+    correlation_id: UUID = Field(default_factory=uuid4)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    source_component: str = Field(min_length=1, max_length=200)
+    classification: str = Field(min_length=1, max_length=100)
+    destination: str = Field(min_length=1, max_length=200)
+    normalized_intent: str = Field(min_length=1, max_length=10_000)
+    management_pattern: str = Field(min_length=1, max_length=200)
+    candidate_planning_models: tuple[PlanningModelCandidate, ...]
+    selected_planning_model_id: str = Field(min_length=1, max_length=200)
+    selected_planning_model_version_constraint: str = Field(
+        default="*", min_length=1, max_length=100
+    )
+    selection_method: Literal["inferred", "user_selected", "policy_selected"]
+    selection_confidence: float = Field(ge=0, le=1)
+    selection_rationale: str = Field(min_length=1, max_length=2_000)
+    alternatives_considered: tuple[str, ...] = ()
+    planning_assumptions: tuple[str, ...] = ()
+    planning_constraints: tuple[str, ...] = ()
+    known_stakeholders: tuple[str, ...] = ()
+    known_inputs: dict[str, Any] = Field(default_factory=dict)
+    unresolved_planning_questions: tuple[str, ...] = ()
+    requires_human_decision: bool = False
+
+    @model_validator(mode="after")
+    def validate_selection(self) -> ReasoningPackageV3:
+        candidate_ids = {candidate.model_id for candidate in self.candidate_planning_models}
+        if self.selected_planning_model_id not in candidate_ids:
+            raise ValueError("selected planning model must be a declared candidate")
+        if self.requires_human_decision and not self.unresolved_planning_questions:
+            raise ValueError("human decision requires an unresolved planning question")
+        return self
+
+
 class ClassificationChallenge(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
@@ -142,6 +193,61 @@ class KnowledgePackage(ContractEnvelope):
     unresolved_questions: list[str] = Field(default_factory=list)
 
 
+class KnowledgePackageV2(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    contract_version: Literal[2] = 2
+    contract_kind: ContractKind = ContractKind.KNOWLEDGE
+    correlation_id: UUID
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    source_component: str = "engines.knowledge_composition"
+    source_reasoning_reference: str = Field(min_length=1, max_length=500)
+    selected_planning_model_id: str = Field(min_length=1, max_length=200)
+    selected_planning_model_version: str = Field(min_length=1, max_length=100)
+    required_modules: tuple[str, ...]
+    optional_modules: tuple[str, ...] = ()
+    module_versions: dict[str, str]
+    dependency_graph: tuple[tuple[str, tuple[str, ...]], ...]
+    composition_order: tuple[str, ...]
+    context_bindings: dict[str, Any] = Field(default_factory=dict)
+    composed_facts: dict[str, Any] = Field(default_factory=dict)
+    value_provenance: dict[str, tuple[str, ...]] = Field(default_factory=dict)
+    governance_overlays: tuple[str, ...] = ()
+    evidence_overlays: tuple[str, ...] = ()
+    conflict_resolutions: tuple[str, ...] = ()
+    missing_context_requirements: tuple[str, ...] = ()
+    assumptions: tuple[str, ...] = ()
+    warnings: tuple[str, ...] = ()
+    unresolved_questions: tuple[str, ...] = ()
+    resolution_trace: tuple[str, ...] = ()
+    planning_registry_digest: str = Field(min_length=64, max_length=64)
+    module_registry_digest: str = Field(min_length=64, max_length=64)
+    configuration_digest: str = Field(min_length=64, max_length=64)
+    resolution_digest: str = Field(min_length=64, max_length=64)
+    package_digest: str = Field(min_length=64, max_length=64)
+
+    def digest_payload(self) -> dict[str, Any]:
+        return self.model_dump(
+            mode="json",
+            exclude={"created_at", "package_digest"},
+        )
+
+    def verify_digest(self) -> bool:
+        return self.package_digest == deterministic_digest(self.digest_payload())
+
+    def project_v1(self) -> KnowledgePackage:
+        if self.conflict_resolutions or self.unresolved_questions:
+            raise ValueError("unsafe lossy Knowledge Package V2 projection")
+        return KnowledgePackage(
+            correlation_id=self.correlation_id,
+            created_at=self.created_at,
+            source_component=self.source_component,
+            module_ids=list(self.composition_order),
+            facts=dict(self.composed_facts),
+            unresolved_questions=list(self.missing_context_requirements),
+        )
+
+
 class ManagementPackage(ContractEnvelope):
     contract_kind: ContractKind = ContractKind.MANAGEMENT
     responsibility: str = Field(min_length=1, max_length=500)
@@ -149,6 +255,86 @@ class ManagementPackage(ContractEnvelope):
     owner: str = ""
     workstream: str = ""
     decision_points: list[str] = Field(default_factory=list)
+
+
+class ManagementSection(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    section_id: str = Field(min_length=1, max_length=200)
+    title: str = Field(min_length=1, max_length=500)
+    content: dict[str, Any] = Field(default_factory=dict)
+    provenance: tuple[str, ...] = ()
+    completeness: Literal["complete", "incomplete", "decision_required"]
+    unresolved_items: tuple[str, ...] = ()
+
+
+class ValidationResult(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    rule: str = Field(min_length=1, max_length=1_000)
+    passed: bool
+    detail: str = Field(default="", max_length=2_000)
+
+
+class ManagementPackageV2(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    contract_version: Literal[2] = 2
+    contract_kind: ContractKind = ContractKind.MANAGEMENT
+    correlation_id: UUID
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    source_component: str = "engines.management_structure"
+    artifact_id: str = Field(min_length=1, max_length=256)
+    artifact_type: str = Field(min_length=1, max_length=200)
+    planning_model_id: str = Field(min_length=1, max_length=200)
+    planning_model_version: str = Field(min_length=1, max_length=100)
+    source_reasoning_reference: str = Field(min_length=1, max_length=500)
+    source_knowledge_reference: str = Field(min_length=1, max_length=500)
+    responsibility: str = Field(min_length=1, max_length=2_000)
+    desired_outcome: str = Field(min_length=1, max_length=10_000)
+    owner: str = ""
+    workstream: str = ""
+    sections: tuple[ManagementSection, ...]
+    section_provenance: dict[str, tuple[str, ...]]
+    section_completeness: dict[str, str]
+    assumptions: tuple[str, ...] = ()
+    unresolved_items: tuple[str, ...] = ()
+    decision_points: tuple[str, ...] = ()
+    governance_requirements: tuple[str, ...] = ()
+    required_approvals: tuple[str, ...] = ()
+    escalation_requirements: tuple[str, ...] = ()
+    completion_evidence_requirements: tuple[str, ...] = ()
+    validation_results: tuple[ValidationResult, ...] = ()
+    lifecycle_status: Literal["draft", "incomplete", "decision_required", "structurally_complete"]
+    planning_registry_digest: str = Field(min_length=64, max_length=64)
+    module_registry_digest: str = Field(min_length=64, max_length=64)
+    configuration_digest: str = Field(min_length=64, max_length=64)
+    package_digest: str = Field(min_length=64, max_length=64)
+
+    def digest_payload(self) -> dict[str, Any]:
+        return self.model_dump(mode="json", exclude={"created_at", "package_digest"})
+
+    def verify_digest(self) -> bool:
+        return self.package_digest == deterministic_digest(self.digest_payload())
+
+    def project_v1(self) -> ManagementPackage:
+        if self.lifecycle_status not in {"draft", "structurally_complete"}:
+            raise ValueError("unsafe lossy Management Package V2 projection")
+        return ManagementPackage(
+            correlation_id=self.correlation_id,
+            created_at=self.created_at,
+            source_component=self.source_component,
+            responsibility=self.responsibility,
+            desired_outcome=self.desired_outcome,
+            owner=self.owner,
+            workstream=self.workstream,
+            decision_points=list(self.decision_points),
+        )
+
+
+def deterministic_digest(payload: Any) -> str:
+    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":"), default=str)
+    return hashlib.sha256(encoded.encode()).hexdigest()
 
 
 class ExecutionStep(BaseModel):

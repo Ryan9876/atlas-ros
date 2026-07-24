@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "atlas-ros"
-version = "5.3.0"
+version = "5.4.0rc1"
 description = "Policy-driven executable core for Atlas Ryan Operating System"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -24,7 +24,7 @@ atlas = "atlas_ros.cli:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/atlas_ros"]
-include = ["src/atlas_ros/data/*.yaml"]
+include = ["src/atlas_ros/data/**/*.yaml"]
 
 [tool.pytest.ini_options]
 addopts = "-q --strict-markers --cov=atlas_ros --cov-branch --cov-report=term-missing --cov-fail-under=85"

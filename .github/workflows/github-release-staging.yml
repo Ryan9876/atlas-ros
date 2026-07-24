@@ -17,7 +17,7 @@ on:
         required: true
         type: string
       tag:
-        description: Draft release tag, for example v5.3.0-rc.1
+        description: Draft release tag, for example v5.4.0-rc.1
         required: true
         type: string
       release_name:
@@ -40,7 +40,7 @@ permissions:
   pull-requests: write
 
 concurrency:
-  group: github-release-staging-v5.3.0-rc.1
+  group: github-release-staging-v5.4.0-rc.1
   cancel-in-progress: false
 
 jobs:
@@ -48,18 +48,18 @@ jobs:
     if: >-
       github.event_name == 'workflow_dispatch' ||
       (github.event.workflow_run.conclusion == 'success' &&
-       github.event.workflow_run.head_branch == 'release/v5.3-candidate') ||
+       github.event.workflow_run.head_branch == 'release/v5.4-candidate') ||
       (github.event_name == 'push' &&
-       contains(github.event.head_commit.message, '[stage-v5.3.0rc1]'))
+       contains(github.event.head_commit.message, '[stage-v5.4.0rc1]'))
     runs-on: ubuntu-24.04
     timeout-minutes: 20
 
     env:
       RUN_ID: ${{ github.event.workflow_run.id || inputs.candidate_run_id }}
       ARTIFACT_ID: ${{ github.event_name == 'push' && '8605295031' || '' }}
-      ARTIFACT_NAME: ${{ inputs.artifact_name || 'atlas-ros-v5.3.0rc1-release-candidate' }}
-      TAG: ${{ inputs.tag || 'v5.3.0-rc.1' }}
-      RELEASE_NAME: ${{ inputs.release_name || 'Atlas ROS v5.3.0 Classification Intelligence Release Candidate 1' }}
+      ARTIFACT_NAME: ${{ inputs.artifact_name || 'atlas-ros-v5.4.0rc1-release-candidate' }}
+      TAG: ${{ inputs.tag || 'v5.4.0-rc.1' }}
+      RELEASE_NAME: ${{ inputs.release_name || 'Atlas ROS v5.4.0 Knowledge Composition and Management Structure Release Candidate 1' }}
       TARGET_COMMITISH: ${{ github.event.workflow_run.head_sha || inputs.target_commitish || '6380c79974bcd499a5694982210f86431e85dec4' }}
       EXPECTED_PACKAGE_SHA256: ${{ inputs.expected_package_sha256 || (github.event_name == 'push' && '3fe3dafe2723b5be881830fbd7ef4c74ebe0dad5ae7e1c1ed5a6a60ccabdcb53') || '' }}
 
@@ -121,6 +121,12 @@ jobs:
         run: |
           set -euo pipefail
           mapfile -d '' assets < <(find verified-candidate/publication -type f -print0 | sort -z)
+          duplicate_basenames="$(printf '%s\n' "${assets[@]##*/}" | sort | uniq -d)"
+          if [[ -n "${duplicate_basenames}" ]]; then
+            echo "release assets contain duplicate basenames that GitHub would flatten:" >&2
+            echo "${duplicate_basenames}" >&2
+            exit 1
+          fi
           gh release upload "${TAG}" --repo "${GITHUB_REPOSITORY}" --clobber "${PACKAGE}" "${PACKAGE}.sha256" "${assets[@]}"
 
       - name: Download and verify published assets
@@ -136,6 +142,16 @@ jobs:
           test "$(sha256sum "${downloaded_package}" | awk '{print $1}')" = "${PACKAGE_SHA256}"
           (cd release-readback && sha256sum -c "$(basename "${downloaded_package}").sha256")
           test -f release-readback/CHECKSUMS.sha256
+          while read -r _ expected_path; do
+            expected_path="${expected_path#\*}"
+            expected_path="${expected_path#./}"
+            if [[ "${expected_path}" == */* && ! -f "release-readback/${expected_path}" ]]; then
+              flattened_path="release-readback/$(basename "${expected_path}")"
+              test -f "${flattened_path}"
+              mkdir -p "release-readback/$(dirname "${expected_path}")"
+              mv "${flattened_path}" "release-readback/${expected_path}"
+            fi
+          done < release-readback/CHECKSUMS.sha256
           (cd release-readback && sha256sum -c CHECKSUMS.sha256)
 
       - name: Prove restoration without Drive
@@ -148,7 +164,7 @@ jobs:
           test -n "${source_archive}"
           python -m venv restored-venv
           restored-venv/bin/pip install --disable-pip-version-check "${source_archive}"
-          restored-venv/bin/python -c "import atlas_ros; from atlas_ros.capabilities import ExecutionPlanner, ManagementReasoningEngine, ResponsibilityClassifier"
+          restored-venv/bin/python -c "from atlas_ros.models import load_default_registries; models, modules = load_default_registries(); assert models.get('team-operating-model', '^2.0.0'); assert len(modules.list()) >= 14"
 
       - name: Verify draft release metadata
         env:
@@ -163,4 +179,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          gh pr comment 13 --repo "${GITHUB_REPOSITORY}" --body "Draft GitHub Release staging passed for \`${TAG}\`. Staging run: \`${GITHUB_RUN_ID}\`. Candidate run: \`${RUN_ID}\`. Target: \`${TARGET_COMMITISH}\`. Package SHA-256: \`${PACKAGE_SHA256}\`. Assets were uploaded, downloaded, checksum-verified, and restored without Google Drive, including Classification Intelligence imports. Production promotion remains unauthorized."
+          pr_number="${{ github.event.workflow_run.pull_requests[0].number || '' }}"
+          if [[ -n "${pr_number}" ]]; then
+            gh pr comment "${pr_number}" --repo "${GITHUB_REPOSITORY}" --body "Draft GitHub Release staging passed for \`${TAG}\`. Staging run: \`${GITHUB_RUN_ID}\`. Candidate run: \`${RUN_ID}\`. Target: \`${TARGET_COMMITISH}\`. Package SHA-256: \`${PACKAGE_SHA256}\`. Assets were uploaded, downloaded, checksum-verified, and restored without Google Drive. Production promotion remains unauthorized."
+          fi

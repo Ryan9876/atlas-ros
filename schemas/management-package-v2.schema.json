@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-ros.local/schemas/management-package-v2.schema.json",
+  "title": "Atlas ROS Management Package V2",
+  "type": "object",
+  "required": [
+    "contract_version",
+    "correlation_id",
+    "artifact_id",
+    "planning_model_id",
+    "planning_model_version",
+    "sections",
+    "section_provenance",
+    "section_completeness",
+    "lifecycle_status",
+    "package_digest"
+  ],
+  "properties": {
+    "contract_version": {"const": 2},
+    "correlation_id": {"type": "string", "format": "uuid"},
+    "artifact_id": {"type": "string", "minLength": 1},
+    "planning_model_id": {"type": "string", "minLength": 1},
+    "planning_model_version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"},
+    "sections": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["section_id", "title", "content", "provenance", "completeness"],
+        "properties": {
+          "section_id": {"type": "string"},
+          "title": {"type": "string"},
+          "content": {"type": "object"},
+          "provenance": {"type": "array", "items": {"type": "string"}},
+          "completeness": {"enum": ["complete", "incomplete", "decision_required"]},
+          "unresolved_items": {"type": "array", "items": {"type": "string"}}
+        },
+        "additionalProperties": false
+      }
+    },
+    "section_provenance": {"type": "object"},
+    "section_completeness": {"type": "object"},
+    "lifecycle_status": {
+      "enum": ["draft", "incomplete", "decision_required", "structurally_complete"]
+    },
+    "package_digest": {"type": "string", "pattern": "^[a-f0-9]{64}$"}
+  },
+  "additionalProperties": true
+}

@@ -1,0 +1,78 @@
+model_id: team-operating-model
+version: 2.0.0
+lifecycle_status: active
+purpose: Define how a team creates value, owns services, makes decisions, collaborates, measures performance, and improves.
+supported_management_patterns:
+  - Operational Excellence
+  - People Leadership
+artifact_type: team_operating_model
+default_owner: ""
+default_workstream: Leadership & Team
+allow_degraded_composition: false
+supported_reasoning_package_versions: [3]
+supported_knowledge_package_versions: [2]
+supported_management_package_versions: [2]
+required_modules:
+  - {module_id: purpose-mission, version_constraint: "^2.0.0"}
+  - {module_id: scope-boundaries, version_constraint: "^2.0.0"}
+  - {module_id: customers-stakeholders, version_constraint: "^2.0.0"}
+  - {module_id: services-outcomes, version_constraint: "^2.0.0"}
+  - {module_id: responsibilities, version_constraint: "^2.0.0"}
+  - {module_id: roles-accountabilities, version_constraint: "^2.0.0"}
+  - {module_id: decision-rights, version_constraint: "^2.0.0"}
+  - {module_id: ways-of-working, version_constraint: "^2.0.0"}
+  - {module_id: meeting-communication-cadence, version_constraint: "^2.0.0"}
+  - {module_id: governance-escalation, version_constraint: "^2.0.0"}
+  - {module_id: metrics-service-health, version_constraint: "^2.0.0"}
+  - {module_id: continuous-improvement, version_constraint: "^2.0.0"}
+  - {module_id: review-change-control, version_constraint: "^2.0.0"}
+  - {module_id: completion-evidence, version_constraint: "^2.0.0"}
+optional_modules:
+  - {module_id: risk, version_constraint: "^2.0.0"}
+  - {module_id: stakeholder-communication, version_constraint: "^2.0.0"}
+sections:
+  - {section_id: purpose, title: Purpose, contribution_keys: ["section:purpose"]}
+  - {section_id: mission, title: Mission, dependencies: [purpose], contribution_keys: ["section:mission"]}
+  - {section_id: scope-boundaries, title: Scope and boundaries, dependencies: [purpose], contribution_keys: ["section:scope-boundaries"]}
+  - {section_id: customers-stakeholders, title: Customers and stakeholders, dependencies: [scope-boundaries], contribution_keys: ["section:customers-stakeholders"]}
+  - {section_id: services-outcomes, title: Services and outcomes, dependencies: [customers-stakeholders], contribution_keys: ["section:services-outcomes"]}
+  - {section_id: responsibilities, title: Responsibilities, dependencies: [services-outcomes], contribution_keys: ["section:responsibilities"]}
+  - {section_id: roles-accountabilities, title: Roles and accountabilities, dependencies: [responsibilities], contribution_keys: ["section:roles-accountabilities"]}
+  - {section_id: decision-rights, title: Decision rights, dependencies: [roles-accountabilities], contribution_keys: ["section:decision-rights"]}
+  - {section_id: ways-of-working, title: Ways of working, dependencies: [decision-rights], contribution_keys: ["section:ways-of-working"]}
+  - {section_id: meeting-communication-cadence, title: Meeting and communication cadence, dependencies: [ways-of-working], contribution_keys: ["section:meeting-communication-cadence"]}
+  - {section_id: governance-escalation, title: Governance and escalation, dependencies: [decision-rights], contribution_keys: ["section:governance-escalation"]}
+  - {section_id: metrics-service-health, title: Metrics and service health, dependencies: [services-outcomes], contribution_keys: ["section:metrics-service-health"]}
+  - {section_id: continuous-improvement, title: Continuous improvement, dependencies: [metrics-service-health], contribution_keys: ["section:continuous-improvement"]}
+  - {section_id: review-change-control, title: Review and change control, dependencies: [governance-escalation], contribution_keys: ["section:review-change-control"]}
+planning_rules:
+  - Purpose and scope precede responsibility assignment.
+  - Services and outcomes precede ownership.
+  - Ownership precedes decision rights and escalation.
+  - Governance precedes review cadence.
+  - Metrics map to a service, outcome, or operating-health objective.
+  - Every meeting has a purpose, owner, inputs, outputs, and cadence.
+  - Responsibilities require corresponding authority or escalation paths.
+governance_rules:
+  - An accountable owner is required.
+  - Decision rights identify escalation conditions.
+  - The operating model includes an explicit review cadence.
+  - Material changes require governed review.
+required_approvals:
+  - Leadership or team review
+escalation_requirements:
+  - Unresolved accountability or decision-right conflicts escalate to the accountable leader.
+completion_evidence:
+  - All required sections populated
+  - Services mapped to accountable owners
+  - Decision rights reviewed
+  - Governance and escalation paths reviewed
+  - Metrics defined with owners and sources
+  - Leadership or team review recorded
+  - Effective date recorded
+  - Next review date recorded
+validation_rules:
+  - accountable_owner_required
+  - responsibilities_require_authority
+  - meetings_require_operating_contract
+  - metrics_require_owner_and_source

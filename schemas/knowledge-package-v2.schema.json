@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-ros.local/schemas/knowledge-package-v2.schema.json",
+  "title": "Atlas ROS Knowledge Package V2",
+  "type": "object",
+  "required": [
+    "contract_version",
+    "correlation_id",
+    "selected_planning_model_id",
+    "selected_planning_model_version",
+    "required_modules",
+    "module_versions",
+    "dependency_graph",
+    "composition_order",
+    "composed_facts",
+    "value_provenance",
+    "planning_registry_digest",
+    "module_registry_digest",
+    "configuration_digest",
+    "resolution_digest",
+    "package_digest"
+  ],
+  "properties": {
+    "contract_version": {"const": 2},
+    "correlation_id": {"type": "string", "format": "uuid"},
+    "selected_planning_model_id": {"type": "string", "minLength": 1},
+    "selected_planning_model_version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"},
+    "required_modules": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+    "optional_modules": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+    "module_versions": {"type": "object", "additionalProperties": {"type": "string"}},
+    "dependency_graph": {"type": "array"},
+    "composition_order": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+    "composed_facts": {"type": "object"},
+    "value_provenance": {
+      "type": "object",
+      "additionalProperties": {"type": "array", "items": {"type": "string"}, "minItems": 1}
+    },
+    "missing_context_requirements": {"type": "array", "items": {"type": "string"}},
+    "unresolved_questions": {"type": "array", "items": {"type": "string"}},
+    "planning_registry_digest": {"$ref": "#/$defs/digest"},
+    "module_registry_digest": {"$ref": "#/$defs/digest"},
+    "configuration_digest": {"$ref": "#/$defs/digest"},
+    "resolution_digest": {"$ref": "#/$defs/digest"},
+    "package_digest": {"$ref": "#/$defs/digest"}
+  },
+  "$defs": {
+    "digest": {"type": "string", "pattern": "^[a-f0-9]{64}$"}
+  },
+  "additionalProperties": false
+}

@@ -6,6 +6,12 @@ from atlas_ros.engines import (
     ManagerIntentInferer,
     ResponsibilityClassifier,
 )
+from atlas_ros.models import (
+    KnowledgeDependencyResolver,
+    KnowledgeModuleRegistry,
+    PlanningModelRegistry,
+    load_default_registries,
+)
 from atlas_ros.planning import ExecutionPlanner
 from atlas_ros.services import ExecutionReconciliationService, RecordRoutingService
 from atlas_ros.workflows.w01_capture import CaptureService
@@ -19,10 +25,14 @@ __all__ = [
     "ExecutionPlanner",
     "ExecutionReconciliationService",
     "KnowledgeCompositionEngine",
+    "KnowledgeDependencyResolver",
+    "KnowledgeModuleRegistry",
     "ManagementReasoningEngine",
     "ManagerIntentInferer",
+    "PlanningModelRegistry",
     "ManagementStructureEngine",
     "ResponsibilityClassifier",
     "RecordRoutingService",
     "TodoistService",
+    "load_default_registries",
 ]

@@ -1,0 +1,134 @@
+modules:
+  - module_id: purpose-mission
+    version: 2.0.0
+    category: purpose
+    purpose: Establish the team's purpose and mission.
+    provided_knowledge_keys: [section:purpose, section:mission]
+    section_contributions:
+      purpose: {statement: Define why the team exists and the value it is accountable to create.}
+      mission: {statement: Deliver reliable services through clear ownership, disciplined operations, and continuous improvement.}
+  - module_id: scope-boundaries
+    version: 2.0.0
+    category: scope
+    purpose: Establish scope and explicit boundaries.
+    provided_knowledge_keys: [section:scope-boundaries]
+    required_dependencies: [{module_id: purpose-mission, version_constraint: "^2.0.0"}]
+    section_contributions:
+      scope-boundaries: {rule: State included services, excluded responsibilities, handoffs, and decision boundaries.}
+  - module_id: customers-stakeholders
+    version: 2.0.0
+    category: stakeholder
+    purpose: Identify customers and stakeholders.
+    provided_knowledge_keys: [section:customers-stakeholders]
+    required_dependencies: [{module_id: scope-boundaries, version_constraint: "^2.0.0"}]
+    section_contributions:
+      customers-stakeholders: {rule: Identify customers, partners, leaders, and dependency owners with their expected outcomes.}
+  - module_id: services-outcomes
+    version: 2.0.0
+    category: service
+    purpose: Define services and their intended outcomes.
+    provided_knowledge_keys: [section:services-outcomes]
+    required_context: [services, service_owner]
+    required_dependencies: [{module_id: customers-stakeholders, version_constraint: "^2.0.0"}]
+    section_contributions:
+      services-outcomes: {rule: Map every service to a customer outcome and accountable service owner.}
+  - module_id: responsibilities
+    version: 2.0.0
+    category: responsibility
+    purpose: Define responsibility standards.
+    provided_knowledge_keys: [section:responsibilities]
+    required_dependencies: [{module_id: services-outcomes, version_constraint: "^2.0.0"}]
+    section_contributions:
+      responsibilities: {rule: Define outcome-based responsibilities with authority, boundaries, and evidence.}
+  - module_id: roles-accountabilities
+    version: 2.0.0
+    category: ownership
+    purpose: Assign accountable and contributing roles.
+    provided_knowledge_keys: [section:roles-accountabilities]
+    required_context: [owner]
+    required_dependencies: [{module_id: responsibilities, version_constraint: "^2.0.0"}]
+    section_contributions:
+      roles-accountabilities: {rule: Name one accountable owner for each service and clarify contributor responsibilities.}
+  - module_id: decision-rights
+    version: 2.0.0
+    category: decision
+    purpose: Define decision authority and escalation triggers.
+    provided_knowledge_keys: [section:decision-rights]
+    required_dependencies: [{module_id: roles-accountabilities, version_constraint: "^2.0.0"}]
+    governance_overlays: [Decision rights must name decision owners and escalation conditions.]
+    section_contributions:
+      decision-rights: {rule: Define who decides, who advises, who is informed, and when escalation is mandatory.}
+  - module_id: ways-of-working
+    version: 2.0.0
+    category: operating-practice
+    purpose: Define collaboration and delivery practices.
+    provided_knowledge_keys: [section:ways-of-working]
+    required_dependencies: [{module_id: decision-rights, version_constraint: "^2.0.0"}]
+    section_contributions:
+      ways-of-working: {rule: Establish intake, prioritization, documentation, handoff, and feedback practices.}
+  - module_id: meeting-communication-cadence
+    version: 2.0.0
+    category: communication
+    purpose: Define purposeful meetings and communication cadence.
+    provided_knowledge_keys: [section:meeting-communication-cadence]
+    required_context: [review_cadence]
+    required_dependencies: [{module_id: ways-of-working, version_constraint: "^2.0.0"}]
+    section_contributions:
+      meeting-communication-cadence: {rule: Every forum records purpose, owner, inputs, outputs, participants, and cadence.}
+  - module_id: governance-escalation
+    version: 2.0.0
+    category: governance
+    purpose: Define governance, controls, and escalation.
+    provided_knowledge_keys: [section:governance-escalation]
+    required_dependencies: [{module_id: decision-rights, version_constraint: "^2.0.0"}]
+    governance_overlays:
+      - Material changes require governed review.
+      - Responsibilities cannot exist without authority or escalation.
+    section_contributions:
+      governance-escalation: {rule: Record review forums, approval thresholds, exception handling, and escalation paths.}
+  - module_id: metrics-service-health
+    version: 2.0.0
+    category: metric
+    purpose: Define service and operating-health measures.
+    provided_knowledge_keys: [section:metrics-service-health]
+    required_context: [metric_owner, metric_source]
+    required_dependencies: [{module_id: services-outcomes, version_constraint: "^2.0.0"}]
+    section_contributions:
+      metrics-service-health: {rule: Each metric maps to a service or outcome and names an owner, source, target, and review cadence.}
+  - module_id: continuous-improvement
+    version: 2.0.0
+    category: improvement
+    purpose: Establish a closed-loop improvement practice.
+    provided_knowledge_keys: [section:continuous-improvement]
+    required_dependencies: [{module_id: metrics-service-health, version_constraint: "^2.0.0"}]
+    section_contributions:
+      continuous-improvement: {rule: Convert evidence, incidents, feedback, and review findings into governed improvements.}
+  - module_id: review-change-control
+    version: 2.0.0
+    category: governance
+    purpose: Define lifecycle review and change control.
+    provided_knowledge_keys: [section:review-change-control]
+    required_context: [effective_date, next_review_date]
+    required_dependencies: [{module_id: governance-escalation, version_constraint: "^2.0.0"}]
+    section_contributions:
+      review-change-control: {rule: Record effective date, next review date, change owner, approval, and supersession history.}
+  - module_id: completion-evidence
+    version: 2.0.0
+    category: evidence
+    purpose: Define reviewable completion evidence.
+    provided_knowledge_keys: [completion-evidence]
+    evidence_overlays:
+      - Required sections are populated and provenance-complete.
+      - Service ownership, decision rights, governance, metrics, review, and dates are recorded.
+  - module_id: risk
+    version: 2.0.0
+    category: risk
+    purpose: Add risk identification and treatment guidance.
+    provided_knowledge_keys: [risk-overlay]
+    governance_overlays: [Material operating risks require an owner, treatment, trigger, and escalation path.]
+  - module_id: stakeholder-communication
+    version: 2.0.0
+    category: communication
+    purpose: Add stakeholder communication guidance.
+    provided_knowledge_keys: [stakeholder-communication-overlay]
+    governance_overlays: [Material changes require timely communication to affected stakeholders.]
