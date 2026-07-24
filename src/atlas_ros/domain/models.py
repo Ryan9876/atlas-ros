@@ -17,6 +17,42 @@ class Classification(StrEnum):
     NEEDS_CLARIFICATION = "needs_clarification"
 
 
+class ResponsibilityDomain(StrEnum):
+    PEOPLE_LEADERSHIP = "people_leadership"
+    PROJECT_DELIVERY = "project_delivery"
+    OPERATIONAL_STEWARDSHIP = "operational_stewardship"
+    EXTERNAL_DEPENDENCY = "external_dependency"
+    CAPABILITY_BUILDING = "capability_building"
+    UNRESOLVED = "unresolved"
+
+
+class ManagementWorkstream(StrEnum):
+    LEADERSHIP_AND_TEAM = "Leadership & Team"
+    ACTIVE_PROJECTS = "Active Projects"
+    OPERATIONS = "Operations"
+    WAITING_ON_OTHERS = "Waiting on Others"
+    DEVELOPMENT_AND_LEARNING = "Development & Learning"
+    NEEDS_CLARIFICATION = "Needs Clarification"
+
+
+class OperatingContext(StrEnum):
+    PEOPLE_LEADER = "people_leader"
+    PROJECT_MANAGER = "project_manager"
+    OPERATIONS_MANAGER = "operations_manager"
+    STRATEGIC_PLANNER = "strategic_planner"
+    INDIVIDUAL_CONTRIBUTOR = "individual_contributor"
+    EXECUTIVE = "executive"
+    UNRESOLVED = "unresolved"
+
+
+class ChallengeStatus(StrEnum):
+    UNCHALLENGED = "unchallenged"
+    ACCEPTED = "accepted"
+    CHALLENGED = "challenged"
+    CORRECTED = "corrected"
+    UNRESOLVED = "unresolved"
+
+
 class Severity(StrEnum):
     INFO = "info"
     WARNING = "warning"

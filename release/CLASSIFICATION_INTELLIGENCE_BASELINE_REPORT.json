@@ -1,0 +1,91 @@
+{
+  "case_count": 30,
+  "confidence_calibration_error": 0.02133333333333334,
+  "confusion_matrix": {
+    "capability_building": {
+      "capability_building": 6,
+      "external_dependency": 0,
+      "operational_stewardship": 0,
+      "people_leadership": 0,
+      "project_delivery": 0,
+      "unresolved": 0
+    },
+    "external_dependency": {
+      "capability_building": 0,
+      "external_dependency": 6,
+      "operational_stewardship": 0,
+      "people_leadership": 0,
+      "project_delivery": 0,
+      "unresolved": 0
+    },
+    "operational_stewardship": {
+      "capability_building": 0,
+      "external_dependency": 0,
+      "operational_stewardship": 6,
+      "people_leadership": 0,
+      "project_delivery": 0,
+      "unresolved": 0
+    },
+    "people_leadership": {
+      "capability_building": 0,
+      "external_dependency": 0,
+      "operational_stewardship": 0,
+      "people_leadership": 6,
+      "project_delivery": 0,
+      "unresolved": 0
+    },
+    "project_delivery": {
+      "capability_building": 0,
+      "external_dependency": 0,
+      "operational_stewardship": 0,
+      "people_leadership": 0,
+      "project_delivery": 6,
+      "unresolved": 0
+    }
+  },
+  "critical_fixture_pass_rate": 1.0,
+  "dataset_id": "classification-intelligence-v1",
+  "explanation_evidence_agreement": 1.0,
+  "macro_f1": 1.0,
+  "minimum_domain_recall": 1.0,
+  "per_domain": {
+    "capability_building": {"f1": 1.0, "precision": 1.0, "recall": 1.0},
+    "external_dependency": {"f1": 1.0, "precision": 1.0, "recall": 1.0},
+    "operational_stewardship": {"f1": 1.0, "precision": 1.0, "recall": 1.0},
+    "people_leadership": {"f1": 1.0, "precision": 1.0, "recall": 1.0},
+    "project_delivery": {"f1": 1.0, "precision": 1.0, "recall": 1.0}
+  },
+  "record_destination_equivalence": 1.0,
+  "results": [
+    {"confidence":0.99,"correct":true,"expected_classification":"action","expected_destination":"action_records","expected_domain":"people_leadership","expected_workstream":"Leadership & Team","id":"P01","predicted_classification":"action","predicted_destination":"action_records","predicted_domain":"people_leadership","predicted_workstream":"Leadership & Team","requires_human_decision":false},
+    {"confidence":0.99,"correct":true,"expected_classification":"action","expected_destination":"action_records","expected_domain":"people_leadership","expected_workstream":"Leadership & Team","id":"P02","predicted_classification":"action","predicted_destination":"action_records","predicted_domain":"people_leadership","predicted_workstream":"Leadership & Team","requires_human_decision":false},
+    {"confidence":0.99,"correct":true,"expected_classification":"action","expected_destination":"action_records","expected_domain":"people_leadership","expected_workstream":"Leadership & Team","id":"P03","predicted_classification":"action","predicted_destination":"action_records","predicted_domain":"people_leadership","predicted_workstream":"Leadership & Team","requires_human_decision":false},
+    {"confidence":0.99,"correct":true,"expected_classification":"action","expected_destination":"action_records","expected_domain":"people_leadership","expected_workstream":"Leadership & Team","id":"P04","predicted_classification":"action","predicted_destination":"action_records","predicted_domain":"people_leadership","predicted_workstream":"Leadership & Team","requires_human_decision":false},
+    {"confidence":0.99,"correct":true,"expected_classification":"action","expected_destination":"action_records","expected_domain":"people_leadership","expected_workstream":"Leadership & Team","id":"P05","predicted_classification":"action","predicted_destination":"action_records","predicted_domain":"people_leadership","predicted_workstream":"Leadership & Team","requires_human_decision":false},
+    {"confidence":0.99,"correct":true,"expected_classification":"action","expected_destination":"action_records","expected_domain":"people_leadership","expected_workstream":"Leadership & Team","id":"P06","predicted_classification":"action","predicted_destination":"action_records","predicted_domain":"people_leadership","predicted_workstream":"Leadership & Team","requires_human_decision":false},
+    {"confidence":0.99,"correct":true,"expected_classification":"action","expected_destination":"action_records","expected_domain":"project_delivery","expected_workstream":"Active Projects","id":"J01","predicted_classification":"action","predicted_destination":"action_records","predicted_domain":"project_delivery","predicted_workstream":"Active Projects","requires_human_decision":false},
+    {"confidence":0.99,"correct":true,"expected_classification":"action","expected_destination":"action_records","expected_domain":"project_delivery","expected_workstream":"Active Projects","id":"J02","predicted_classification":"action","predicted_destination":"action_records","predicted_domain":"project_delivery","predicted_workstream":"Active Projects","requires_human_decision":false},
+    {"confidence":0.99,"correct":true,"expected_classification":"action","expected_destination":"action_records","expected_domain":"project_delivery","expected_workstream":"Active Projects","id":"J03","predicted_classification":"action","predicted_destination":"action_records","predicted_domain":"project_delivery","predicted_workstream":"Active Projects","requires_human_decision":false},
+    {"confidence":0.99,"correct":true,"expected_classification":"action","expected_destination":"action_records","expected_domain":"project_delivery","expected_workstream":"Active Projects","id":"J04","predicted_classification":"action","predicted_destination":"action_records","predicted_domain":"project_delivery","predicted_workstream":"Active Projects","requires_human_decision":false},
+    {"confidence":0.79,"correct":true,"expected_classification":"project","expected_destination":"portfolio_projects","expected_domain":"project_delivery","expected_workstream":"Active Projects","id":"J05","predicted_classification":"project","predicted_destination":"portfolio_projects","predicted_domain":"project_delivery","predicted_workstream":"Active Projects","requires_human_decision":false},
+    {"confidence":0.99,"correct":true,"expected_classification":"project","expected_destination":"portfolio_projects","expected_domain":"project_delivery","expected_workstream":"Active Projects","id":"J06","predicted_classification":"project","predicted_destination":"portfolio_projects","predicted_domain":"project_delivery","predicted_workstream":"Active Projects","requires_human_decision":false},
+    {"confidence":0.99,"correct":true,"expected_classification":"action","expected_destination":"action_records","expected_domain":"operational_stewardship","expected_workstream":"Operations","id":"O01","predicted_classification":"action","predicted_destination":"action_records","predicted_domain":"operational_stewardship","predicted_workstream":"Operations","requires_human_decision":false},
+    {"confidence":0.99,"correct":true,"expected_classification":"action","expected_destination":"action_records","expected_domain":"operational_stewardship","expected_workstream":"Operations","id":"O02","predicted_classification":"action","predicted_destination":"action_records","predicted_domain":"operational_stewardship","predicted_workstream":"Operations","requires_human_decision":false},
+    {"confidence":0.99,"correct":true,"expected_classification":"action","expected_destination":"action_records","expected_domain":"operational_stewardship","expected_workstream":"Operations","id":"O03","predicted_classification":"action","predicted_destination":"action_records","predicted_domain":"operational_stewardship","predicted_workstream":"Operations","requires_human_decision":false},
+    {"confidence":0.99,"correct":true,"expected_classification":"action","expected_destination":"action_records","expected_domain":"operational_stewardship","expected_workstream":"Operations","id":"O04","predicted_classification":"action","predicted_destination":"action_records","predicted_domain":"operational_stewardship","predicted_workstream":"Operations","requires_human_decision":false},
+    {"confidence":0.99,"correct":true,"expected_classification":"action","expected_destination":"action_records","expected_domain":"operational_stewardship","expected_workstream":"Operations","id":"O05","predicted_classification":"action","predicted_destination":"action_records","predicted_domain":"operational_stewardship","predicted_workstream":"Operations","requires_human_decision":false},
+    {"confidence":0.99,"correct":true,"expected_classification":"risk","expected_destination":"risks_and_blockers","expected_domain":"operational_stewardship","expected_workstream":"Operations","id":"O06","predicted_classification":"risk","predicted_destination":"risks_and_blockers","predicted_domain":"operational_stewardship","predicted_workstream":"Operations","requires_human_decision":false},
+    {"confidence":0.99,"correct":true,"expected_classification":"action","expected_destination":"action_records","expected_domain":"external_dependency","expected_workstream":"Waiting on Others","id":"E01","predicted_classification":"action","predicted_destination":"action_records","predicted_domain":"external_dependency","predicted_workstream":"Waiting on Others","requires_human_decision":false},
+    {"confidence":0.99,"correct":true,"expected_classification":"action","expected_destination":"action_records","expected_domain":"external_dependency","expected_workstream":"Waiting on Others","id":"E02","predicted_classification":"action","predicted_destination":"action_records","predicted_domain":"external_dependency","predicted_workstream":"Waiting on Others","requires_human_decision":false},
+    {"confidence":0.99,"correct":true,"expected_classification":"action","expected_destination":"action_records","expected_domain":"external_dependency","expected_workstream":"Waiting on Others","id":"E03","predicted_classification":"action","predicted_destination":"action_records","predicted_domain":"external_dependency","predicted_workstream":"Waiting on Others","requires_human_decision":false},
+    {"confidence":0.99,"correct":true,"expected_classification":"action","expected_destination":"action_records","expected_domain":"external_dependency","expected_workstream":"Waiting on Others","id":"E04","predicted_classification":"action","predicted_destination":"action_records","predicted_domain":"external_dependency","predicted_workstream":"Waiting on Others","requires_human_decision":false},
+    {"confidence":0.99,"correct":true,"expected_classification":"action","expected_destination":"action_records","expected_domain":"external_dependency","expected_workstream":"Waiting on Others","id":"E05","predicted_classification":"action","predicted_destination":"action_records","predicted_domain":"external_dependency","predicted_workstream":"Waiting on Others","requires_human_decision":false},
+    {"confidence":0.99,"correct":true,"expected_classification":"decision","expected_destination":"decision_log","expected_domain":"external_dependency","expected_workstream":"Waiting on Others","id":"E06","predicted_classification":"decision","predicted_destination":"decision_log","predicted_domain":"external_dependency","predicted_workstream":"Waiting on Others","requires_human_decision":false},
+    {"confidence":0.99,"correct":true,"expected_classification":"action","expected_destination":"action_records","expected_domain":"capability_building","expected_workstream":"Development & Learning","id":"C01","predicted_classification":"action","predicted_destination":"action_records","predicted_domain":"capability_building","predicted_workstream":"Development & Learning","requires_human_decision":false},
+    {"confidence":0.99,"correct":true,"expected_classification":"action","expected_destination":"action_records","expected_domain":"capability_building","expected_workstream":"Development & Learning","id":"C02","predicted_classification":"action","predicted_destination":"action_records","predicted_domain":"capability_building","predicted_workstream":"Development & Learning","requires_human_decision":false},
+    {"confidence":0.99,"correct":true,"expected_classification":"action","expected_destination":"action_records","expected_domain":"capability_building","expected_workstream":"Development & Learning","id":"C03","predicted_classification":"action","predicted_destination":"action_records","predicted_domain":"capability_building","predicted_workstream":"Development & Learning","requires_human_decision":false},
+    {"confidence":0.99,"correct":true,"expected_classification":"action","expected_destination":"action_records","expected_domain":"capability_building","expected_workstream":"Development & Learning","id":"C04","predicted_classification":"action","predicted_destination":"action_records","predicted_domain":"capability_building","predicted_workstream":"Development & Learning","requires_human_decision":false},
+    {"confidence":0.99,"correct":true,"expected_classification":"action","expected_destination":"action_records","expected_domain":"capability_building","expected_workstream":"Development & Learning","id":"C05","predicted_classification":"action","predicted_destination":"action_records","predicted_domain":"capability_building","predicted_workstream":"Development & Learning","requires_human_decision":false},
+    {"confidence":0.85,"correct":true,"expected_classification":"reference","expected_destination":"universal_inbox","expected_domain":"capability_building","expected_workstream":"Development & Learning","id":"C06","predicted_classification":"reference","predicted_destination":"universal_inbox","predicted_domain":"capability_building","predicted_workstream":"Development & Learning","requires_human_decision":false}
+  ]
+}

@@ -5,10 +5,11 @@ from dataclasses import dataclass
 from typing import Any
 
 from atlas_ros.config.loader import load_config
-from atlas_ros.contracts import ReasoningPackage
+from atlas_ros.contracts import ReasoningPackage, ReasoningPackageV2
 from atlas_ros.domain.models import Classification, RoutingRecommendation
 
 ConfigLoader = Callable[[str], dict[str, Any]]
+ReasoningContract = ReasoningPackage | ReasoningPackageV2
 
 
 @dataclass(frozen=True)
@@ -25,7 +26,7 @@ class RecordRoutingService:
     def __init__(self, config_loader: ConfigLoader = load_config) -> None:
         self._config_loader = config_loader
 
-    def decide(self, reasoning: ReasoningPackage) -> RoutingDecision:
+    def decide(self, reasoning: ReasoningContract) -> RoutingDecision:
         config = self._config_loader("classifications")
         allowed = set(config["allowed"])
         if reasoning.classification not in allowed:
@@ -56,7 +57,7 @@ class RecordRoutingService:
     def apply(
         self,
         recommendation: RoutingRecommendation,
-        reasoning: ReasoningPackage,
+        reasoning: ReasoningContract,
     ) -> RoutingRecommendation:
         decision = self.decide(reasoning)
         return recommendation.model_copy(

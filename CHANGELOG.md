@@ -1,3 +1,12 @@
+# Unreleased — Classification Intelligence Phase 1
+
+- Added responsibility-first classification across People Leadership, Project Delivery, Operational Stewardship, External Dependency, and Capability Building.
+- Added version 2 reasoning contracts with structured evidence, workstream, operating context, challenge state, fallback reason, and explicit version 1 projection.
+- Added concise evidence-aligned classification explanations and manager-intent inference as a supporting signal only.
+- Added shadow, attended, and explicit semantic W02 modes while preserving legacy mode as the default production-compatible path.
+- Added governed policy configuration, a 30-case evaluation dataset, quantitative calibration tooling, implementation-registry traceability, ADR-005, and regression coverage.
+- Preserved deterministic record routing, provider separation, attended execution, rollback controls, and Ryan-only production promotion.
+
 ## v5.0.0rc1 — Milestone 5
 
 - Added governed evidence-first reasoning and recommendation engine.
