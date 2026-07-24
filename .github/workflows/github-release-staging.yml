@@ -39,7 +39,7 @@ concurrency:
 jobs:
   stage-draft-release:
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 20
 
     steps:
       - name: Check out release tooling
@@ -56,10 +56,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p candidate
-          gh run download "${RUN_ID}" \
-            --repo "${GITHUB_REPOSITORY}" \
-            --name "${ARTIFACT_NAME}" \
-            --dir candidate
+          gh run download "${RUN_ID}" --repo "${GITHUB_REPOSITORY}" --name "${ARTIFACT_NAME}" --dir candidate
 
       - name: Verify candidate package and publication checksums
         env:
@@ -70,10 +67,7 @@ jobs:
           checksum_file="${package}.sha256"
           test -n "${package}"
           test -f "${checksum_file}"
-          (
-            cd "$(dirname "${package}")"
-            sha256sum -c "$(basename "${checksum_file}")"
-          )
+          (cd "$(dirname "${package}")" && sha256sum -c "$(basename "${checksum_file}")")
           actual_sha256="$(sha256sum "${package}" | awk '{print $1}')"
           if [[ -n "${EXPECTED_PACKAGE_SHA256}" && "${actual_sha256}" != "${EXPECTED_PACKAGE_SHA256}" ]]; then
             echo "candidate package digest mismatch" >&2
@@ -82,10 +76,7 @@ jobs:
           rm -rf verified-candidate
           mkdir verified-candidate
           unzip -q "${package}" -d verified-candidate
-          (
-            cd verified-candidate/publication
-            sha256sum -c CHECKSUMS.sha256
-          )
+          (cd verified-candidate/publication && sha256sum -c CHECKSUMS.sha256)
           printf 'PACKAGE=%s\n' "${package}" >> "${GITHUB_ENV}"
           printf 'PACKAGE_SHA256=%s\n' "${actual_sha256}" >> "${GITHUB_ENV}"
 
@@ -99,19 +90,9 @@ jobs:
           set -euo pipefail
           notes_file="verified-candidate/publication/RELEASE_MANIFEST.md"
           if gh release view "${TAG}" --repo "${GITHUB_REPOSITORY}" >/dev/null 2>&1; then
-            gh release edit "${TAG}" \
-              --repo "${GITHUB_REPOSITORY}" \
-              --draft \
-              --title "${RELEASE_NAME}" \
-              --target "${TARGET_COMMITISH}" \
-              --notes-file "${notes_file}"
+            gh release edit "${TAG}" --repo "${GITHUB_REPOSITORY}" --draft --title "${RELEASE_NAME}" --target "${TARGET_COMMITISH}" --notes-file "${notes_file}"
           else
-            gh release create "${TAG}" \
-              --repo "${GITHUB_REPOSITORY}" \
-              --draft \
-              --title "${RELEASE_NAME}" \
-              --target "${TARGET_COMMITISH}" \
-              --notes-file "${notes_file}"
+            gh release create "${TAG}" --repo "${GITHUB_REPOSITORY}" --draft --title "${RELEASE_NAME}" --target "${TARGET_COMMITISH}" --notes-file "${notes_file}"
           fi
 
       - name: Upload checksum-bound draft release assets
@@ -120,15 +101,36 @@ jobs:
           TAG: ${{ inputs.tag }}
         run: |
           set -euo pipefail
-          mapfile -d '' assets < <(
-            find verified-candidate/publication -type f -print0 | sort -z
-          )
-          gh release upload "${TAG}" \
-            --repo "${GITHUB_REPOSITORY}" \
-            --clobber \
-            "${PACKAGE}" \
-            "${PACKAGE}.sha256" \
-            "${assets[@]}"
+          mapfile -d '' assets < <(find verified-candidate/publication -type f -print0 | sort -z)
+          gh release upload "${TAG}" --repo "${GITHUB_REPOSITORY}" --clobber "${PACKAGE}" "${PACKAGE}.sha256" "${assets[@]}"
+
+      - name: Download and verify published assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.tag }}
+        run: |
+          set -euo pipefail
+          rm -rf release-readback
+          mkdir release-readback
+          gh release download "${TAG}" --repo "${GITHUB_REPOSITORY}" --dir release-readback
+          downloaded_package="$(find release-readback -maxdepth 1 -type f -name 'Atlas_ROS_v*_release_candidate.zip' -print -quit)"
+          test -n "${downloaded_package}"
+          test "$(sha256sum "${downloaded_package}" | awk '{print $1}')" = "${PACKAGE_SHA256}"
+          (cd release-readback && sha256sum -c "$(basename "${downloaded_package}").sha256")
+          test -f release-readback/CHECKSUMS.sha256
+          (cd release-readback && sha256sum -c CHECKSUMS.sha256)
+
+      - name: Prove restoration without Drive
+        run: |
+          set -euo pipefail
+          rm -rf restored-source restored-venv
+          mkdir restored-source
+          unzip -q release-readback/Atlas_ROS_v*_release_candidate.zip -d restored-source
+          source_archive="$(find restored-source -type f -name '*.tar.gz' -print -quit)"
+          test -n "${source_archive}"
+          python -m venv restored-venv
+          restored-venv/bin/pip install --disable-pip-version-check "${source_archive}"
+          restored-venv/bin/python -c "import atlas_ros; from atlas_ros.capabilities import ExecutionPlanner"
 
       - name: Verify draft release metadata
         env:
@@ -137,8 +139,5 @@ jobs:
           TARGET_COMMITISH: ${{ inputs.target_commitish }}
         run: |
           set -euo pipefail
-          gh release view "${TAG}" \
-            --repo "${GITHUB_REPOSITORY}" \
-            --json isDraft,tagName,targetCommitish \
-            --jq 'select(.isDraft == true and .tagName == env.TAG and .targetCommitish == env.TARGET_COMMITISH)'
-          echo "Draft release staged. Publication remains inactive until Ryan explicitly authorizes promotion."
+          gh release view "${TAG}" --repo "${GITHUB_REPOSITORY}" --json isDraft,tagName,targetCommitish --jq 'select(.isDraft == true and .tagName == env.TAG and .targetCommitish == env.TARGET_COMMITISH)'
+          echo "Draft release staged, downloaded, checksum-verified, and restored without Drive. Publication remains inactive until Ryan explicitly authorizes promotion."
