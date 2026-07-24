@@ -138,7 +138,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: v510-source-verification
+          name: v520-source-verification
           path: source-verification/mismatches.json
           if-no-files-found: warn
           retention-days: 7
@@ -167,18 +167,18 @@ jobs:
             --source-manifest release/CHECKSUMS.sha256 \
             --sbom release/SBOM_V510_CURRENT.cdx.json
 
-      - name: Assemble immutable v5.1 candidate publication set
+      - name: Assemble immutable v5.2 candidate publication set
         run: |
           set -euo pipefail
           mkdir -p publication/audit
           cp "dist/${ATLAS_SDIST}" publication/
           cp "dist/${ATLAS_WHEEL}" publication/
-          cp candidate-evidence/RELEASE_MANIFEST_V510_CANDIDATE.md publication/RELEASE_MANIFEST.md
-          cp candidate-evidence/V510_PROMOTION_PREPARATION_REPORT.md publication/
-          cp candidate-evidence/V510_PROMOTION_PREPARATION_STATUS.json publication/
-          cp candidate-evidence/V510_PROMOTION_PREPARATION_STATUS.sha256 publication/
-          cp candidate-evidence/V510_RELEASE_VALIDATION_WORKBENCH_REPORT.md publication/
-          cp candidate-evidence/V510_CALIBRATION_REPORT.json publication/
+          cp candidate-evidence/RELEASE_MANIFEST_V520_CANDIDATE.md publication/RELEASE_MANIFEST.md
+          cp candidate-evidence/V520_PROMOTION_PREPARATION_REPORT.md publication/
+          cp candidate-evidence/V520_PROMOTION_PREPARATION_STATUS.json publication/
+          cp candidate-evidence/V520_PROMOTION_PREPARATION_STATUS.sha256 publication/
+          cp candidate-evidence/V520_RELEASE_VALIDATION_WORKBENCH_REPORT.md publication/
+          cp candidate-evidence/V520_CALIBRATION_REPORT.json publication/
           cp release/SBOM_V510_CURRENT.cdx.json publication/SBOM.cdx.json
           cp release/CHECKSUMS.sha256 publication/SOURCE_CHECKSUMS.sha256
           cp requirements.runtime.lock publication/
@@ -197,7 +197,7 @@ jobs:
           zip -q -X -r "${ATLAS_PACKAGE_BASENAME}.zip" publication
           sha256sum "${ATLAS_PACKAGE_BASENAME}.zip" > "${ATLAS_PACKAGE_BASENAME}.zip.sha256"
 
-      - name: Retain v5.1 release candidate evidence
+      - name: Retain v5.2 release candidate evidence
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: atlas-ros-v${{ env.ATLAS_RELEASE_LABEL }}-release-candidate
