@@ -88,26 +88,30 @@ jobs:
           mapfile -d '' assets < <(find verified-candidate/publication -type f -print0 | sort -z)
           gh release upload "${TAG}" --repo "${GITHUB_REPOSITORY}" --clobber "${PACKAGE}" "${PACKAGE}.sha256" "${assets[@]}"
 
-      - name: Download and verify published assets
+      - name: Download and verify authoritative published package
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           mkdir release-readback
-          gh release download "${TAG}" --repo "${GITHUB_REPOSITORY}" --dir release-readback
-          downloaded_package="$(find release-readback -maxdepth 1 -type f -name 'Atlas_ROS_v5.3.0rc1_release_candidate.zip' -print -quit)"
-          test -n "${downloaded_package}"
+          gh release download "${TAG}" --repo "${GITHUB_REPOSITORY}" \
+            --pattern 'Atlas_ROS_v5.3.0rc1_release_candidate.zip' \
+            --pattern 'Atlas_ROS_v5.3.0rc1_release_candidate.zip.sha256' \
+            --dir release-readback
+          downloaded_package="release-readback/Atlas_ROS_v5.3.0rc1_release_candidate.zip"
+          test -f "${downloaded_package}"
+          test -f "${downloaded_package}.sha256"
           test "$(sha256sum "${downloaded_package}" | awk '{print $1}')" = "${PACKAGE_SHA256}"
-          (cd release-readback && sha256sum -c "$(basename "${downloaded_package}").sha256")
-          (cd release-readback && sha256sum -c CHECKSUMS.sha256)
+          (cd release-readback && sha256sum -c Atlas_ROS_v5.3.0rc1_release_candidate.zip.sha256)
+          mkdir published-candidate
+          unzip -q "${downloaded_package}" -d published-candidate
+          (cd published-candidate/publication && sha256sum -c CHECKSUMS.sha256)
 
       - name: Prove Drive-independent restoration
         run: |
           set -euo pipefail
-          mkdir restored-source
-          unzip -q release-readback/Atlas_ROS_v5.3.0rc1_release_candidate.zip -d restored-source
-          source_archive="$(find restored-source -type f -name 'atlas_ros-5.3.0rc1.tar.gz' -print -quit)"
-          test -n "${source_archive}"
+          source_archive="published-candidate/publication/atlas_ros-5.3.0rc1.tar.gz"
+          test -f "${source_archive}"
           python -m venv restored-venv
           restored-venv/bin/pip install --disable-pip-version-check "${source_archive}"
           restored-venv/bin/python -c "import atlas_ros; from atlas_ros.capabilities import ExecutionPlanner, ManagementReasoningEngine, ResponsibilityClassifier"
@@ -123,7 +127,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh pr comment 13 --repo "${GITHUB_REPOSITORY}" --body "Draft GitHub Release staging passed for \`${TAG}\`. Staging run: \`${GITHUB_RUN_ID}\`. Artifact ID: \`${ARTIFACT_ID}\`. Candidate run: \`${CANDIDATE_RUN_ID}\`. Target: \`${TARGET_COMMITISH}\`. Package SHA-256: \`${PACKAGE_SHA256}\`. All assets were uploaded, downloaded, checksum-verified, and restored without Google Drive, including Classification Intelligence imports and configuration. Production promotion remains unauthorized."
+          gh pr comment 13 --repo "${GITHUB_REPOSITORY}" --body "Draft GitHub Release staging passed for \`${TAG}\`. Staging run: \`${GITHUB_RUN_ID}\`. Artifact ID: \`${ARTIFACT_ID}\`. Candidate run: \`${CANDIDATE_RUN_ID}\`. Target: \`${TARGET_COMMITISH}\`. Package SHA-256: \`${PACKAGE_SHA256}\`. The authoritative package was uploaded, downloaded, checksum-verified with its internal publication set, and restored without Google Drive, including Classification Intelligence imports and configuration. Production promotion remains unauthorized."
 
       - name: Record staging failure
         if: failure()
