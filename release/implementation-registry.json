@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-07-24T14:30:00Z",
-  "candidate_version": "5.2.0.dev0",
-  "source_head": "4eed3b8b33f1ac77a2166d0244ffbd883a6f9121",
+  "generated_at": "2026-07-24T14:55:00Z",
+  "candidate_version": "5.2.0rc1",
+  "source_head": "58a0d4d225fa9c44d4616a45bce7c89d2596da82",
   "records": [
     {
       "record_id": "IDEA-8",
@@ -17,7 +17,7 @@
       "title": "GitHub-First Authority Migration and Drive Dependency Reduction",
       "disposition": "partially_implemented",
       "implemented_scope": "Recursive Drive inventory and parent-closure contracts, checksum-bound GitHub representation requirements, fixed bootstrap and Drive allowlist enforcement, draft GitHub Release asset publication, release download/readback verification, and restoration proof without Drive.",
-      "remaining_scope": "Populate the complete recursive representation ledger from retained historical Drive assets, dispatch and verify the draft GitHub Release staging workflow, then perform the separately authorized authority promotion and post-promotion readback.",
+      "remaining_scope": "Populate the complete recursive representation ledger from retained historical Drive assets and verify the staged draft release before the separately authorized authority promotion and post-promotion readback.",
       "evidence": ["PR #10", "src/atlas_ros/release/authority_cutover.py", ".github/workflows/github-release-staging.yml", "tests/unit/test_authority_cutover.py"]
     },
     {
