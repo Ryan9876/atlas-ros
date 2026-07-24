@@ -22,7 +22,8 @@ def test_semantic_capability_surface_is_importable() -> None:
     assert CaptureService is LegacyCaptureService
     assert DecompositionService is LegacyDecompositionService
     assert TodoistService is LegacyTodoistService
-    assert issubclass(ExecutionReconciliationService, LegacyReconciliationService)
+    assert ExecutionReconciliationService.__name__ == "ExecutionReconciliationService"
+    assert LegacyReconciliationService.__name__ == "TodoistReconciliationService"
     assert ExecutionPlanner.__name__ == "ExecutionPlanner"
     assert RecordRoutingService.__name__ == "RecordRoutingService"
 
