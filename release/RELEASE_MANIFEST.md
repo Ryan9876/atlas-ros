@@ -1,17 +1,27 @@
-# Atlas ROS v5.1.1 Release Manifest
+# Atlas ROS v5.2.0 Release Manifest
 
-Release class: Immutable release-manifest and published-workspace validity correction.
+Status: Active production release after successful release-candidate validation, checksum-bound GitHub staging and readback, Drive-independent restoration proof, historical representation-ledger verification, Full Validation Review V4V-25, and Ryan Smith's explicit production-promotion authorization on 2026-07-24.
 
-Base authority: Atlas ROS v5.1. Immediate immutable rollback upon promotion: Atlas ROS v5.1.
+- Package version: `5.2.0`
+- Validated candidate head: `2745a79d202031f8bfcd6f36098439fd8df6f844`
+- Production merge commit: `79568b1bb6f4fa46407ecfb28320afe22c9e631a`
+- Final identity commit: `80ee6352f60f8146d17d6f1af8415ebb13f6858b`
+- Release-candidate workflow run: `30102629211`
+- Validated candidate package SHA-256: `9176143323f6371879b2b5c2a609e1aa204628252297328d3b1b9aa971bb86ee`
+- Governed review: `Atlas ROS v5.2.0rc1 Full Validation and Governed Release Review` — Passed with Findings; no blocking findings
+- Promotion authorized: Yes — Ryan Smith, 2026-07-24
+- Previous Active authority and immediate immutable rollback: Atlas ROS v5.1.1
 
-This patch corrects release-authority documentation without expanding executable scope. It replaces the stale embedded v4.5.3 source manifest with the correct v5.1.1 identity and requires the generated published manifest to state the readable published workspace validity contract explicitly. The v5.1 workflow, policy, schema, integration scope, operating boundaries, and attended execution model remain unchanged.
+## Authority model
 
-Required production integrations remain Google Drive, Notion, and Todoist. Integration Inventory authority: https://app.notion.com/p/8ba4fafb5ce244ef9add3013aff3746b
+GitHub is the canonical source, architecture, policy, schema, runbook, release, validation, restoration, and historical-software authority. Notion remains the live dynamic management authority. Todoist remains the attended execution authority. The fixed Google Drive Release Index remains the initialization bootstrap, while historical Drive release folders remain allowlisted legacy-read-only records.
 
-Validation gates: Ruff, strict MyPy, complete regression tests with branch coverage above the 85% threshold, source and wheel builds, clean-wheel installation, packaged-policy smoke testing, deterministic dependency-lock validation, vulnerability-exception validation, dual-service advisory-policy enforcement, canonical source-manifest generation and verification, extracted-source verification, SBOM and package-version consistency, six critical restoration-document validation, restoration-companion checksum verification, outer release-artifact checksums, Google Drive publication/readback, Decision Log and Review Record readback, and rollback-integrity confirmation.
+## Release scope
 
-The readable published workspace is valid when this manifest, the validation report, dependency-security evidence, SBOM, canonical checksums, source distribution, wheel, and combined package are readable, internally consistent, checksum-valid, and successfully read back from their authoritative published locations. Secrets and private signing material are excluded.
+This compatibility release completes the GitHub-first authority migration baseline, implements capability-based semantic architecture and development-record reconciliation, preserves W-number compatibility aliases, and does not expand production integration scope or autonomy. Calendar, messaging, email, deletion, autonomous scheduling, and unattended consequential automation remain inactive unless separately authorized.
 
-This release does not activate autonomous scheduling, messaging, email, calendar actions, deletion, or unattended consequential automation.
+## Validation
 
-Production promotion requires a governed review bound to the exact commit and artifact digest, successful publication and readback, and Ryan Smith's explicit authorization.
+Ruff, architecture validation, strict MyPy, 313 regression tests, 88.83% branch coverage, deterministic dependency policy, PyPI and OSV advisory audits, source and wheel builds, clean-wheel installation, canonical source verification across 293 files, extracted-source verification, SBOM/package consistency, quantitative calibration across 60 cases and 8 domains, six critical restoration-document validation, restoration-companion checksum verification, outer package checksums, checksum-bound publication readback, Drive-independent restoration, historical representation-ledger verification for 43/43 root authorities, Decision Log readback, Review Record readback, Automation Register validation, Integration Inventory validation, and rollback-integrity confirmation passed.
+
+The readable published workspace is valid when this manifest, validation evidence, dependency-security evidence, SBOM, canonical checksums, source distribution, wheel, candidate package, historical representation ledger, and production source commit are readable, internally consistent, checksum-valid, and successfully read back from their authoritative GitHub and Notion locations. Secrets and private signing material are excluded.
