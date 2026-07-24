@@ -14,9 +14,9 @@ from atlas_ros.intelligence.calibration import IntelligenceCalibrationEngine, lo
 from atlas_ros.intelligence.evaluator import IntelligenceEvaluationRunner
 
 SHA_PATTERN = re.compile(r"^[0-9a-f]{40}$")
-RELEASE_NAME = "Atlas ROS v5.1"
+RELEASE_NAME = "Atlas ROS v5.1.1"
 EVIDENCE_PREFIX = "V510"
-BASE_AUTHORITY = "Atlas ROS v5.0"
+BASE_AUTHORITY = "Atlas ROS v5.1"
 
 
 def sha256(path: Path) -> str:
@@ -90,6 +90,11 @@ Status: Candidate evidence ready for governed solo-maintainer review; not promot
 
 The candidate source, source manifest, source distribution, wheel, SBOM, dependency audit evidence,
 quantitative calibration evidence, and workflow validation report are bound by the publication-set checksum manifest.
+
+The readable published workspace is valid when this manifest, the validation report, dependency-security evidence,
+SBOM, canonical checksums, source distribution, wheel, and combined package are readable, internally consistent,
+checksum-valid, and successfully read back from their authoritative published locations. Secrets and private signing
+material are excluded.
 
 Validated gates include Ruff, strict MyPy, {test_count} tests, {branch_coverage:.2f}% branch coverage,
 dependency policy and dual advisory audits, canonical source verification, source and wheel builds,
@@ -193,7 +198,9 @@ This report cannot authorize promotion.
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Build commit-bound Atlas ROS v5.1 candidate evidence")
+    parser = argparse.ArgumentParser(
+        description="Build commit-bound Atlas ROS v5.1.1 candidate evidence"
+    )
     parser.add_argument("--project-root", type=Path, default=Path.cwd())
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--head-sha", required=True)
