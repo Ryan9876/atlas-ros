@@ -34,6 +34,8 @@ on:
 permissions:
   actions: read
   contents: write
+  issues: write
+  pull-requests: write
 
 concurrency:
   group: github-release-staging-v5.3.0-rc.1
@@ -145,3 +147,10 @@ jobs:
           set -euo pipefail
           gh release view "${TAG}" --repo "${GITHUB_REPOSITORY}" --json isDraft,tagName,targetCommitish --jq 'select(.isDraft == true and .tagName == env.TAG and .targetCommitish == env.TARGET_COMMITISH)'
           echo "Draft release staged, downloaded, checksum-verified, and restored without Drive. Publication remains inactive until Ryan explicitly authorizes promotion."
+
+      - name: Record staging receipt on promotion PR
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh pr comment 13 --repo "${GITHUB_REPOSITORY}" --body "Draft GitHub Release staging passed for \`${TAG}\`. Staging run: \`${GITHUB_RUN_ID}\`. Candidate run: \`${RUN_ID}\`. Target: \`${TARGET_COMMITISH}\`. Package SHA-256: \`${PACKAGE_SHA256}\`. Assets were uploaded, downloaded, checksum-verified, and restored without Google Drive, including Classification Intelligence imports. Production promotion remains unauthorized."
