@@ -10,6 +10,12 @@ FORBIDDEN_PREFIXES: dict[str, tuple[str, ...]] = {
     "planning": ("atlas_ros.adapters", "atlas_ros.legacy"),
     "policy": ("atlas_ros.adapters", "atlas_ros.legacy"),
 }
+LEGACY_WORKFLOW_PREFIX = "atlas_ros.workflows.w"
+LEGACY_IMPORT_ALLOWLIST = {
+    "capabilities/__init__.py",
+    "legacy/facades.py",
+    "services/execution_reconciliation.py",
+}
 
 
 def imported_modules(path: Path) -> set[str]:
@@ -40,4 +46,17 @@ def validate(root: Path = PACKAGE_ROOT) -> list[dict[str, str]]:
                             "rule": f"{layer} must not depend on {matched}",
                         }
                     )
+    for path in sorted(root.rglob("*.py")):
+        relative = path.relative_to(root).as_posix()
+        if relative.startswith("workflows/") or relative in LEGACY_IMPORT_ALLOWLIST:
+            continue
+        for module in sorted(imported_modules(path)):
+            if module.startswith(LEGACY_WORKFLOW_PREFIX):
+                violations.append(
+                    {
+                        "path": path.as_posix(),
+                        "import": module,
+                        "rule": "new internal code must use semantic capability imports",
+                    }
+                )
     return violations
