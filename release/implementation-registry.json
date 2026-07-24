@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-07-24T13:45:00Z",
+  "generated_at": "2026-07-24T13:56:00Z",
   "candidate_version": "5.2.0.dev0",
-  "source_head": "40e3d62b7d1b30a6e31e09d5a8526f428417552a",
+  "source_head": "ad90aef1f14be229b88dfdd6b40eac3f71648943",
   "records": [
     {
       "record_id": "IDEA-8",
@@ -24,9 +24,9 @@
       "record_id": "IDEA-10",
       "title": "Capability-Based ROS Architecture Migration and W-Convention Retirement",
       "disposition": "in_progress",
-      "implemented_scope": "Canonical contracts, compatibility facades, separated reasoning and routing, knowledge and management engines, execution planning, and Phase 5 execution orchestration and provider separation.",
-      "remaining_scope": "Execution reconciliation service, semantic cutover, W-number retirement, and production promotion.",
-      "evidence": ["PR #10", "src/atlas_ros/orchestration/execution.py", "src/atlas_ros/adapters/todoist_execution.py", "CI 30097927431", "Release candidate 30097927362"]
+      "implemented_scope": "Canonical contracts, compatibility facades, separated reasoning and routing, knowledge and management engines, execution planning, execution orchestration/provider separation, and Phase 6 Execution Reconciliation Service with canonical outcomes and fail-closed checkpoint safety.",
+      "remaining_scope": "Responsibility-first reasoning expansion, semantic cutover, W-number retirement, development-record reconciliation, authority migration completion, and production promotion.",
+      "evidence": ["PR #10", "src/atlas_ros/services/execution_reconciliation.py", "tests/test_execution_reconciliation_service.py", "CI 30098886294", "Release candidate 30098886212"]
     },
     {
       "record_id": "IDEA-9",
@@ -40,7 +40,7 @@
       "record_id": "IDEA-5",
       "title": "Enforce Todoist Done When bullet formatting at the write boundary",
       "disposition": "unaffected",
-      "implemented_scope": "Delivered in Atlas ROS v5.1 and preserved through the Phase 5 provider adapter boundary.",
+      "implemented_scope": "Delivered in Atlas ROS v5.1 and preserved through the provider adapter boundary.",
       "remaining_scope": "",
       "evidence": []
     },
