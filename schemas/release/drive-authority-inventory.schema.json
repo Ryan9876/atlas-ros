@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-ros.local/schemas/release/drive-authority-inventory.schema.json",
+  "title": "Atlas ROS Drive Authority Inventory",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "generated_at", "source_folder_id", "items", "summary"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "generated_at": {"type": "string", "format": "date-time"},
+    "source_folder_id": {"type": "string", "minLength": 1},
+    "summary": {
+      "type": "object",
+      "additionalProperties": {"type": "integer", "minimum": 0}
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id", "title", "url", "mime_type", "item_type", "created_time",
+          "modified_time", "parent_id", "target_authority", "drive_retention",
+          "rationale", "target_path", "checksum_required", "deletion_authorized"
+        ],
+        "properties": {
+          "id": {"type": "string", "minLength": 1},
+          "title": {"type": "string", "minLength": 1},
+          "url": {"type": "string", "minLength": 1},
+          "mime_type": {"type": "string"},
+          "item_type": {"enum": ["file", "folder"]},
+          "created_time": {"type": "string"},
+          "modified_time": {"type": "string"},
+          "parent_id": {"type": "string"},
+          "target_authority": {
+            "enum": ["github", "drive_bootstrap", "notion_or_runtime", "drive_exception", "review_required"]
+          },
+          "drive_retention": {
+            "enum": ["bootstrap", "legacy_read_only", "temporary_migration", "human_share_export", "github_unsuitable", "review_required"]
+          },
+          "rationale": {"type": "string", "minLength": 1},
+          "target_path": {"type": "string"},
+          "checksum_required": {"type": "boolean"},
+          "deletion_authorized": {"const": false}
+        }
+      }
+    }
+  }
+}
