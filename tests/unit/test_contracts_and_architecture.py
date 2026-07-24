@@ -23,7 +23,7 @@ from atlas_ros.legacy import (
     W03TodoistFacade,
 )
 from atlas_ros.runtime.database import RuntimeDatabase
-from scripts.validate_architecture import validate
+from atlas_ros.validation import validate
 
 
 def test_capture_envelope_is_versioned_and_immutable() -> None:
