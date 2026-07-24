@@ -19,6 +19,13 @@ from atlas_ros.intelligence.dataset import validate_files
 from atlas_ros.intelligence.evaluation import BenchmarkRunner
 from atlas_ros.intelligence.evaluator import IntelligenceEvaluationRunner
 from atlas_ros.intelligence.io import load_results
+from atlas_ros.release.authority_migration import (
+    build_drive_inventory,
+    load_drive_inventory,
+    load_drive_items,
+    load_implementation_registry,
+    write_drive_inventory,
+)
 from atlas_ros.release.tooling import checksums, inventory, verify
 from atlas_ros.runtime.database import RuntimeDatabase
 from atlas_ros.workflows import (
@@ -275,6 +282,46 @@ def release_verify(
     print('{"valid":true}')
 
 
+def release_classify_drive_inventory(
+    input_file: Path, output_file: Path, source_folder_id: str, bootstrap_file_id: str
+) -> None:
+    inventory_report = build_drive_inventory(
+        load_drive_items(input_file),
+        source_folder_id=source_folder_id,
+        bootstrap_file_id=bootstrap_file_id,
+    )
+    write_drive_inventory(inventory_report, output_file)
+    print(output_file)
+
+
+def release_validate_drive_inventory(inventory_file: Path) -> None:
+    inventory_report = load_drive_inventory(inventory_file)
+    print(
+        json.dumps(
+            {
+                "valid": True,
+                "source_folder_id": inventory_report.source_folder_id,
+                "item_count": len(inventory_report.items),
+                "summary": inventory_report.summary,
+            }
+        )
+    )
+
+
+def release_validate_implementation_registry(registry_file: Path) -> None:
+    registry = load_implementation_registry(registry_file)
+    print(
+        json.dumps(
+            {
+                "valid": True,
+                "candidate_version": registry.candidate_version,
+                "source_head": registry.source_head,
+                "record_count": len(registry.records),
+            }
+        )
+    )
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(prog="atlas")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -327,6 +374,15 @@ def main() -> None:
         rp = relsub.add_parser(command)
         rp.add_argument("--root", type=Path, default=Path("."))
         rp.add_argument("--checksum-file", type=Path, default=Path("release/CHECKSUMS.sha256"))
+    classify_inventory = relsub.add_parser("classify-drive-inventory")
+    classify_inventory.add_argument("input_file", type=Path)
+    classify_inventory.add_argument("output_file", type=Path)
+    classify_inventory.add_argument("--source-folder-id", required=True)
+    classify_inventory.add_argument("--bootstrap-file-id", required=True)
+    validate_inventory = relsub.add_parser("validate-drive-inventory")
+    validate_inventory.add_argument("inventory_file", type=Path)
+    validate_registry = relsub.add_parser("validate-implementation-registry")
+    validate_registry.add_argument("registry_file", type=Path)
     args = parser.parse_args()
     if args.command == "status":
         status()
@@ -376,6 +432,20 @@ def main() -> None:
         release_checksums(args.root, args.checksum_file)
     elif args.command == "release" and args.release_command == "verify":
         release_verify(args.root, args.checksum_file)
+    elif args.command == "release" and args.release_command == "classify-drive-inventory":
+        release_classify_drive_inventory(
+            args.input_file,
+            args.output_file,
+            args.source_folder_id,
+            args.bootstrap_file_id,
+        )
+    elif args.command == "release" and args.release_command == "validate-drive-inventory":
+        release_validate_drive_inventory(args.inventory_file)
+    elif (
+        args.command == "release"
+        and args.release_command == "validate-implementation-registry"
+    ):
+        release_validate_implementation_registry(args.registry_file)
 
 
 if __name__ == "__main__":
