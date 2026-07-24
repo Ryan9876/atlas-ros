@@ -1,0 +1,118 @@
+name: v540-promote-once
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: v540-promote-once
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: contains(github.event.head_commit.message, '[publish-v5.4.0]')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      DRAFT_TAG: v5.4.0-rc.1
+      FINAL_TAG: v5.4.0
+      RELEASE_NAME: Atlas ROS v5.4.0 Knowledge Composition and Management Structure
+      EXPECTED_PACKAGE_SHA256: e6339e214d40af42e371b7ca71931e713d0a0b4775b562fad4eba3842d489ca6
+    steps:
+      - name: Check out production source
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+
+      - name: Download and verify staged candidate
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir source-assets
+          gh release download "${DRAFT_TAG}" --repo "${GITHUB_REPOSITORY}" --dir source-assets
+          package="$(find source-assets -maxdepth 1 -type f -name 'Atlas_ROS_v5.4.0rc1_release_candidate.zip' -print -quit)"
+          test -n "${package}"
+          test -f "${package}.sha256"
+          test "$(sha256sum "${package}" | awk '{print $1}')" = "${EXPECTED_PACKAGE_SHA256}"
+          (cd source-assets && sha256sum -c "$(basename "${package}").sha256")
+          test -f source-assets/CHECKSUMS.sha256
+          cp -a source-assets verification
+          while read -r _ expected_path; do
+            expected_path="${expected_path#\*}"
+            expected_path="${expected_path#./}"
+            if [[ "${expected_path}" == */* && ! -f "verification/${expected_path}" ]]; then
+              flattened_path="verification/$(basename "${expected_path}")"
+              test -f "${flattened_path}"
+              mkdir -p "verification/$(dirname "${expected_path}")"
+              mv "${flattened_path}" "verification/${expected_path}"
+            fi
+          done < verification/CHECKSUMS.sha256
+          (cd verification && sha256sum -c CHECKSUMS.sha256)
+          mkdir restored
+          unzip -q "${package}" -d restored
+          (cd restored/publication && sha256sum -c CHECKSUMS.sha256)
+
+      - name: Publish final GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if gh release view "${FINAL_TAG}" --repo "${GITHUB_REPOSITORY}" >/dev/null 2>&1; then
+            gh release edit "${FINAL_TAG}" \
+              --repo "${GITHUB_REPOSITORY}" \
+              --draft=false \
+              --latest \
+              --title "${RELEASE_NAME}" \
+              --target "${GITHUB_SHA}" \
+              --notes-file release/RELEASE_MANIFEST.md
+          else
+            gh release create "${FINAL_TAG}" \
+              --repo "${GITHUB_REPOSITORY}" \
+              --latest \
+              --title "${RELEASE_NAME}" \
+              --target "${GITHUB_SHA}" \
+              --notes-file release/RELEASE_MANIFEST.md
+          fi
+          mapfile -d '' assets < <(find source-assets -maxdepth 1 -type f -print0 | sort -z)
+          gh release upload "${FINAL_TAG}" --repo "${GITHUB_REPOSITORY}" --clobber "${assets[@]}"
+
+      - name: Read back final release and prove restoration
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir final-readback
+          gh release download "${FINAL_TAG}" --repo "${GITHUB_REPOSITORY}" --dir final-readback
+          package="final-readback/Atlas_ROS_v5.4.0rc1_release_candidate.zip"
+          test -f "${package}"
+          test -f "${package}.sha256"
+          test "$(sha256sum "${package}" | awk '{print $1}')" = "${EXPECTED_PACKAGE_SHA256}"
+          (cd final-readback && sha256sum -c Atlas_ROS_v5.4.0rc1_release_candidate.zip.sha256)
+          mkdir final-restored
+          unzip -q "${package}" -d final-restored
+          (cd final-restored/publication && sha256sum -c CHECKSUMS.sha256)
+          source_archive="$(find final-restored -type f -name '*.tar.gz' -print -quit)"
+          test -n "${source_archive}"
+          python -m venv restored-venv
+          restored-venv/bin/pip install --disable-pip-version-check "${source_archive}"
+          restored-venv/bin/python -c "from atlas_ros.models import load_default_registries; models, modules = load_default_registries(); assert models.get('team-operating-model', '^2.0.0'); assert len(modules.list()) >= 14"
+          gh release view "${FINAL_TAG}" \
+            --repo "${GITHUB_REPOSITORY}" \
+            --json isDraft,isPrerelease,tagName,targetCommitish \
+            --jq 'select(.isDraft == false and .isPrerelease == false and .tagName == env.FINAL_TAG and .targetCommitish == env.GITHUB_SHA)'
+
+      - name: Record promotion receipt
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh pr comment 14 --repo "${GITHUB_REPOSITORY}" --body "Final Atlas ROS v5.4.0 publication and readback passed. Promotion run: \`${GITHUB_RUN_ID}\`. Production source: \`${GITHUB_SHA}\`. Candidate package SHA-256: \`${EXPECTED_PACKAGE_SHA256}\`. Final release assets were uploaded, downloaded, checksum-verified, and restored without Google Drive."
+
+      - name: Record promotion failure
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh pr comment 14 --repo "${GITHUB_REPOSITORY}" --body "Atlas ROS v5.4.0 final publication failed. Promotion run: \`${GITHUB_RUN_ID}\`. Production source: \`${GITHUB_SHA}\`. Production authority records must not be switched until this run passes."
