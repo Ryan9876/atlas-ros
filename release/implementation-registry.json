@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-07-24T05:00:00Z",
+  "candidate_version": "5.2.0.dev0",
+  "source_head": "migration/github-first-authority",
+  "records": [
+    {
+      "record_id": "IDEA-8",
+      "title": "Release-Gated Development Record Reconciliation",
+      "disposition": "in_progress",
+      "implemented_scope": "Versioned implementation-registry model, schema, CLI validation, and release-candidate gate scaffolding.",
+      "remaining_scope": "Bidirectional Notion reconciliation, governed writes and readback, checksum-covered reconciliation report, and post-promotion verification.",
+      "evidence": ["PR #10", "src/atlas_ros/release/authority_migration.py", "schemas/release/implementation-registry.schema.json"]
+    },
+    {
+      "record_id": "IDEA-11",
+      "title": "GitHub-First Authority Migration and Drive Dependency Reduction",
+      "disposition": "in_progress",
+      "implemented_scope": "Architecture decision, migration plan, complete roadmap, deterministic Drive classification model, and root inventory snapshot.",
+      "remaining_scope": "Recursive inventory, historical asset migration, GitHub Release publication, restoration proof, authority cutover, and Drive allowlist enforcement.",
+      "evidence": ["PR #10", "docs/adr/ADR-003-GITHUB-FIRST-AUTHORITY.md", "release/authority-migration/drive-root-items.json"]
+    },
+    {
+      "record_id": "IDEA-10",
+      "title": "Capability-Based ROS Architecture Migration and W-Convention Retirement",
+      "disposition": "deferred",
+      "implemented_scope": "",
+      "remaining_scope": "Begins after IDEA-11 is validated and promoted.",
+      "evidence": []
+    },
+    {
+      "record_id": "IDEA-5",
+      "title": "Enforce Todoist Done When bullet formatting at the write boundary",
+      "disposition": "unaffected",
+      "implemented_scope": "Delivered in Atlas ROS v5.1 and retained as a regression contract.",
+      "remaining_scope": "",
+      "evidence": []
+    },
+    {
+      "record_id": "IDEA-6",
+      "title": "W03 Todoist Section Routing by Management Domain",
+      "disposition": "unaffected",
+      "implemented_scope": "Delivered in Atlas ROS v5.1 and retained as a regression contract.",
+      "remaining_scope": "",
+      "evidence": []
+    },
+    {
+      "record_id": "IDEA-7",
+      "title": "Preserve Todoist parent-subtask hierarchy during section moves",
+      "disposition": "unaffected",
+      "implemented_scope": "Delivered in Atlas ROS v5.1 and retained as a regression contract.",
+      "remaining_scope": "",
+      "evidence": []
+    }
+  ]
+}
