@@ -1,8 +1,8 @@
 from atlas_ros.engines import (
     ClassificationExplainability,
     KnowledgeCompositionEngine,
-    ManagementReasoningEngine,
     ManagerIntentInferer,
+    ManagementReasoningEngine,
     ManagementStructureEngine,
     ResponsibilityClassifier,
 )
