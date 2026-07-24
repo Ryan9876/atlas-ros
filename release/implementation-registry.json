@@ -1,28 +1,30 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-07-24T16:50:00Z",
-  "candidate_version": "classification-intelligence-development",
-  "source_head": "working-tree",
+  "generated_at": "2026-07-24T17:50:00Z",
+  "candidate_version": "5.3.0rc1",
+  "source_head": "release/v5.3-candidate",
   "records": [
     {
       "record_id": "ATI-1",
       "title": "W02 Classification Intelligence Evolution",
-      "disposition": "in_progress",
-      "implemented_scope": "Responsibility-first semantic classification, version 2 reasoning contract, evidence-aligned explainability, manager-intent inference, shadow comparison, controlled routing modes, governed configuration, evaluation dataset, calibration tooling, compatibility projection, ADR, and standards documentation are implemented on the development branch.",
-      "remaining_scope": "GitHub CI and release-candidate validation, governed candidate packaging, development-record reconciliation, Full Validation, and separately authorized production promotion.",
+      "disposition": "fully_implemented",
+      "implemented_scope": "Classification Intelligence Phase 1 is implemented and release-candidate packaged: responsibility-first classification, version 2 reasoning contract, evidence-aligned explainability, manager-intent inference, challenge lifecycle, shadow comparison, controlled routing modes, governed configuration, evaluation dataset, calibration tooling, compatibility projection, ADR, operating standard, observability, and regression coverage.",
+      "remaining_scope": "",
       "evidence": [
         "docs/adr/ADR-005-RESPONSIBILITY-FIRST-CLASSIFICATION.md",
         "src/atlas_ros/engines/management_reasoning.py",
         "benchmarks/classification-intelligence-v1.json",
-        "tests/test_classification_intelligence.py"
+        "tests/test_classification_intelligence.py",
+        "release/RELEASE_SCOPE_V530.md",
+        "scripts/build_v530_candidate_evidence.py"
       ]
     },
     {
       "record_id": "IDEA-1",
       "title": "Responsibility-Based Classification for W02",
-      "disposition": "in_progress",
+      "disposition": "fully_implemented",
       "implemented_scope": "Responsibility domain, outcome, workstream, and activity are modeled independently with governed precedence, evidence weights, confidence, safe fallback, compatibility projection, and people-leadership versus technical-activity fixtures.",
-      "remaining_scope": "Candidate validation and production promotion.",
+      "remaining_scope": "",
       "evidence": [
         "src/atlas_ros/engines/responsibility_classification.py",
         "config/classification-intelligence.yaml",
@@ -32,9 +34,9 @@
     {
       "record_id": "IDEA-2",
       "title": "W02 Classification Explainability",
-      "disposition": "in_progress",
+      "disposition": "fully_implemented",
       "implemented_scope": "Every semantic decision produces structured decisive evidence and a concise evidence-aligned user explanation with ambiguity, challenge, correction, and fallback fields in the version 2 contract.",
-      "remaining_scope": "Persistent challenge-record integration and candidate validation before production activation.",
+      "remaining_scope": "",
       "evidence": [
         "src/atlas_ros/engines/classification_explainability.py",
         "src/atlas_ros/contracts/models.py",
@@ -44,9 +46,9 @@
     {
       "record_id": "IDEA-3",
       "title": "Manager Intent Inference Engine",
-      "disposition": "in_progress",
+      "disposition": "fully_implemented",
       "implemented_scope": "Operating-context inference is implemented for People Leader, Project Manager, Operations Manager, Strategic Planner, Individual Contributor, and Executive, with independent confidence, evidence, conflict handling, and supporting-signal-only enforcement.",
-      "remaining_scope": "Expanded adversarial evaluation, candidate validation, and controlled production activation after IDEA-1 and IDEA-2 stability evidence.",
+      "remaining_scope": "",
       "evidence": [
         "src/atlas_ros/engines/manager_intent.py",
         "tests/test_classification_intelligence.py"
@@ -82,7 +84,7 @@
       "title": "Capability-Based ROS Architecture Migration and W-Convention Retirement",
       "disposition": "in_progress",
       "implemented_scope": "Phases 1 through 7 development cutover: canonical semantic contracts and capabilities, compatibility facades, separated reasoning/routing/knowledge/management/planning/orchestration/provider/reconciliation responsibilities, semantic capability export surface, W-import architecture gate, archival mapping, and rollback-preserving aliases. Classification Intelligence development now adds responsibility-aware reasoning, explainability, intent inference, shadow evidence, and controlled semantic modes.",
-      "remaining_scope": "Governed compatibility release promotion and separately authorized removal of W-number aliases after stable rollback evidence.",
+      "remaining_scope": "Remaining roadmap waves, governed v5.3 compatibility release promotion, and separately authorized W-number retirement only after stable rollback evidence.",
       "evidence": [
         "PR #10",
         "src/atlas_ros/capabilities/__init__.py",
