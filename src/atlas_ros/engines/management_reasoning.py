@@ -1,28 +1,38 @@
 from __future__ import annotations
 
-from atlas_ros.contracts import CaptureEnvelope, ReasoningPackage
-from atlas_ros.domain.models import Capture, RoutingRecommendation
+from atlas_ros.config.loader import load_config
+from atlas_ros.contracts import CaptureEnvelope, ReasoningPackage, ReasoningPackageV2
+from atlas_ros.domain.models import (
+    Capture,
+    ChallengeStatus,
+    Classification,
+    ManagementWorkstream,
+    OperatingContext,
+    ResponsibilityDomain,
+    RoutingRecommendation,
+)
+from atlas_ros.engines.classification_explainability import ClassificationExplainability
+from atlas_ros.engines.manager_intent import ManagerIntentInferer
+from atlas_ros.engines.responsibility_classification import ResponsibilityClassifier
 
 
 class ManagementReasoningEngine:
-    """Produces provider-independent reasoning without connector or adapter access."""
+    """Produces provider-independent responsibility-aware reasoning."""
+
+    def __init__(self) -> None:
+        self._intelligence_config = load_config("classification-intelligence")
+        self._routing_config = load_config("classifications")
+        self._classifier = ResponsibilityClassifier(self._intelligence_config)
+        self._explainability = ClassificationExplainability(self._intelligence_config)
+        self._intent = ManagerIntentInferer(self._intelligence_config)
 
     def reason(
         self,
         capture: Capture,
         recommendation: RoutingRecommendation,
     ) -> ReasoningPackage:
-        envelope = CaptureEnvelope(
-            correlation_id=capture.correlation_id,
-            source_component="capture.service",
-            content=capture.content,
-            source=capture.source,
-            context={
-                "due_date_input": capture.due_date_input,
-                "delegation_input": capture.delegation_input,
-                "additional_context": capture.additional_context,
-            },
-        )
+        """Preserve the v1 compatibility contract for existing W02 consumers."""
+        envelope = self._capture_envelope(capture)
         rationale = [
             f"Recommended classification: {recommendation.classification.value}",
             f"Recommended destination: {recommendation.destination}",
@@ -37,3 +47,126 @@ class ManagementReasoningEngine:
             ambiguities=list(recommendation.ambiguities),
             requires_human_decision=recommendation.clarification_required,
         )
+
+    def reason_v2(self, capture: Capture) -> ReasoningPackageV2:
+        """Classify responsibility, record type, workstream, and context independently."""
+        envelope = self._capture_envelope(capture)
+        assessment = self._classifier.classify(capture.content, capture.additional_context)
+        intent = self._intent.infer(
+            f"{capture.content}\n{capture.additional_context}",
+            assessment.responsibility_domain,
+        )
+        ambiguities = list(assessment.ambiguities)
+        if intent.ambiguity:
+            ambiguities.append(intent.ambiguity)
+
+        confidence_threshold = float(
+            self._intelligence_config["confidence"]["responsibility_minimum"]
+        )
+        requires_human_decision = (
+            assessment.responsibility_domain is ResponsibilityDomain.UNRESOLVED
+            or assessment.confidence < confidence_threshold
+            or bool(assessment.ambiguities)
+        )
+        fallback_reason = ""
+        if assessment.responsibility_domain is ResponsibilityDomain.UNRESOLVED:
+            fallback_reason = "No governed responsibility signal was strong enough to classify."
+        elif assessment.confidence < confidence_threshold:
+            fallback_reason = (
+                "Responsibility confidence is below the governed canonical threshold."
+            )
+        elif assessment.ambiguities:
+            fallback_reason = "Conflicting responsibility evidence requires attended review."
+
+        explanation = self._explainability.explain(
+            responsibility_domain=assessment.responsibility_domain,
+            workstream=assessment.workstream,
+            rationale_basis=assessment.rationale_basis,
+            evidence=assessment.evidence,
+            ambiguities=assessment.ambiguities,
+            confidence=assessment.confidence,
+        )
+        destination = self._destination_for(assessment.classification)
+        evidence = list(assessment.evidence) + list(intent.evidence)
+        operating_context = (
+            "" if intent.context is OperatingContext.UNRESOLVED else intent.context.value
+        )
+        activity = self._activity_summary(capture.content)
+        return ReasoningPackageV2(
+            correlation_id=envelope.correlation_id,
+            source_component="engines.management_reasoning",
+            classification=assessment.classification.value,
+            destination=destination,
+            responsibility_domain=assessment.responsibility_domain.value,
+            desired_outcome=self._desired_outcome(assessment.workstream, activity),
+            workstream=assessment.workstream.value,
+            activity_summary=activity,
+            operating_context=operating_context,
+            operating_context_confidence=(
+                intent.confidence if operating_context else 0.0
+            ),
+            confidence=assessment.confidence,
+            decisive_evidence=evidence,
+            rationale=[explanation],
+            ambiguities=ambiguities,
+            challenge_status=ChallengeStatus.UNCHALLENGED.value,
+            fallback_reason=fallback_reason,
+            requires_human_decision=requires_human_decision,
+        )
+
+    def recommendation_from_v2(self, reasoning: ReasoningPackageV2) -> RoutingRecommendation:
+        return RoutingRecommendation(
+            classification=Classification(reasoning.classification),
+            destination=reasoning.destination,
+            confidence=reasoning.confidence,
+            desired_outcome=reasoning.desired_outcome,
+            owner="Ryan",
+            ambiguities=list(reasoning.ambiguities),
+            clarification_required=reasoning.requires_human_decision,
+        )
+
+    @staticmethod
+    def _capture_envelope(capture: Capture) -> CaptureEnvelope:
+        return CaptureEnvelope(
+            correlation_id=capture.correlation_id,
+            source_component="capture.service",
+            content=capture.content,
+            source=capture.source,
+            context={
+                "due_date_input": capture.due_date_input,
+                "delegation_input": capture.delegation_input,
+                "additional_context": capture.additional_context,
+            },
+        )
+
+    def _destination_for(self, classification: Classification) -> str:
+        return str(self._routing_config["destinations"][classification.value])
+
+    @staticmethod
+    def _activity_summary(content: str) -> str:
+        normalized = " ".join(content.split())
+        return normalized[:1000]
+
+    @staticmethod
+    def _desired_outcome(workstream: ManagementWorkstream, activity: str) -> str:
+        templates = {
+            ManagementWorkstream.LEADERSHIP_AND_TEAM: (
+                "The person or team is enabled and the accountable leadership outcome is complete."
+            ),
+            ManagementWorkstream.ACTIVE_PROJECTS: (
+                "The defined project outcome advances with clear ownership and evidence."
+            ),
+            ManagementWorkstream.OPERATIONS: (
+                "The operational service is stable, controlled, and verified."
+            ),
+            ManagementWorkstream.WAITING_ON_OTHERS: (
+                "The external dependency is resolved or has a governed follow-up path."
+            ),
+            ManagementWorkstream.DEVELOPMENT_AND_LEARNING: (
+                "The targeted knowledge or capability is demonstrably improved."
+            ),
+            ManagementWorkstream.NEEDS_CLARIFICATION: (
+                "The accountable responsibility and intended outcome are clarified."
+            ),
+        }
+        return f"{templates[workstream]} Activity: {activity}"[:10000]

@@ -1,0 +1,162 @@
+version: 1
+responsibility_hierarchy:
+  - people_leadership
+  - project_delivery
+  - operational_stewardship
+  - external_dependency
+  - capability_building
+responsibility_domains:
+  people_leadership:
+    workstream: Leadership & Team
+    rationale: enabling, leading, developing, or supporting a person or team
+    phrases:
+      direct report: 4.0
+      team member: 3.5
+      my team: 3.0
+      performance review: 4.0
+      career development: 4.0
+      one-on-one: 3.5
+      1:1: 3.5
+      access for: 3.0
+      onboard: 2.5
+      coaching: 3.0
+      mentor: 2.5
+      enable the team: 3.5
+    keywords:
+      employee: 2.0
+      teammate: 2.0
+      staff: 1.5
+      people: 1.5
+      feedback: 1.5
+      recognition: 2.0
+      development: 1.0
+  project_delivery:
+    workstream: Active Projects
+    rationale: delivering a defined project, migration, rollout, or milestone
+    phrases:
+      project plan: 3.5
+      project delivery: 4.0
+      implementation plan: 3.0
+      migration plan: 3.5
+      rollout plan: 3.5
+      launch plan: 3.5
+      project milestone: 3.5
+      program roadmap: 3.5
+      cross-functional project: 4.0
+    keywords:
+      project: 2.0
+      migration: 2.0
+      rollout: 2.0
+      launch: 2.0
+      milestone: 2.0
+      implementation: 1.5
+      deployment: 1.5
+  operational_stewardship:
+    workstream: Operations
+    rationale: maintaining, restoring, protecting, or improving a production service
+    phrases:
+      production incident: 4.0
+      service outage: 4.0
+      restore service: 4.0
+      operational health: 3.0
+      capacity planning: 3.0
+      change window: 3.0
+      production service: 3.5
+      root cause: 2.5
+    keywords:
+      incident: 2.5
+      outage: 3.0
+      production: 2.0
+      uptime: 2.0
+      alert: 1.5
+      monitoring: 1.5
+      maintenance: 1.5
+      capacity: 1.5
+      patching: 1.5
+      availability: 2.0
+  external_dependency:
+    workstream: Waiting on Others
+    rationale: progressing work that depends on another person, team, vendor, or approval
+    phrases:
+      waiting on: 4.0
+      awaiting approval: 4.0
+      follow up with vendor: 3.5
+      dependency on: 3.5
+      blocked by: 4.0
+      another team: 2.5
+      pending response: 3.0
+      vendor response: 3.0
+    keywords:
+      vendor: 2.0
+      dependency: 2.5
+      waiting: 2.5
+      approval: 1.5
+      pending: 1.5
+      blocked: 2.5
+  capability_building:
+    workstream: Development & Learning
+    rationale: building knowledge, skill, certification, or reusable capability
+    phrases:
+      complete training: 3.5
+      certification exam: 4.0
+      professional development: 4.0
+      learn how to: 3.0
+      knowledge transfer: 3.0
+      training course: 3.5
+      build capability: 3.5
+    keywords:
+      training: 2.5
+      certification: 3.0
+      course: 2.0
+      learn: 2.0
+      study: 2.0
+      workshop: 2.0
+      skill: 1.5
+record_classification:
+  decision:
+    phrases: [make a decision, decide whether, approve or reject, choose between, record the decision]
+  risk:
+    phrases: [record a risk, assess the risk, mitigate the risk, risk register, blocker record]
+  project:
+    phrases: [create a project, establish a project, project charter, program roadmap, multi-phase initiative]
+  delegated_work:
+    phrases: [delegate to, assign to, have the team implement, ask the engineer to, assigned resource]
+  reference:
+    phrases: [for reference, save this note, retain as reference, fyi only, no action required]
+  default: action
+operating_contexts:
+  people_leader:
+    responsibility_domains: [people_leadership]
+    phrases: [people leader, team leader, direct report, performance review, coaching]
+  project_manager:
+    responsibility_domains: [project_delivery]
+    phrases: [project manager, project plan, milestone, program roadmap]
+  operations_manager:
+    responsibility_domains: [operational_stewardship]
+    phrases: [operations manager, production incident, service outage, operational health]
+  strategic_planner:
+    responsibility_domains: []
+    phrases: [strategy, strategic plan, roadmap, operating model, long-term]
+  executive:
+    responsibility_domains: []
+    phrases: [executive review, board, enterprise strategy, leadership decision]
+  individual_contributor:
+    responsibility_domains: []
+    phrases: [configure, code, implement personally, troubleshoot directly, build script]
+confidence:
+  responsibility_minimum: 0.75
+  strong_signal_score: 3.0
+  ambiguity_margin: 1.0
+  context_minimum: 0.65
+  canonical_minimum: 0.85
+canonical_mode:
+  enabled: false
+  allowed_responsibility_domains:
+    - people_leadership
+    - project_delivery
+    - operational_stewardship
+    - external_dependency
+    - capability_building
+explanations:
+  max_characters: 280
+  include_ambiguity: true

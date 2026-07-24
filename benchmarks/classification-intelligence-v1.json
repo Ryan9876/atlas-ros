@@ -1,0 +1,306 @@
+{
+  "schema_version": 1,
+  "dataset_id": "classification-intelligence-v1",
+  "cases": [
+    {
+      "id": "P01",
+      "content": "Restore access for a direct report so the employee can work",
+      "expected_responsibility_domain": "people_leadership",
+      "expected_workstream": "Leadership & Team",
+      "expected_classification": "action",
+      "critical": true,
+      "split": "held_out",
+      "expected_destination": "action_records"
+    },
+    {
+      "id": "P02",
+      "content": "Prepare the performance review for a team member",
+      "expected_responsibility_domain": "people_leadership",
+      "expected_workstream": "Leadership & Team",
+      "expected_classification": "action",
+      "critical": true,
+      "split": "held_out",
+      "expected_destination": "action_records"
+    },
+    {
+      "id": "P03",
+      "content": "Hold a one-on-one coaching session with an employee",
+      "expected_responsibility_domain": "people_leadership",
+      "expected_workstream": "Leadership & Team",
+      "expected_classification": "action",
+      "critical": false,
+      "split": "held_out",
+      "expected_destination": "action_records"
+    },
+    {
+      "id": "P04",
+      "content": "Create a career development plan for my team member",
+      "expected_responsibility_domain": "people_leadership",
+      "expected_workstream": "Leadership & Team",
+      "expected_classification": "action",
+      "critical": false,
+      "split": "held_out",
+      "expected_destination": "action_records"
+    },
+    {
+      "id": "P05",
+      "content": "Onboard a direct report and enable the team",
+      "expected_responsibility_domain": "people_leadership",
+      "expected_workstream": "Leadership & Team",
+      "expected_classification": "action",
+      "critical": false,
+      "split": "held_out",
+      "expected_destination": "action_records"
+    },
+    {
+      "id": "P06",
+      "content": "Troubleshoot VPN access for a direct report",
+      "expected_responsibility_domain": "people_leadership",
+      "expected_workstream": "Leadership & Team",
+      "expected_classification": "action",
+      "critical": true,
+      "split": "held_out",
+      "expected_destination": "action_records"
+    },
+    {
+      "id": "J01",
+      "content": "Coordinate the network migration project milestone",
+      "expected_responsibility_domain": "project_delivery",
+      "expected_workstream": "Active Projects",
+      "expected_classification": "action",
+      "critical": true,
+      "split": "held_out",
+      "expected_destination": "action_records"
+    },
+    {
+      "id": "J02",
+      "content": "Review the rollout plan and deployment milestone",
+      "expected_responsibility_domain": "project_delivery",
+      "expected_workstream": "Active Projects",
+      "expected_classification": "action",
+      "critical": false,
+      "split": "held_out",
+      "expected_destination": "action_records"
+    },
+    {
+      "id": "J03",
+      "content": "Prepare the implementation plan for the cross-functional project",
+      "expected_responsibility_domain": "project_delivery",
+      "expected_workstream": "Active Projects",
+      "expected_classification": "action",
+      "critical": false,
+      "split": "held_out",
+      "expected_destination": "action_records"
+    },
+    {
+      "id": "J04",
+      "content": "Track the datacenter migration project delivery",
+      "expected_responsibility_domain": "project_delivery",
+      "expected_workstream": "Active Projects",
+      "expected_classification": "action",
+      "critical": false,
+      "split": "held_out",
+      "expected_destination": "action_records"
+    },
+    {
+      "id": "J05",
+      "content": "Create a project for a multi-phase initiative",
+      "expected_responsibility_domain": "project_delivery",
+      "expected_workstream": "Active Projects",
+      "expected_classification": "project",
+      "critical": false,
+      "split": "held_out",
+      "expected_destination": "portfolio_projects"
+    },
+    {
+      "id": "J06",
+      "content": "Update the program roadmap and launch plan",
+      "expected_responsibility_domain": "project_delivery",
+      "expected_workstream": "Active Projects",
+      "expected_classification": "project",
+      "critical": false,
+      "split": "held_out",
+      "expected_destination": "portfolio_projects"
+    },
+    {
+      "id": "O01",
+      "content": "Restore the production service after a service outage",
+      "expected_responsibility_domain": "operational_stewardship",
+      "expected_workstream": "Operations",
+      "expected_classification": "action",
+      "critical": true,
+      "split": "held_out",
+      "expected_destination": "action_records"
+    },
+    {
+      "id": "O02",
+      "content": "Investigate the production incident and root cause",
+      "expected_responsibility_domain": "operational_stewardship",
+      "expected_workstream": "Operations",
+      "expected_classification": "action",
+      "critical": false,
+      "split": "held_out",
+      "expected_destination": "action_records"
+    },
+    {
+      "id": "O03",
+      "content": "Review operational health and capacity planning",
+      "expected_responsibility_domain": "operational_stewardship",
+      "expected_workstream": "Operations",
+      "expected_classification": "action",
+      "critical": false,
+      "split": "held_out",
+      "expected_destination": "action_records"
+    },
+    {
+      "id": "O04",
+      "content": "Prepare the maintenance change window for the production service",
+      "expected_responsibility_domain": "operational_stewardship",
+      "expected_workstream": "Operations",
+      "expected_classification": "action",
+      "critical": false,
+      "split": "held_out",
+      "expected_destination": "action_records"
+    },
+    {
+      "id": "O05",
+      "content": "Improve uptime monitoring and availability",
+      "expected_responsibility_domain": "operational_stewardship",
+      "expected_workstream": "Operations",
+      "expected_classification": "action",
+      "critical": false,
+      "split": "held_out",
+      "expected_destination": "action_records"
+    },
+    {
+      "id": "O06",
+      "content": "Record a risk about the production incident",
+      "expected_responsibility_domain": "operational_stewardship",
+      "expected_workstream": "Operations",
+      "expected_classification": "risk",
+      "critical": true,
+      "split": "held_out",
+      "expected_destination": "risks_and_blockers"
+    },
+    {
+      "id": "E01",
+      "content": "Follow up with vendor because we are waiting on a response",
+      "expected_responsibility_domain": "external_dependency",
+      "expected_workstream": "Waiting on Others",
+      "expected_classification": "action",
+      "critical": true,
+      "split": "held_out",
+      "expected_destination": "action_records"
+    },
+    {
+      "id": "E02",
+      "content": "Track the dependency on another team",
+      "expected_responsibility_domain": "external_dependency",
+      "expected_workstream": "Waiting on Others",
+      "expected_classification": "action",
+      "critical": false,
+      "split": "held_out",
+      "expected_destination": "action_records"
+    },
+    {
+      "id": "E03",
+      "content": "Awaiting approval from the vendor",
+      "expected_responsibility_domain": "external_dependency",
+      "expected_workstream": "Waiting on Others",
+      "expected_classification": "action",
+      "critical": false,
+      "split": "held_out",
+      "expected_destination": "action_records"
+    },
+    {
+      "id": "E04",
+      "content": "The migration is blocked by another team",
+      "expected_responsibility_domain": "external_dependency",
+      "expected_workstream": "Waiting on Others",
+      "expected_classification": "action",
+      "critical": false,
+      "split": "held_out",
+      "expected_destination": "action_records"
+    },
+    {
+      "id": "E05",
+      "content": "Follow up on the pending vendor response",
+      "expected_responsibility_domain": "external_dependency",
+      "expected_workstream": "Waiting on Others",
+      "expected_classification": "action",
+      "critical": false,
+      "split": "held_out",
+      "expected_destination": "action_records"
+    },
+    {
+      "id": "E06",
+      "content": "Make a decision about the vendor dependency",
+      "expected_responsibility_domain": "external_dependency",
+      "expected_workstream": "Waiting on Others",
+      "expected_classification": "decision",
+      "critical": true,
+      "split": "held_out",
+      "expected_destination": "decision_log"
+    },
+    {
+      "id": "C01",
+      "content": "Complete the cloud certification course and training",
+      "expected_responsibility_domain": "capability_building",
+      "expected_workstream": "Development & Learning",
+      "expected_classification": "action",
+      "critical": true,
+      "split": "held_out",
+      "expected_destination": "action_records"
+    },
+    {
+      "id": "C02",
+      "content": "Study for the certification exam",
+      "expected_responsibility_domain": "capability_building",
+      "expected_workstream": "Development & Learning",
+      "expected_classification": "action",
+      "critical": false,
+      "split": "held_out",
+      "expected_destination": "action_records"
+    },
+    {
+      "id": "C03",
+      "content": "Attend a training workshop to build capability",
+      "expected_responsibility_domain": "capability_building",
+      "expected_workstream": "Development & Learning",
+      "expected_classification": "action",
+      "critical": false,
+      "split": "held_out",
+      "expected_destination": "action_records"
+    },
+    {
+      "id": "C04",
+      "content": "Complete professional development training",
+      "expected_responsibility_domain": "capability_building",
+      "expected_workstream": "Development & Learning",
+      "expected_classification": "action",
+      "critical": false,
+      "split": "held_out",
+      "expected_destination": "action_records"
+    },
+    {
+      "id": "C05",
+      "content": "Learn how to use the new platform",
+      "expected_responsibility_domain": "capability_building",
+      "expected_workstream": "Development & Learning",
+      "expected_classification": "action",
+      "critical": false,
+      "split": "held_out",
+      "expected_destination": "action_records"
+    },
+    {
+      "id": "C06",
+      "content": "Retain this training note for reference",
+      "expected_responsibility_domain": "capability_building",
+      "expected_workstream": "Development & Learning",
+      "expected_classification": "reference",
+      "critical": false,
+      "split": "held_out",
+      "expected_destination": "universal_inbox"
+    }
+  ]
+}

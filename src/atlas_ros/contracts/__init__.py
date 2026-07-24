@@ -1,25 +1,33 @@
 from .models import (
     CaptureEnvelope,
+    ClassificationChallenge,
+    ClassificationChallengeReceipt,
     ContractEnvelope,
     ContractKind,
+    EvidenceSignal,
     ExecutionPlan,
     ExecutionReceipt,
     ExecutionStep,
     KnowledgePackage,
     ManagementPackage,
     ReasoningPackage,
+    ReasoningPackageV2,
     ReconciliationResult,
 )
 
 __all__ = [
     "CaptureEnvelope",
+    "ClassificationChallenge",
+    "ClassificationChallengeReceipt",
     "ContractEnvelope",
     "ContractKind",
+    "EvidenceSignal",
     "ExecutionPlan",
     "ExecutionReceipt",
     "ExecutionStep",
     "KnowledgePackage",
     "ManagementPackage",
     "ReasoningPackage",
+    "ReasoningPackageV2",
     "ReconciliationResult",
 ]

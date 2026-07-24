@@ -1,6 +1,11 @@
 from __future__ import annotations
 
-from atlas_ros.contracts import KnowledgePackage, ManagementPackage, ReasoningPackage
+from atlas_ros.contracts import (
+    KnowledgePackage,
+    ManagementPackage,
+    ReasoningPackage,
+    ReasoningPackageV2,
+)
 from atlas_ros.models import PlanningModelRegistry
 
 
@@ -12,7 +17,7 @@ class ManagementStructureEngine:
 
     def structure(
         self,
-        reasoning: ReasoningPackage,
+        reasoning: ReasoningPackage | ReasoningPackageV2,
         knowledge: KnowledgePackage,
         model_id: str,
         *,

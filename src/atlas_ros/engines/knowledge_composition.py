@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from atlas_ros.contracts import KnowledgePackage, ReasoningPackage
+from atlas_ros.contracts import KnowledgePackage, ReasoningPackage, ReasoningPackageV2
 from atlas_ros.models import KnowledgeModuleRegistry
 
 
@@ -14,7 +14,7 @@ class KnowledgeCompositionEngine:
 
     def compose(
         self,
-        reasoning: ReasoningPackage,
+        reasoning: ReasoningPackage | ReasoningPackageV2,
         module_ids: tuple[str, ...],
         context: dict[str, Any] | None = None,
     ) -> KnowledgePackage:

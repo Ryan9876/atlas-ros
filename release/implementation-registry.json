@@ -1,16 +1,68 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-07-24T15:15:00Z",
-  "candidate_version": "5.2.0rc1",
-  "source_head": "002384a96e263c641c62f9ea096a4ca1d6216f8b",
+  "generated_at": "2026-07-24T16:50:00Z",
+  "candidate_version": "classification-intelligence-development",
+  "source_head": "working-tree",
   "records": [
+    {
+      "record_id": "ATI-1",
+      "title": "W02 Classification Intelligence Evolution",
+      "disposition": "in_progress",
+      "implemented_scope": "Responsibility-first semantic classification, version 2 reasoning contract, evidence-aligned explainability, manager-intent inference, shadow comparison, controlled routing modes, governed configuration, evaluation dataset, calibration tooling, compatibility projection, ADR, and standards documentation are implemented on the development branch.",
+      "remaining_scope": "GitHub CI and release-candidate validation, governed candidate packaging, development-record reconciliation, Full Validation, and separately authorized production promotion.",
+      "evidence": [
+        "docs/adr/ADR-005-RESPONSIBILITY-FIRST-CLASSIFICATION.md",
+        "src/atlas_ros/engines/management_reasoning.py",
+        "benchmarks/classification-intelligence-v1.json",
+        "tests/test_classification_intelligence.py"
+      ]
+    },
+    {
+      "record_id": "IDEA-1",
+      "title": "Responsibility-Based Classification for W02",
+      "disposition": "in_progress",
+      "implemented_scope": "Responsibility domain, outcome, workstream, and activity are modeled independently with governed precedence, evidence weights, confidence, safe fallback, compatibility projection, and people-leadership versus technical-activity fixtures.",
+      "remaining_scope": "Candidate validation and production promotion.",
+      "evidence": [
+        "src/atlas_ros/engines/responsibility_classification.py",
+        "config/classification-intelligence.yaml",
+        "tests/test_classification_intelligence.py"
+      ]
+    },
+    {
+      "record_id": "IDEA-2",
+      "title": "W02 Classification Explainability",
+      "disposition": "in_progress",
+      "implemented_scope": "Every semantic decision produces structured decisive evidence and a concise evidence-aligned user explanation with ambiguity, challenge, correction, and fallback fields in the version 2 contract.",
+      "remaining_scope": "Persistent challenge-record integration and candidate validation before production activation.",
+      "evidence": [
+        "src/atlas_ros/engines/classification_explainability.py",
+        "src/atlas_ros/contracts/models.py",
+        "docs/CLASSIFICATION_INTELLIGENCE_STANDARD.md"
+      ]
+    },
+    {
+      "record_id": "IDEA-3",
+      "title": "Manager Intent Inference Engine",
+      "disposition": "in_progress",
+      "implemented_scope": "Operating-context inference is implemented for People Leader, Project Manager, Operations Manager, Strategic Planner, Individual Contributor, and Executive, with independent confidence, evidence, conflict handling, and supporting-signal-only enforcement.",
+      "remaining_scope": "Expanded adversarial evaluation, candidate validation, and controlled production activation after IDEA-1 and IDEA-2 stability evidence.",
+      "evidence": [
+        "src/atlas_ros/engines/manager_intent.py",
+        "tests/test_classification_intelligence.py"
+      ]
+    },
     {
       "record_id": "IDEA-8",
       "title": "Release-Gated Development Record Reconciliation",
       "disposition": "fully_implemented",
       "implemented_scope": "Bidirectional GitHub/Notion development-record snapshots, deterministic record digests, drift detection, checksum-covered reconciliation reports, release-gated validation, and readback contracts.",
       "remaining_scope": "",
-      "evidence": ["PR #10", "src/atlas_ros/release/authority_cutover.py", "tests/unit/test_authority_cutover.py"]
+      "evidence": [
+        "PR #10",
+        "src/atlas_ros/release/authority_cutover.py",
+        "tests/unit/test_authority_cutover.py"
+      ]
     },
     {
       "record_id": "IDEA-11",
@@ -18,15 +70,25 @@
       "disposition": "partially_implemented",
       "implemented_scope": "Recursive Drive inventory and parent-closure contracts, checksum-bound GitHub representation requirements, fixed bootstrap and Drive allowlist enforcement, draft GitHub Release asset publication, release download/readback verification, and restoration proof without Drive.",
       "remaining_scope": "Populate the complete recursive representation ledger from retained historical Drive assets and verify the staged draft release before the separately authorized authority promotion and post-promotion readback.",
-      "evidence": ["PR #10", "src/atlas_ros/release/authority_cutover.py", ".github/workflows/github-release-staging.yml", "tests/unit/test_authority_cutover.py"]
+      "evidence": [
+        "PR #10",
+        "src/atlas_ros/release/authority_cutover.py",
+        ".github/workflows/github-release-staging.yml",
+        "tests/unit/test_authority_cutover.py"
+      ]
     },
     {
       "record_id": "IDEA-10",
       "title": "Capability-Based ROS Architecture Migration and W-Convention Retirement",
       "disposition": "in_progress",
-      "implemented_scope": "Phases 1 through 7 development cutover: canonical semantic contracts and capabilities, compatibility facades, separated reasoning/routing/knowledge/management/planning/orchestration/provider/reconciliation responsibilities, semantic capability export surface, W-import architecture gate, archival mapping, and rollback-preserving aliases.",
-      "remaining_scope": "Responsibility-first reasoning expansion, stable compatibility release promotion, and separately authorized removal of W-number aliases.",
-      "evidence": ["PR #10", "src/atlas_ros/capabilities/__init__.py", "docs/migration/W_WORKFLOW_ARCHIVAL_MAPPING.md", "tests/test_phase7_semantic_cutover.py"]
+      "implemented_scope": "Phases 1 through 7 development cutover: canonical semantic contracts and capabilities, compatibility facades, separated reasoning/routing/knowledge/management/planning/orchestration/provider/reconciliation responsibilities, semantic capability export surface, W-import architecture gate, archival mapping, and rollback-preserving aliases. Classification Intelligence development now adds responsibility-aware reasoning, explainability, intent inference, shadow evidence, and controlled semantic modes.",
+      "remaining_scope": "Governed compatibility release promotion and separately authorized removal of W-number aliases after stable rollback evidence.",
+      "evidence": [
+        "PR #10",
+        "src/atlas_ros/capabilities/__init__.py",
+        "docs/migration/W_WORKFLOW_ARCHIVAL_MAPPING.md",
+        "tests/test_phase7_semantic_cutover.py"
+      ]
     },
     {
       "record_id": "IDEA-9",
@@ -34,7 +96,11 @@
       "disposition": "fully_implemented",
       "implemented_scope": "Provider-independent Execution Planner, projection guardrails, explainability, duplicate suppression, progressive execution horizon, and review gates.",
       "remaining_scope": "",
-      "evidence": ["PR #10", "src/atlas_ros/planning/execution.py", "tests/test_execution_planner.py"]
+      "evidence": [
+        "PR #10",
+        "src/atlas_ros/planning/execution.py",
+        "tests/test_execution_planner.py"
+      ]
     },
     {
       "record_id": "IDEA-5",
