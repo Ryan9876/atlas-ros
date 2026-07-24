@@ -29,7 +29,19 @@ jobs:
       - name: Validate architecture boundaries
         run: python scripts/validate_architecture.py
       - run: mypy src
-      - run: pytest
+      - name: Test
+        id: pytest
+        run: |
+          set -o pipefail
+          pytest 2>&1 | tee pytest-output.txt
+      - name: Retain pytest diagnostics
+        if: failure() && steps.pytest.outcome == 'failure'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: pytest-diagnostics
+          path: pytest-output.txt
+          if-no-files-found: error
+          retention-days: 7
       - run: python -m build
       - run: python -c "from atlas_ros.config.loader import load_config; assert load_config('todoist')['version']"
 
