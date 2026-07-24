@@ -1,6 +1,8 @@
 name: github-release-staging
 
 on:
+  push:
+    branches: [main]
   workflow_run:
     workflows: [release-candidate]
     types: [completed]
@@ -34,6 +36,8 @@ on:
 permissions:
   actions: read
   contents: write
+  issues: write
+  pull-requests: write
 
 concurrency:
   group: github-release-staging-v5.3.0-rc.1
@@ -44,17 +48,20 @@ jobs:
     if: >-
       github.event_name == 'workflow_dispatch' ||
       (github.event.workflow_run.conclusion == 'success' &&
-       github.event.workflow_run.head_branch == 'release/v5.3-candidate')
+       github.event.workflow_run.head_branch == 'release/v5.3-candidate') ||
+      (github.event_name == 'push' &&
+       contains(github.event.head_commit.message, '[stage-v5.3.0rc1]'))
     runs-on: ubuntu-24.04
     timeout-minutes: 20
 
     env:
       RUN_ID: ${{ github.event.workflow_run.id || inputs.candidate_run_id }}
+      ARTIFACT_ID: ${{ github.event_name == 'push' && '8605295031' || '' }}
       ARTIFACT_NAME: ${{ inputs.artifact_name || 'atlas-ros-v5.3.0rc1-release-candidate' }}
       TAG: ${{ inputs.tag || 'v5.3.0-rc.1' }}
       RELEASE_NAME: ${{ inputs.release_name || 'Atlas ROS v5.3.0 Classification Intelligence Release Candidate 1' }}
-      TARGET_COMMITISH: ${{ github.event.workflow_run.head_sha || inputs.target_commitish }}
-      EXPECTED_PACKAGE_SHA256: ${{ inputs.expected_package_sha256 }}
+      TARGET_COMMITISH: ${{ github.event.workflow_run.head_sha || inputs.target_commitish || '6380c79974bcd499a5694982210f86431e85dec4' }}
+      EXPECTED_PACKAGE_SHA256: ${{ inputs.expected_package_sha256 || (github.event_name == 'push' && '3fe3dafe2723b5be881830fbd7ef4c74ebe0dad5ae7e1c1ed5a6a60ccabdcb53') || '' }}
 
     steps:
       - name: Check out release tooling
@@ -69,7 +76,12 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p candidate
-          gh run download "${RUN_ID}" --repo "${GITHUB_REPOSITORY}" --name "${ARTIFACT_NAME}" --dir candidate
+          if [[ -n "${ARTIFACT_ID}" ]]; then
+            gh api "repos/${GITHUB_REPOSITORY}/actions/artifacts/${ARTIFACT_ID}/zip" > candidate-artifact.zip
+            unzip -q candidate-artifact.zip -d candidate
+          else
+            gh run download "${RUN_ID}" --repo "${GITHUB_REPOSITORY}" --name "${ARTIFACT_NAME}" --dir candidate
+          fi
 
       - name: Verify candidate package and publication checksums
         run: |
@@ -145,3 +157,10 @@ jobs:
           set -euo pipefail
           gh release view "${TAG}" --repo "${GITHUB_REPOSITORY}" --json isDraft,tagName,targetCommitish --jq 'select(.isDraft == true and .tagName == env.TAG and .targetCommitish == env.TARGET_COMMITISH)'
           echo "Draft release staged, downloaded, checksum-verified, and restored without Drive. Publication remains inactive until Ryan explicitly authorizes promotion."
+
+      - name: Record staging receipt on promotion PR
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh pr comment 13 --repo "${GITHUB_REPOSITORY}" --body "Draft GitHub Release staging passed for \`${TAG}\`. Staging run: \`${GITHUB_RUN_ID}\`. Candidate run: \`${RUN_ID}\`. Target: \`${TARGET_COMMITISH}\`. Package SHA-256: \`${PACKAGE_SHA256}\`. Assets were uploaded, downloaded, checksum-verified, and restored without Google Drive, including Classification Intelligence imports. Production promotion remains unauthorized."
