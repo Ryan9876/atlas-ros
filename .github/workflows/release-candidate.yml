@@ -1,70 +1,209 @@
 name: release-candidate
+
 on:
   push:
-    branches: [atlas/release-v453-final]
+    branches:
+      - release/v5.1-candidate
   pull_request:
-    branches: [main]
+    branches: [release/v5.1-candidate]
   workflow_dispatch:
+
 permissions:
   contents: read
+
+concurrency:
+  group: release-candidate-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   build-and-verify:
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 30
+
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
-        with: {persist-credentials: false}
-      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
-        with: {python-version: '3.12.10', cache: pip}
-      - run: python -m pip install --upgrade pip && pip install -e '.[dev]'
-      - run: ruff check .
-      - run: mypy src
-      - run: pytest
+      - name: Check out candidate source
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.12.10'
+          cache: pip
+
+      - name: Resolve package metadata
+        id: metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY' >> "$GITHUB_ENV"
+          import tomllib
+          from pathlib import Path
+
+          project = tomllib.loads(Path("pyproject.toml").read_text(encoding="utf-8"))["project"]
+          distribution = project["name"].replace("-", "_")
+          version = project["version"]
+          release_label = version.removesuffix(".dev0")
+
+          print(f"ATLAS_DISTRIBUTION={distribution}")
+          print(f"ATLAS_VERSION={version}")
+          print(f"ATLAS_RELEASE_LABEL={release_label}")
+          print(f"ATLAS_SDIST={distribution}-{version}.tar.gz")
+          print(f"ATLAS_WHEEL={distribution}-{version}-py3-none-any.whl")
+          print(f"ATLAS_SOURCE_DIR={distribution}-{version}")
+          print(f"ATLAS_PACKAGE_BASENAME=Atlas_ROS_v{release_label}_release_candidate")
+          PY
+
+      - name: Install validation toolchain
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          python -m pip install -e '.[dev]'
+
+      - name: Static analysis
+        run: |
+          set -euo pipefail
+          ruff check .
+          mypy src
+
+      - name: Test with branch coverage
+        run: |
+          set -euo pipefail
+          mkdir -p test-results
+          pytest --junitxml=test-results/pytest.xml --cov-report=json:test-results/coverage.json
+
+      - name: Validate dependency policy and advisories
+        run: |
+          set -euo pipefail
+          mkdir -p audit
+          python scripts/validate_dependency_lock.py requirements.runtime.lock
+          python scripts/validate_vulnerability_exceptions.py
+          pip-audit --disable-pip --require-hashes --no-deps --vulnerability-service pypi --requirement requirements.runtime.lock --format json --output audit/pip-audit-pypi.json
+          pip-audit --disable-pip --require-hashes --no-deps --vulnerability-service osv --requirement requirements.runtime.lock --format json --output audit/pip-audit-osv.json
+          python scripts/evaluate_dependency_audit.py audit/pip-audit-pypi.json audit/pip-audit-osv.json
+
+      - name: Validate authority-migration records
+        run: |
+          set -euo pipefail
+          mkdir -p authority-migration-evidence
+          atlas release classify-drive-inventory \
+            release/authority-migration/drive-root-items.json \
+            authority-migration-evidence/drive-root-inventory.json \
+            --source-folder-id 1TG_2OP6iZpCmih734SumSsi62gOQ1zH4 \
+            --bootstrap-file-id 1F8fXT9oLtXnorbyL--5Vw0Ajo6MyW0Xk
+          atlas release validate-drive-inventory \
+            authority-migration-evidence/drive-root-inventory.json
+          atlas release validate-implementation-registry \
+            release/implementation-registry.json
+
       - name: Generate canonical source manifest
         run: |
+          set -euo pipefail
           rm -f release/CHECKSUMS.sha256
           atlas release checksums --root . --checksum-file release/CHECKSUMS.sha256
           atlas release verify --root . --checksum-file release/CHECKSUMS.sha256
-      - name: Build source and wheel
-        run: python -m build
+
+      - name: Build source distribution and wheel
+        run: |
+          set -euo pipefail
+          python -m build
+          test -f "dist/${ATLAS_SDIST}"
+          test -f "dist/${ATLAS_WHEEL}"
+
       - name: Verify extracted source manifest
         run: |
-          mkdir -p extracted
-          tar -xzf dist/atlas_ros-4.5.3.tar.gz -C extracted
-          test -f extracted/atlas_ros-4.5.3/release/CHECKSUMS.sha256
-          PYTHONPATH=extracted/atlas_ros-4.5.3/src \
-            python -m atlas_ros.cli release verify \
-            --root extracted/atlas_ros-4.5.3 \
-            --checksum-file extracted/atlas_ros-4.5.3/release/CHECKSUMS.sha256
+          set -euo pipefail
+          mkdir -p extracted source-verification
+          tar -xzf "dist/${ATLAS_SDIST}" -C extracted
+          test -f "extracted/${ATLAS_SOURCE_DIR}/release/CHECKSUMS.sha256"
+          PYTHONPATH="extracted/${ATLAS_SOURCE_DIR}/src" python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          from atlas_ros.release.tooling import verify
+
+          root = Path("extracted") / os.environ["ATLAS_SOURCE_DIR"]
+          checksum_file = root / "release" / "CHECKSUMS.sha256"
+          errors = verify(root, checksum_file)
+          Path("source-verification/mismatches.json").write_text(
+              json.dumps({"valid": not errors, "mismatches": errors}, indent=2) + "\n",
+              encoding="utf-8",
+          )
+          if errors:
+              raise SystemExit(1)
+          PY
+
+      - name: Retain source verification diagnostics
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: v520-source-verification
+          path: source-verification/mismatches.json
+          if-no-files-found: warn
+          retention-days: 7
+
       - name: Clean wheel install and policy smoke test
         run: |
+          set -euo pipefail
           python -m venv clean-wheel
-          clean-wheel/bin/python -m pip install --disable-pip-version-check dist/atlas_ros-4.5.3-py3-none-any.whl
+          clean-wheel/bin/python -m pip install --disable-pip-version-check "dist/${ATLAS_WHEEL}"
           clean-wheel/bin/python -c "from atlas_ros.config.loader import load_config; assert load_config('readiness')['version'] == 2"
           clean-wheel/bin/atlas status
-      - name: Assemble release publication set
+
+      - name: Generate commit-bound candidate evidence
+        env:
+          ATLAS_CANDIDATE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         run: |
-          mkdir -p publication
-          cp dist/atlas_ros-4.5.3.tar.gz publication/
-          cp dist/atlas_ros-4.5.3-py3-none-any.whl publication/
-          cp release/RELEASE_MANIFEST.md publication/
-          cp release/RELEASE_MANIFEST_V453.md publication/
-          cp release/FULL_VALIDATION_REPORT_V453.md publication/
-          cp release/DEPENDENCY_SECURITY_GATE_STATUS.md publication/
-          cp release/SBOM.cdx.json publication/
+          set -euo pipefail
+          python scripts/build_v510_candidate_evidence.py \
+            --project-root . \
+            --output-dir candidate-evidence \
+            --head-sha "${ATLAS_CANDIDATE_SHA}" \
+            --workflow-run-id "${GITHUB_RUN_ID}" \
+            --cases benchmarks/ryan-intelligence-evaluation-set-v1.json \
+            --junit test-results/pytest.xml \
+            --coverage test-results/coverage.json \
+            --source-manifest release/CHECKSUMS.sha256 \
+            --sbom release/SBOM_V510_CURRENT.cdx.json
+
+      - name: Assemble immutable v5.2 candidate publication set
+        run: |
+          set -euo pipefail
+          mkdir -p publication/audit
+          cp "dist/${ATLAS_SDIST}" publication/
+          cp "dist/${ATLAS_WHEEL}" publication/
+          cp candidate-evidence/RELEASE_MANIFEST_V520_CANDIDATE.md publication/RELEASE_MANIFEST.md
+          cp candidate-evidence/V520_PROMOTION_PREPARATION_REPORT.md publication/
+          cp candidate-evidence/V520_PROMOTION_PREPARATION_STATUS.json publication/
+          cp candidate-evidence/V520_PROMOTION_PREPARATION_STATUS.sha256 publication/
+          cp candidate-evidence/V520_RELEASE_VALIDATION_WORKBENCH_REPORT.md publication/
+          cp candidate-evidence/V520_CALIBRATION_REPORT.json publication/
+          cp release/SBOM_V510_CURRENT.cdx.json publication/SBOM.cdx.json
           cp release/CHECKSUMS.sha256 publication/SOURCE_CHECKSUMS.sha256
           cp requirements.runtime.lock publication/
           cp security/vulnerability-exceptions.yml publication/
-          (cd publication && sha256sum * > CHECKSUMS.sha256)
-          zip -q -r Atlas_ROS_v4.5.3_release_package.zip publication
-          sha256sum Atlas_ROS_v4.5.3_release_package.zip > Atlas_ROS_v4.5.3_release_package.zip.sha256
-      - name: Retain release candidate
+          mkdir -p publication/authority-migration
+          cp release/implementation-registry.json publication/authority-migration/
+          cp authority-migration-evidence/drive-root-inventory.json publication/authority-migration/
+          cp schemas/release/implementation-registry.schema.json publication/authority-migration/
+          cp schemas/release/drive-authority-inventory.schema.json publication/authority-migration/
+          cp audit/pip-audit-pypi.json publication/audit/
+          cp audit/pip-audit-osv.json publication/audit/
+          (
+            cd publication
+            find . -type f ! -name CHECKSUMS.sha256 -print0 | sort -z | xargs -0 sha256sum > CHECKSUMS.sha256
+          )
+          zip -q -X -r "${ATLAS_PACKAGE_BASENAME}.zip" publication
+          sha256sum "${ATLAS_PACKAGE_BASENAME}.zip" > "${ATLAS_PACKAGE_BASENAME}.zip.sha256"
+
+      - name: Retain v5.2 release candidate evidence
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: atlas-ros-v4.5.3-release-candidate
+          name: atlas-ros-v${{ env.ATLAS_RELEASE_LABEL }}-release-candidate
           path: |
             publication/
-            Atlas_ROS_v4.5.3_release_package.zip
-            Atlas_ROS_v4.5.3_release_package.zip.sha256
+            ${{ env.ATLAS_PACKAGE_BASENAME }}.zip
+            ${{ env.ATLAS_PACKAGE_BASENAME }}.zip.sha256
           if-no-files-found: error
           retention-days: 90

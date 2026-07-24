@@ -11,7 +11,7 @@ SCHEMA = """
 PRAGMA foreign_keys=ON;
 PRAGMA journal_mode=WAL;
 CREATE TABLE IF NOT EXISTS migration_history (version TEXT PRIMARY KEY, applied_at TEXT NOT NULL);
-CREATE TABLE IF NOT EXISTS pending_capture (capture_id TEXT PRIMARY KEY, correlation_id TEXT UNIQUE NOT NULL, content TEXT NOT NULL, source TEXT NOT NULL, created_at TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'pending');
+CREATE TABLE IF NOT EXISTS pending_capture (capture_id TEXT PRIMARY KEY, correlation_id TEXT UNIQUE NOT NULL, content TEXT NOT NULL, source TEXT NOT NULL, due_date_input TEXT NOT NULL DEFAULT '', delegation_input TEXT NOT NULL DEFAULT '', additional_context TEXT NOT NULL DEFAULT '', created_at TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'pending');
 CREATE TABLE IF NOT EXISTS outbox_event (event_id TEXT PRIMARY KEY, correlation_id TEXT NOT NULL, payload TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'pending', attempts INTEGER NOT NULL DEFAULT 0, last_error TEXT, next_retry TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS runtime_lock (name TEXT PRIMARY KEY, holder TEXT NOT NULL, expires_at TEXT NOT NULL);
 CREATE INDEX IF NOT EXISTS outbox_pending_idx ON outbox_event(status, next_retry);
@@ -30,8 +30,24 @@ class RuntimeDatabase:
         self.path.parent.chmod(0o700)
         with self.connect() as connection:
             connection.executescript(SCHEMA)
-            connection.execute("PRAGMA user_version=40502")
+            self._ensure_capture_assertion_columns(connection)
+            connection.execute("PRAGMA user_version=50001")
         os.chmod(self.path, 0o600)
+
+    @staticmethod
+    def _ensure_capture_assertion_columns(connection: sqlite3.Connection) -> None:
+        existing = {
+            row[1] for row in connection.execute("PRAGMA table_info(pending_capture)")
+        }
+        for column, definition in (
+            ("due_date_input", "TEXT NOT NULL DEFAULT ''"),
+            ("delegation_input", "TEXT NOT NULL DEFAULT ''"),
+            ("additional_context", "TEXT NOT NULL DEFAULT ''"),
+        ):
+            if column not in existing:
+                connection.execute(
+                    f"ALTER TABLE pending_capture ADD COLUMN {column} {definition}"
+                )
 
     @contextmanager
     def connect(self) -> Iterator[sqlite3.Connection]:

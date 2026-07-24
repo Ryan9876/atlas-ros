@@ -13,3 +13,12 @@ build/
 .deps/
 .atlas-runtime/
 release/*.zip
+*$py.class
+*.egg-info/
+# macOS metadata
+.DS_Store
+**/.DS_Store
+
+# Generated intelligence outputs
+calibration-report.json
+judgments.json

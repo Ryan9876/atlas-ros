@@ -9,6 +9,23 @@ from pathlib import Path
 from atlas_ros.adapters.notion import LiveNotionAdapter
 from atlas_ros.adapters.todoist import LiveTodoistAdapter
 from atlas_ros.domain.models import Action
+from atlas_ros.intelligence.calibration import (
+    IntelligenceCalibrationEngine,
+    load_calibration_cases,
+    load_calibration_report,
+    load_intelligence_judgments,
+)
+from atlas_ros.intelligence.dataset import validate_files
+from atlas_ros.intelligence.evaluation import BenchmarkRunner
+from atlas_ros.intelligence.evaluator import IntelligenceEvaluationRunner
+from atlas_ros.intelligence.io import load_results
+from atlas_ros.release.authority_migration import (
+    build_drive_inventory,
+    load_drive_inventory,
+    load_drive_items,
+    load_implementation_registry,
+    write_drive_inventory,
+)
 from atlas_ros.release.tooling import checksums, inventory, verify
 from atlas_ros.runtime.database import RuntimeDatabase
 from atlas_ros.workflows import (
@@ -47,8 +64,20 @@ def initialize(json_output: bool = False) -> None:
     )
 
 
-def capture(content: str, source: str = "cli") -> None:
-    item = CaptureService(runtime()).capture(content, source)
+def capture(
+    content: str,
+    source: str = "cli",
+    due_date_input: str = "",
+    delegation_input: str = "",
+    additional_context: str = "",
+) -> None:
+    item = CaptureService(runtime()).capture(
+        content,
+        source,
+        due_date_input=due_date_input,
+        delegation_input=delegation_input,
+        additional_context=additional_context,
+    )
     print(item.model_dump_json())
 
 
@@ -181,6 +210,57 @@ def connectivity_check(keychain: bool) -> None:
     )
 
 
+def intelligence_evaluate(results_file: Path) -> None:
+    report = BenchmarkRunner().run(load_results(results_file))
+    print(report.model_dump_json())
+
+
+def intelligence_generate_judgments(cases_file: Path, output_file: Path) -> None:
+    judgments = IntelligenceEvaluationRunner().run(load_calibration_cases(cases_file))
+    output_file.parent.mkdir(parents=True, exist_ok=True)
+    output_file.write_text(
+        json.dumps(
+            [judgment.model_dump(mode="json") for judgment in judgments],
+            indent=2,
+        )
+        + "\n"
+    )
+    print(output_file)
+
+
+def intelligence_calibrate(cases_file: Path, judgments_file: Path) -> None:
+    report = IntelligenceCalibrationEngine().run(
+        load_calibration_cases(cases_file),
+        load_intelligence_judgments(judgments_file),
+    )
+    print(report.model_dump_json())
+
+
+def intelligence_compare_calibration(baseline_file: Path, current_file: Path) -> None:
+    report = IntelligenceCalibrationEngine().compare_regression(
+        load_calibration_report(baseline_file),
+        load_calibration_report(current_file),
+    )
+    print(report.model_dump_json())
+
+
+def intelligence_validate_set(cases_file: Path, results_file: Path | None) -> None:
+    validation = validate_files(cases_file, results_file)
+    print(
+        json.dumps(
+            {
+                "valid": validation.valid,
+                "case_count": validation.case_count,
+                "result_count": validation.result_count,
+                "covered_dimensions": [item.value for item in validation.covered_dimensions],
+                "errors": list(validation.errors),
+            }
+        )
+    )
+    if not validation.valid:
+        raise ValueError("intelligence evaluation set validation failed")
+
+
 def release_inventory(root: Path = Path(".")) -> None:
     print("\n".join(path.relative_to(root).as_posix() for path in inventory(root)))
 
@@ -202,6 +282,46 @@ def release_verify(
     print('{"valid":true}')
 
 
+def release_classify_drive_inventory(
+    input_file: Path, output_file: Path, source_folder_id: str, bootstrap_file_id: str
+) -> None:
+    inventory_report = build_drive_inventory(
+        load_drive_items(input_file),
+        source_folder_id=source_folder_id,
+        bootstrap_file_id=bootstrap_file_id,
+    )
+    write_drive_inventory(inventory_report, output_file)
+    print(output_file)
+
+
+def release_validate_drive_inventory(inventory_file: Path) -> None:
+    inventory_report = load_drive_inventory(inventory_file)
+    print(
+        json.dumps(
+            {
+                "valid": True,
+                "source_folder_id": inventory_report.source_folder_id,
+                "item_count": len(inventory_report.items),
+                "summary": inventory_report.summary,
+            }
+        )
+    )
+
+
+def release_validate_implementation_registry(registry_file: Path) -> None:
+    registry = load_implementation_registry(registry_file)
+    print(
+        json.dumps(
+            {
+                "valid": True,
+                "candidate_version": registry.candidate_version,
+                "source_head": registry.source_head,
+                "record_count": len(registry.records),
+            }
+        )
+    )
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(prog="atlas")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -211,6 +331,9 @@ def main() -> None:
     cap = sub.add_parser("capture")
     cap.add_argument("content")
     cap.add_argument("--source", default="cli")
+    cap.add_argument("--due-date", default="")
+    cap.add_argument("--delegate-to", default="")
+    cap.add_argument("--context", default="")
     todoist_cmd = sub.add_parser("todoist")
     todoist_sub = todoist_cmd.add_subparsers(dest="todoist_command", required=True)
     reconcile = todoist_sub.add_parser("reconcile")
@@ -229,25 +352,69 @@ def main() -> None:
     dec.add_argument("--delegation-reviewed", action="store_true")
     dec.add_argument("--delegated-work-required", action="store_true")
     dec.add_argument("--delegated-work", action="store_true")
+    intelligence = sub.add_parser("intelligence")
+    intelligence_sub = intelligence.add_subparsers(dest="intelligence_command", required=True)
+    evaluate = intelligence_sub.add_parser("evaluate")
+    evaluate.add_argument("results_file", type=Path)
+    generate_judgments = intelligence_sub.add_parser("generate-judgments")
+    generate_judgments.add_argument("cases_file", type=Path)
+    generate_judgments.add_argument("output_file", type=Path)
+    validate_set = intelligence_sub.add_parser("validate-set")
+    validate_set.add_argument("cases_file", type=Path)
+    validate_set.add_argument("--results-file", type=Path)
+    calibrate = intelligence_sub.add_parser("calibrate")
+    calibrate.add_argument("cases_file", type=Path)
+    calibrate.add_argument("judgments_file", type=Path)
+    compare_calibration = intelligence_sub.add_parser("compare-calibration")
+    compare_calibration.add_argument("baseline_file", type=Path)
+    compare_calibration.add_argument("current_file", type=Path)
     rel = sub.add_parser("release")
     relsub = rel.add_subparsers(dest="release_command")
     for command in ("inventory", "checksums", "verify"):
         rp = relsub.add_parser(command)
         rp.add_argument("--root", type=Path, default=Path("."))
         rp.add_argument("--checksum-file", type=Path, default=Path("release/CHECKSUMS.sha256"))
+    classify_inventory = relsub.add_parser("classify-drive-inventory")
+    classify_inventory.add_argument("input_file", type=Path)
+    classify_inventory.add_argument("output_file", type=Path)
+    classify_inventory.add_argument("--source-folder-id", required=True)
+    classify_inventory.add_argument("--bootstrap-file-id", required=True)
+    validate_inventory = relsub.add_parser("validate-drive-inventory")
+    validate_inventory.add_argument("inventory_file", type=Path)
+    validate_registry = relsub.add_parser("validate-implementation-registry")
+    validate_registry.add_argument("registry_file", type=Path)
     args = parser.parse_args()
     if args.command == "status":
         status()
     elif args.command == "initialize":
         initialize(args.json)
     elif args.command == "capture":
-        capture(args.content, args.source)
+        capture(
+            args.content,
+            args.source,
+            due_date_input=args.due_date,
+            delegation_input=args.delegate_to,
+            additional_context=args.context,
+        )
     elif args.command == "todoist" and args.todoist_command == "reconcile":
         todoist_reconcile(
             apply=args.apply, full=args.full, task_id=args.task, keychain=args.keychain
         )
     elif args.command == "connectivity":
         connectivity_check(args.keychain)
+    elif args.command == "intelligence" and args.intelligence_command == "evaluate":
+        intelligence_evaluate(args.results_file)
+    elif (
+        args.command == "intelligence"
+        and args.intelligence_command == "generate-judgments"
+    ):
+        intelligence_generate_judgments(args.cases_file, args.output_file)
+    elif args.command == "intelligence" and args.intelligence_command == "validate-set":
+        intelligence_validate_set(args.cases_file, args.results_file)
+    elif args.command == "intelligence" and args.intelligence_command == "calibrate":
+        intelligence_calibrate(args.cases_file, args.judgments_file)
+    elif args.command == "intelligence" and args.intelligence_command == "compare-calibration":
+        intelligence_compare_calibration(args.baseline_file, args.current_file)
     elif args.command == "decompose":
         decompose(
             args.action_id,
@@ -265,6 +432,20 @@ def main() -> None:
         release_checksums(args.root, args.checksum_file)
     elif args.command == "release" and args.release_command == "verify":
         release_verify(args.root, args.checksum_file)
+    elif args.command == "release" and args.release_command == "classify-drive-inventory":
+        release_classify_drive_inventory(
+            args.input_file,
+            args.output_file,
+            args.source_folder_id,
+            args.bootstrap_file_id,
+        )
+    elif args.command == "release" and args.release_command == "validate-drive-inventory":
+        release_validate_drive_inventory(args.inventory_file)
+    elif (
+        args.command == "release"
+        and args.release_command == "validate-implementation-registry"
+    ):
+        release_validate_implementation_registry(args.registry_file)
 
 
 if __name__ == "__main__":

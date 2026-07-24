@@ -1,0 +1,55 @@
+{
+  "release": "Atlas ROS v5.0",
+  "base_authority": "Atlas ROS v4.5.3",
+  "immediate_rollback_on_promotion": "Atlas ROS v4.5.3",
+  "status": "blocked",
+  "promotion_authorized": false,
+  "benchmark_case_count": 60,
+  "benchmark_domains": [
+    "action_recommendation",
+    "decision_recommendation",
+    "evidence_quality",
+    "explanation_quality",
+    "learning_effectiveness",
+    "priority_recommendation",
+    "risk_prediction",
+    "root_cause_hypothesis"
+  ],
+  "dataset_fingerprint": "0cd3430d3711df8e5e936b30eef92f7bb69ee904ce5ae343f177e313259a99f5",
+  "governed_review": {
+    "path": "solo_maintainer",
+    "reviewer": "Ryan9876",
+    "status": "approved",
+    "evidence_reference": "GitHub PR #5 comment 5048479728",
+    "reviewed_head_sha": "507f6946b231891c0b6de4e17e21644c23ba23a0"
+  },
+  "ci_evidence": {
+    "ci_run_id": 29936005831,
+    "ci_conclusion": "success",
+    "release_candidate_run_id": 29936006280,
+    "release_candidate_conclusion": "success",
+    "artifact_id": 8536143452,
+    "artifact_digest": "sha256:f0677053ab92dad9040c6775b964941369b7aa2fe865b1df75c4bb8bbe53ce0a"
+  },
+  "completed_gates": [
+    "60-case benchmark corpus",
+    "eight-domain coverage",
+    "authority references",
+    "adversarial cases",
+    "deterministic evidence builder",
+    "Ruff",
+    "strict MyPy",
+    "150 tests",
+    "89.47% branch coverage",
+    "source and wheel build",
+    "clean-wheel validation",
+    "dependency audit",
+    "artifact integrity",
+    "governed solo-maintainer review"
+  ],
+  "blocking_gates": [
+    "expert-reviewed benchmark judgments not supplied",
+    "full Atlas restoration validation and release-record review not completed"
+  ],
+  "required_decision": "Complete remaining blocking gates before final production promotion authorization."
+}

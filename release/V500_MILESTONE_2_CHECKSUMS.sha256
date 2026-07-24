@@ -1,0 +1,6 @@
+487a1363cf68624d0019557a088e396e4787a582ae216098b975b8479bfd84f1  evaluation/ryan-intelligence-evaluation-set/v1.0/README.md
+5907fee214519046854b315c149c6f141ab0f1da99e66773097eba307d0e0597  evaluation/ryan-intelligence-evaluation-set/v1.0/baseline-report-v4.5.3.json
+0a701f9a4cc561adfc337e06e550088854f33f774c795689bbe4161f2fe062b0  evaluation/ryan-intelligence-evaluation-set/v1.0/baseline-v4.5.3.json
+ced30ee54285e8549f0774fa94613f674852d244b0efe21a611bbb7e7f07fdf8  evaluation/ryan-intelligence-evaluation-set/v1.0/cases.json
+32345cc1764ce19dff07c165130f1bdf2d6caf750a7a1fc47ec52316af624e72  docs/RYAN_INTELLIGENCE_BASELINE_V453.md
+fdedfd775d816603cc3c94aad3760ae6f3730d71768f6cda2fa88a8a4d6ac75f  src/atlas_ros/intelligence/dataset.py

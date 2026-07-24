@@ -1,3 +1,9 @@
+## v5.0.0rc1 — Milestone 5
+
+- Added governed evidence-first reasoning and recommendation engine.
+- Added deterministic weighted tradeoff analysis, uncertainty propagation, abstention, explanations, and decision-quality evaluation.
+- Added immutable RecommendationRecord generation and blocking regression coverage.
+
 # Changelog
 
 ## 4.5.2 - 2026-07-21
@@ -120,3 +126,38 @@
 - Added shared Notion reconciliation-state store for CLI/ChatGPT replay suppression.
 - Retained SQLite state as a recovery fallback.
 - Added connector-native W04 runbook and cross-surface idempotency acceptance requirements.
+
+## 5.0.0rc1 — Milestone 2
+
+- Added Ryan Intelligence Evaluation Set v1.0 with 18 immutable core cases.
+- Added documented-capability baseline for Atlas ROS v4.5.3.
+- Added evaluation-set coverage and referential-integrity validation.
+- Added `atlas intelligence validate-set` CLI command.
+- Explicitly separated documented capability from live behavioral observation.
+
+## 5.0.0rc1 — Milestone 3
+
+- Added immutable Canonical Intelligence Record contracts for evidence, context, predictions, recommendations, decisions, and learning events.
+- Added deterministic serialization, SHA-256 integrity validation, typed record references, append-only SQLite persistence, migration registry, generated schemas, and regression coverage.
+
+## v5.0 development — Milestone 7
+- Added governed outcome-linked learning and adaptation proposals.
+- Added approval gates, bounded confidence updates, rollback-safe application, and longitudinal learning-quality evaluation.
+
+## v5.0.0rc1 — Milestone 9
+
+- Added governed candidate-preparation evidence packets.
+- Added fixed mandatory gate completeness and failure checks.
+- Added independent-review approval and changes-required controls.
+- Added artifact SHA-256 verification and deterministic packet fingerprints.
+- Added explicit separation between candidate proposal and promotion authority.
+- Expanded regression coverage to 131 passing tests and 88.85% branch coverage.
+
+## v5.0 Release Control Center
+- Added a read-only control center generated from Release Validation Workbench evidence.
+- Added gate, blocker, artifact-integrity, active/rollback authority, candidate-readiness, and promotion-boundary views.
+- Added deterministic JSON and dashboard fingerprints.
+
+## v5.0 promotion preparation
+- Added Ryan Intelligence Evaluation Set v1 with 60 promotion cases.
+- Added deterministic promotion-readiness evidence builder and blocking boundaries.

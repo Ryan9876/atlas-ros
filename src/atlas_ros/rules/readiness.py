@@ -57,9 +57,7 @@ def action_rules() -> list[Rule]:
             Severity.ERROR,
             Action,
             lambda a: (
-                not a.execution_ready
-                or not a.delegated_work_required
-                or a.delegated_work_present
+                not a.execution_ready or not a.delegated_work_required or a.delegated_work_present
             ),
             "Create or link the Delegated Work record.",
         ),

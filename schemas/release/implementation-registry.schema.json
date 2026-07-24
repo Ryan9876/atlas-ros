@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-ros.local/schemas/release/implementation-registry.schema.json",
+  "title": "Atlas ROS Implementation Registry",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "generated_at", "candidate_version", "source_head", "records"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "generated_at": {"type": "string", "format": "date-time"},
+    "candidate_version": {"type": "string", "minLength": 1},
+    "source_head": {"type": "string", "minLength": 1},
+    "records": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["record_id", "title", "disposition", "implemented_scope", "remaining_scope", "evidence"],
+        "properties": {
+          "record_id": {"type": "string", "minLength": 1},
+          "title": {"type": "string", "minLength": 1},
+          "disposition": {
+            "enum": ["fully_implemented", "partially_implemented", "in_progress", "deferred", "superseded", "declined", "unaffected"]
+          },
+          "implemented_scope": {"type": "string"},
+          "remaining_scope": {"type": "string"},
+          "evidence": {"type": "array", "items": {"type": "string", "minLength": 1}}
+        }
+      }
+    }
+  }
+}

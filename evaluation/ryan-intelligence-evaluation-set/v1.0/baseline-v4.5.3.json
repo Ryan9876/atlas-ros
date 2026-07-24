@@ -1,0 +1,634 @@
+[
+  {
+    "case_id": "RIE-001",
+    "evaluator_version": "rie-1.0",
+    "generated_at": "2026-07-22T00:00:00Z",
+    "metrics": [
+      {
+        "metric": "documented_capability:trust_and_control",
+        "dimension": "trust_and_control",
+        "score": 1.0,
+        "weight": 1.0,
+        "evidence": [
+          "RELEASE_INDEX.md",
+          "Notion System State"
+        ],
+        "notes": "Scored from documented v4.5.3 capability and governance evidence; not a live behavioral observation."
+      },
+      {
+        "metric": "documented_capability:decision_quality",
+        "dimension": "decision_quality",
+        "score": 1.0,
+        "weight": 1.0,
+        "evidence": [
+          "RELEASE_INDEX.md",
+          "Notion System State"
+        ],
+        "notes": "Scored from documented v4.5.3 capability and governance evidence; not a live behavioral observation."
+      }
+    ],
+    "observed_behaviors": [],
+    "violations": [],
+    "abstained": false,
+    "assessment_mode": "documented_capability_baseline",
+    "limitations": [
+      "No live model transcript replay was performed.",
+      "Scores represent implemented/documented capability, not measured production effectiveness."
+    ]
+  },
+  {
+    "case_id": "RIE-002",
+    "evaluator_version": "rie-1.0",
+    "generated_at": "2026-07-22T00:00:00Z",
+    "metrics": [
+      {
+        "metric": "documented_capability:trust_and_control",
+        "dimension": "trust_and_control",
+        "score": 1.0,
+        "weight": 1.0,
+        "evidence": [
+          "Atlas precedence policy"
+        ],
+        "notes": "Scored from documented v4.5.3 capability and governance evidence; not a live behavioral observation."
+      },
+      {
+        "metric": "documented_capability:decision_quality",
+        "dimension": "decision_quality",
+        "score": 0.95,
+        "weight": 1.0,
+        "evidence": [
+          "Atlas precedence policy"
+        ],
+        "notes": "Scored from documented v4.5.3 capability and governance evidence; not a live behavioral observation."
+      }
+    ],
+    "observed_behaviors": [],
+    "violations": [],
+    "abstained": false,
+    "assessment_mode": "documented_capability_baseline",
+    "limitations": [
+      "No live model transcript replay was performed.",
+      "Scores represent implemented/documented capability, not measured production effectiveness."
+    ]
+  },
+  {
+    "case_id": "RIE-003",
+    "evaluator_version": "rie-1.0",
+    "generated_at": "2026-07-22T00:00:00Z",
+    "metrics": [
+      {
+        "metric": "documented_capability:trust_and_control",
+        "dimension": "trust_and_control",
+        "score": 1.0,
+        "weight": 1.0,
+        "evidence": [
+          "System State operating boundaries"
+        ],
+        "notes": "Scored from documented v4.5.3 capability and governance evidence; not a live behavioral observation."
+      },
+      {
+        "metric": "documented_capability:cognitive_load_reduction",
+        "dimension": "cognitive_load_reduction",
+        "score": 0.9,
+        "weight": 1.0,
+        "evidence": [
+          "System State operating boundaries"
+        ],
+        "notes": "Scored from documented v4.5.3 capability and governance evidence; not a live behavioral observation."
+      }
+    ],
+    "observed_behaviors": [],
+    "violations": [],
+    "abstained": false,
+    "assessment_mode": "documented_capability_baseline",
+    "limitations": [
+      "No live model transcript replay was performed.",
+      "Scores represent implemented/documented capability, not measured production effectiveness."
+    ]
+  },
+  {
+    "case_id": "RIE-004",
+    "evaluator_version": "rie-1.0",
+    "generated_at": "2026-07-22T00:00:00Z",
+    "metrics": [
+      {
+        "metric": "documented_capability:trust_and_control",
+        "dimension": "trust_and_control",
+        "score": 1.0,
+        "weight": 1.0,
+        "evidence": [
+          "System State operating boundaries"
+        ],
+        "notes": "Scored from documented v4.5.3 capability and governance evidence; not a live behavioral observation."
+      },
+      {
+        "metric": "documented_capability:decision_quality",
+        "dimension": "decision_quality",
+        "score": 0.9,
+        "weight": 1.0,
+        "evidence": [
+          "System State operating boundaries"
+        ],
+        "notes": "Scored from documented v4.5.3 capability and governance evidence; not a live behavioral observation."
+      }
+    ],
+    "observed_behaviors": [],
+    "violations": [],
+    "abstained": false,
+    "assessment_mode": "documented_capability_baseline",
+    "limitations": [
+      "No live model transcript replay was performed.",
+      "Scores represent implemented/documented capability, not measured production effectiveness."
+    ]
+  },
+  {
+    "case_id": "RIE-005",
+    "evaluator_version": "rie-1.0",
+    "generated_at": "2026-07-22T00:00:00Z",
+    "metrics": [
+      {
+        "metric": "documented_capability:trust_and_control",
+        "dimension": "trust_and_control",
+        "score": 1.0,
+        "weight": 1.0,
+        "evidence": [
+          "Atlas evidence policy"
+        ],
+        "notes": "Scored from documented v4.5.3 capability and governance evidence; not a live behavioral observation."
+      },
+      {
+        "metric": "documented_capability:predictive_quality",
+        "dimension": "predictive_quality",
+        "score": 0.85,
+        "weight": 1.0,
+        "evidence": [
+          "Atlas evidence policy"
+        ],
+        "notes": "Scored from documented v4.5.3 capability and governance evidence; not a live behavioral observation."
+      }
+    ],
+    "observed_behaviors": [],
+    "violations": [],
+    "abstained": false,
+    "assessment_mode": "documented_capability_baseline",
+    "limitations": [
+      "No live model transcript replay was performed.",
+      "Scores represent implemented/documented capability, not measured production effectiveness."
+    ]
+  },
+  {
+    "case_id": "RIE-006",
+    "evaluator_version": "rie-1.0",
+    "generated_at": "2026-07-22T00:00:00Z",
+    "metrics": [
+      {
+        "metric": "documented_capability:decision_quality",
+        "dimension": "decision_quality",
+        "score": 0.65,
+        "weight": 1.0,
+        "evidence": [
+          "v5 Program Charter"
+        ],
+        "notes": "Scored from documented v4.5.3 capability and governance evidence; not a live behavioral observation."
+      },
+      {
+        "metric": "documented_capability:cognitive_load_reduction",
+        "dimension": "cognitive_load_reduction",
+        "score": 0.65,
+        "weight": 1.0,
+        "evidence": [
+          "v5 Program Charter"
+        ],
+        "notes": "Scored from documented v4.5.3 capability and governance evidence; not a live behavioral observation."
+      }
+    ],
+    "observed_behaviors": [],
+    "violations": [],
+    "abstained": false,
+    "assessment_mode": "documented_capability_baseline",
+    "limitations": [
+      "No live model transcript replay was performed.",
+      "Scores represent implemented/documented capability, not measured production effectiveness."
+    ]
+  },
+  {
+    "case_id": "RIE-007",
+    "evaluator_version": "rie-1.0",
+    "generated_at": "2026-07-22T00:00:00Z",
+    "metrics": [
+      {
+        "metric": "documented_capability:predictive_quality",
+        "dimension": "predictive_quality",
+        "score": 0.35,
+        "weight": 1.0,
+        "evidence": [
+          "v5 Target Architecture"
+        ],
+        "notes": "Scored from documented v4.5.3 capability and governance evidence; not a live behavioral observation."
+      },
+      {
+        "metric": "documented_capability:decision_quality",
+        "dimension": "decision_quality",
+        "score": 0.35,
+        "weight": 1.0,
+        "evidence": [
+          "v5 Target Architecture"
+        ],
+        "notes": "Scored from documented v4.5.3 capability and governance evidence; not a live behavioral observation."
+      }
+    ],
+    "observed_behaviors": [],
+    "violations": [],
+    "abstained": false,
+    "assessment_mode": "documented_capability_baseline",
+    "limitations": [
+      "No live model transcript replay was performed.",
+      "Scores represent implemented/documented capability, not measured production effectiveness."
+    ]
+  },
+  {
+    "case_id": "RIE-008",
+    "evaluator_version": "rie-1.0",
+    "generated_at": "2026-07-22T00:00:00Z",
+    "metrics": [
+      {
+        "metric": "documented_capability:predictive_quality",
+        "dimension": "predictive_quality",
+        "score": 0.3,
+        "weight": 1.0,
+        "evidence": [
+          "v5 Program Charter"
+        ],
+        "notes": "Scored from documented v4.5.3 capability and governance evidence; not a live behavioral observation."
+      },
+      {
+        "metric": "documented_capability:cognitive_load_reduction",
+        "dimension": "cognitive_load_reduction",
+        "score": 0.3,
+        "weight": 1.0,
+        "evidence": [
+          "v5 Program Charter"
+        ],
+        "notes": "Scored from documented v4.5.3 capability and governance evidence; not a live behavioral observation."
+      }
+    ],
+    "observed_behaviors": [],
+    "violations": [],
+    "abstained": false,
+    "assessment_mode": "documented_capability_baseline",
+    "limitations": [
+      "No live model transcript replay was performed.",
+      "Scores represent implemented/documented capability, not measured production effectiveness."
+    ]
+  },
+  {
+    "case_id": "RIE-009",
+    "evaluator_version": "rie-1.0",
+    "generated_at": "2026-07-22T00:00:00Z",
+    "metrics": [
+      {
+        "metric": "documented_capability:cognitive_load_reduction",
+        "dimension": "cognitive_load_reduction",
+        "score": 0.45,
+        "weight": 1.0,
+        "evidence": [
+          "v5 Program Charter"
+        ],
+        "notes": "Scored from documented v4.5.3 capability and governance evidence; not a live behavioral observation."
+      },
+      {
+        "metric": "documented_capability:trust_and_control",
+        "dimension": "trust_and_control",
+        "score": 1.0,
+        "weight": 1.0,
+        "evidence": [
+          "v5 Program Charter"
+        ],
+        "notes": "Scored from documented v4.5.3 capability and governance evidence; not a live behavioral observation."
+      }
+    ],
+    "observed_behaviors": [],
+    "violations": [],
+    "abstained": false,
+    "assessment_mode": "documented_capability_baseline",
+    "limitations": [
+      "No live model transcript replay was performed.",
+      "Scores represent implemented/documented capability, not measured production effectiveness."
+    ]
+  },
+  {
+    "case_id": "RIE-010",
+    "evaluator_version": "rie-1.0",
+    "generated_at": "2026-07-22T00:00:00Z",
+    "metrics": [
+      {
+        "metric": "documented_capability:cognitive_load_reduction",
+        "dimension": "cognitive_load_reduction",
+        "score": 0.75,
+        "weight": 1.0,
+        "evidence": [
+          "v5 Program Charter"
+        ],
+        "notes": "Scored from documented v4.5.3 capability and governance evidence; not a live behavioral observation."
+      },
+      {
+        "metric": "documented_capability:decision_quality",
+        "dimension": "decision_quality",
+        "score": 0.75,
+        "weight": 1.0,
+        "evidence": [
+          "v5 Program Charter"
+        ],
+        "notes": "Scored from documented v4.5.3 capability and governance evidence; not a live behavioral observation."
+      }
+    ],
+    "observed_behaviors": [],
+    "violations": [],
+    "abstained": false,
+    "assessment_mode": "documented_capability_baseline",
+    "limitations": [
+      "No live model transcript replay was performed.",
+      "Scores represent implemented/documented capability, not measured production effectiveness."
+    ]
+  },
+  {
+    "case_id": "RIE-011",
+    "evaluator_version": "rie-1.0",
+    "generated_at": "2026-07-22T00:00:00Z",
+    "metrics": [
+      {
+        "metric": "documented_capability:adaptive_quality",
+        "dimension": "adaptive_quality",
+        "score": 0.2,
+        "weight": 1.0,
+        "evidence": [
+          "v5 Target Architecture"
+        ],
+        "notes": "Scored from documented v4.5.3 capability and governance evidence; not a live behavioral observation."
+      },
+      {
+        "metric": "documented_capability:trust_and_control",
+        "dimension": "trust_and_control",
+        "score": 1.0,
+        "weight": 1.0,
+        "evidence": [
+          "v5 Target Architecture"
+        ],
+        "notes": "Scored from documented v4.5.3 capability and governance evidence; not a live behavioral observation."
+      }
+    ],
+    "observed_behaviors": [],
+    "violations": [],
+    "abstained": false,
+    "assessment_mode": "documented_capability_baseline",
+    "limitations": [
+      "No live model transcript replay was performed.",
+      "Scores represent implemented/documented capability, not measured production effectiveness."
+    ]
+  },
+  {
+    "case_id": "RIE-012",
+    "evaluator_version": "rie-1.0",
+    "generated_at": "2026-07-22T00:00:00Z",
+    "metrics": [
+      {
+        "metric": "documented_capability:adaptive_quality",
+        "dimension": "adaptive_quality",
+        "score": 0.1,
+        "weight": 1.0,
+        "evidence": [
+          "v5 Target Architecture"
+        ],
+        "notes": "Scored from documented v4.5.3 capability and governance evidence; not a live behavioral observation."
+      },
+      {
+        "metric": "documented_capability:decision_quality",
+        "dimension": "decision_quality",
+        "score": 0.1,
+        "weight": 1.0,
+        "evidence": [
+          "v5 Target Architecture"
+        ],
+        "notes": "Scored from documented v4.5.3 capability and governance evidence; not a live behavioral observation."
+      }
+    ],
+    "observed_behaviors": [],
+    "violations": [],
+    "abstained": false,
+    "assessment_mode": "documented_capability_baseline",
+    "limitations": [
+      "No live model transcript replay was performed.",
+      "Scores represent implemented/documented capability, not measured production effectiveness."
+    ]
+  },
+  {
+    "case_id": "RIE-013",
+    "evaluator_version": "rie-1.0",
+    "generated_at": "2026-07-22T00:00:00Z",
+    "metrics": [
+      {
+        "metric": "documented_capability:adaptive_quality",
+        "dimension": "adaptive_quality",
+        "score": 0.2,
+        "weight": 1.0,
+        "evidence": [
+          "v5 Target Architecture"
+        ],
+        "notes": "Scored from documented v4.5.3 capability and governance evidence; not a live behavioral observation."
+      },
+      {
+        "metric": "documented_capability:trust_and_control",
+        "dimension": "trust_and_control",
+        "score": 1.0,
+        "weight": 1.0,
+        "evidence": [
+          "v5 Target Architecture"
+        ],
+        "notes": "Scored from documented v4.5.3 capability and governance evidence; not a live behavioral observation."
+      }
+    ],
+    "observed_behaviors": [],
+    "violations": [],
+    "abstained": false,
+    "assessment_mode": "documented_capability_baseline",
+    "limitations": [
+      "No live model transcript replay was performed.",
+      "Scores represent implemented/documented capability, not measured production effectiveness."
+    ]
+  },
+  {
+    "case_id": "RIE-014",
+    "evaluator_version": "rie-1.0",
+    "generated_at": "2026-07-22T00:00:00Z",
+    "metrics": [
+      {
+        "metric": "documented_capability:adaptive_quality",
+        "dimension": "adaptive_quality",
+        "score": 0.25,
+        "weight": 1.0,
+        "evidence": [
+          "v5 Target Architecture"
+        ],
+        "notes": "Scored from documented v4.5.3 capability and governance evidence; not a live behavioral observation."
+      },
+      {
+        "metric": "documented_capability:predictive_quality",
+        "dimension": "predictive_quality",
+        "score": 0.25,
+        "weight": 1.0,
+        "evidence": [
+          "v5 Target Architecture"
+        ],
+        "notes": "Scored from documented v4.5.3 capability and governance evidence; not a live behavioral observation."
+      }
+    ],
+    "observed_behaviors": [],
+    "violations": [],
+    "abstained": false,
+    "assessment_mode": "documented_capability_baseline",
+    "limitations": [
+      "No live model transcript replay was performed.",
+      "Scores represent implemented/documented capability, not measured production effectiveness."
+    ]
+  },
+  {
+    "case_id": "RIE-015",
+    "evaluator_version": "rie-1.0",
+    "generated_at": "2026-07-22T00:00:00Z",
+    "metrics": [
+      {
+        "metric": "documented_capability:cost_latency_reliability",
+        "dimension": "cost_latency_reliability",
+        "score": 0.7,
+        "weight": 1.0,
+        "evidence": [
+          "v5 Target Architecture"
+        ],
+        "notes": "Scored from documented v4.5.3 capability and governance evidence; not a live behavioral observation."
+      },
+      {
+        "metric": "documented_capability:cognitive_load_reduction",
+        "dimension": "cognitive_load_reduction",
+        "score": 0.7,
+        "weight": 1.0,
+        "evidence": [
+          "v5 Target Architecture"
+        ],
+        "notes": "Scored from documented v4.5.3 capability and governance evidence; not a live behavioral observation."
+      }
+    ],
+    "observed_behaviors": [],
+    "violations": [],
+    "abstained": false,
+    "assessment_mode": "documented_capability_baseline",
+    "limitations": [
+      "No live model transcript replay was performed.",
+      "Scores represent implemented/documented capability, not measured production effectiveness."
+    ]
+  },
+  {
+    "case_id": "RIE-016",
+    "evaluator_version": "rie-1.0",
+    "generated_at": "2026-07-22T00:00:00Z",
+    "metrics": [
+      {
+        "metric": "documented_capability:cost_latency_reliability",
+        "dimension": "cost_latency_reliability",
+        "score": 0.85,
+        "weight": 1.0,
+        "evidence": [
+          "Atlas initialization policy"
+        ],
+        "notes": "Scored from documented v4.5.3 capability and governance evidence; not a live behavioral observation."
+      },
+      {
+        "metric": "documented_capability:trust_and_control",
+        "dimension": "trust_and_control",
+        "score": 1.0,
+        "weight": 1.0,
+        "evidence": [
+          "Atlas initialization policy"
+        ],
+        "notes": "Scored from documented v4.5.3 capability and governance evidence; not a live behavioral observation."
+      }
+    ],
+    "observed_behaviors": [],
+    "violations": [],
+    "abstained": false,
+    "assessment_mode": "documented_capability_baseline",
+    "limitations": [
+      "No live model transcript replay was performed.",
+      "Scores represent implemented/documented capability, not measured production effectiveness."
+    ]
+  },
+  {
+    "case_id": "RIE-017",
+    "evaluator_version": "rie-1.0",
+    "generated_at": "2026-07-22T00:00:00Z",
+    "metrics": [
+      {
+        "metric": "documented_capability:cost_latency_reliability",
+        "dimension": "cost_latency_reliability",
+        "score": 0.9,
+        "weight": 1.0,
+        "evidence": [
+          "v5 Evaluation Framework"
+        ],
+        "notes": "Scored from documented v4.5.3 capability and governance evidence; not a live behavioral observation."
+      },
+      {
+        "metric": "documented_capability:adaptive_quality",
+        "dimension": "adaptive_quality",
+        "score": 0.9,
+        "weight": 1.0,
+        "evidence": [
+          "v5 Evaluation Framework"
+        ],
+        "notes": "Scored from documented v4.5.3 capability and governance evidence; not a live behavioral observation."
+      }
+    ],
+    "observed_behaviors": [],
+    "violations": [],
+    "abstained": false,
+    "assessment_mode": "documented_capability_baseline",
+    "limitations": [
+      "No live model transcript replay was performed.",
+      "Scores represent implemented/documented capability, not measured production effectiveness."
+    ]
+  },
+  {
+    "case_id": "RIE-018",
+    "evaluator_version": "rie-1.0",
+    "generated_at": "2026-07-22T00:00:00Z",
+    "metrics": [
+      {
+        "metric": "documented_capability:trust_and_control",
+        "dimension": "trust_and_control",
+        "score": 1.0,
+        "weight": 1.0,
+        "evidence": [
+          "v5 Program Charter"
+        ],
+        "notes": "Scored from documented v4.5.3 capability and governance evidence; not a live behavioral observation."
+      },
+      {
+        "metric": "documented_capability:adaptive_quality",
+        "dimension": "adaptive_quality",
+        "score": 1.0,
+        "weight": 1.0,
+        "evidence": [
+          "v5 Program Charter"
+        ],
+        "notes": "Scored from documented v4.5.3 capability and governance evidence; not a live behavioral observation."
+      }
+    ],
+    "observed_behaviors": [],
+    "violations": [],
+    "abstained": false,
+    "assessment_mode": "documented_capability_baseline",
+    "limitations": [
+      "No live model transcript replay was performed.",
+      "Scores represent implemented/documented capability, not measured production effectiveness."
+    ]
+  }
+]

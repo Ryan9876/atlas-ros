@@ -153,3 +153,20 @@ def test_todoist_reconcile_requires_action_source(monkeypatch: pytest.MonkeyPatc
     monkeypatch.delenv("ATLAS_ACTION_DATA_SOURCE_ID", raising=False)
     with pytest.raises(ValueError, match="ATLAS_ACTION_DATA_SOURCE_ID"):
         cli.todoist_reconcile(apply=False, full=False, task_id="", keychain=False)
+
+
+def test_intelligence_calibration_cli(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str], tmp_path: Path
+) -> None:
+    cases = tmp_path / "cases.json"
+    judgments = tmp_path / "judgments.json"
+    cases.write_text(
+        '[{"id":"c1","title":"Priority","domain":"priority_recommendation","expected_label":"p1","scenario":"Urgent Ryan decision","authority_refs":["authority://test"]}]',
+        encoding="utf-8",
+    )
+    judgments.write_text(
+        '[{"case_id":"c1","evaluator_version":"rie-cal-1.0","generated_at":"2026-07-22T04:00:00Z","predicted_label":"p1","confidence":0.95,"evidence_refs":["authority://test"],"explanation_score":0.95,"evidence_completeness":0.98}]',
+        encoding="utf-8",
+    )
+    run_cli(monkeypatch, "intelligence", "calibrate", str(cases), str(judgments))
+    assert '"overall_accuracy":1.0' in capsys.readouterr().out
