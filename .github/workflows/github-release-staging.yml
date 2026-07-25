@@ -261,6 +261,9 @@ jobs:
           inventory = json.loads(next(Path("restored-source").rglob("W_NUMBER_RETIREMENT_INVENTORY.json")).read_text())
           assert inventory["runtime_w_module_count"] == 0
           assert inventory["blocking_reference_count"] == 0
+          rollback = json.loads(Path("release-readback/V600_ROLLBACK_REHEARSAL.json").read_text())
+          assert rollback["eligible"]
+          assert rollback["rollback_production_source"] == "06c5a703dec72135171d5738e6e0f3573ed8499d"
           PY
 
       - name: Verify draft release metadata

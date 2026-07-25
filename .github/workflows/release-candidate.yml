@@ -132,6 +132,16 @@ jobs:
           python scripts/evaluate_v6_differential.py \
             --rollback-source rollback-source/atlas_ros-5.6.0rc1 \
             --output differential-evidence/V600_DIFFERENTIAL_REPORT.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          report = json.loads(Path("release/V600_ROLLBACK_REHEARSAL.json").read_text())
+          assert report["eligible"]
+          assert report["rollback_production_source"] == "06c5a703dec72135171d5738e6e0f3573ed8499d"
+          assert report["v6_differential_unexplained_drift"] == 0
+          assert report["live_provider_writes"] == 0
+          PY
 
       - name: Validate dependency policy and advisories
         run: |
@@ -260,6 +270,11 @@ jobs:
           cp reconciliation-evidence/CANONICAL_RECONCILIATION_REPORT.json publication/RECONCILIATION_EVIDENCE.json
           cp reconciliation-evidence/POST_PROMOTION_DRY_RUN.json publication/
           cp release/W_NUMBER_RETIREMENT_INVENTORY.json publication/
+          cp release/V600_ROLLBACK_REHEARSAL.json publication/
+          cp release/V600_ROLLBACK_REHEARSAL.md publication/
+          cp release/DEVELOPMENT_RECORD_RECONCILIATION.json publication/
+          cp release/DEVELOPMENT_RECORD_RECONCILIATION.md publication/
+          cp release/development-record-snapshots.json publication/
           cp differential-evidence/V600_DIFFERENTIAL_REPORT.json publication/
           cp release/RELEASE_SCOPE_V600.md publication/
           cp release/RELEASE_NOTES_V600.md publication/
