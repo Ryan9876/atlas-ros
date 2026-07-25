@@ -96,10 +96,12 @@ jobs:
           (cd final-restored/publication && sha256sum -c CHECKSUMS.sha256)
           source_archive="$(find final-restored -type f -name '*.tar.gz' -print -quit)"
           test -n "${source_archive}"
+          mkdir restored-source
+          tar -xzf "${source_archive}" -C restored-source
           python -m venv restored-venv
           restored-venv/bin/pip install --disable-pip-version-check "${source_archive}"
           restored-venv/bin/python -c "from atlas_ros.contracts import ExecutionCandidate, ExecutionPlanV2, ExistingRepresentationIndex, ProjectionDecision; from atlas_ros.planning import DuplicateAnalyzer, ExecutionCandidateExtractor, ExecutionPlanner, ProgressiveHorizonPolicy; assert all((ExecutionCandidate, ExecutionPlanV2, ExistingRepresentationIndex, ProjectionDecision, DuplicateAnalyzer, ExecutionCandidateExtractor, ExecutionPlanner, ProgressiveHorizonPolicy))"
-          source_root="$(find final-restored -type d -name 'atlas_ros-5.5.0rc1' -print -quit)"
+          source_root="$(find restored-source -maxdepth 1 -type d -name 'atlas_ros-5.5.0rc1' -print -quit)"
           test -n "${source_root}"
           (cd "${source_root}" && "${GITHUB_WORKSPACE}/restored-venv/bin/python" scripts/evaluate_execution_planning.py --dataset benchmarks/execution-planning-v1.json --output restored-execution-planning-report.json)
           restored-venv/bin/python -c "import json; from pathlib import Path; report=json.loads(next(Path('final-restored').rglob('restored-execution-planning-report.json')).read_text()); assert report['passed'] and report['case_count'] >= 50 and report['zero_provider_writes'] and report['zero_unauthorized_execution_objects']"
