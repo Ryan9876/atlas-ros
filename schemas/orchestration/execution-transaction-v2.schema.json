@@ -1,0 +1,279 @@
+{
+  "$defs": {
+    "ErrorClassification": {
+      "enum": [
+        "retryable_transport",
+        "retryable_timeout",
+        "retryable_rate_limit",
+        "retryable_provider_5xx",
+        "validation_failure",
+        "authorization_failure",
+        "schema_mismatch",
+        "permission_failure",
+        "readback_mismatch",
+        "unknown_review"
+      ],
+      "title": "ErrorClassification",
+      "type": "string"
+    },
+    "ProviderName": {
+      "enum": [
+        "todoist",
+        "notion"
+      ],
+      "title": "ProviderName",
+      "type": "string"
+    },
+    "RecoveryInstruction": {
+      "additionalProperties": false,
+      "properties": {
+        "evidence_reference": {
+          "maxLength": 500,
+          "minLength": 1,
+          "title": "Evidence Reference",
+          "type": "string"
+        },
+        "instruction": {
+          "maxLength": 2000,
+          "minLength": 1,
+          "title": "Instruction",
+          "type": "string"
+        },
+        "operation_id": {
+          "title": "Operation Id",
+          "type": "string"
+        },
+        "provider": {
+          "$ref": "#/$defs/ProviderName"
+        },
+        "required_actor": {
+          "default": "Ryan",
+          "title": "Required Actor",
+          "type": "string"
+        },
+        "safe_to_retry": {
+          "default": false,
+          "title": "Safe To Retry",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "operation_id",
+        "provider",
+        "instruction",
+        "evidence_reference"
+      ],
+      "title": "RecoveryInstruction",
+      "type": "object"
+    },
+    "TransactionJournalEntry": {
+      "additionalProperties": false,
+      "properties": {
+        "attempt": {
+          "minimum": 0,
+          "title": "Attempt",
+          "type": "integer"
+        },
+        "command_id": {
+          "title": "Command Id",
+          "type": "string"
+        },
+        "correlation_id": {
+          "title": "Correlation Id",
+          "type": "string"
+        },
+        "entry_digest": {
+          "maxLength": 64,
+          "minLength": 64,
+          "title": "Entry Digest",
+          "type": "string"
+        },
+        "error_classification": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ErrorClassification"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "event_type": {
+          "maxLength": 100,
+          "minLength": 1,
+          "title": "Event Type",
+          "type": "string"
+        },
+        "new_state": {
+          "$ref": "#/$defs/TransactionStateV2"
+        },
+        "operation_id": {
+          "default": "",
+          "title": "Operation Id",
+          "type": "string"
+        },
+        "previous_entry_digest": {
+          "default": "",
+          "title": "Previous Entry Digest",
+          "type": "string"
+        },
+        "prior_state": {
+          "$ref": "#/$defs/TransactionStateV2"
+        },
+        "provider": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ProviderName"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "provider_object_references": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Provider Object References",
+          "type": "array"
+        },
+        "readback_status": {
+          "default": "not_required",
+          "enum": [
+            "not_required",
+            "pending",
+            "passed",
+            "failed"
+          ],
+          "title": "Readback Status",
+          "type": "string"
+        },
+        "result": {
+          "maxLength": 500,
+          "minLength": 1,
+          "title": "Result",
+          "type": "string"
+        },
+        "retry_eligible": {
+          "default": false,
+          "title": "Retry Eligible",
+          "type": "boolean"
+        },
+        "sequence": {
+          "minimum": 1,
+          "title": "Sequence",
+          "type": "integer"
+        },
+        "timestamp": {
+          "format": "date-time",
+          "title": "Timestamp",
+          "type": "string"
+        },
+        "transaction_id": {
+          "title": "Transaction Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "transaction_id",
+        "command_id",
+        "correlation_id",
+        "sequence",
+        "prior_state",
+        "new_state",
+        "attempt",
+        "event_type",
+        "result",
+        "entry_digest"
+      ],
+      "title": "TransactionJournalEntry",
+      "type": "object"
+    },
+    "TransactionStateV2": {
+      "enum": [
+        "prepared",
+        "authorization_validated",
+        "applying",
+        "verifying",
+        "verified",
+        "retry_pending",
+        "partially_applied",
+        "compensating",
+        "compensated",
+        "failed",
+        "manual_recovery_required",
+        "simulated"
+      ],
+      "title": "TransactionStateV2",
+      "type": "string"
+    }
+  },
+  "$id": "https://atlas-ros.local/schemas/orchestration/execution-transaction-v2.schema.json",
+  "additionalProperties": false,
+  "properties": {
+    "applied_operation_ids": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Applied Operation Ids",
+      "type": "array"
+    },
+    "command_id": {
+      "title": "Command Id",
+      "type": "string"
+    },
+    "contract_version": {
+      "const": 2,
+      "default": 2,
+      "title": "Contract Version",
+      "type": "integer"
+    },
+    "correlation_id": {
+      "title": "Correlation Id",
+      "type": "string"
+    },
+    "journal": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/TransactionJournalEntry"
+      },
+      "title": "Journal",
+      "type": "array"
+    },
+    "recovery_instructions": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/RecoveryInstruction"
+      },
+      "title": "Recovery Instructions",
+      "type": "array"
+    },
+    "state": {
+      "$ref": "#/$defs/TransactionStateV2"
+    },
+    "transaction_id": {
+      "title": "Transaction Id",
+      "type": "string"
+    },
+    "unapplied_operation_ids": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Unapplied Operation Ids",
+      "type": "array"
+    }
+  },
+  "required": [
+    "transaction_id",
+    "command_id",
+    "correlation_id",
+    "state"
+  ],
+  "title": "ExecutionTransactionV2",
+  "type": "object"
+}

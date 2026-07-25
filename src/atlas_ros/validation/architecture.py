@@ -12,6 +12,7 @@ FORBIDDEN_PREFIXES: dict[str, tuple[str, ...]] = {
         "atlas_ros.legacy",
         "atlas_ros.orchestration",
     ),
+    "orchestration": ("atlas_ros.adapters", "atlas_ros.planning"),
     "policy": ("atlas_ros.adapters", "atlas_ros.legacy"),
 }
 LEGACY_WORKFLOW_PREFIX = "atlas_ros.workflows.w"
@@ -38,6 +39,17 @@ PLANNER_FORBIDDEN_SYMBOLS = {
     "ExecutionReceipt",
     "TodoistExecutionAdapter",
 }
+ADAPTER_FORBIDDEN_CONSTRUCTORS = {
+    "ExecutionAuthorization",
+    "ExecutionAuthorizationV2",
+    "ExecutionPlan",
+    "ExecutionPlanV2",
+}
+ORCHESTRATOR_FORBIDDEN_CONSTRUCTORS = {
+    "ExecutionStep",
+    "ExecutionStepV2",
+}
+RECEIPT_CONSTRUCTORS = {"ExecutionReceipt", "ExecutionReceiptV2"}
 EXECUTION_CONSTRUCTORS = {"ExecutionPlan", "ExecutionPlanV2"}
 EXECUTION_CONSTRUCTOR_ALLOWLIST = {
     "contracts/execution_v2.py",
@@ -128,10 +140,7 @@ def validate(root: Path = PACKAGE_ROOT) -> list[dict[str, str]]:
             for node in ast.walk(tree)
             if isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
         }
-        if (
-            calls & EXECUTION_CONSTRUCTORS
-            and relative not in EXECUTION_CONSTRUCTOR_ALLOWLIST
-        ):
+        if calls & EXECUTION_CONSTRUCTORS and relative not in EXECUTION_CONSTRUCTOR_ALLOWLIST:
             violations.append(
                 {
                     "path": path.as_posix(),
@@ -186,8 +195,7 @@ def validate(root: Path = PACKAGE_ROOT) -> list[dict[str, str]]:
                 for node in ast.walk(tree)
             )
             environment_calls = any(
-                isinstance(node, ast.Attribute)
-                and node.attr in {"environ", "getenv"}
+                isinstance(node, ast.Attribute) and node.attr in {"environ", "getenv"}
                 for node in ast.walk(tree)
             )
             if authorized_true or environment_calls:
@@ -202,8 +210,7 @@ def validate(root: Path = PACKAGE_ROOT) -> list[dict[str, str]]:
             fields = {
                 node.target.id
                 for node in ast.walk(tree)
-                if isinstance(node, ast.AnnAssign)
-                and isinstance(node.target, ast.Name)
+                if isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name)
             }
             provider_fields = fields & PROVIDER_ID_FIELDS
             if provider_fields:
@@ -214,7 +221,7 @@ def validate(root: Path = PACKAGE_ROOT) -> list[dict[str, str]]:
                         "rule": "Execution Plan V2 contracts cannot store provider object IDs",
                     }
                 )
-        if relative.startswith("adapters/"):
+        if relative.startswith("adapters/") and relative != "adapters/__init__.py":
             names = {
                 alias.name
                 for node in ast.walk(tree)
@@ -229,6 +236,80 @@ def validate(root: Path = PACKAGE_ROOT) -> list[dict[str, str]]:
                             sorted(names & {"ExecutionPlanner", "ExecutionPlanningPolicy"})
                         ),
                         "rule": "provider adapters cannot decide whether tasks should exist",
+                    }
+                )
+            adapter_calls = {
+                node.func.id
+                for node in ast.walk(tree)
+                if isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
+            }
+            forbidden_constructors = adapter_calls & ADAPTER_FORBIDDEN_CONSTRUCTORS
+            if forbidden_constructors:
+                violations.append(
+                    {
+                        "path": path.as_posix(),
+                        "import": ",".join(sorted(forbidden_constructors)),
+                        "rule": "provider adapters cannot construct plans or authorization",
+                    }
+                )
+            for module in sorted(imported_modules(path)):
+                module_name = module.rsplit(".", 1)[-1]
+                if (
+                    module.startswith("atlas_ros.adapters.")
+                    and module_name not in {"errors", "keychain"}
+                    and not path.stem.startswith(module_name)
+                ):
+                    violations.append(
+                        {
+                            "path": path.as_posix(),
+                            "import": module,
+                            "rule": "provider adapters cannot import another provider adapter",
+                        }
+                    )
+        if relative.startswith("orchestration/"):
+            orchestration_calls = {
+                node.func.id
+                for node in ast.walk(tree)
+                if isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
+            }
+            forbidden_steps = orchestration_calls & ORCHESTRATOR_FORBIDDEN_CONSTRUCTORS
+            if forbidden_steps:
+                violations.append(
+                    {
+                        "path": path.as_posix(),
+                        "import": ",".join(sorted(forbidden_steps)),
+                        "rule": "orchestration cannot create or re-plan execution steps",
+                    }
+                )
+        receipt_calls = {
+            node.func.id
+            for node in ast.walk(tree)
+            if isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
+        } & RECEIPT_CONSTRUCTORS
+        if receipt_calls and not (
+            relative.startswith("orchestration/")
+            or relative in {"contracts/models.py", "contracts/orchestration_v2.py"}
+        ):
+            violations.append(
+                {
+                    "path": path.as_posix(),
+                    "import": ",".join(sorted(receipt_calls)),
+                    "rule": "canonical execution receipts are emitted only by orchestration",
+                }
+            )
+        if relative == "workflows/w03_todoist.py":
+            forbidden_provider_calls = {
+                node.attr
+                for node in ast.walk(tree)
+                if isinstance(node, ast.Attribute)
+                and node.attr in {"create_task", "update_task", "execute_operation"}
+            }
+            if forbidden_provider_calls:
+                violations.append(
+                    {
+                        "path": path.as_posix(),
+                        "import": ",".join(sorted(forbidden_provider_calls)),
+                        "rule": "W03 must remain a compatibility facade over orchestration",
                     }
                 )
     return violations

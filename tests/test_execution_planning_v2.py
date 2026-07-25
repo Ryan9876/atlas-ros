@@ -21,6 +21,7 @@ from atlas_ros.contracts import (
     RepresentationMatchKind,
     deterministic_digest,
 )
+from atlas_ros.orchestration import ExecutionCommandFactory
 from atlas_ros.planning import (
     DuplicateAnalyzer,
     ExecutionCandidateExtractor,
@@ -50,9 +51,7 @@ def management(
         "workstream": "Leadership & Team",
         "sections": sections,
         "section_provenance": {section.section_id: section.provenance for section in sections},
-        "section_completeness": {
-            section.section_id: section.completeness for section in sections
-        },
+        "section_completeness": {section.section_id: section.completeness for section in sections},
         "completion_evidence_requirements": (
             "The operating plan is approved and stored in its authoritative location",
         ),
@@ -129,6 +128,80 @@ def candidates(count: int) -> tuple[ExecutionCandidate, ...]:
         candidate("parent", candidate_type=CandidateType.PARENT_OUTCOME),
         *(candidate(f"child-{index}") for index in range(1, count + 1)),
     )
+
+
+def test_command_factory_preserves_exact_plan_without_adding_work() -> None:
+    plan = ExecutionPlanner().plan_v2(
+        management(),
+        action_id="A-command",
+        destination_intent="Work/Operations",
+        candidates=candidates(2),
+    )
+    operations = ExecutionCommandFactory.todoist_operations(
+        plan,
+        project="Work",
+        section="Operations",
+    )
+    child_operations = [
+        operation
+        for operation in operations
+        if operation.operation_type.value == "upsert_child"
+    ]
+    assert len(child_operations) == len(plan.projected_steps) == 2
+    assert [operation.sequence for operation in operations] == list(
+        range(1, len(operations) + 1)
+    )
+    assert child_operations[0].payload["objective"] == plan.projected_steps[0].objective
+    assert child_operations[0].payload["done_when"] == plan.projected_steps[0].done_when
+
+
+def test_command_factory_creates_no_placeholder_for_zero_subtasks() -> None:
+    plan = ExecutionPlanner().plan_v2(
+        management(),
+        action_id="A-zero",
+        destination_intent="Work/Operations",
+        candidates=candidates(0),
+    )
+    operations = ExecutionCommandFactory.todoist_operations(
+        plan,
+        project="Work",
+        section="Operations",
+    )
+    assert all(operation.operation_type.value != "upsert_child" for operation in operations)
+
+
+def test_command_factory_builds_only_explicit_notion_operations() -> None:
+    plan = ExecutionPlanner().plan_v2(
+        management(),
+        action_id="A-notion",
+        destination_intent="Work/Operations",
+        candidates=candidates(0),
+    )
+    operations = ExecutionCommandFactory.notion_operations(
+        plan,
+        identity="A-notion",
+        properties={"Action ID": "A-notion"},
+    )
+    assert [operation.operation_type.value for operation in operations] == [
+        "find_record",
+        "upsert_record",
+        "verify_record",
+    ]
+
+
+def test_command_factory_rejects_tampered_plan() -> None:
+    plan = ExecutionPlanner().plan_v2(
+        management(),
+        action_id="A-tampered",
+        destination_intent="Work/Operations",
+        candidates=candidates(0),
+    ).model_copy(update={"plan_digest": "0" * 64})
+    with pytest.raises(ValueError, match="digest"):
+        ExecutionCommandFactory.todoist_operations(
+            plan,
+            project="Work",
+            section="Operations",
+        )
 
 
 def test_extractor_is_deterministic_and_does_not_turn_sections_into_tasks() -> None:
@@ -265,9 +338,7 @@ def test_projection_test_explains_every_non_projection(
             candidate("subject", **changed),
         ),
     )
-    decision = next(
-        item for item in plan.projection_decisions if item.candidate_id == "subject"
-    )
+    decision = next(item for item in plan.projection_decisions if item.candidate_id == "subject")
     assert decision.status is expected
     assert len(decision.task_projection_test) == 14
     assert decision.non_projection_reasons
@@ -319,8 +390,7 @@ def test_existing_open_representation_suppresses_projection() -> None:
     decision = plan.projection_decisions[1]
     assert decision.status is ProjectionDecisionStatus.SUPPRESS_EXISTING
     assert (
-        decision.existing_representation_result.outcome
-        is RepresentationMatchKind.EQUIVALENT_OPEN
+        decision.existing_representation_result.outcome is RepresentationMatchKind.EQUIVALENT_OPEN
     )
 
 
@@ -383,8 +453,7 @@ def test_conditional_horizon_transitions_only_when_trigger_is_true() -> None:
     assert ProgressiveHorizonPolicy.effective(waiting) is HorizonState.CONDITIONAL
     assert ProgressiveHorizonPolicy.effective(ready) is HorizonState.CURRENT
     assert (
-        ProgressiveHorizonPolicy.transition(waiting, trigger_satisfied=True)
-        is HorizonState.CURRENT
+        ProgressiveHorizonPolicy.transition(waiting, trigger_satisfied=True) is HorizonState.CURRENT
     )
 
 
@@ -425,9 +494,7 @@ def test_observability_is_structured_and_content_safe() -> None:
         "candidate_projected",
         "plan_generated",
     }
-    assert all(
-        "candidate_digest" in fields or "plan_digest" in fields for _, fields in events
-    )
+    assert all("candidate_digest" in fields or "plan_digest" in fields for _, fields in events)
     assert all("done_when" not in fields and "objective" not in fields for _, fields in events)
 
 
@@ -443,9 +510,7 @@ def test_ambiguous_duplicate_requires_review_without_suppression() -> None:
         destination_intent="Work",
         candidates=inputs,
     )
-    decision = next(
-        item for item in plan.projection_decisions if item.candidate_id == "brief-b"
-    )
+    decision = next(item for item in plan.projection_decisions if item.candidate_id == "brief-b")
     assert decision.status is ProjectionDecisionStatus.REVIEW_REQUIRED
     assert decision.duplicate_result.ambiguous
     assert decision.human_decision_required
@@ -484,8 +549,7 @@ def test_multiple_independent_parent_outcomes_create_separate_plans() -> None:
     }
     assert all(plan.task_budget.multiple_parent_outcomes for plan in plans)
     assert all(
-        "independently valid parent outcomes" in plan.projection_explanation
-        for plan in plans
+        "independently valid parent outcomes" in plan.projection_explanation for plan in plans
     )
 
 
@@ -528,9 +592,7 @@ def test_duplicate_insertion_never_increases_task_count(values: list[int]) -> No
             for value in values
         ),
     )
-    planner = ExecutionPlanner(
-        ExecutionPlanningPolicy(max_steps=10, review_threshold=10)
-    )
+    planner = ExecutionPlanner(ExecutionPlanningPolicy(max_steps=10, review_threshold=10))
     first = planner.plan_v2(
         management(),
         action_id="A-base",
