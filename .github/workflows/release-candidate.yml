@@ -126,11 +126,11 @@ jobs:
           mkdir -p rollback-source differential-evidence
           gh release download v5.6.0 \
             --repo "${GITHUB_REPOSITORY}" \
-            --pattern 'atlas_ros-5.6.0.tar.gz' \
+            --pattern 'atlas_ros-5.6.0rc1.tar.gz' \
             --dir rollback-source
-          tar -xzf rollback-source/atlas_ros-5.6.0.tar.gz -C rollback-source
+          tar -xzf rollback-source/atlas_ros-5.6.0rc1.tar.gz -C rollback-source
           python scripts/evaluate_v6_differential.py \
-            --rollback-source rollback-source/atlas_ros-5.6.0 \
+            --rollback-source rollback-source/atlas_ros-5.6.0rc1 \
             --output differential-evidence/V600_DIFFERENTIAL_REPORT.json
 
       - name: Validate dependency policy and advisories
