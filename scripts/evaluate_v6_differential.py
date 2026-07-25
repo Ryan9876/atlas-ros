@@ -5,6 +5,7 @@ import json
 import os
 import subprocess
 import sys
+from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
 
@@ -84,14 +85,21 @@ def evaluate(rollback_source: Path) -> dict[str, Any]:
     }
 
 
-def main() -> None:
+def main(argv: Sequence[str] | None = None) -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--rollback-source", required=True, type=Path)
-    args = parser.parse_args()
+    parser.add_argument(
+        "--output",
+        type=Path,
+        default=Path("differential-evidence/V600_DIFFERENTIAL_REPORT.json"),
+    )
+    args = parser.parse_args(argv)
     report = evaluate(args.rollback_source)
-    output = Path("differential-evidence/V600_DIFFERENTIAL_REPORT.json")
-    output.parent.mkdir(parents=True, exist_ok=True)
-    output.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    args.output.parent.mkdir(parents=True, exist_ok=True)
+    args.output.write_text(
+        json.dumps(report, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
     print(json.dumps(report, sort_keys=True))
     if not report["eligible"]:
         raise SystemExit(1)
