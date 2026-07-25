@@ -12,6 +12,14 @@ EXCLUDED = {
     "scripts/inventory_w_references.py",
     "release/W_NUMBER_RETIREMENT_INVENTORY.json",
 }
+EXCLUDED_DIRECTORIES = {
+    "dist",
+    "build",
+    "__pycache__",
+    "extracted",
+    "clean-wheel",
+    "rollback-source",
+}
 
 
 def disposition(path: str) -> str:
@@ -45,20 +53,21 @@ def disposition(path: str) -> str:
     return "remove_or_replace"
 
 
-def main() -> None:
+def is_excluded(path: Path, root: Path) -> bool:
+    relative = path.relative_to(root)
+    return (
+        relative.as_posix() in EXCLUDED
+        or any(part.startswith(".") for part in relative.parts)
+        or any(part in EXCLUDED_DIRECTORIES for part in relative.parts)
+    )
+
+
+def build_inventory(root: Path) -> dict[str, object]:
     references: list[dict[str, object]] = []
-    for path in sorted(ROOT.rglob("*")):
-        relative = path.relative_to(ROOT).as_posix()
-        if (
-            not path.is_file()
-            or relative in EXCLUDED
-            or any(part.startswith(".") for part in path.relative_to(ROOT).parts)
-            or any(
-                part in {"dist", "build", "__pycache__", "extracted", "clean-wheel"}
-                for part in path.parts
-            )
-        ):
+    for path in sorted(root.rglob("*")):
+        if not path.is_file() or is_excluded(path, root):
             continue
+        relative = path.relative_to(root).as_posix()
         try:
             text = path.read_text(encoding="utf-8")
         except UnicodeDecodeError:
@@ -72,9 +81,11 @@ def main() -> None:
                     "match_count": len(list(PATTERN.finditer(text))),
                 }
             )
-    runtime_modules = sorted(
-        path.relative_to(ROOT).as_posix()
-        for path in (ROOT / "src" / "atlas_ros").rglob("w*.py")
+    runtime_root = root / "src" / "atlas_ros"
+    runtime_modules = (
+        sorted(path.relative_to(root).as_posix() for path in runtime_root.rglob("w*.py"))
+        if runtime_root.exists()
+        else []
     )
     blocking = [
         item
@@ -93,9 +104,14 @@ def main() -> None:
     }
     digest_payload = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
     payload["inventory_sha256"] = hashlib.sha256(digest_payload).hexdigest()
+    return payload
+
+
+def main() -> None:
+    payload = build_inventory(ROOT)
     output = ROOT / "release" / "W_NUMBER_RETIREMENT_INVENTORY.json"
     output.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-    if runtime_modules or blocking:
+    if payload["runtime_w_module_count"] or payload["blocking_reference_count"]:
         raise SystemExit(1)
 
 
