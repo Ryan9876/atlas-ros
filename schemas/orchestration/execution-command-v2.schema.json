@@ -1,0 +1,184 @@
+{
+  "$defs": {
+    "ProviderName": {
+      "enum": [
+        "todoist",
+        "notion"
+      ],
+      "title": "ProviderName",
+      "type": "string"
+    },
+    "ProviderOperation": {
+      "additionalProperties": false,
+      "properties": {
+        "compensation_allowed": {
+          "default": false,
+          "title": "Compensation Allowed",
+          "type": "boolean"
+        },
+        "destructive": {
+          "default": false,
+          "title": "Destructive",
+          "type": "boolean"
+        },
+        "idempotency_key": {
+          "maxLength": 256,
+          "minLength": 16,
+          "title": "Idempotency Key",
+          "type": "string"
+        },
+        "operation_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Operation Id",
+          "type": "string"
+        },
+        "operation_type": {
+          "$ref": "#/$defs/ProviderOperationType"
+        },
+        "payload": {
+          "additionalProperties": true,
+          "title": "Payload",
+          "type": "object"
+        },
+        "provider": {
+          "$ref": "#/$defs/ProviderName"
+        },
+        "requires_readback": {
+          "default": true,
+          "title": "Requires Readback",
+          "type": "boolean"
+        },
+        "sequence": {
+          "minimum": 1,
+          "title": "Sequence",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "operation_id",
+        "provider",
+        "operation_type",
+        "sequence",
+        "idempotency_key"
+      ],
+      "title": "ProviderOperation",
+      "type": "object"
+    },
+    "ProviderOperationType": {
+      "enum": [
+        "resolve_target",
+        "read_parent",
+        "upsert_parent",
+        "verify_parent",
+        "read_children",
+        "upsert_child",
+        "verify_child",
+        "verify_hierarchy",
+        "move_group",
+        "find_record",
+        "upsert_record",
+        "write_link",
+        "verify_record"
+      ],
+      "title": "ProviderOperationType",
+      "type": "string"
+    }
+  },
+  "$id": "https://atlas-ros.local/schemas/orchestration/execution-command-v2.schema.json",
+  "additionalProperties": false,
+  "properties": {
+    "action_id": {
+      "maxLength": 256,
+      "minLength": 1,
+      "title": "Action Id",
+      "type": "string"
+    },
+    "authorization_digest": {
+      "maxLength": 64,
+      "minLength": 64,
+      "title": "Authorization Digest",
+      "type": "string"
+    },
+    "authorization_id": {
+      "maxLength": 256,
+      "minLength": 1,
+      "title": "Authorization Id",
+      "type": "string"
+    },
+    "command_digest": {
+      "maxLength": 64,
+      "minLength": 64,
+      "title": "Command Digest",
+      "type": "string"
+    },
+    "command_id": {
+      "maxLength": 256,
+      "minLength": 1,
+      "title": "Command Id",
+      "type": "string"
+    },
+    "contract_version": {
+      "const": 2,
+      "default": 2,
+      "title": "Contract Version",
+      "type": "integer"
+    },
+    "correlation_id": {
+      "maxLength": 256,
+      "minLength": 1,
+      "title": "Correlation Id",
+      "type": "string"
+    },
+    "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+    },
+    "execution_plan_digest": {
+      "maxLength": 64,
+      "minLength": 64,
+      "title": "Execution Plan Digest",
+      "type": "string"
+    },
+    "execution_plan_id": {
+      "maxLength": 256,
+      "minLength": 1,
+      "title": "Execution Plan Id",
+      "type": "string"
+    },
+    "expected_final_state": {
+      "const": "verified",
+      "default": "verified",
+      "title": "Expected Final State",
+      "type": "string"
+    },
+    "idempotency_key": {
+      "maxLength": 256,
+      "minLength": 16,
+      "title": "Idempotency Key",
+      "type": "string"
+    },
+    "operations": {
+      "items": {
+        "$ref": "#/$defs/ProviderOperation"
+      },
+      "title": "Operations",
+      "type": "array"
+    }
+  },
+  "required": [
+    "command_id",
+    "execution_plan_id",
+    "execution_plan_digest",
+    "authorization_id",
+    "authorization_digest",
+    "action_id",
+    "correlation_id",
+    "operations",
+    "idempotency_key",
+    "command_digest"
+  ],
+  "title": "ExecutionCommandV2",
+  "type": "object"
+}

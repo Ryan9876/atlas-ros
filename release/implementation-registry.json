@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-07-24T22:55:00Z",
-  "candidate_version": "5.5.0rc1",
-  "source_head": "agent/execution-planning-phase3",
+  "generated_at": "2026-07-24T23:45:00Z",
+  "candidate_version": "5.6.0rc1",
+  "source_head": "agent/execution-orchestration-phase4",
   "records": [
     {
       "record_id": "IDEA-4",
@@ -98,15 +98,21 @@
       "record_id": "IDEA-10",
       "title": "Capability-Based ROS Architecture Migration and W-Convention Retirement",
       "disposition": "in_progress",
-      "implemented_scope": "Phases 1 through 7 development cutover, roadmap Wave 3 Knowledge Composition and Management Structure, and roadmap Wave 4 Execution Planning and Task Economy are implemented behind semantic capability surfaces with compatibility facades, architecture gates, archival mapping, and rollback-preserving aliases.",
-      "remaining_scope": "Remaining orchestration/cutover roadmap work and separately authorized W-number retirement only after stable rollback evidence. This candidate does not retire compatibility interfaces.",
+      "implemented_scope": "Phases 1 through 7 development cutover and roadmap Waves 3 through 5 are implemented behind semantic capability surfaces with compatibility facades, architecture gates, archival mapping, and rollback-preserving aliases. Wave 5 adds provider-neutral execution commands, exact scoped authorization, transaction and receipt contracts, orchestration-owned retry/idempotency/recovery, separated Todoist and Notion adapters, and W03 delegation through the new boundary.",
+      "remaining_scope": "Separately authorized production cutover validation and W-number retirement only after stable rollback evidence. This candidate preserves all compatibility interfaces and does not switch production authority.",
       "evidence": [
         "src/atlas_ros/capabilities/__init__.py",
         "src/atlas_ros/engines/knowledge_composition.py",
         "src/atlas_ros/engines/management_structure.py",
         "src/atlas_ros/planning/execution.py",
         "src/atlas_ros/contracts/execution_v2.py",
+        "src/atlas_ros/contracts/orchestration_v2.py",
+        "src/atlas_ros/orchestration/execution.py",
+        "src/atlas_ros/orchestration/commands.py",
+        "src/atlas_ros/adapters/todoist_execution.py",
+        "src/atlas_ros/adapters/notion_execution.py",
         "docs/adr/ADR-007-EXECUTION-PLANNING-AND-TASK-ECONOMY.md",
+        "docs/adr/ADR-008-EXECUTION-ORCHESTRATION-AND-PROVIDER-SEPARATION.md",
         "docs/migration/W_WORKFLOW_ARCHIVAL_MAPPING.md",
         "docs/migration/KNOWLEDGE_MANAGEMENT_V2_MIGRATION.md",
         "tests/test_phase7_semantic_cutover.py",
@@ -134,10 +140,11 @@
       "record_id": "IDEA-5",
       "title": "Enforce Todoist Done When bullet formatting at the write boundary",
       "disposition": "unaffected",
-      "implemented_scope": "Delivered in Atlas ROS v5.1 and preserved through the provider adapter boundary; exact Objective and Done When rendering remains regression verified for v5.5.",
+      "implemented_scope": "Delivered in Atlas ROS v5.1 and preserved through the Wave 5 Todoist adapter boundary; exact Objective and Done When rendering is regression verified for v5.6.",
       "remaining_scope": "",
       "evidence": [
         "tests/test_execution_orchestrator.py",
+        "tests/test_execution_orchestration_v2.py",
         "tests/acceptance/test_workflows.py"
       ]
     },
@@ -145,10 +152,11 @@
       "record_id": "IDEA-6",
       "title": "W03 Todoist Section Routing by Management Domain",
       "disposition": "unaffected",
-      "implemented_scope": "Delivered in Atlas ROS v5.1 and preserved through W03 compatibility delegation; management-domain routing remains regression verified for v5.5.",
+      "implemented_scope": "Delivered in Atlas ROS v5.1 and preserved through W03 compatibility delegation into the Wave 5 command and adapter boundary; management-domain routing is regression verified for v5.6.",
       "remaining_scope": "",
       "evidence": [
         "tests/unit/test_todoist_sections.py",
+        "tests/test_execution_orchestration_v2.py",
         "tests/acceptance/test_workflows.py"
       ]
     },
@@ -156,10 +164,11 @@
       "record_id": "IDEA-7",
       "title": "Preserve Todoist parent-subtask hierarchy during section moves",
       "disposition": "unaffected",
-      "implemented_scope": "Delivered in Atlas ROS v5.1 and preserved by provider-adapter move-group readback validation; parent-subtask hierarchy remains regression verified for v5.5.",
+      "implemented_scope": "Delivered in Atlas ROS v5.1 and preserved by the Wave 5 Todoist adapter's parent, child, hierarchy, move-group, and immediate-readback operations; hierarchy remains regression verified for v5.6.",
       "remaining_scope": "",
       "evidence": [
         "tests/test_execution_orchestrator.py",
+        "tests/test_execution_orchestration_v2.py",
         "tests/acceptance/test_workflows.py"
       ]
     }

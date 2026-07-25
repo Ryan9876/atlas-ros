@@ -5,15 +5,19 @@ from dataclasses import dataclass
 from typing import Protocol
 from uuid import uuid4
 
-from atlas_ros.adapters.todoist import LiveTodoistAdapter, TodoistAdapter, TodoistTask
-from atlas_ros.adapters.todoist_execution import TodoistExecutionAdapter
+from atlas_ros.adapters.todoist import TodoistAdapter, TodoistTask
+from atlas_ros.adapters.todoist_execution import TodoistExecutionAdapterV2
 from atlas_ros.config.loader import load_config
-from atlas_ros.contracts import ExecutionReceipt
+from atlas_ros.contracts import (
+    ExecutionReceiptV2,
+    ProviderName,
+    ProviderOperation,
+    ProviderOperationType,
+    deterministic_digest,
+)
 from atlas_ros.domain.models import Action
 from atlas_ros.orchestration import (
-    ExecutionAuthorization,
-    ExecutionOrchestrator,
-    ExecutionRequest,
+    ExecutionOrchestratorV2,
 )
 from atlas_ros.workflows.w03a_decomposition import DecompositionService
 
@@ -182,11 +186,13 @@ class TodoistService:
     ) -> None:
         self.adapter = adapter
         self.link_writer = link_writer
-        self.last_receipt: ExecutionReceipt | None = None
-        self._execution_adapter = TodoistExecutionAdapter(adapter) if adapter is not None else None
-        self._orchestrator = (
-            ExecutionOrchestrator(self._execution_adapter)
-            if self._execution_adapter is not None
+        self.last_receipt: ExecutionReceiptV2 | None = None
+        self._execution_adapter_v2 = (
+            TodoistExecutionAdapterV2(adapter) if adapter is not None else None
+        )
+        self._orchestrator_v2 = (
+            ExecutionOrchestratorV2((self._execution_adapter_v2,))
+            if self._execution_adapter_v2 is not None
             else None
         )
 
@@ -200,8 +206,7 @@ class TodoistService:
         approved = set(config.get("approved_labels", ()))
         prohibited = set(config["prohibited_labels"])
         invalid_label = any(
-            label in prohibited or (approved and label not in approved)
-            for label in action.labels
+            label in prohibited or (approved and label not in approved) for label in action.labels
         )
         if invalid_label:
             raise ValueError("prohibited or unapproved Todoist label")
@@ -214,67 +219,199 @@ class TodoistService:
             routing=routing,
         )
 
-    def _resolve_section(self, project_id: str, selected: str) -> str | None:
-        if not selected or self.adapter is None:
-            return None
-        available = self.adapter.list_sections(project_id)
-        if not available and not isinstance(self.adapter, LiveTodoistAdapter):
-            return None
-        sections = {item["name"]: item["id"] for item in available}
-        if selected not in sections:
-            raise ValueError("configured Todoist section is not available live")
-        return sections[selected]
-
     def apply(self, action: Action, confirmed: bool = False) -> TodoistPlan:
-        if self._orchestrator is None:
+        if self._orchestrator_v2 is None:
             if not confirmed:
                 raise PermissionError("explicit confirmation is required")
             raise PermissionError("no production Todoist adapter is configured")
+        if not confirmed:
+            raise PermissionError("explicit confirmation is required")
         plan = self.plan(action)
         selected = plan.routing.selected_section if plan.routing else action.todoist_section
         descriptions = tuple(
-            task_description(raw, f"{raw} is completed and verified.")
-            for raw in plan.subtasks
+            task_description(raw, f"{raw} is completed and verified.") for raw in plan.subtasks
         )
-        request = ExecutionRequest(
-            correlation_id=uuid4(),
-            action_id=action.id,
-            existing_task_id=action.todoist_task_id,
-            title=action.title,
-            description=task_description(action.title, action.definition_of_done),
+        correlation_id = str(uuid4())
+        description = task_description(action.title, action.definition_of_done)
+        plan_payload = {
+            "action_id": action.id,
+            "title": action.title,
+            "description": description,
+            "project": plan.project,
+            "section": selected,
+            "labels": tuple(action.labels),
+            "subtasks": tuple(plan.subtasks),
+            "subtask_descriptions": descriptions,
+        }
+        plan_digest = deterministic_digest(plan_payload)
+        operations = self._compatibility_operations(
+            action=action,
             project=plan.project,
             section=selected,
-            labels=tuple(action.labels),
+            description=description,
             subtasks=tuple(plan.subtasks),
             subtask_descriptions=descriptions,
+            plan_digest=plan_digest,
         )
-        _, receipt = self._orchestrator.execute(
-            request,
-            ExecutionAuthorization(confirmed=confirmed),
+        authorization = ExecutionOrchestratorV2.issue_authorization(
+            plan_id=f"legacy-w03:{action.id}",
+            plan_digest=plan_digest,
+            action_id=action.id,
+            correlation_id=correlation_id,
+            operations=operations,
+            reason="Preserve attended W03 compatibility behavior",
+            attended_confirmation_evidence=(
+                "Legacy confirmed=True translated at the attended W03 boundary "
+                "for this exact plan and provider scope."
+            ),
         )
+        command = ExecutionOrchestratorV2.build_command(
+            plan_id=f"legacy-w03:{action.id}",
+            plan_digest=plan_digest,
+            action_id=action.id,
+            correlation_id=correlation_id,
+            authorization=authorization,
+            operations=operations,
+        )
+        _, receipt = self._orchestrator_v2.execute(command, authorization)
         self.last_receipt = receipt
+        parent_id = next(
+            (
+                reference
+                for reference in receipt.provider_object_references
+                if reference.startswith("task-")
+            ),
+            receipt.provider_object_references[0],
+        )
         if self.link_writer:
-            self.link_writer.store_todoist_link(action.id, receipt.provider_object_id)
+            self.link_writer.store_todoist_link(action.id, parent_id)
         return TodoistPlan(
             action.id,
             plan.project,
             plan.subtasks,
             False,
-            receipt.provider_object_id,
+            parent_id,
             plan.routing,
         )
 
     def move_task_group(
         self, task_id: str, target_section_id: str, confirmed: bool = False
     ) -> None:
-        if self._orchestrator is None:
+        if self._orchestrator_v2 is None:
             if not confirmed:
                 raise PermissionError("explicit confirmation is required")
             raise PermissionError("no production Todoist adapter is configured")
-        self._orchestrator.move_group(
-            task_id,
-            target_section_id,
-            ExecutionAuthorization(confirmed=confirmed),
+        if not confirmed:
+            raise PermissionError("explicit confirmation is required")
+        correlation_id = str(uuid4())
+        plan_digest = deterministic_digest(
+            {"task_id": task_id, "target_section_id": target_section_id}
+        )
+        operation = ProviderOperation(
+            operation_id=f"move:{task_id}",
+            provider=ProviderName.TODOIST,
+            operation_type=ProviderOperationType.MOVE_GROUP,
+            sequence=1,
+            payload={"task_id": task_id, "target_section_id": target_section_id},
+            idempotency_key=deterministic_digest(
+                {"task_id": task_id, "target_section_id": target_section_id}
+            ),
+        )
+        authorization = ExecutionOrchestratorV2.issue_authorization(
+            plan_id=f"legacy-w03-move:{task_id}",
+            plan_digest=plan_digest,
+            action_id=task_id,
+            correlation_id=correlation_id,
+            operations=(operation,),
+            reason="Preserve attended W03 parent-group move",
+            attended_confirmation_evidence=(
+                "Legacy confirmed=True translated for this exact hierarchy-preserving move."
+            ),
+        )
+        command = ExecutionOrchestratorV2.build_command(
+            plan_id=f"legacy-w03-move:{task_id}",
+            plan_digest=plan_digest,
+            action_id=task_id,
+            correlation_id=correlation_id,
+            authorization=authorization,
+            operations=(operation,),
+        )
+        self._orchestrator_v2.execute(command, authorization)
+
+    @staticmethod
+    def _compatibility_operations(
+        *,
+        action: Action,
+        project: str,
+        section: str,
+        description: str,
+        subtasks: tuple[str, ...],
+        subtask_descriptions: tuple[str, ...],
+        plan_digest: str,
+    ) -> tuple[ProviderOperation, ...]:
+        specs: list[tuple[ProviderOperationType, dict[str, object]]] = [
+            (
+                ProviderOperationType.RESOLVE_TARGET,
+                {"project": project, "section": section, "labels": tuple(action.labels)},
+            ),
+            (
+                ProviderOperationType.READ_PARENT,
+                {"existing_task_id": action.todoist_task_id},
+            ),
+            (
+                ProviderOperationType.UPSERT_PARENT,
+                {
+                    "action_id": action.id,
+                    "existing_task_id": action.todoist_task_id,
+                    "title": action.title,
+                    "description": description,
+                },
+            ),
+            (
+                ProviderOperationType.VERIFY_PARENT,
+                {"title": action.title, "description": description},
+            ),
+            (ProviderOperationType.READ_CHILDREN, {}),
+        ]
+        for sequence, (title, child_description) in enumerate(
+            zip(subtasks, subtask_descriptions, strict=True), 1
+        ):
+            payload = {
+                "action_id": action.id,
+                "sequence": sequence,
+                "raw_title": title,
+                "description": child_description,
+            }
+            specs.append((ProviderOperationType.UPSERT_CHILD, payload))
+            specs.append((ProviderOperationType.VERIFY_CHILD, {"sequence": sequence}))
+        specs.append(
+            (
+                ProviderOperationType.VERIFY_HIERARCHY,
+                {
+                    "expected_titles": tuple(
+                        f"{sequence:02d} — {title}" for sequence, title in enumerate(subtasks, 1)
+                    )
+                },
+            )
+        )
+        return tuple(
+            ProviderOperation(
+                operation_id=f"w03:{action.id}:{index}:{operation_type.value}",
+                provider=ProviderName.TODOIST,
+                operation_type=operation_type,
+                sequence=index,
+                payload=payload,
+                idempotency_key=deterministic_digest(
+                    {
+                        "plan_digest": plan_digest,
+                        "action_id": action.id,
+                        "sequence": index,
+                        "operation_type": operation_type,
+                        "payload": payload,
+                    }
+                ),
+            )
+            for index, (operation_type, payload) in enumerate(specs, 1)
         )
 
     @staticmethod
@@ -286,7 +423,7 @@ class TodoistService:
         section_id: str | None,
         parent_id: str | None,
     ) -> None:
-        TodoistExecutionAdapter.verify_task(
+        TodoistExecutionAdapterV2.verify_task(
             task,
             title,
             description,

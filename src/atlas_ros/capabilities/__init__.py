@@ -12,6 +12,7 @@ from atlas_ros.models import (
     PlanningModelRegistry,
     load_default_registries,
 )
+from atlas_ros.orchestration import ExecutionCommandFactory, ExecutionOrchestratorV2
 from atlas_ros.planning import (
     DuplicateAnalyzer,
     ExecutionCandidateExtractor,
@@ -29,6 +30,8 @@ __all__ = [
     "ClassificationExplainability",
     "DecompositionService",
     "ExecutionPlanner",
+    "ExecutionCommandFactory",
+    "ExecutionOrchestratorV2",
     "ExecutionCandidateExtractor",
     "DuplicateAnalyzer",
     "ExistingRepresentationMatcher",

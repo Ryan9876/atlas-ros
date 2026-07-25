@@ -39,6 +39,22 @@ from .models import (
     ValidationResult,
     deterministic_digest,
 )
+from .orchestration_v2 import (
+    LEGAL_TRANSITIONS,
+    ErrorClassification,
+    ExecutionAuthorizationV2,
+    ExecutionCommandV2,
+    ExecutionReceiptV2,
+    ExecutionTransactionV2,
+    ProviderName,
+    ProviderOperation,
+    ProviderOperationResult,
+    ProviderOperationType,
+    RecoveryInstruction,
+    TransactionJournalEntry,
+    TransactionStateV2,
+    stable_id,
+)
 
 __all__ = [
     "CaptureEnvelope",
@@ -78,4 +94,18 @@ __all__ = [
     "RepresentationMatch",
     "RepresentationMatchKind",
     "TaskBudgetResult",
+    "ErrorClassification",
+    "ExecutionAuthorizationV2",
+    "ExecutionCommandV2",
+    "ExecutionReceiptV2",
+    "ExecutionTransactionV2",
+    "ProviderName",
+    "ProviderOperation",
+    "ProviderOperationResult",
+    "ProviderOperationType",
+    "RecoveryInstruction",
+    "TransactionJournalEntry",
+    "TransactionStateV2",
+    "LEGAL_TRANSITIONS",
+    "stable_id",
 ]

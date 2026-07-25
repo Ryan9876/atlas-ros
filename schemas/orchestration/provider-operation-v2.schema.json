@@ -1,0 +1,87 @@
+{
+  "$defs": {
+    "ProviderName": {
+      "enum": [
+        "todoist",
+        "notion"
+      ],
+      "title": "ProviderName",
+      "type": "string"
+    },
+    "ProviderOperationType": {
+      "enum": [
+        "resolve_target",
+        "read_parent",
+        "upsert_parent",
+        "verify_parent",
+        "read_children",
+        "upsert_child",
+        "verify_child",
+        "verify_hierarchy",
+        "move_group",
+        "find_record",
+        "upsert_record",
+        "write_link",
+        "verify_record"
+      ],
+      "title": "ProviderOperationType",
+      "type": "string"
+    }
+  },
+  "$id": "https://atlas-ros.local/schemas/orchestration/provider-operation-v2.schema.json",
+  "additionalProperties": false,
+  "properties": {
+    "compensation_allowed": {
+      "default": false,
+      "title": "Compensation Allowed",
+      "type": "boolean"
+    },
+    "destructive": {
+      "default": false,
+      "title": "Destructive",
+      "type": "boolean"
+    },
+    "idempotency_key": {
+      "maxLength": 256,
+      "minLength": 16,
+      "title": "Idempotency Key",
+      "type": "string"
+    },
+    "operation_id": {
+      "maxLength": 256,
+      "minLength": 1,
+      "title": "Operation Id",
+      "type": "string"
+    },
+    "operation_type": {
+      "$ref": "#/$defs/ProviderOperationType"
+    },
+    "payload": {
+      "additionalProperties": true,
+      "title": "Payload",
+      "type": "object"
+    },
+    "provider": {
+      "$ref": "#/$defs/ProviderName"
+    },
+    "requires_readback": {
+      "default": true,
+      "title": "Requires Readback",
+      "type": "boolean"
+    },
+    "sequence": {
+      "minimum": 1,
+      "title": "Sequence",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "operation_id",
+    "provider",
+    "operation_type",
+    "sequence",
+    "idempotency_key"
+  ],
+  "title": "ProviderOperation",
+  "type": "object"
+}

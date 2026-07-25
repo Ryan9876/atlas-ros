@@ -1,0 +1,172 @@
+{
+  "$defs": {
+    "ProviderName": {
+      "enum": [
+        "todoist",
+        "notion"
+      ],
+      "title": "ProviderName",
+      "type": "string"
+    },
+    "ProviderOperationType": {
+      "enum": [
+        "resolve_target",
+        "read_parent",
+        "upsert_parent",
+        "verify_parent",
+        "read_children",
+        "upsert_child",
+        "verify_child",
+        "verify_hierarchy",
+        "move_group",
+        "find_record",
+        "upsert_record",
+        "write_link",
+        "verify_record"
+      ],
+      "title": "ProviderOperationType",
+      "type": "string"
+    }
+  },
+  "$id": "https://atlas-ros.local/schemas/orchestration/execution-authorization-v2.schema.json",
+  "additionalProperties": false,
+  "properties": {
+    "action_id": {
+      "maxLength": 256,
+      "minLength": 1,
+      "title": "Action Id",
+      "type": "string"
+    },
+    "actor_authority": {
+      "maxLength": 200,
+      "minLength": 1,
+      "title": "Actor Authority",
+      "type": "string"
+    },
+    "actor_identity": {
+      "maxLength": 200,
+      "minLength": 1,
+      "title": "Actor Identity",
+      "type": "string"
+    },
+    "attended_confirmation_evidence": {
+      "maxLength": 2000,
+      "minLength": 1,
+      "title": "Attended Confirmation Evidence",
+      "type": "string"
+    },
+    "authorization_digest": {
+      "maxLength": 64,
+      "minLength": 64,
+      "title": "Authorization Digest",
+      "type": "string"
+    },
+    "authorization_id": {
+      "maxLength": 256,
+      "minLength": 1,
+      "title": "Authorization Id",
+      "type": "string"
+    },
+    "contract_version": {
+      "const": 2,
+      "default": 2,
+      "title": "Contract Version",
+      "type": "integer"
+    },
+    "correlation_id": {
+      "maxLength": 256,
+      "minLength": 1,
+      "title": "Correlation Id",
+      "type": "string"
+    },
+    "execution_plan_digest": {
+      "maxLength": 64,
+      "minLength": 64,
+      "title": "Execution Plan Digest",
+      "type": "string"
+    },
+    "execution_plan_id": {
+      "maxLength": 256,
+      "minLength": 1,
+      "title": "Execution Plan Id",
+      "type": "string"
+    },
+    "expires_at": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Expires At"
+    },
+    "issued_at": {
+      "format": "date-time",
+      "title": "Issued At",
+      "type": "string"
+    },
+    "maximum_object_count": {
+      "maximum": 100,
+      "minimum": 0,
+      "title": "Maximum Object Count",
+      "type": "integer"
+    },
+    "operation_types": {
+      "items": {
+        "$ref": "#/$defs/ProviderOperationType"
+      },
+      "title": "Operation Types",
+      "type": "array",
+      "uniqueItems": true
+    },
+    "provider_scope": {
+      "items": {
+        "$ref": "#/$defs/ProviderName"
+      },
+      "title": "Provider Scope",
+      "type": "array",
+      "uniqueItems": true
+    },
+    "reason": {
+      "maxLength": 2000,
+      "minLength": 1,
+      "title": "Reason",
+      "type": "string"
+    },
+    "replay_policy": {
+      "default": "one_time",
+      "enum": [
+        "one_time",
+        "idempotent_replay"
+      ],
+      "title": "Replay Policy",
+      "type": "string"
+    },
+    "revoked": {
+      "default": false,
+      "title": "Revoked",
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "authorization_id",
+    "actor_identity",
+    "actor_authority",
+    "execution_plan_id",
+    "execution_plan_digest",
+    "action_id",
+    "provider_scope",
+    "operation_types",
+    "maximum_object_count",
+    "reason",
+    "attended_confirmation_evidence",
+    "correlation_id",
+    "authorization_digest"
+  ],
+  "title": "ExecutionAuthorizationV2",
+  "type": "object"
+}

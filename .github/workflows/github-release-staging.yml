@@ -2,7 +2,7 @@ name: github-release-staging
 
 on:
   push:
-    branches: [release/v5.5-candidate]
+    branches: [release/v5.6-candidate]
   workflow_run:
     workflows: [release-candidate]
     types: [completed]
@@ -17,7 +17,7 @@ on:
         required: true
         type: string
       tag:
-        description: Draft release tag, for example v5.5.0-rc.1
+        description: Draft release tag, for example v5.6.0-rc.1
         required: true
         type: string
       release_name:
@@ -40,7 +40,7 @@ permissions:
   pull-requests: write
 
 concurrency:
-  group: github-release-staging-v5.5.0-rc.1
+  group: github-release-staging-v5.6.0-rc.1
   cancel-in-progress: false
 
 jobs:
@@ -48,17 +48,17 @@ jobs:
     if: >-
       github.event_name == 'workflow_dispatch' ||
       (github.event.workflow_run.conclusion == 'success' &&
-       github.event.workflow_run.head_branch == 'release/v5.5-candidate') ||
+       github.event.workflow_run.head_branch == 'release/v5.6-candidate') ||
       (github.event_name == 'push' &&
-       contains(github.event.head_commit.message, '[stage-v5.5.0rc1]'))
+       contains(github.event.head_commit.message, '[stage-v5.6.0rc1]'))
     runs-on: ubuntu-24.04
     timeout-minutes: 20
 
     env:
       RUN_ID: ${{ github.event.workflow_run.id || inputs.candidate_run_id }}
-      ARTIFACT_NAME: ${{ inputs.artifact_name || 'atlas-ros-v5.5.0rc1-release-candidate' }}
-      TAG: ${{ inputs.tag || 'v5.5.0-rc.1' }}
-      RELEASE_NAME: ${{ inputs.release_name || 'Atlas ROS v5.5.0 Execution Planning and Task Economy Release Candidate 1' }}
+      ARTIFACT_NAME: ${{ inputs.artifact_name || 'atlas-ros-v5.6.0rc1-release-candidate' }}
+      TAG: ${{ inputs.tag || 'v5.6.0-rc.1' }}
+      RELEASE_NAME: ${{ inputs.release_name || 'Atlas ROS v5.6.0 Execution Orchestration and Provider Separation Release Candidate 1' }}
       TARGET_COMMITISH: ${{ github.event.workflow_run.head_sha || inputs.target_commitish || github.sha }}
       EXPECTED_PACKAGE_SHA256: ${{ inputs.expected_package_sha256 || '' }}
 
@@ -197,11 +197,16 @@ jobs:
           restored-venv/bin/pip install --disable-pip-version-check "${source_archive}"
           restored-venv/bin/python - <<'PY'
           from atlas_ros.contracts import (
+              ExecutionAuthorizationV2,
               ExecutionCandidate,
+              ExecutionCommandV2,
               ExecutionPlanV2,
+              ExecutionReceiptV2,
+              ExecutionTransactionV2,
               ExistingRepresentationIndex,
               ProjectionDecision,
           )
+          from atlas_ros.orchestration import ExecutionCommandFactory, ExecutionOrchestratorV2
           from atlas_ros.planning import (
               DuplicateAnalyzer,
               ExecutionCandidateExtractor,
@@ -211,6 +216,9 @@ jobs:
           assert ExecutionCandidate and ProjectionDecision and ExistingRepresentationIndex
           assert ExecutionPlanV2 and ExecutionPlanner and ExecutionCandidateExtractor
           assert DuplicateAnalyzer and ProgressiveHorizonPolicy
+          assert ExecutionAuthorizationV2 and ExecutionCommandV2
+          assert ExecutionTransactionV2 and ExecutionReceiptV2
+          assert ExecutionCommandFactory and ExecutionOrchestratorV2
           PY
           source_root="$(find restored-source/extracted -maxdepth 1 -type d -name 'atlas_ros-*' -print -quit)"
           test -n "${source_root}"
@@ -220,6 +228,9 @@ jobs:
             "${restored_venv}/bin/python" scripts/evaluate_execution_planning.py \
               --dataset benchmarks/execution-planning-v1.json \
               --output restored-execution-planning-report.json
+            "${restored_venv}/bin/python" scripts/evaluate_execution_orchestration.py \
+              --dataset benchmarks/execution-orchestration-v1.json \
+              --output restored-execution-orchestration-report.json
           )
           restored-venv/bin/python - <<'PY'
           import json
@@ -228,6 +239,10 @@ jobs:
           assert report["passed"] and report["case_count"] >= 50
           assert report["zero_provider_writes"]
           assert report["zero_unauthorized_execution_objects"]
+          orchestration = json.loads(next(Path("restored-source").rglob("restored-execution-orchestration-report.json")).read_text())
+          assert orchestration["passed"] and orchestration["case_count"] >= 60
+          assert orchestration["zero_unauthorized_provider_writes"]
+          assert orchestration["zero_false_success_receipts"]
           PY
 
       - name: Verify draft release metadata
