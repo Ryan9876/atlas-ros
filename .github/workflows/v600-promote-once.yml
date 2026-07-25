@@ -95,7 +95,7 @@ jobs:
           mapfile -d '' assets < <(find source-assets -maxdepth 1 -type f -print0 | sort -z)
           gh release upload "${FINAL_TAG}" --repo "${GITHUB_REPOSITORY}" --clobber "${assets[@]}"
 
-      - name: Read back final release and prove restoration
+      - name: Download and verify final release assets
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -121,6 +121,10 @@ jobs:
           done < final-verification/CHECKSUMS.sha256
           (cd final-verification && sha256sum -c CHECKSUMS.sha256)
 
+      - name: Restore final release and run release benchmarks
+        run: |
+          set -euo pipefail
+          package="final-readback/Atlas_ROS_v6.0.0rc1_release_candidate.zip"
           mkdir final-restored restored-source
           unzip -q "${package}" -d final-restored
           (cd final-restored/publication && sha256sum -c CHECKSUMS.sha256)
@@ -212,10 +216,15 @@ jobs:
           assert rollback["live_provider_writes"] == 0
           PY
 
-          gh release view "${FINAL_TAG}" \
-            --repo "${GITHUB_REPOSITORY}" \
-            --json isDraft,isPrerelease,tagName,targetCommitish \
-            --jq 'select(.isDraft == false and .isPrerelease == false and .tagName == env.FINAL_TAG and .targetCommitish == env.GITHUB_SHA)'
+      - name: Verify final release metadata and target
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          metadata="$(gh release view "${FINAL_TAG}" --repo "${GITHUB_REPOSITORY}" --json isDraft,isPrerelease,tagName,targetCommitish)"
+          jq -e --arg tag "${FINAL_TAG}" '.isDraft == false and .isPrerelease == false and .tagName == $tag' <<<"${metadata}"
+          git fetch --force origin "refs/tags/${FINAL_TAG}:refs/tags/${FINAL_TAG}"
+          test "$(git rev-list -n 1 "${FINAL_TAG}")" = "${GITHUB_SHA}"
 
       - name: Record promotion receipt
         env:
