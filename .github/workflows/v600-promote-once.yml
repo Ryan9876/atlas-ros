@@ -121,7 +121,7 @@ jobs:
           done < final-verification/CHECKSUMS.sha256
           (cd final-verification && sha256sum -c CHECKSUMS.sha256)
 
-      - name: Restore final release and run release benchmarks
+      - name: Unpack final release sources
         run: |
           set -euo pipefail
           package="final-readback/Atlas_ROS_v6.0.0rc1_release_candidate.zip"
@@ -129,10 +129,21 @@ jobs:
           unzip -q "${package}" -d final-restored
           (cd final-restored/publication && sha256sum -c CHECKSUMS.sha256)
           source_archive="$(find final-restored -type f -name '*.tar.gz' -print -quit)"
+          wheel_archive="$(find final-restored -type f -name '*.whl' -print -quit)"
           test -n "${source_archive}"
+          test -n "${wheel_archive}"
           tar -xzf "${source_archive}" -C restored-source
+          source_root="$(find restored-source -maxdepth 1 -type d -name 'atlas_ros-*' -print -quit)"
+          test -n "${source_root}"
+          printf 'SOURCE_ARCHIVE=%s\n' "$(realpath "${source_archive}")" >> "${GITHUB_ENV}"
+          printf 'WHEEL_ARCHIVE=%s\n' "$(realpath "${wheel_archive}")" >> "${GITHUB_ENV}"
+          printf 'SOURCE_ROOT=%s\n' "$(realpath "${source_root}")" >> "${GITHUB_ENV}"
+
+      - name: Install final wheel and verify runtime surface
+        run: |
+          set -euo pipefail
           python -m venv restored-venv
-          restored-venv/bin/pip install --disable-pip-version-check "${source_archive}"
+          restored-venv/bin/pip install --disable-pip-version-check "${WHEEL_ARCHIVE}"
           restored-venv/bin/python - <<'PY'
           import importlib.util
           from atlas_ros.contracts import (
@@ -169,20 +180,39 @@ jobs:
           assert importlib.util.find_spec("atlas_ros.legacy") is None
           PY
 
-          source_root="$(find restored-source -maxdepth 1 -type d -name 'atlas_ros-*' -print -quit)"
-          test -n "${source_root}"
+      - name: Run restored planning benchmark
+        run: |
+          set -euo pipefail
+          restored_venv="$(pwd)/restored-venv"
+          cd "${SOURCE_ROOT}"
+          "${restored_venv}/bin/python" scripts/evaluate_execution_planning.py \
+            --dataset benchmarks/execution-planning-v1.json \
+            --output restored-execution-planning-report.json
+
+      - name: Run restored orchestration benchmark
+        run: |
+          set -euo pipefail
+          restored_venv="$(pwd)/restored-venv"
+          cd "${SOURCE_ROOT}"
+          "${restored_venv}/bin/python" scripts/evaluate_execution_orchestration.py \
+            --dataset benchmarks/execution-orchestration-v1.json \
+            --output restored-execution-orchestration-report.json
+
+      - name: Run restored reconciliation benchmark
+        run: |
+          set -euo pipefail
+          restored_venv="$(pwd)/restored-venv"
+          cd "${SOURCE_ROOT}"
+          "${restored_venv}/bin/python" scripts/evaluate_canonical_reconciliation.py \
+            --dataset benchmarks/canonical-reconciliation-v1.json \
+            --output restored-reconciliation-report.json
+
+      - name: Verify W retirement and rollback evidence
+        run: |
+          set -euo pipefail
           restored_venv="$(pwd)/restored-venv"
           (
-            cd "${source_root}"
-            "${restored_venv}/bin/python" scripts/evaluate_execution_planning.py \
-              --dataset benchmarks/execution-planning-v1.json \
-              --output restored-execution-planning-report.json
-            "${restored_venv}/bin/python" scripts/evaluate_execution_orchestration.py \
-              --dataset benchmarks/execution-orchestration-v1.json \
-              --output restored-execution-orchestration-report.json
-            "${restored_venv}/bin/python" scripts/evaluate_canonical_reconciliation.py \
-              --dataset benchmarks/canonical-reconciliation-v1.json \
-              --output restored-reconciliation-report.json
+            cd "${SOURCE_ROOT}"
             "${restored_venv}/bin/python" scripts/inventory_w_references.py
           )
           restored-venv/bin/python - <<'PY'
@@ -190,22 +220,23 @@ jobs:
           import os
           from pathlib import Path
 
-          planning = json.loads(next(Path("restored-source").rglob("restored-execution-planning-report.json")).read_text())
+          source_root = Path(os.environ["SOURCE_ROOT"])
+          planning = json.loads((source_root / "restored-execution-planning-report.json").read_text())
           assert planning["passed"] and planning["case_count"] >= 50
           assert planning["zero_provider_writes"]
           assert planning["zero_unauthorized_execution_objects"]
 
-          orchestration = json.loads(next(Path("restored-source").rglob("restored-execution-orchestration-report.json")).read_text())
+          orchestration = json.loads((source_root / "restored-execution-orchestration-report.json").read_text())
           assert orchestration["passed"] and orchestration["case_count"] >= 60
           assert orchestration["zero_unauthorized_provider_writes"]
           assert orchestration["zero_live_writes"]
           assert orchestration["false_success_rejection"] == 1.0
 
-          reconciliation = json.loads(next(Path("restored-source").rglob("restored-reconciliation-report.json")).read_text())
+          reconciliation = json.loads((source_root / "restored-reconciliation-report.json").read_text())
           assert reconciliation["eligible"] and reconciliation["case_count"] >= 75
           assert reconciliation["live_provider_writes"] == 0
 
-          inventory = json.loads(next(Path("restored-source").rglob("W_NUMBER_RETIREMENT_INVENTORY.json")).read_text())
+          inventory = json.loads((source_root / "release/W_NUMBER_RETIREMENT_INVENTORY.json").read_text())
           assert inventory["runtime_w_module_count"] == 0
           assert inventory["blocking_reference_count"] == 0
 
