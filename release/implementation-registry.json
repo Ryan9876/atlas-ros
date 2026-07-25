@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-07-24T23:45:00Z",
+  "generated_at": "2026-07-25T01:34:00Z",
   "candidate_version": "5.6.0rc1",
   "source_head": "agent/execution-orchestration-phase4",
   "records": [
@@ -98,7 +98,7 @@
       "record_id": "IDEA-10",
       "title": "Capability-Based ROS Architecture Migration and W-Convention Retirement",
       "disposition": "in_progress",
-      "implemented_scope": "Phases 1 through 7 development cutover and roadmap Waves 3 through 5 are implemented behind semantic capability surfaces with compatibility facades, architecture gates, archival mapping, and rollback-preserving aliases. Wave 5 adds provider-neutral execution commands, exact scoped authorization, transaction and receipt contracts, orchestration-owned retry/idempotency/recovery, separated Todoist and Notion adapters, and W03 delegation through the new boundary.",
+      "implemented_scope": "Phases 1 through 7 development cutover and roadmap Waves 3 through 5 are implemented behind semantic capability surfaces with compatibility facades, architecture gates, archival mapping, and rollback-preserving aliases. Wave 5 adds provider-neutral execution commands, exact scoped authorization, transaction and receipt contracts, orchestration-owned retry/idempotency/recovery, separated Todoist and Notion adapters, W03 delegation through the new boundary, 408-test regression coverage, a governed 64-case orchestration benchmark, commit-bound release evidence, checksum-bound draft staging, and Drive-independent restoration.",
       "remaining_scope": "Separately authorized production cutover validation and W-number retirement only after stable rollback evidence. This candidate preserves all compatibility interfaces and does not switch production authority.",
       "evidence": [
         "src/atlas_ros/capabilities/__init__.py",
@@ -113,6 +113,14 @@
         "src/atlas_ros/adapters/notion_execution.py",
         "docs/adr/ADR-007-EXECUTION-PLANNING-AND-TASK-ECONOMY.md",
         "docs/adr/ADR-008-EXECUTION-ORCHESTRATION-AND-PROVIDER-SEPARATION.md",
+        "docs/EXECUTION_ORCHESTRATION_STANDARD.md",
+        "benchmarks/execution-orchestration-v1.json",
+        "scripts/evaluate_execution_orchestration.py",
+        "scripts/build_v560_candidate_evidence.py",
+        "tests/test_execution_orchestration_v2.py",
+        ".github/workflows/release-candidate.yml",
+        ".github/workflows/github-release-staging.yml",
+        "release/RELEASE_MANIFEST.md",
         "docs/migration/W_WORKFLOW_ARCHIVAL_MAPPING.md",
         "docs/migration/KNOWLEDGE_MANAGEMENT_V2_MIGRATION.md",
         "tests/test_phase7_semantic_cutover.py",
@@ -123,7 +131,7 @@
       "record_id": "IDEA-9",
       "title": "Task Economy and Execution Projection Guardrails",
       "disposition": "fully_implemented",
-      "implemented_scope": "Roadmap Wave 4 is implemented through immutable Execution Candidate and Projection Decision contracts, provider-neutral Existing Representation Index, Execution Plan V2, deterministic candidate extraction, the complete 14-condition Task Projection Test, progressive horizon transitions, layered duplicate and representation analysis, default and expanded task budgets, above-five decomposition review, over-compression safeguards, Done When quality, structured explainability, content-safe observability, anti-bloat architecture gates, a 52-case benchmark, property tests, and W03A compatibility.",
+      "implemented_scope": "Roadmap Wave 4 is implemented through immutable Execution Candidate and Projection Decision contracts, provider-neutral Existing Representation Index, Execution Plan V2, deterministic candidate extraction, the complete 14-condition Task Projection Test, progressive horizon transitions, layered duplicate and representation analysis, default and expanded task budgets, above-five decomposition review, over-compression safeguards, Done When quality, structured explainability, content-safe observability, anti-bloat architecture gates, a 52-case benchmark, property tests, and W03A compatibility. The v5.6 candidate preserves planner/provider separation: planning cannot authorize, import adapters, call providers, or emit receipts; orchestration executes only operations derived from the exact authorized plan.",
       "remaining_scope": "",
       "evidence": [
         "docs/EXECUTION_PLANNING_STANDARD.md",
@@ -133,7 +141,9 @@
         "benchmarks/execution-planning-v1.json",
         "scripts/evaluate_execution_planning.py",
         "tests/test_execution_planner.py",
-        "tests/test_execution_planning_v2.py"
+        "tests/test_execution_planning_v2.py",
+        "src/atlas_ros/validation/architecture.py",
+        "tests/test_execution_orchestration_v2.py"
       ]
     },
     {
