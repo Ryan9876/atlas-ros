@@ -207,6 +207,8 @@ jobs:
               ProjectionDecision,
           )
           from atlas_ros.orchestration import ExecutionCommandFactory, ExecutionOrchestratorV2
+          from atlas_ros.adapters.notion_execution import NotionExecutionAdapterV2
+          from atlas_ros.adapters.todoist_execution import TodoistExecutionAdapterV2
           from atlas_ros.planning import (
               DuplicateAnalyzer,
               ExecutionCandidateExtractor,
@@ -219,6 +221,7 @@ jobs:
           assert ExecutionAuthorizationV2 and ExecutionCommandV2
           assert ExecutionTransactionV2 and ExecutionReceiptV2
           assert ExecutionCommandFactory and ExecutionOrchestratorV2
+          assert NotionExecutionAdapterV2 and TodoistExecutionAdapterV2
           PY
           source_root="$(find restored-source/extracted -maxdepth 1 -type d -name 'atlas_ros-*' -print -quit)"
           test -n "${source_root}"
@@ -272,4 +275,20 @@ jobs:
           else
             echo "No promotion PR is associated with exact candidate ${TARGET_COMMITISH}" >&2
             exit 1
+          fi
+
+      - name: Record staging failure on promotion PR
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          pr_number="$(
+            gh api \
+              -H 'Accept: application/vnd.github+json' \
+              "repos/${GITHUB_REPOSITORY}/commits/${TARGET_COMMITISH}/pulls" \
+              --jq '.[0].number // empty'
+          )"
+          if [[ -n "${pr_number}" ]]; then
+            gh pr comment "${pr_number}" --repo "${GITHUB_REPOSITORY}" --body "Atlas ROS v5.6.0rc1 draft staging failed closed. Staging run: \`${GITHUB_RUN_ID}\`. Candidate run: \`${RUN_ID:-unresolved}\`. Target: \`${TARGET_COMMITISH}\`. Production promotion remains blocked and production authority is unchanged."
           fi
