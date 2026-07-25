@@ -23,7 +23,7 @@ boundary.
 Canonical execution requires `ExecutionAuthorizationV2`. The actor must be Ryan, the authority must
 be `production_promotion_owner`, and the authorization digest must verify. Plan ID, plan digest,
 action, providers, operation types, maximum object count, expiry, revocation, and replay policy are
-checked before `applying`. A generic Boolean is accepted only at the attended W03 boundary and is
+checked before `applying`. A generic Boolean is accepted only at the attended execution boundary and is
 immediately translated into this exact scope.
 
 ## Deterministic sequence

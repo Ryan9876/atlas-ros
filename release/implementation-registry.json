@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-07-25T01:34:00Z",
-  "candidate_version": "5.6.0rc1",
-  "source_head": "agent/execution-orchestration-phase4",
+  "generated_at": "2026-07-25T03:30:00Z",
+  "candidate_version": "6.0.0rc1",
+  "source_head": "agent/canonical-reconciliation-phase5",
   "records": [
     {
       "record_id": "IDEA-4",
@@ -21,7 +21,7 @@
     },
     {
       "record_id": "ATI-1",
-      "title": "W02 Classification Intelligence Evolution",
+      "title": "Classification Intelligence Evolution",
       "disposition": "fully_implemented",
       "implemented_scope": "Classification Intelligence Phase 1 is implemented and release-candidate packaged: responsibility-first classification, version 2 reasoning contract, evidence-aligned explainability, manager-intent inference, challenge lifecycle, shadow comparison, controlled routing modes, governed configuration, evaluation dataset, calibration tooling, compatibility projection, ADR, operating standard, observability, and regression coverage.",
       "remaining_scope": "",
@@ -36,7 +36,7 @@
     },
     {
       "record_id": "IDEA-1",
-      "title": "Responsibility-Based Classification for W02",
+      "title": "Responsibility-Based Classification",
       "disposition": "fully_implemented",
       "implemented_scope": "Responsibility domain, outcome, workstream, and activity are modeled independently with governed precedence, evidence weights, confidence, safe fallback, compatibility projection, and people-leadership versus technical-activity fixtures.",
       "remaining_scope": "",
@@ -48,7 +48,7 @@
     },
     {
       "record_id": "IDEA-2",
-      "title": "W02 Classification Explainability",
+      "title": "Classification Explainability",
       "disposition": "fully_implemented",
       "implemented_scope": "Every semantic decision produces structured decisive evidence and a concise evidence-aligned user explanation with ambiguity, challenge, correction, and fallback fields in the version 2 contract.",
       "remaining_scope": "",
@@ -73,10 +73,13 @@
       "record_id": "IDEA-8",
       "title": "Release-Gated Development Record Reconciliation",
       "disposition": "fully_implemented",
-      "implemented_scope": "Bidirectional GitHub/Notion development-record snapshots, deterministic record digests, drift detection, checksum-covered reconciliation reports, release-gated validation, and readback contracts.",
+      "implemented_scope": "Bidirectional release-to-Notion and Notion-to-release reconciliation, explicit dispositions, deterministic record digests, drift and missing-record detection, readback comparison, checksum-covered reports, fail-closed release gating, and a packaged post-promotion workflow dry run.",
       "remaining_scope": "",
       "evidence": [
-        "PR #10",
+        "release/development-record-snapshots.json",
+        "release/DEVELOPMENT_RECORD_RECONCILIATION.md",
+        "release/DEVELOPMENT_RECORD_RECONCILIATION.json",
+        "scripts/post_promotion_reconciliation.py",
         "src/atlas_ros/release/authority_cutover.py",
         "tests/unit/test_authority_cutover.py"
       ]
@@ -96,10 +99,10 @@
     },
     {
       "record_id": "IDEA-10",
-      "title": "Capability-Based ROS Architecture Migration and W-Convention Retirement",
-      "disposition": "in_progress",
-      "implemented_scope": "Phases 1 through 7 development cutover and roadmap Waves 3 through 5 are implemented behind semantic capability surfaces with compatibility facades, architecture gates, archival mapping, and rollback-preserving aliases. Wave 5 adds provider-neutral execution commands, exact scoped authorization, transaction and receipt contracts, orchestration-owned retry/idempotency/recovery, separated Todoist and Notion adapters, W03 delegation through the new boundary, 408-test regression coverage, a governed 64-case orchestration benchmark, commit-bound release evidence, checksum-bound draft staging, and Drive-independent restoration.",
-      "remaining_scope": "Separately authorized production cutover validation and W-number retirement only after stable rollback evidence. This candidate preserves all compatibility interfaces and does not switch production authority.",
+      "title": "Capability-Based ROS Architecture Migration and Numbered-Workflow Retirement",
+      "disposition": "fully_implemented",
+      "implemented_scope": "Roadmap Waves 1 through 6 are implemented in the v6 candidate. Semantic capabilities are the sole runtime architecture; canonical reconciliation adds versioned field authority, conflicts, command idempotency, checkpoint safety, exact attended authorization, verified readback, and fail-closed receipts. Numbered runtime interfaces and aliases are retired from the wheel and source distribution. Migration, differential, restoration, and v5.6 rollback evidence are packaged.",
+      "remaining_scope": "",
       "evidence": [
         "src/atlas_ros/capabilities/__init__.py",
         "src/atlas_ros/engines/knowledge_composition.py",
@@ -107,6 +110,9 @@
         "src/atlas_ros/planning/execution.py",
         "src/atlas_ros/contracts/execution_v2.py",
         "src/atlas_ros/contracts/orchestration_v2.py",
+        "src/atlas_ros/contracts/reconciliation_v2.py",
+        "src/atlas_ros/reconciliation/authority.py",
+        "src/atlas_ros/reconciliation/engine.py",
         "src/atlas_ros/orchestration/execution.py",
         "src/atlas_ros/orchestration/commands.py",
         "src/atlas_ros/adapters/todoist_execution.py",
@@ -114,9 +120,18 @@
         "docs/adr/ADR-007-EXECUTION-PLANNING-AND-TASK-ECONOMY.md",
         "docs/adr/ADR-008-EXECUTION-ORCHESTRATION-AND-PROVIDER-SEPARATION.md",
         "docs/EXECUTION_ORCHESTRATION_STANDARD.md",
+        "docs/EXECUTION_RECONCILIATION_STANDARD.md",
+        "docs/adr/ADR-009-CANONICAL-RECONCILIATION-AND-W-RETIREMENT.md",
+        "docs/migration/V6_CANONICAL_CUTOVER_AND_W_RETIREMENT.md",
+        "docs/migration/V6_BREAKING_CHANGES.md",
+        "docs/migration/V6_ROLLBACK_GUIDE.md",
+        "benchmarks/canonical-reconciliation-v1.json",
+        "scripts/evaluate_canonical_reconciliation.py",
+        "release/W_NUMBER_RETIREMENT_INVENTORY.json",
+        "tests/test_canonical_reconciliation_v2.py",
         "benchmarks/execution-orchestration-v1.json",
         "scripts/evaluate_execution_orchestration.py",
-        "scripts/build_v560_candidate_evidence.py",
+        "scripts/build_v600_candidate_evidence.py",
         "tests/test_execution_orchestration_v2.py",
         ".github/workflows/release-candidate.yml",
         ".github/workflows/github-release-staging.yml",
@@ -131,7 +146,7 @@
       "record_id": "IDEA-9",
       "title": "Task Economy and Execution Projection Guardrails",
       "disposition": "fully_implemented",
-      "implemented_scope": "Roadmap Wave 4 is implemented through immutable Execution Candidate and Projection Decision contracts, provider-neutral Existing Representation Index, Execution Plan V2, deterministic candidate extraction, the complete 14-condition Task Projection Test, progressive horizon transitions, layered duplicate and representation analysis, default and expanded task budgets, above-five decomposition review, over-compression safeguards, Done When quality, structured explainability, content-safe observability, anti-bloat architecture gates, a 52-case benchmark, property tests, and W03A compatibility. The v5.6 candidate preserves planner/provider separation: planning cannot authorize, import adapters, call providers, or emit receipts; orchestration executes only operations derived from the exact authorized plan.",
+      "implemented_scope": "Roadmap Wave 4 is preserved through immutable Execution Candidate and Projection Decision contracts, provider-neutral Existing Representation Index, Execution Plan V2, deterministic candidate extraction, the complete 14-condition Task Projection Test, progressive horizons, duplicate and representation analysis, task budgets, decomposition review, over-compression safeguards, Done When quality, structured explainability, a 52-case benchmark, and property tests. Planning cannot authorize, import adapters, call providers, or emit receipts.",
       "remaining_scope": "",
       "evidence": [
         "docs/EXECUTION_PLANNING_STANDARD.md",
@@ -160,9 +175,9 @@
     },
     {
       "record_id": "IDEA-6",
-      "title": "W03 Todoist Section Routing by Management Domain",
+      "title": "Todoist Section Routing by Management Domain",
       "disposition": "unaffected",
-      "implemented_scope": "Delivered in Atlas ROS v5.1 and preserved through W03 compatibility delegation into the Wave 5 command and adapter boundary; management-domain routing is regression verified for v5.6.",
+      "implemented_scope": "Delivered in Atlas ROS v5.1 and preserved through the semantic command, orchestrator, and adapter boundary; management-domain routing is regression verified for v6.",
       "remaining_scope": "",
       "evidence": [
         "tests/unit/test_todoist_sections.py",

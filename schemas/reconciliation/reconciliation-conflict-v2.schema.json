@@ -1,0 +1,112 @@
+{
+  "$defs": {
+    "ConflictType": {
+      "enum": [
+        "missing_todoist_object",
+        "missing_notion_record",
+        "ambiguous_mapping",
+        "duplicate_mapping",
+        "field_authority_violation",
+        "concurrent_modification",
+        "unsupported_schema",
+        "missing_execution_step",
+        "ambiguous_blocker",
+        "command_replay_ambiguity",
+        "readback_mismatch",
+        "provider_permission_failure",
+        "stale_checkpoint",
+        "development_record_drift",
+        "release_authority_disagreement"
+      ],
+      "title": "ConflictType",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "authority_rule": {
+      "default": "",
+      "title": "Authority Rule",
+      "type": "string"
+    },
+    "conflict_id": {
+      "minLength": 1,
+      "title": "Conflict Id",
+      "type": "string"
+    },
+    "conflict_type": {
+      "$ref": "#/$defs/ConflictType"
+    },
+    "evidence": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Evidence",
+      "type": "array"
+    },
+    "field_or_command": {
+      "minLength": 1,
+      "title": "Field Or Command",
+      "type": "string"
+    },
+    "human_decision_required": {
+      "default": true,
+      "title": "Human Decision Required",
+      "type": "boolean"
+    },
+    "object_id": {
+      "minLength": 1,
+      "title": "Object Id",
+      "type": "string"
+    },
+    "plan_id": {
+      "minLength": 1,
+      "title": "Plan Id",
+      "type": "string"
+    },
+    "severity": {
+      "default": "high",
+      "enum": [
+        "low",
+        "medium",
+        "high",
+        "critical"
+      ],
+      "title": "Severity",
+      "type": "string"
+    },
+    "source_value": {
+      "default": null,
+      "title": "Source Value"
+    },
+    "status": {
+      "default": "open",
+      "enum": [
+        "open",
+        "resolved",
+        "ignored"
+      ],
+      "title": "Status",
+      "type": "string"
+    },
+    "suggested_resolution": {
+      "title": "Suggested Resolution",
+      "type": "string"
+    },
+    "target_value": {
+      "default": null,
+      "title": "Target Value"
+    }
+  },
+  "required": [
+    "conflict_id",
+    "plan_id",
+    "object_id",
+    "field_or_command",
+    "conflict_type",
+    "suggested_resolution"
+  ],
+  "title": "ReconciliationConflict",
+  "type": "object"
+}

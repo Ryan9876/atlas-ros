@@ -1,11 +1,11 @@
 from datetime import UTC, datetime, timedelta
 
 from atlas_ros.adapters.notion import FakeNotionAdapter
-from atlas_ros.runtime.database import RuntimeDatabase
-from atlas_ros.workflows.reconciliation_state import (
+from atlas_ros.reconciliation.state import (
     NotionReconciliationStateStore,
     SQLiteReconciliationStateStore,
 )
+from atlas_ros.runtime.database import RuntimeDatabase
 
 
 def test_sqlite_state_store_round_trip(tmp_path):

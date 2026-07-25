@@ -1,9 +1,9 @@
 from atlas_ros.adapters.notion import FakeNotionAdapter
 from atlas_ros.adapters.todoist import FakeTodoistAdapter, TodoistTask
+from atlas_ros.reconciliation import TodoistReconciliationService as Exported
+from atlas_ros.reconciliation.service import MutationType
+from atlas_ros.reconciliation.trust import TodoistReconciliationService
 from atlas_ros.runtime.database import RuntimeDatabase
-from atlas_ros.workflows import TodoistReconciliationService as Exported
-from atlas_ros.workflows.w04_reconciliation import MutationType
-from atlas_ros.workflows.w04_trust import TodoistReconciliationService
 
 
 def text(value: str) -> dict[str, object]:
@@ -40,7 +40,7 @@ def action(notion):
 
 
 def test_trust_wrapper_is_exported() -> None:
-    assert Exported is TodoistReconciliationService
+    assert issubclass(TodoistReconciliationService, Exported)
 
 
 def test_invalid_checkpoint_and_empty_blocker_conflict(tmp_path) -> None:

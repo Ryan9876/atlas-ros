@@ -10,11 +10,11 @@ from atlas_ros.adapters.notion import FakeNotionAdapter, LiveNotionAdapter, Noti
 from atlas_ros.adapters.todoist import FakeTodoistAdapter, LiveTodoistAdapter, TodoistTask
 from atlas_ros.config.loader import load_config
 from atlas_ros.domain.models import Action
+from atlas_ros.reconciliation.service import TodoistReconciliationService
+from atlas_ros.reconciliation.state import SQLiteReconciliationStateStore
 from atlas_ros.release.tooling import verify
 from atlas_ros.runtime.database import RuntimeDatabase
-from atlas_ros.workflows.reconciliation_state import SQLiteReconciliationStateStore
-from atlas_ros.workflows.w03_todoist import TodoistService, task_description
-from atlas_ros.workflows.w04_reconciliation import TodoistReconciliationService
+from atlas_ros.services.todoist_execution import TodoistService, task_description
 
 
 def _text(value: str) -> dict:

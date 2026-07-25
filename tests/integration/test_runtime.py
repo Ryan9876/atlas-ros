@@ -1,8 +1,8 @@
 from uuid import uuid4
 
+from atlas_ros.capture import CaptureService
 from atlas_ros.domain.models import ObservabilityEvent
 from atlas_ros.runtime import Outbox, RuntimeDatabase
-from atlas_ros.workflows.w01_capture import CaptureService
 
 
 def test_capture_and_outbox_export(tmp_path) -> None:

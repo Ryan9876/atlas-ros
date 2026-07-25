@@ -9,11 +9,11 @@ from typing import Any
 from atlas_ros.adapters.errors import AdapterError
 from atlas_ros.adapters.notion import NotionAdapter, NotionPage
 from atlas_ros.adapters.todoist import TodoistAdapter, TodoistComment, TodoistTask
-from atlas_ros.runtime.database import RuntimeDatabase
-from atlas_ros.workflows.reconciliation_state import (
+from atlas_ros.reconciliation.state import (
     ReconciliationStateStore,
     SQLiteReconciliationStateStore,
 )
+from atlas_ros.runtime.database import RuntimeDatabase
 
 
 class MutationType(StrEnum):
@@ -315,7 +315,7 @@ class TodoistReconciliationService:
 
     def apply(self, plan: ReconciliationPlan, *, confirmed: bool = False) -> ReconciliationResult:
         if not confirmed:
-            raise PermissionError("W04 apply requires explicit confirmation")
+            raise PermissionError("reconciliation apply requires explicit attended confirmation")
         applied = verified = conflicts = 0
         groups: dict[str, list[ReconciliationMutation]] = {}
         for index, mutation in enumerate(plan.mutations):
@@ -780,12 +780,12 @@ class TodoistReconciliationService:
                 "Type": _select("Sync Conflict"),
                 "Severity": _select("High"),
                 "Status": _select("Open"),
-                "Workflow": _rich_text("W04 Todoist-to-Notion Reconciliation"),
+                "Workflow": _rich_text("Execution Reconciliation"),
                 "Affected Object URL": {
                     "url": f"https://app.todoist.com/app/task/{mutation.todoist_task_id}"
                 },
                 "Error Signature": _rich_text(mutation.summary),
-                "Next Action": _rich_text("Review the conflict and rerun W04."),
+                "Next Action": _rich_text("Review the conflict and rerun reconciliation."),
                 "Occurrence Count": {"number": 1},
                 "Retry Count": {"number": 0},
                 "Last Occurrence": _date_value(datetime.now(UTC).isoformat()),

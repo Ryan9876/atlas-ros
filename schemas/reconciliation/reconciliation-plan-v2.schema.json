@@ -1,0 +1,357 @@
+{
+  "$defs": {
+    "AuthoritySource": {
+      "enum": [
+        "todoist",
+        "notion",
+        "derived"
+      ],
+      "title": "AuthoritySource",
+      "type": "string"
+    },
+    "CheckpointToken": {
+      "additionalProperties": false,
+      "properties": {
+        "applied_event_ids": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Applied Event Ids",
+          "type": "array"
+        },
+        "cursor": {
+          "minLength": 1,
+          "title": "Cursor",
+          "type": "string"
+        },
+        "integration": {
+          "default": "todoist-notion",
+          "title": "Integration",
+          "type": "string"
+        },
+        "integrity_digest": {
+          "default": "",
+          "title": "Integrity Digest",
+          "type": "string"
+        }
+      },
+      "required": [
+        "cursor"
+      ],
+      "title": "CheckpointToken",
+      "type": "object"
+    },
+    "ConflictType": {
+      "enum": [
+        "missing_todoist_object",
+        "missing_notion_record",
+        "ambiguous_mapping",
+        "duplicate_mapping",
+        "field_authority_violation",
+        "concurrent_modification",
+        "unsupported_schema",
+        "missing_execution_step",
+        "ambiguous_blocker",
+        "command_replay_ambiguity",
+        "readback_mismatch",
+        "provider_permission_failure",
+        "stale_checkpoint",
+        "development_record_drift",
+        "release_authority_disagreement"
+      ],
+      "title": "ConflictType",
+      "type": "string"
+    },
+    "ReconciliationConflict": {
+      "additionalProperties": false,
+      "properties": {
+        "authority_rule": {
+          "default": "",
+          "title": "Authority Rule",
+          "type": "string"
+        },
+        "conflict_id": {
+          "minLength": 1,
+          "title": "Conflict Id",
+          "type": "string"
+        },
+        "conflict_type": {
+          "$ref": "#/$defs/ConflictType"
+        },
+        "evidence": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Evidence",
+          "type": "array"
+        },
+        "field_or_command": {
+          "minLength": 1,
+          "title": "Field Or Command",
+          "type": "string"
+        },
+        "human_decision_required": {
+          "default": true,
+          "title": "Human Decision Required",
+          "type": "boolean"
+        },
+        "object_id": {
+          "minLength": 1,
+          "title": "Object Id",
+          "type": "string"
+        },
+        "plan_id": {
+          "minLength": 1,
+          "title": "Plan Id",
+          "type": "string"
+        },
+        "severity": {
+          "default": "high",
+          "enum": [
+            "low",
+            "medium",
+            "high",
+            "critical"
+          ],
+          "title": "Severity",
+          "type": "string"
+        },
+        "source_value": {
+          "default": null,
+          "title": "Source Value"
+        },
+        "status": {
+          "default": "open",
+          "enum": [
+            "open",
+            "resolved",
+            "ignored"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "suggested_resolution": {
+          "title": "Suggested Resolution",
+          "type": "string"
+        },
+        "target_value": {
+          "default": null,
+          "title": "Target Value"
+        }
+      },
+      "required": [
+        "conflict_id",
+        "plan_id",
+        "object_id",
+        "field_or_command",
+        "conflict_type",
+        "suggested_resolution"
+      ],
+      "title": "ReconciliationConflict",
+      "type": "object"
+    },
+    "ReconciliationMutationV2": {
+      "additionalProperties": false,
+      "properties": {
+        "authority": {
+          "$ref": "#/$defs/AuthoritySource"
+        },
+        "command_event_id": {
+          "default": "",
+          "title": "Command Event Id",
+          "type": "string"
+        },
+        "desired_value": {
+          "default": null,
+          "title": "Desired Value"
+        },
+        "expected_value": {
+          "default": null,
+          "title": "Expected Value"
+        },
+        "field": {
+          "minLength": 1,
+          "title": "Field",
+          "type": "string"
+        },
+        "idempotency_key": {
+          "minLength": 1,
+          "title": "Idempotency Key",
+          "type": "string"
+        },
+        "mutation_id": {
+          "minLength": 1,
+          "title": "Mutation Id",
+          "type": "string"
+        },
+        "object_id": {
+          "minLength": 1,
+          "title": "Object Id",
+          "type": "string"
+        },
+        "provider": {
+          "$ref": "#/$defs/AuthoritySource"
+        },
+        "readback_required": {
+          "default": true,
+          "title": "Readback Required",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "mutation_id",
+        "provider",
+        "object_id",
+        "field",
+        "authority",
+        "idempotency_key"
+      ],
+      "title": "ReconciliationMutationV2",
+      "type": "object"
+    },
+    "ReconciliationSnapshot": {
+      "additionalProperties": false,
+      "properties": {
+        "captured_at": {
+          "format": "date-time",
+          "title": "Captured At",
+          "type": "string"
+        },
+        "event_ids": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Event Ids",
+          "type": "array"
+        },
+        "object_id": {
+          "minLength": 1,
+          "title": "Object Id",
+          "type": "string"
+        },
+        "provider": {
+          "$ref": "#/$defs/AuthoritySource"
+        },
+        "values": {
+          "additionalProperties": true,
+          "title": "Values",
+          "type": "object"
+        },
+        "version": {
+          "default": "",
+          "title": "Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "provider",
+        "object_id",
+        "values"
+      ],
+      "title": "ReconciliationSnapshot",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "authority_policy_digest": {
+      "title": "Authority Policy Digest",
+      "type": "string"
+    },
+    "authority_policy_version": {
+      "title": "Authority Policy Version",
+      "type": "string"
+    },
+    "command_decisions": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Command Decisions",
+      "type": "array"
+    },
+    "conflicts": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/ReconciliationConflict"
+      },
+      "title": "Conflicts",
+      "type": "array"
+    },
+    "correlation_id": {
+      "minLength": 1,
+      "title": "Correlation Id",
+      "type": "string"
+    },
+    "expected_checkpoint": {
+      "$ref": "#/$defs/CheckpointToken"
+    },
+    "generated_at": {
+      "format": "date-time",
+      "title": "Generated At",
+      "type": "string"
+    },
+    "ignored_items": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Ignored Items",
+      "type": "array"
+    },
+    "ordered_mutations": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/ReconciliationMutationV2"
+      },
+      "title": "Ordered Mutations",
+      "type": "array"
+    },
+    "plan_digest": {
+      "default": "",
+      "title": "Plan Digest",
+      "type": "string"
+    },
+    "plan_id": {
+      "minLength": 1,
+      "title": "Plan Id",
+      "type": "string"
+    },
+    "required_human_decisions": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Required Human Decisions",
+      "type": "array"
+    },
+    "source_snapshots": {
+      "items": {
+        "$ref": "#/$defs/ReconciliationSnapshot"
+      },
+      "title": "Source Snapshots",
+      "type": "array"
+    },
+    "target_snapshots": {
+      "items": {
+        "$ref": "#/$defs/ReconciliationSnapshot"
+      },
+      "title": "Target Snapshots",
+      "type": "array"
+    }
+  },
+  "required": [
+    "plan_id",
+    "correlation_id",
+    "authority_policy_version",
+    "authority_policy_digest",
+    "source_snapshots",
+    "target_snapshots",
+    "expected_checkpoint"
+  ],
+  "title": "ReconciliationPlanV2",
+  "type": "object"
+}

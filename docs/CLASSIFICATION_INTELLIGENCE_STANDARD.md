@@ -40,4 +40,4 @@ A classification may be unchallenged, accepted, challenged, corrected, or unreso
 
 ## Compatibility and activation
 
-Reasoning contract version 2 projects explicitly to version 1. W02 defaults to legacy authority. Shadow and attended modes do not change routing. Semantic mode is development-only until a separately authorized production promotion.
+Reasoning contract version 2 projects explicitly to version 1 evidence. Shadow and attended modes do not change routing. Semantic mode is the canonical v6 path and remains governed by production promotion.

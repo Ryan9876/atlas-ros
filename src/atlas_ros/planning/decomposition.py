@@ -3,12 +3,12 @@ from __future__ import annotations
 from atlas_ros.config.loader import load_config
 from atlas_ros.contracts import ManagementPackage
 from atlas_ros.domain.models import Action, ReadinessReport, ReadinessStatus
-from atlas_ros.planning import ExecutionPlanner, ExecutionPlanningPolicy
+from atlas_ros.planning.execution import ExecutionPlanner, ExecutionPlanningPolicy
 from atlas_ros.rules import RulesEngine, action_rules
 
 
 class DecompositionService:
-    """Legacy W03A facade over readiness rules and the canonical Execution Planner."""
+    """Canonical readiness and execution-plan decomposition service."""
 
     def select_pattern(self, text: str) -> tuple[str, list[str]]:
         patterns = load_config("patterns")["patterns"]
@@ -30,7 +30,7 @@ class DecompositionService:
             review_threshold=max(5, len(candidates)),
         )
         management = ManagementPackage(
-            source_component="legacy.w03a",
+            source_component="planning.decomposition",
             responsibility=action.title,
             desired_outcome=action.definition_of_done or action.title,
             owner=action.owner or "Ryan",

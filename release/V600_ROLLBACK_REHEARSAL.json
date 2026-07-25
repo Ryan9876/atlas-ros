@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "candidate": "6.0.0rc1",
+  "rollback_release": "Atlas ROS v5.6.0",
+  "rollback_tag": "v5.6.0",
+  "rollback_production_source": "06c5a703dec72135171d5738e6e0f3573ed8499d",
+  "rollback_package_source": "atlas_ros-5.6.0rc1.tar.gz",
+  "rollback_package_sha256": "6a01b0aef23e93da65c340722d5cc7f390a31a49a61526294988b26e1af97b71",
+  "publication_and_restoration_run": 30140577467,
+  "baseline_tests_passed": 408,
+  "baseline_branch_coverage_percent": 88.27,
+  "planning_cases_passed": 52,
+  "orchestration_cases_passed": 64,
+  "v6_differential_unexplained_drift": 0,
+  "live_provider_writes": 0,
+  "rollback_manifest_preserved": true,
+  "eligible": true
+}

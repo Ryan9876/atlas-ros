@@ -1,0 +1,54 @@
+{
+  "$defs": {
+    "AuthoritySource": {
+      "enum": [
+        "todoist",
+        "notion",
+        "derived"
+      ],
+      "title": "AuthoritySource",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "captured_at": {
+      "format": "date-time",
+      "title": "Captured At",
+      "type": "string"
+    },
+    "event_ids": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Event Ids",
+      "type": "array"
+    },
+    "object_id": {
+      "minLength": 1,
+      "title": "Object Id",
+      "type": "string"
+    },
+    "provider": {
+      "$ref": "#/$defs/AuthoritySource"
+    },
+    "values": {
+      "additionalProperties": true,
+      "title": "Values",
+      "type": "object"
+    },
+    "version": {
+      "default": "",
+      "title": "Version",
+      "type": "string"
+    }
+  },
+  "required": [
+    "provider",
+    "object_id",
+    "values"
+  ],
+  "title": "ReconciliationSnapshot",
+  "type": "object"
+}

@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "atlas-ros"
-version = "5.6.0"
+version = "6.0.0rc1"
 description = "Policy-driven executable core for Atlas Ryan Operating System"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -26,6 +26,17 @@ atlas = "atlas_ros.cli:main"
 packages = ["src/atlas_ros"]
 include = ["src/atlas_ros/data/**/*.yaml"]
 
+[tool.hatch.build.targets.sdist]
+exclude = [
+  "/.venv",
+  "/build",
+  "/clean-wheel",
+  "/dist",
+  "/extracted",
+  "/source-verification",
+  "/test-results",
+]
+
 [tool.pytest.ini_options]
 addopts = "-q --strict-markers --cov=atlas_ros --cov-branch --cov-report=term-missing --cov-fail-under=85"
 testpaths = ["tests"]
@@ -46,7 +57,6 @@ select = ["E", "F", "I", "UP", "B", "SIM"]
 "tests/unit/test_release_control_center.py" = ["E501"]
 "src/atlas_ros/intelligence/__init__.py" = ["E402"]
 "src/atlas_ros/intelligence/release_control_center.py" = ["E501"]
-"src/atlas_ros/workflows/w03_todoist.py" = ["E501"]
 "scripts/build_v510_candidate_evidence.py" = ["E501"]
 "scripts/build_v530_candidate_evidence.py" = ["E501"]
 "tools/assemble_v410_restoration.py" = ["E501"]

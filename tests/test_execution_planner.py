@@ -6,7 +6,7 @@ from pydantic import ValidationError
 from atlas_ros.contracts import ExecutionPlan, ManagementPackage
 from atlas_ros.domain.models import Action
 from atlas_ros.planning import ExecutionPlanner, ExecutionPlanningPolicy
-from atlas_ros.workflows.w03a_decomposition import DecompositionService
+from atlas_ros.planning.decomposition import DecompositionService
 
 
 def management(
@@ -71,9 +71,7 @@ def test_existing_parent_representation_withholds_duplicate_projection() -> None
         existing_representations=(package.desired_outcome,),
     )
     assert plan.steps == []
-    assert plan.non_projection_reasons == [
-        "An equivalent execution representation already exists."
-    ]
+    assert plan.non_projection_reasons == ["An equivalent execution representation already exists."]
 
 
 def test_non_ryan_owner_and_unresolved_decisions_fail_closed() -> None:

@@ -1,0 +1,88 @@
+{
+  "$defs": {
+    "AuthoritySource": {
+      "enum": [
+        "todoist",
+        "notion",
+        "derived"
+      ],
+      "title": "AuthoritySource",
+      "type": "string"
+    },
+    "FieldAuthorityRule": {
+      "additionalProperties": false,
+      "properties": {
+        "authority": {
+          "$ref": "#/$defs/AuthoritySource"
+        },
+        "direction": {
+          "$ref": "#/$defs/UpdateDirection"
+        },
+        "field": {
+          "minLength": 1,
+          "title": "Field",
+          "type": "string"
+        },
+        "merge_allowed": {
+          "default": false,
+          "title": "Merge Allowed",
+          "type": "boolean"
+        },
+        "normalization": {
+          "default": "identity",
+          "enum": [
+            "identity",
+            "text",
+            "date",
+            "priority",
+            "boolean"
+          ],
+          "title": "Normalization",
+          "type": "string"
+        },
+        "readback_required": {
+          "default": true,
+          "title": "Readback Required",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "field",
+        "authority",
+        "direction"
+      ],
+      "title": "FieldAuthorityRule",
+      "type": "object"
+    },
+    "UpdateDirection": {
+      "enum": [
+        "todoist_to_notion",
+        "notion_to_todoist",
+        "derive_only"
+      ],
+      "title": "UpdateDirection",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "policy_version": {
+      "minLength": 1,
+      "title": "Policy Version",
+      "type": "string"
+    },
+    "rules": {
+      "items": {
+        "$ref": "#/$defs/FieldAuthorityRule"
+      },
+      "title": "Rules",
+      "type": "array"
+    }
+  },
+  "required": [
+    "policy_version",
+    "rules"
+  ],
+  "title": "FieldAuthorityRegistry",
+  "type": "object"
+}

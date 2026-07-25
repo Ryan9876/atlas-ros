@@ -5,22 +5,16 @@ from pathlib import Path
 
 PACKAGE_ROOT = Path(__file__).resolve().parents[1]
 FORBIDDEN_PREFIXES: dict[str, tuple[str, ...]] = {
-    "contracts": ("atlas_ros.adapters", "atlas_ros.workflows", "atlas_ros.legacy"),
-    "engines": ("atlas_ros.adapters", "atlas_ros.legacy"),
+    "contracts": ("atlas_ros.adapters",),
+    "engines": ("atlas_ros.adapters",),
     "planning": (
         "atlas_ros.adapters",
-        "atlas_ros.legacy",
         "atlas_ros.orchestration",
     ),
     "orchestration": ("atlas_ros.adapters", "atlas_ros.planning"),
-    "policy": ("atlas_ros.adapters", "atlas_ros.legacy"),
+    "policy": ("atlas_ros.adapters",),
 }
-LEGACY_WORKFLOW_PREFIX = "atlas_ros.workflows.w"
-LEGACY_IMPORT_ALLOWLIST = {
-    "capabilities/__init__.py",
-    "legacy/facades.py",
-    "services/execution_reconciliation.py",
-}
+RETIRED_IMPORT_PREFIXES = ("atlas_ros.workflows", "atlas_ros.legacy")
 NON_EXECUTING_ENGINES = {
     "engines/management_reasoning.py",
     "engines/classification_intelligence.py",
@@ -94,15 +88,13 @@ def validate(root: Path = PACKAGE_ROOT) -> list[dict[str, str]]:
                     )
     for path in sorted(root.rglob("*.py")):
         relative = path.relative_to(root).as_posix()
-        if relative.startswith("workflows/") or relative in LEGACY_IMPORT_ALLOWLIST:
-            continue
         for module in sorted(imported_modules(path)):
-            if module.startswith(LEGACY_WORKFLOW_PREFIX):
+            if module.startswith(RETIRED_IMPORT_PREFIXES):
                 violations.append(
                     {
                         "path": path.as_posix(),
                         "import": module,
-                        "rule": "new internal code must use semantic capability imports",
+                        "rule": "retired workflow and legacy packages cannot be imported in v6",
                     }
                 )
         if relative in NON_EXECUTING_ENGINES:
@@ -135,6 +127,19 @@ def validate(root: Path = PACKAGE_ROOT) -> list[dict[str, str]]:
                     }
                 )
         tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        if relative in {"reconciliation/engine.py", "reconciliation/authority.py"}:
+            for module in sorted(imported_modules(path)):
+                if module.startswith("atlas_ros.adapters"):
+                    violations.append(
+                        {
+                            "path": path.as_posix(),
+                            "import": module,
+                            "rule": (
+                                "canonical reconciliation policy and engine "
+                                "must be provider-neutral"
+                            ),
+                        }
+                    )
         calls = {
             node.func.id
             for node in ast.walk(tree)
@@ -297,19 +302,14 @@ def validate(root: Path = PACKAGE_ROOT) -> list[dict[str, str]]:
                     "rule": "canonical execution receipts are emitted only by orchestration",
                 }
             )
-        if relative == "workflows/w03_todoist.py":
-            forbidden_provider_calls = {
-                node.attr
-                for node in ast.walk(tree)
-                if isinstance(node, ast.Attribute)
-                and node.attr in {"create_task", "update_task", "execute_operation"}
-            }
-            if forbidden_provider_calls:
-                violations.append(
-                    {
-                        "path": path.as_posix(),
-                        "import": ",".join(sorted(forbidden_provider_calls)),
-                        "rule": "W03 must remain a compatibility facade over orchestration",
-                    }
-                )
+    for retired in ("workflows", "legacy"):
+        retired_root = root / retired
+        if retired_root.exists() and any(retired_root.rglob("*.py")):
+            violations.append(
+                {
+                    "path": retired_root.as_posix(),
+                    "import": retired,
+                    "rule": "retired runtime packages must be absent from the v6 distribution",
+                }
+            )
     return violations

@@ -3,12 +3,12 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from unittest.mock import patch
 
-from atlas_ros.services.execution_reconciliation import ExecutionReconciliationService
-from atlas_ros.workflows.w04_reconciliation import (
+from atlas_ros.reconciliation.service import (
     ReconciliationPlan,
     ReconciliationResult,
     TodoistReconciliationService,
 )
+from atlas_ros.services.execution_reconciliation import ExecutionReconciliationService
 
 
 class MemoryStateStore:

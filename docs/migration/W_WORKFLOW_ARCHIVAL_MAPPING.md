@@ -4,11 +4,11 @@ Status: Development cutover record. Production remains Atlas ROS v5.1.1 until se
 
 | Legacy entrypoint | Canonical capability | Compatibility status |
 |---|---|---|
-| W01 capture | Capture Service | Alias retained |
-| W02 routing | Management Reasoning Engine + Record Routing Service | Alias retained |
-| W03A decomposition | Execution Planner | Alias retained |
-| W03 Todoist | Execution Orchestrator + Todoist Execution Adapter | Alias retained |
-| W04 reconciliation | Execution Reconciliation Service | Alias retained |
+| W01 capture | Capture Service | Retired in v6.0.0 |
+| W02 routing | Management Reasoning Engine + Record Routing Service | Retired in v6.0.0 |
+| W03A decomposition | Execution Planner | Retired in v6.0.0 |
+| W03 Todoist | Execution Orchestrator + Todoist Execution Adapter | Retired in v6.0.0 |
+| W04 reconciliation | Execution Reconciliation Service | Retired in v6.0.0 |
 
 ## Cutover rules
 

@@ -7,7 +7,7 @@ from atlas_ros.contracts import ReasoningPackageV2
 from atlas_ros.domain.models import Capture, Classification, RoutingRecommendation
 from atlas_ros.engines import ManagementReasoningEngine
 from atlas_ros.services import RecordRoutingService
-from atlas_ros.workflows.w02_routing import RoutingMode, RoutingService
+from atlas_ros.services.routing import RoutingMode, RoutingService
 
 
 @pytest.mark.parametrize(
@@ -66,9 +66,7 @@ def test_responsibility_first_classification(
 def test_technical_activity_does_not_override_people_responsibility() -> None:
     reasoning = ManagementReasoningEngine().reason_v2(
         Capture(
-            content=(
-                "Troubleshoot the VPN access for a direct report and enable the team member"
-            )
+            content=("Troubleshoot the VPN access for a direct report and enable the team member")
         )
     )
     assert reasoning.responsibility_domain == "people_leadership"
@@ -123,9 +121,7 @@ def test_v2_contract_projects_to_v1_without_losing_routing_fields() -> None:
 def test_intent_is_supporting_evidence_not_sole_authority() -> None:
     reasoning = ManagementReasoningEngine().reason_v2(
         Capture(
-            content=(
-                "As project manager, restore the production service after a service outage"
-            )
+            content=("As project manager, restore the production service after a service outage")
         )
     )
     assert reasoning.responsibility_domain == "operational_stewardship"

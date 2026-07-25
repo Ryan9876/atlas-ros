@@ -37,7 +37,7 @@ class ManagementReasoningEngine:
         capture: Capture,
         recommendation: RoutingRecommendation,
     ) -> ReasoningPackage:
-        """Preserve the v1 compatibility contract for existing W02 consumers."""
+        """Project semantic reasoning into the historical V1 evidence contract."""
         envelope = self._capture_envelope(capture)
         rationale = [
             f"Recommended classification: {recommendation.classification.value}",

@@ -28,7 +28,7 @@ class SemanticRoutingEvidence:
 
 
 class RoutingService:
-    """W02 compatibility facade with controlled semantic classification modes."""
+    """Canonical reasoning-and-routing coordinator with controlled semantic modes."""
 
     def __init__(self, adapter: LLMAdapter, mode: RoutingMode | str = RoutingMode.LEGACY) -> None:
         self.adapter = adapter

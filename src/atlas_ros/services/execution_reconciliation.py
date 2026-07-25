@@ -3,11 +3,11 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from atlas_ros import contracts
-from atlas_ros.workflows import w04_reconciliation
+from atlas_ros.reconciliation import service as reconciliation_service
 
-ReconciliationPlan = w04_reconciliation.ReconciliationPlan
-LegacyReconciliationResult = w04_reconciliation.ReconciliationResult
-TodoistReconciliationService = w04_reconciliation.TodoistReconciliationService
+ReconciliationPlan = reconciliation_service.ReconciliationPlan
+LegacyReconciliationResult = reconciliation_service.ReconciliationResult
+TodoistReconciliationService = reconciliation_service.TodoistReconciliationService
 CanonicalReconciliationResult = contracts.ReconciliationResult
 
 
@@ -18,7 +18,7 @@ class ReconciliationOutcome:
 
 
 class ExecutionReconciliationService(TodoistReconciliationService):
-    """Semantic reconciliation boundary preserving the attended W04 behavior."""
+    """Semantic reconciliation boundary for the provider adapters."""
 
     def apply(
         self,

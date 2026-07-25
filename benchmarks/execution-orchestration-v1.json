@@ -61,7 +61,7 @@
     {"id": "EO-056", "name": "adapter cannot authorize", "scenario": "boundary", "critical": true},
     {"id": "EO-057", "name": "adapter cannot plan", "scenario": "boundary", "critical": true},
     {"id": "EO-058", "name": "orchestrator cannot re-plan", "scenario": "boundary", "critical": true},
-    {"id": "EO-059", "name": "W03 compatibility", "scenario": "valid", "critical": true},
+    {"id": "EO-059", "name": "semantic execution compatibility", "scenario": "valid", "critical": true},
     {"id": "EO-060", "name": "deterministic journal", "scenario": "valid", "critical": true},
     {"id": "EO-061", "name": "deterministic receipt", "scenario": "replay", "critical": true},
     {"id": "EO-062", "name": "secret redaction", "scenario": "contract_reject", "critical": true},

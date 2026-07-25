@@ -10,7 +10,7 @@ from atlas_ros.adapters.errors import AdapterConfigurationError, AdapterError
 from atlas_ros.adapters.notion import FakeNotionAdapter, LiveNotionAdapter
 from atlas_ros.adapters.todoist import FakeTodoistAdapter, LiveTodoistAdapter
 from atlas_ros.domain.models import Action
-from atlas_ros.workflows.w03_todoist import TodoistService
+from atlas_ros.services.todoist_execution import TodoistService
 
 
 class LinkWriter:

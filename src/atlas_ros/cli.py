@@ -8,6 +8,7 @@ from pathlib import Path
 
 from atlas_ros.adapters.notion import LiveNotionAdapter
 from atlas_ros.adapters.todoist import LiveTodoistAdapter
+from atlas_ros.capture import CaptureService
 from atlas_ros.domain.models import Action
 from atlas_ros.intelligence.calibration import (
     IntelligenceCalibrationEngine,
@@ -19,6 +20,11 @@ from atlas_ros.intelligence.dataset import validate_files
 from atlas_ros.intelligence.evaluation import BenchmarkRunner
 from atlas_ros.intelligence.evaluator import IntelligenceEvaluationRunner
 from atlas_ros.intelligence.io import load_results
+from atlas_ros.planning import DecompositionService
+from atlas_ros.reconciliation import (
+    NotionReconciliationStateStore,
+    TodoistReconciliationService,
+)
 from atlas_ros.release.authority_migration import (
     build_drive_inventory,
     load_drive_inventory,
@@ -28,13 +34,7 @@ from atlas_ros.release.authority_migration import (
 )
 from atlas_ros.release.tooling import checksums, inventory, verify
 from atlas_ros.runtime.database import RuntimeDatabase
-from atlas_ros.workflows import (
-    CaptureService,
-    DecompositionService,
-    TodoistReconciliationService,
-    TodoistService,
-)
-from atlas_ros.workflows.reconciliation_state import NotionReconciliationStateStore
+from atlas_ros.services import TodoistService
 
 
 def runtime() -> RuntimeDatabase:
@@ -133,7 +133,7 @@ def todoist_plan(
 
 def todoist_apply() -> None:
     raise PermissionError(
-        "Direct W03 apply is not exposed by this CLI; use the attended connector workflow."
+        "Direct execution apply is not exposed by this CLI; use the attended connector workflow."
     )
 
 
@@ -404,10 +404,7 @@ def main() -> None:
         connectivity_check(args.keychain)
     elif args.command == "intelligence" and args.intelligence_command == "evaluate":
         intelligence_evaluate(args.results_file)
-    elif (
-        args.command == "intelligence"
-        and args.intelligence_command == "generate-judgments"
-    ):
+    elif args.command == "intelligence" and args.intelligence_command == "generate-judgments":
         intelligence_generate_judgments(args.cases_file, args.output_file)
     elif args.command == "intelligence" and args.intelligence_command == "validate-set":
         intelligence_validate_set(args.cases_file, args.results_file)
@@ -441,10 +438,7 @@ def main() -> None:
         )
     elif args.command == "release" and args.release_command == "validate-drive-inventory":
         release_validate_drive_inventory(args.inventory_file)
-    elif (
-        args.command == "release"
-        and args.release_command == "validate-implementation-registry"
-    ):
+    elif args.command == "release" and args.release_command == "validate-implementation-registry":
         release_validate_implementation_registry(args.registry_file)
 
 

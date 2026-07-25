@@ -4,7 +4,7 @@ import pytest
 
 from atlas_ros.adapters.todoist import FakeTodoistAdapter, TodoistTask
 from atlas_ros.domain.models import Action
-from atlas_ros.workflows.w03_todoist import (
+from atlas_ros.services.todoist_execution import (
     TodoistService,
     route_todoist_section,
     task_description,
@@ -108,9 +108,7 @@ def test_section_move_preserves_parent_relationships_and_order() -> None:
         ),
     }
 
-    TodoistService(adapter=adapter).move_task_group(
-        "parent", "leadership-team", confirmed=True
-    )
+    TodoistService(adapter=adapter).move_task_group("parent", "leadership-team", confirmed=True)
 
     assert adapter.get_task("parent").section_id == "leadership-team"
     children = sorted(adapter.list_tasks(parent_id="parent"), key=lambda item: item.order)

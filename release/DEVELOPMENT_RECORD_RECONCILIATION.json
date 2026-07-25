@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "candidate": "6.0.0rc1",
+  "source_authority": "release/implementation-registry.json",
+  "target_authority": "Notion Atlas Development Ideas",
+  "record_count": 6,
+  "matched_record_ids": [
+    "IDEA-5",
+    "IDEA-6",
+    "IDEA-7",
+    "IDEA-8",
+    "IDEA-9",
+    "IDEA-10"
+  ],
+  "missing_record_ids": [],
+  "duplicate_record_ids": [],
+  "pre_candidate_drift": {
+    "IDEA-8": "Notion remained Planned despite prior implementation evidence",
+    "IDEA-10": "Notion remained In Development with v5.6 candidate evidence"
+  },
+  "required_candidate_dispositions": {
+    "IDEA-5": "preserve validated regression contract",
+    "IDEA-6": "preserve validated regression contract",
+    "IDEA-7": "preserve validated regression contract",
+    "IDEA-8": "validate bidirectional release-gated development-record reconciliation",
+    "IDEA-9": "preserve validated provider-free planning contract",
+    "IDEA-10": "validate semantic-only runtime cutover and numbered-workflow retirement"
+  },
+  "post_promotion_reconciliation": "packaged but not executed; requires a promoted v6 authority",
+  "fail_closed": true,
+  "eligible_for_candidate_validation": true
+}

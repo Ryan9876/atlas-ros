@@ -217,20 +217,15 @@ class ExecutionCandidateExtractor:
                     "execution_ready": bool(raw.get("execution_ready", False)),
                     "earliest_executable_horizon": horizon,
                     "existing_representation_hints": tuple(
-                        str(value)
-                        for value in raw.get("existing_representation_hints", ())
+                        str(value) for value in raw.get("existing_representation_hints", ())
                     ),
                     "confidence": float(raw.get("confidence", 1.0)),
                     "assumptions": tuple(str(value) for value in raw.get("assumptions", ())),
                     "ambiguities": tuple(str(value) for value in raw.get("ambiguities", ())),
                     "evidence": tuple(str(value) for value in raw.get("evidence", ())),
                     "can_remain_embedded": bool(raw.get("can_remain_embedded", False)),
-                    "improves_execution_clarity": bool(
-                        raw.get("improves_execution_clarity", True)
-                    ),
-                    "independently_executable": bool(
-                        raw.get("independently_executable", True)
-                    ),
+                    "improves_execution_clarity": bool(raw.get("improves_execution_clarity", True)),
+                    "independently_executable": bool(raw.get("independently_executable", True)),
                     "recurrence_required": bool(raw.get("recurrence_required", False)),
                 }
                 candidates.append(self._build_candidate(**values))
@@ -247,9 +242,7 @@ class ExecutionCandidateExtractor:
                 ),
             )
         )
-        digest = deterministic_digest(
-            [candidate.candidate_digest for candidate in ordered]
-        )
+        digest = deterministic_digest([candidate.candidate_digest for candidate in ordered])
         for candidate in ordered:
             self._emit(
                 "candidate_extracted",
@@ -401,8 +394,7 @@ class DuplicateAnalyzer:
         if (
             left.dependency_references
             and left.dependency_references == right.dependency_references
-            and _normalized(left.proposed_objective)
-            == _normalized(right.proposed_objective)
+            and _normalized(left.proposed_objective) == _normalized(right.proposed_objective)
         ):
             return "dependency_equivalence"
         return ""
@@ -446,14 +438,9 @@ class ExistingRepresentationMatcher:
                 )
                 matches.append((kind, representation))
                 continue
-            exact = (
-                signature == _representation_signature(representation)
-                or (
-                    _normalized(candidate.proposed_objective)
-                    == _normalized(representation.objective)
-                    and _normalized(candidate.done_when)
-                    == _normalized(representation.done_when)
-                )
+            exact = signature == _representation_signature(representation) or (
+                _normalized(candidate.proposed_objective) == _normalized(representation.objective)
+                and _normalized(candidate.done_when) == _normalized(representation.done_when)
             )
             if exact:
                 kind = (
@@ -488,8 +475,7 @@ class ExistingRepresentationMatcher:
             outcome=kind,
             representation_ids=(representation.representation_id,),
             rationale=(
-                "Matched provider-neutral representation "
-                f"{representation.representation_id}."
+                f"Matched provider-neutral representation {representation.representation_id}."
             ),
         )
 
@@ -552,7 +538,7 @@ class ExecutionPlanner:
         candidate_steps: tuple[str, ...] = (),
         existing_representations: tuple[str, ...] = (),
     ) -> ExecutionPlan:
-        """Preserve the v1 and W03A compatibility contract."""
+        """Project a V2 plan into the historical V1 evidence contract."""
         reasons: list[str] = []
         existing = {_normalized(value) for value in existing_representations}
         objective_key = _normalized(management.desired_outcome)
@@ -679,9 +665,7 @@ class ExecutionPlanner:
             evaluated.append((candidate, results, status))
 
         eligible = [
-            item
-            for item in evaluated
-            if item[2] is ProjectionDecisionStatus.PROJECT_SUBTASK
+            item for item in evaluated if item[2] is ProjectionDecisionStatus.PROJECT_SUBTASK
         ]
         review_required = len(eligible) > self._policy.review_threshold
         expanded_budget = (
@@ -692,11 +676,7 @@ class ExecutionPlanner:
         allowed_count = (
             0
             if review_required
-            else (
-                len(eligible)
-                if expanded_budget
-                else min(len(eligible), self._policy.max_steps)
-            )
+            else (len(eligible) if expanded_budget else min(len(eligible), self._policy.max_steps))
         )
         selected_ids = {item[0].candidate_id for item in eligible[:allowed_count]}
 
@@ -792,9 +772,7 @@ class ExecutionPlanner:
                 if review_required
                 else ()
             ),
-            multiple_parent_outcomes=(
-                _multiple_parent_outcomes or len(parents) > 1
-            ),
+            multiple_parent_outcomes=(_multiple_parent_outcomes or len(parents) > 1),
         )
         deferred = tuple(
             decision.candidate_id
@@ -833,9 +811,7 @@ class ExecutionPlanner:
             ),
             "action_id": action_id,
             "correlation_id": management.correlation_id,
-            "source_management_reference": (
-                f"management-package/v2/{management.artifact_id}"
-            ),
+            "source_management_reference": (f"management-package/v2/{management.artifact_id}"),
             "source_management_digest": management.package_digest,
             "planner_policy_version": self._policy.policy_version,
             "parent_outcome": parent_step,
@@ -852,16 +828,12 @@ class ExecutionPlanner:
             ),
             "horizon_summary": horizon_summary,
             "task_budget": task_budget,
-            "decomposition_review_status": (
-                "required" if review_required else "not_required"
-            ),
+            "decomposition_review_status": ("required" if review_required else "not_required"),
             "human_decision_requirements": human_decisions,
             "projection_explanation": (
                 "Split the work into independently valid parent outcomes and projected "
                 "this minimal current-horizon Ryan-owned execution path."
-                if parent_projected
-                and not review_required
-                and _multiple_parent_outcomes
+                if parent_projected and not review_required and _multiple_parent_outcomes
                 else (
                     "Projected the minimal current-horizon Ryan-owned execution path."
                     if parent_projected and not review_required
@@ -869,9 +841,7 @@ class ExecutionPlanner:
                 )
             ),
             "non_projection_explanations": tuple(
-                reason
-                for decision in decisions
-                for reason in decision.non_projection_reasons
+                reason for decision in decisions for reason in decision.non_projection_reasons
             ),
             "candidate_set_digest": candidate_set_digest,
             "authorized": False,
@@ -974,8 +944,7 @@ class ExecutionPlanner:
         conditions = (
             (
                 "ryan_ownership",
-                candidate.owner.strip().casefold()
-                == self._policy.execution_owner.casefold(),
+                candidate.owner.strip().casefold() == self._policy.execution_owner.casefold(),
                 "owner",
                 "Candidate must be owned by Ryan.",
             ),
@@ -1109,18 +1078,14 @@ class ExecutionPlanner:
             return ProjectionDecisionStatus.SUPPRESS_DUPLICATE
         if duplicate.ambiguous:
             return ProjectionDecisionStatus.REVIEW_REQUIRED
-        if (
-            representation.outcome
-            in {
-                RepresentationMatchKind.EXACT_PARENT,
-                RepresentationMatchKind.EXACT_SUBTASK,
-                RepresentationMatchKind.EQUIVALENT_OPEN,
-                RepresentationMatchKind.EQUIVALENT_COMPLETED,
-            }
-            and not (
-                representation.outcome is RepresentationMatchKind.EQUIVALENT_COMPLETED
-                and candidate.recurrence_required
-            )
+        if representation.outcome in {
+            RepresentationMatchKind.EXACT_PARENT,
+            RepresentationMatchKind.EXACT_SUBTASK,
+            RepresentationMatchKind.EQUIVALENT_OPEN,
+            RepresentationMatchKind.EQUIVALENT_COMPLETED,
+        } and not (
+            representation.outcome is RepresentationMatchKind.EQUIVALENT_COMPLETED
+            and candidate.recurrence_required
         ):
             return ProjectionDecisionStatus.SUPPRESS_EXISTING
         if representation.outcome is RepresentationMatchKind.AMBIGUOUS:
@@ -1133,11 +1098,15 @@ class ExecutionPlanner:
             return ProjectionDecisionStatus.WITHHOLD_ALREADY_COMPLETE
         if "no_unresolved_prerequisite" in failed:
             return ProjectionDecisionStatus.WITHHOLD_UNRESOLVED
-        if candidate.candidate_type not in {
-            CandidateType.PARENT_OUTCOME,
-            CandidateType.EXECUTABLE_ACTION,
-            CandidateType.RISK_RESPONSE,
-        } or candidate.can_remain_embedded:
+        if (
+            candidate.candidate_type
+            not in {
+                CandidateType.PARENT_OUTCOME,
+                CandidateType.EXECUTABLE_ACTION,
+                CandidateType.RISK_RESPONSE,
+            }
+            or candidate.can_remain_embedded
+        ):
             return ProjectionDecisionStatus.WITHHOLD_NOT_EXECUTION_OBJECT
         if failed:
             return ProjectionDecisionStatus.WITHHOLD_NOT_READY

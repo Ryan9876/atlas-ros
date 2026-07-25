@@ -12,8 +12,8 @@ Write-capable commands default to dry-run or require explicit confirmation. The 
 ## Core controls
 
 - Exact Todoist `**Objective:**` and `**Done when:**` description contract for parent tasks and subtasks.
-- Full-field W03 creation, repair, ordering, validation, and readback.
-- Retry-safe W04 reconciliation with snapshot-consistent checkpoints.
+- Full-field semantic execution creation, repair, ordering, validation, and readback.
+- Retry-safe execution reconciliation with snapshot-consistent checkpoints.
 - Governed risk, blocker, dependency, and issue synchronization.
 - Explicit delegation review without falsely requiring delegated work for every Ryan-owned action.
 - Unblock commands resolve one existing open blocker and fail safely when the target is absent or ambiguous.

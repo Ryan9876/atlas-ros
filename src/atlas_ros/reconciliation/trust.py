@@ -5,19 +5,19 @@ from typing import Any
 
 from atlas_ros.adapters.notion import NotionPage
 from atlas_ros.adapters.todoist import TodoistComment, TodoistTask
-from atlas_ros.workflows.w04_reconciliation import (
+from atlas_ros.reconciliation.service import (
     AtlasCommand,
     MutationType,
     ReconciliationMutation,
     _extract_plain,
 )
-from atlas_ros.workflows.w04_reconciliation import (
+from atlas_ros.reconciliation.service import (
     TodoistReconciliationService as BaseTodoistReconciliationService,
 )
 
 
 class TodoistReconciliationService(BaseTodoistReconciliationService):
-    """P0 trust wrapper that hardens W04 command targeting and validation."""
+    """Trust wrapper that hardens reconciliation command targeting and validation."""
 
     def _plan_command(
         self,
