@@ -1,8 +1,15 @@
+import importlib.util
 import json
 from pathlib import Path
 from typing import Any
 
-from scripts import evaluate_v6_differential
+SCRIPT_PATH = (
+    Path(__file__).resolve().parents[1] / "scripts" / "evaluate_v6_differential.py"
+)
+SPEC = importlib.util.spec_from_file_location("evaluate_v6_differential", SCRIPT_PATH)
+assert SPEC is not None and SPEC.loader is not None
+evaluate_v6_differential = importlib.util.module_from_spec(SPEC)
+SPEC.loader.exec_module(evaluate_v6_differential)
 
 
 def test_main_writes_to_requested_output(
