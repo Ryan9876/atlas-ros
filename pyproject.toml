@@ -33,6 +33,7 @@ exclude = [
   "/clean-wheel",
   "/dist",
   "/extracted",
+  "/rollback-source",
   "/source-verification",
   "/test-results",
 ]
