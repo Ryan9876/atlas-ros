@@ -104,7 +104,7 @@ jobs:
           source_root="$(find restored-source -maxdepth 1 -type d -name 'atlas_ros-5.5.0rc1' -print -quit)"
           test -n "${source_root}"
           (cd "${source_root}" && "${GITHUB_WORKSPACE}/restored-venv/bin/python" scripts/evaluate_execution_planning.py --dataset benchmarks/execution-planning-v1.json --output restored-execution-planning-report.json)
-          restored-venv/bin/python -c "import json; from pathlib import Path; report=json.loads(next(Path('final-restored').rglob('restored-execution-planning-report.json')).read_text()); assert report['passed'] and report['case_count'] >= 50 and report['zero_provider_writes'] and report['zero_unauthorized_execution_objects']"
+          restored-venv/bin/python -c "import json; from pathlib import Path; report=json.loads(next(Path('restored-source').rglob('restored-execution-planning-report.json')).read_text()); assert report['passed'] and report['case_count'] >= 50 and report['zero_provider_writes'] and report['zero_unauthorized_execution_objects']"
           gh release view "${FINAL_TAG}" \
             --repo "${GITHUB_REPOSITORY}" \
             --json isDraft,isPrerelease,tagName,targetCommitish \
