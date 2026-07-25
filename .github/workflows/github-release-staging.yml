@@ -245,7 +245,8 @@ jobs:
           orchestration = json.loads(next(Path("restored-source").rglob("restored-execution-orchestration-report.json")).read_text())
           assert orchestration["passed"] and orchestration["case_count"] >= 60
           assert orchestration["zero_unauthorized_provider_writes"]
-          assert orchestration["zero_false_success_receipts"]
+          assert orchestration["zero_live_writes"]
+          assert orchestration["false_success_rejection"] == 1.0
           PY
 
       - name: Verify draft release metadata
