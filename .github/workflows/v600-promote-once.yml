@@ -135,7 +135,6 @@ jobs:
           tar -xzf "${source_archive}" -C restored-source
           source_root="$(find restored-source -maxdepth 1 -type d -name 'atlas_ros-*' -print -quit)"
           test -n "${source_root}"
-          printf 'SOURCE_ARCHIVE=%s\n' "$(realpath "${source_archive}")" >> "${GITHUB_ENV}"
           printf 'WHEEL_ARCHIVE=%s\n' "$(realpath "${wheel_archive}")" >> "${GITHUB_ENV}"
           printf 'SOURCE_ROOT=%s\n' "$(realpath "${source_root}")" >> "${GITHUB_ENV}"
 
@@ -180,37 +179,28 @@ jobs:
           assert importlib.util.find_spec("atlas_ros.legacy") is None
           PY
 
-      - name: Run restored planning benchmark
+      - name: Run restored release benchmarks
         run: |
           set -euo pipefail
           restored_venv="$(pwd)/restored-venv"
-          cd "${SOURCE_ROOT}"
-          "${restored_venv}/bin/python" scripts/evaluate_execution_planning.py \
-            --dataset benchmarks/execution-planning-v1.json \
-            --output restored-execution-planning-report.json
-
-      - name: Run restored orchestration benchmark
-        run: |
-          set -euo pipefail
-          restored_venv="$(pwd)/restored-venv"
-          cd "${SOURCE_ROOT}"
-          "${restored_venv}/bin/python" scripts/evaluate_execution_orchestration.py \
-            --dataset benchmarks/execution-orchestration-v1.json \
-            --output restored-execution-orchestration-report.json
-
-      - name: Run restored reconciliation benchmark
-        run: |
-          set -euo pipefail
-          restored_venv="$(pwd)/restored-venv"
-          cd "${SOURCE_ROOT}"
-          "${restored_venv}/bin/python" scripts/evaluate_canonical_reconciliation.py \
-            --dataset benchmarks/canonical-reconciliation-v1.json \
-            --output restored-reconciliation-report.json
+          (
+            cd "${SOURCE_ROOT}"
+            "${restored_venv}/bin/python" scripts/evaluate_execution_planning.py \
+              --dataset benchmarks/execution-planning-v1.json \
+              --output restored-execution-planning-report.json
+            "${restored_venv}/bin/python" scripts/evaluate_execution_orchestration.py \
+              --dataset benchmarks/execution-orchestration-v1.json \
+              --output restored-execution-orchestration-report.json
+            "${restored_venv}/bin/python" scripts/evaluate_canonical_reconciliation.py \
+              --dataset benchmarks/canonical-reconciliation-v1.json \
+              --output restored-reconciliation-report.json
+          )
 
       - name: Verify W retirement and rollback evidence
         run: |
           set -euo pipefail
           restored_venv="$(pwd)/restored-venv"
+          cp scripts/inventory_w_references.py "${SOURCE_ROOT}/scripts/inventory_w_references.py"
           (
             cd "${SOURCE_ROOT}"
             "${restored_venv}/bin/python" scripts/inventory_w_references.py
