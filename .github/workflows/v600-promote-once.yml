@@ -1,0 +1,231 @@
+name: v600-promote-once
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: v600-promote-once
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: contains(github.event.head_commit.message, '[publish-v6.0.0]')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      DRAFT_TAG: v6.0.0-rc.1
+      FINAL_TAG: v6.0.0
+      RELEASE_NAME: Atlas ROS v6.0.0 Canonical Reconciliation and Semantic Cutover
+      EXPECTED_PACKAGE_SHA256: 147aa08e3d60e17cf6b3f25099b3d00080e954b0a78cf7971bc08c58fa78bf63
+      EXPECTED_ROLLBACK_SOURCE: 06c5a703dec72135171d5738e6e0f3573ed8499d
+    steps:
+      - name: Check out production source
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+
+      - name: Verify production identity and manifest
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import tomllib
+          from pathlib import Path
+
+          version = tomllib.loads(Path("pyproject.toml").read_text(encoding="utf-8"))["project"]["version"]
+          manifest = Path("release/RELEASE_MANIFEST.md").read_text(encoding="utf-8")
+          assert version == "6.0.0"
+          assert "# Atlas ROS v6.0.0 Release Manifest" in manifest
+          assert "3961d4880b3ed7542314d91b79c6b4780c0952f1" in manifest
+          assert "V4V-34" in manifest and "V4D-29" in manifest
+          PY
+
+      - name: Download and verify staged candidate
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir source-assets
+          gh release download "${DRAFT_TAG}" --repo "${GITHUB_REPOSITORY}" --dir source-assets
+          package="$(find source-assets -maxdepth 1 -type f -name 'Atlas_ROS_v6.0.0rc1_release_candidate.zip' -print -quit)"
+          test -n "${package}"
+          test -f "${package}.sha256"
+          test "$(sha256sum "${package}" | awk '{print $1}')" = "${EXPECTED_PACKAGE_SHA256}"
+          (cd source-assets && sha256sum -c "$(basename "${package}").sha256")
+          test -f source-assets/CHECKSUMS.sha256
+          cp -a source-assets verification
+          while read -r _ expected_path; do
+            expected_path="${expected_path#\*}"
+            expected_path="${expected_path#./}"
+            if [[ "${expected_path}" == */* && ! -f "verification/${expected_path}" ]]; then
+              flattened_path="verification/$(basename "${expected_path}")"
+              test -f "${flattened_path}"
+              mkdir -p "verification/$(dirname "${expected_path}")"
+              mv "${flattened_path}" "verification/${expected_path}"
+            fi
+          done < verification/CHECKSUMS.sha256
+          (cd verification && sha256sum -c CHECKSUMS.sha256)
+          mkdir restored
+          unzip -q "${package}" -d restored
+          (cd restored/publication && sha256sum -c CHECKSUMS.sha256)
+
+      - name: Publish final GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if gh release view "${FINAL_TAG}" --repo "${GITHUB_REPOSITORY}" >/dev/null 2>&1; then
+            gh release edit "${FINAL_TAG}" \
+              --repo "${GITHUB_REPOSITORY}" \
+              --draft=false \
+              --latest \
+              --title "${RELEASE_NAME}" \
+              --target "${GITHUB_SHA}" \
+              --notes-file release/RELEASE_MANIFEST.md
+          else
+            gh release create "${FINAL_TAG}" \
+              --repo "${GITHUB_REPOSITORY}" \
+              --latest \
+              --title "${RELEASE_NAME}" \
+              --target "${GITHUB_SHA}" \
+              --notes-file release/RELEASE_MANIFEST.md
+          fi
+          mapfile -d '' assets < <(find source-assets -maxdepth 1 -type f -print0 | sort -z)
+          gh release upload "${FINAL_TAG}" --repo "${GITHUB_REPOSITORY}" --clobber "${assets[@]}"
+
+      - name: Read back final release and prove restoration
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir final-readback
+          gh release download "${FINAL_TAG}" --repo "${GITHUB_REPOSITORY}" --dir final-readback
+          package="final-readback/Atlas_ROS_v6.0.0rc1_release_candidate.zip"
+          test -f "${package}"
+          test -f "${package}.sha256"
+          test "$(sha256sum "${package}" | awk '{print $1}')" = "${EXPECTED_PACKAGE_SHA256}"
+          (cd final-readback && sha256sum -c Atlas_ROS_v6.0.0rc1_release_candidate.zip.sha256)
+          test -f final-readback/CHECKSUMS.sha256
+          cp -a final-readback final-verification
+          while read -r _ expected_path; do
+            expected_path="${expected_path#\*}"
+            expected_path="${expected_path#./}"
+            if [[ "${expected_path}" == */* && ! -f "final-verification/${expected_path}" ]]; then
+              flattened_path="final-verification/$(basename "${expected_path}")"
+              test -f "${flattened_path}"
+              mkdir -p "final-verification/$(dirname "${expected_path}")"
+              mv "${flattened_path}" "final-verification/${expected_path}"
+            fi
+          done < final-verification/CHECKSUMS.sha256
+          (cd final-verification && sha256sum -c CHECKSUMS.sha256)
+
+          mkdir final-restored restored-source
+          unzip -q "${package}" -d final-restored
+          (cd final-restored/publication && sha256sum -c CHECKSUMS.sha256)
+          source_archive="$(find final-restored -type f -name '*.tar.gz' -print -quit)"
+          test -n "${source_archive}"
+          tar -xzf "${source_archive}" -C restored-source
+          python -m venv restored-venv
+          restored-venv/bin/pip install --disable-pip-version-check "${source_archive}"
+          restored-venv/bin/python - <<'PY'
+          import importlib.util
+          from atlas_ros.contracts import (
+              ExecutionAuthorizationV2,
+              ExecutionCandidate,
+              ExecutionCommandV2,
+              ExecutionPlanV2,
+              ExecutionReceiptV2,
+              ExecutionTransactionV2,
+              ExistingRepresentationIndex,
+              ProjectionDecision,
+              ReconciliationPlanV2,
+              ReconciliationReceiptV2,
+          )
+          from atlas_ros.orchestration import ExecutionCommandFactory, ExecutionOrchestratorV2
+          from atlas_ros.reconciliation import CanonicalReconciliationService
+          from atlas_ros.adapters.notion_execution import NotionExecutionAdapterV2
+          from atlas_ros.adapters.todoist_execution import TodoistExecutionAdapterV2
+          from atlas_ros.planning import (
+              DuplicateAnalyzer,
+              ExecutionCandidateExtractor,
+              ExecutionPlanner,
+              ProgressiveHorizonPolicy,
+          )
+          assert ExecutionCandidate and ProjectionDecision and ExistingRepresentationIndex
+          assert ExecutionPlanV2 and ExecutionPlanner and ExecutionCandidateExtractor
+          assert DuplicateAnalyzer and ProgressiveHorizonPolicy
+          assert ExecutionAuthorizationV2 and ExecutionCommandV2
+          assert ExecutionTransactionV2 and ExecutionReceiptV2
+          assert ExecutionCommandFactory and ExecutionOrchestratorV2
+          assert CanonicalReconciliationService and ReconciliationPlanV2 and ReconciliationReceiptV2
+          assert NotionExecutionAdapterV2 and TodoistExecutionAdapterV2
+          assert importlib.util.find_spec("atlas_ros.workflows") is None
+          assert importlib.util.find_spec("atlas_ros.legacy") is None
+          PY
+
+          source_root="$(find restored-source -maxdepth 1 -type d -name 'atlas_ros-*' -print -quit)"
+          test -n "${source_root}"
+          restored_venv="$(pwd)/restored-venv"
+          (
+            cd "${source_root}"
+            "${restored_venv}/bin/python" scripts/evaluate_execution_planning.py \
+              --dataset benchmarks/execution-planning-v1.json \
+              --output restored-execution-planning-report.json
+            "${restored_venv}/bin/python" scripts/evaluate_execution_orchestration.py \
+              --dataset benchmarks/execution-orchestration-v1.json \
+              --output restored-execution-orchestration-report.json
+            "${restored_venv}/bin/python" scripts/evaluate_canonical_reconciliation.py \
+              --dataset benchmarks/canonical-reconciliation-v1.json \
+              --output restored-reconciliation-report.json
+            "${restored_venv}/bin/python" scripts/inventory_w_references.py
+          )
+          restored-venv/bin/python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          planning = json.loads(next(Path("restored-source").rglob("restored-execution-planning-report.json")).read_text())
+          assert planning["passed"] and planning["case_count"] >= 50
+          assert planning["zero_provider_writes"]
+          assert planning["zero_unauthorized_execution_objects"]
+
+          orchestration = json.loads(next(Path("restored-source").rglob("restored-execution-orchestration-report.json")).read_text())
+          assert orchestration["passed"] and orchestration["case_count"] >= 60
+          assert orchestration["zero_unauthorized_provider_writes"]
+          assert orchestration["zero_live_writes"]
+          assert orchestration["false_success_rejection"] == 1.0
+
+          reconciliation = json.loads(next(Path("restored-source").rglob("restored-reconciliation-report.json")).read_text())
+          assert reconciliation["eligible"] and reconciliation["case_count"] >= 75
+          assert reconciliation["live_provider_writes"] == 0
+
+          inventory = json.loads(next(Path("restored-source").rglob("W_NUMBER_RETIREMENT_INVENTORY.json")).read_text())
+          assert inventory["runtime_w_module_count"] == 0
+          assert inventory["blocking_reference_count"] == 0
+
+          rollback = json.loads(Path("final-readback/V600_ROLLBACK_REHEARSAL.json").read_text())
+          assert rollback["eligible"]
+          assert rollback["rollback_production_source"] == os.environ["EXPECTED_ROLLBACK_SOURCE"]
+          assert rollback["v6_differential_unexplained_drift"] == 0
+          assert rollback["live_provider_writes"] == 0
+          PY
+
+          gh release view "${FINAL_TAG}" \
+            --repo "${GITHUB_REPOSITORY}" \
+            --json isDraft,isPrerelease,tagName,targetCommitish \
+            --jq 'select(.isDraft == false and .isPrerelease == false and .tagName == env.FINAL_TAG and .targetCommitish == env.GITHUB_SHA)'
+
+      - name: Record promotion receipt
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh pr comment 17 --repo "${GITHUB_REPOSITORY}" --body "Final Atlas ROS v6.0.0 publication and readback passed. Promotion run: \`${GITHUB_RUN_ID}\`. Production source: \`${GITHUB_SHA}\`. Candidate package SHA-256: \`${EXPECTED_PACKAGE_SHA256}\`. Final release assets were uploaded, downloaded, checksum-verified, restored without Google Drive, and planning, orchestration, reconciliation, W-retirement, and v5.6 rollback checks passed."
+
+      - name: Record promotion failure
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh pr comment 17 --repo "${GITHUB_REPOSITORY}" --body "Atlas ROS v6.0.0 final publication failed closed. Promotion run: \`${GITHUB_RUN_ID}\`. Production source: \`${GITHUB_SHA}\`. Production authority records must not be switched until this run passes."
