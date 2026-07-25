@@ -2,8 +2,8 @@ import pytest
 
 from atlas_ros.adapters.llm import FixtureLLMAdapter
 from atlas_ros.domain.models import Action, Capture, Classification, RoutingRecommendation
-from atlas_ros.workflows.w02_routing import RoutingService
-from atlas_ros.workflows.w03_todoist import TodoistService
+from atlas_ros.services.routing import RoutingService
+from atlas_ros.services.todoist_execution import TodoistService
 
 
 def test_routing_low_confidence_needs_clarification() -> None:
@@ -40,7 +40,7 @@ def test_invalid_destination_is_rejected() -> None:
 
 def test_prohibited_classification_is_rejected(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(
-        "atlas_ros.workflows.w02_routing.load_config",
+        "atlas_ros.services.routing.load_config",
         lambda _: {
             "allowed": ["project"],
             "destinations": {"action": "action_records"},
@@ -89,7 +89,7 @@ def test_todoist_rejects_prohibited_label() -> None:
 
 def test_todoist_requires_readiness_and_never_applies() -> None:
     incomplete = Action(id="a", title="Investigate", execution_ready=True)
-    with pytest.raises(ValueError, match="W03A gate"):
+    with pytest.raises(ValueError, match="execution-planning gate"):
         TodoistService().plan(incomplete)
     complete = Action(
         id="a",

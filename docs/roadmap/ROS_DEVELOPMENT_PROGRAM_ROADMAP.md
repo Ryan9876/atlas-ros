@@ -25,13 +25,13 @@ Atlas ROS v5.2.0 remains the current Active production authority. Intermediate c
 
 | Record | Title | Current disposition | Program treatment |
 |---|---|---|---|
-| ATI-1 | W02 Classification Intelligence Evolution | Planning / Approved | Implemented as a sequenced capability stream within the Management Reasoning Engine program. |
-| IDEA-1 | Responsibility-Based Classification for W02 | Planned / Approved | Phase 2A. First classification capability after contract foundation. |
-| IDEA-2 | W02 Classification Explainability | Planned / Approved | Phase 2B. Added after responsibility-first classification is stable. |
+| ATI-1 | Classification Intelligence Evolution | Implemented / Approved | Implemented as a sequenced capability stream within the Management Reasoning Engine program. |
+| IDEA-1 | Responsibility-Based Classification | Validated / Approved | Responsibility-first classification is active. |
+| IDEA-2 | Classification Explainability | Validated / Approved | Evidence-aligned explainability is active. |
 | IDEA-3 | Manager Intent Inference Engine | Planned / Approved | Phase 2C / later intelligence milestone. Added only after IDEA-1 and IDEA-2 validation. |
 | IDEA-4 | Modular Cognitive Engines Architecture | Planned / Approved | Architectural source for knowledge composition, management structure, and modular engine boundaries. Implemented through IDEA-10. |
 | IDEA-5 | Enforce Todoist Done When bullet formatting at the write boundary | Validated / Approved | Already delivered in v5.1. Preserved as a mandatory regression contract. |
-| IDEA-6 | W03 Todoist Section Routing by Management Domain | Validated / Approved | Already delivered in v5.1. Preserved through the Execution Planner, Orchestrator, and Todoist Adapter migration. |
+| IDEA-6 | Todoist Section Routing by Management Domain | Validated / Approved | Delivered in v5.1 and preserved through the semantic Execution Planner, Orchestrator, and Todoist Adapter. |
 | IDEA-7 | Preserve Todoist parent-subtask hierarchy during section moves | Validated / Approved | Already delivered in v5.1. Preserved as an adapter and reconciliation acceptance contract. |
 | IDEA-8 | Release-Gated Development Record Reconciliation | Included as required next-release gate | Implemented in the GitHub-first authority migration before architecture cutover. |
 | IDEA-9 | Task Economy and Execution Projection Guardrails | Planned / Approved | Mandatory Execution Planner design and release-blocking regression suite. |

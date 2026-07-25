@@ -1,0 +1,236 @@
+{
+  "blocking_reference_count": 0,
+  "blocking_references": [],
+  "candidate": "6.0.0rc1",
+  "inventory_sha256": "34c55aef2072c4692e40227c77d4e6542a26667f9b9575cf0351a62f4b77fb9c",
+  "references": [
+    {
+      "disposition": "retain_historical_evidence",
+      "match_count": 13,
+      "path": "CHANGELOG.md"
+    },
+    {
+      "disposition": "retain_historical_evidence",
+      "match_count": 1,
+      "path": "candidate-evidence/RELEASE_MANIFEST_V550_CANDIDATE.md"
+    },
+    {
+      "disposition": "retain_historical_evidence",
+      "match_count": 1,
+      "path": "docs/adr/ADR-002-TODOIST-NOTION-RECONCILIATION.md"
+    },
+    {
+      "disposition": "retain_historical_evidence",
+      "match_count": 4,
+      "path": "docs/adr/ADR-004-CANONICAL-CONTRACTS-AND-COMPATIBILITY.md"
+    },
+    {
+      "disposition": "retain_historical_evidence",
+      "match_count": 1,
+      "path": "docs/adr/ADR-005-RESPONSIBILITY-FIRST-CLASSIFICATION.md"
+    },
+    {
+      "disposition": "retain_historical_evidence",
+      "match_count": 2,
+      "path": "docs/adr/ADR-007-EXECUTION-PLANNING-AND-TASK-ECONOMY.md"
+    },
+    {
+      "disposition": "retain_historical_evidence",
+      "match_count": 5,
+      "path": "docs/adr/ADR-008-EXECUTION-ORCHESTRATION-AND-PROVIDER-SEPARATION.md"
+    },
+    {
+      "disposition": "retain_archival_or_migration",
+      "match_count": 3,
+      "path": "docs/migration/EXECUTION_PLANNING_V2_MIGRATION.md"
+    },
+    {
+      "disposition": "retain_archival_or_migration",
+      "match_count": 4,
+      "path": "docs/migration/MIGRATION_PLAN.md"
+    },
+    {
+      "disposition": "retain_archival_or_migration",
+      "match_count": 2,
+      "path": "docs/migration/V6_BREAKING_CHANGES.md"
+    },
+    {
+      "disposition": "retain_archival_or_migration",
+      "match_count": 5,
+      "path": "docs/migration/V6_CANONICAL_CUTOVER_AND_W_RETIREMENT.md"
+    },
+    {
+      "disposition": "retain_archival_or_migration",
+      "match_count": 2,
+      "path": "docs/migration/W04_SCHEMA_MIGRATION.md"
+    },
+    {
+      "disposition": "retain_archival_or_migration",
+      "match_count": 5,
+      "path": "docs/migration/W_WORKFLOW_ARCHIVAL_MAPPING.md"
+    },
+    {
+      "disposition": "retain_historical_evidence",
+      "match_count": 1,
+      "path": "docs/release/FULL_VALIDATION_REPORT.md"
+    },
+    {
+      "disposition": "retain_historical_evidence",
+      "match_count": 2,
+      "path": "docs/release/FULL_VALIDATION_REPORT_V440_CANDIDATE.md"
+    },
+    {
+      "disposition": "retain_historical_evidence",
+      "match_count": 1,
+      "path": "docs/release/FULL_VALIDATION_REPORT_V441.md"
+    },
+    {
+      "disposition": "retain_historical_evidence",
+      "match_count": 1,
+      "path": "docs/release/FULL_VALIDATION_REPORT_V442.md"
+    },
+    {
+      "disposition": "retain_historical_evidence",
+      "match_count": 1,
+      "path": "docs/release/FULL_VALIDATION_REPORT_V450.md"
+    },
+    {
+      "disposition": "retain_historical_evidence",
+      "match_count": 1,
+      "path": "docs/release/RELEASE_MANIFEST_V450.md"
+    },
+    {
+      "disposition": "retain_historical_evidence",
+      "match_count": 3,
+      "path": "docs/release/REMEDIATION_MATRIX_V452.md"
+    },
+    {
+      "disposition": "retain_historical_evidence",
+      "match_count": 2,
+      "path": "docs/release/SOURCE_INVENTORY.md"
+    },
+    {
+      "disposition": "retain_historical_evidence",
+      "match_count": 6,
+      "path": "docs/roadmap/PHASE_1_CLASSIFICATION_INTELLIGENCE_EXECUTION_PLAN.md"
+    },
+    {
+      "disposition": "retain_historical_evidence",
+      "match_count": 1,
+      "path": "release/FULL_VALIDATION_REPORT_V450.md"
+    },
+    {
+      "disposition": "retain_historical_evidence",
+      "match_count": 1,
+      "path": "release/FULL_VALIDATION_REPORT_V452.md"
+    },
+    {
+      "disposition": "retain_historical_evidence",
+      "match_count": 1,
+      "path": "release/FULL_VALIDATION_REPORT_V453.md"
+    },
+    {
+      "disposition": "retain_historical_evidence",
+      "match_count": 1,
+      "path": "release/INSTALL_ON_MAC.md"
+    },
+    {
+      "disposition": "retain_historical_evidence",
+      "match_count": 1,
+      "path": "release/RELEASE_MANIFEST_V452.md"
+    },
+    {
+      "disposition": "retain_historical_evidence",
+      "match_count": 1,
+      "path": "release/RELEASE_MANIFEST_V453.md"
+    },
+    {
+      "disposition": "retain_historical_evidence",
+      "match_count": 1,
+      "path": "release/RELEASE_NOTES_V550.md"
+    },
+    {
+      "disposition": "retain_historical_evidence",
+      "match_count": 1,
+      "path": "release/RELEASE_NOTES_V560.md"
+    },
+    {
+      "disposition": "retain_historical_evidence",
+      "match_count": 3,
+      "path": "release/RELEASE_SCOPE_V510.md"
+    },
+    {
+      "disposition": "retain_historical_evidence",
+      "match_count": 1,
+      "path": "release/RELEASE_SCOPE_V550.md"
+    },
+    {
+      "disposition": "retain_historical_evidence",
+      "match_count": 1,
+      "path": "release/RELEASE_SCOPE_V560.md"
+    },
+    {
+      "disposition": "retain_historical_evidence",
+      "match_count": 3,
+      "path": "release/atlas-ros-v4.1.0-restoration-companion/INTEGRATION_AND_AUTOMATION.md"
+    },
+    {
+      "disposition": "retain_historical_evidence",
+      "match_count": 1,
+      "path": "release/atlas-ros-v4.1.0-restoration-companion/PATTERN_AND_DECOMPOSITION_STANDARD.md"
+    },
+    {
+      "disposition": "retain_historical_evidence",
+      "match_count": 3,
+      "path": "release/atlas-ros-v4.1.0-restoration-companion/RELEASE_MANIFEST.md"
+    },
+    {
+      "disposition": "retain_historical_evidence",
+      "match_count": 2,
+      "path": "release/atlas-ros-v4.1.0-restoration-companion/RESTORATION_COMPANION.md"
+    },
+    {
+      "disposition": "retain_historical_evidence",
+      "match_count": 4,
+      "path": "release/atlas-ros-v4.1.0-restoration-companion/VALIDATION_REPORT.md"
+    },
+    {
+      "disposition": "retain_historical_evidence",
+      "match_count": 3,
+      "path": "release/atlas-ros-v4.1.0-restoration-companion/W01_UNIVERSAL_CAPTURE_RUNBOOK.md"
+    },
+    {
+      "disposition": "retain_historical_evidence",
+      "match_count": 1,
+      "path": "scripts/build_v560_candidate_evidence.py"
+    },
+    {
+      "disposition": "retain_archival_or_migration",
+      "match_count": 2,
+      "path": "scripts/evaluate_v6_differential.py"
+    },
+    {
+      "disposition": "remove_or_replace",
+      "match_count": 2,
+      "path": "src/atlas_ros/validation/architecture.py"
+    },
+    {
+      "disposition": "retain_archival_or_migration",
+      "match_count": 5,
+      "path": "tests/test_phase7_semantic_cutover.py"
+    },
+    {
+      "disposition": "replace_or_retirement_test",
+      "match_count": 1,
+      "path": "tests/unit/test_w04_reconciliation.py"
+    },
+    {
+      "disposition": "retain_historical_evidence",
+      "match_count": 18,
+      "path": "tools/assemble_v410_restoration.py"
+    }
+  ],
+  "runtime_w_module_count": 0,
+  "runtime_w_modules": [],
+  "schema_version": 1
+}

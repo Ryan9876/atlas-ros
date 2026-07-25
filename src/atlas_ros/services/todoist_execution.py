@@ -16,10 +16,8 @@ from atlas_ros.contracts import (
     deterministic_digest,
 )
 from atlas_ros.domain.models import Action
-from atlas_ros.orchestration import (
-    ExecutionOrchestratorV2,
-)
-from atlas_ros.workflows.w03a_decomposition import DecompositionService
+from atlas_ros.orchestration import ExecutionOrchestratorV2
+from atlas_ros.planning.decomposition import DecompositionService
 
 NOTION_MARKERS = re.compile(
     r"(?:notion\.(?:so|site)|app\.notion\.com|Notion (?:Action|Capture):|References:|collection://|[0-9a-f]{32})",
@@ -179,7 +177,7 @@ def route_todoist_section(action: Action) -> SectionRoutingDecision:
 
 
 class TodoistService:
-    """Legacy W03 compatibility service over planning, orchestration, and provider adapter."""
+    """Canonical attended Todoist execution service."""
 
     def __init__(
         self, adapter: TodoistAdapter | None = None, link_writer: ActionLinkWriter | None = None
@@ -199,7 +197,7 @@ class TodoistService:
     def plan(self, action: Action) -> TodoistPlan:
         report = DecompositionService().readiness(action)
         if report.status.value != "ready":
-            raise ValueError(f"W03A gate failed: {', '.join(report.failed_rules)}")
+            raise ValueError(f"execution-planning gate failed: {', '.join(report.failed_rules)}")
         config = load_config("todoist")
         if action.todoist_project not in config["projects"]:
             raise ValueError("invalid Todoist project")
@@ -259,9 +257,9 @@ class TodoistService:
             action_id=action.id,
             correlation_id=correlation_id,
             operations=operations,
-            reason="Preserve attended W03 compatibility behavior",
+            reason="Execute the exact attended semantic plan",
             attended_confirmation_evidence=(
-                "Legacy confirmed=True translated at the attended W03 boundary "
+                "Attended confirmation translated at the semantic execution boundary "
                 "for this exact plan and provider scope."
             ),
         )
@@ -323,7 +321,7 @@ class TodoistService:
             action_id=task_id,
             correlation_id=correlation_id,
             operations=(operation,),
-            reason="Preserve attended W03 parent-group move",
+            reason="Perform an attended parent-group move",
             attended_confirmation_evidence=(
                 "Legacy confirmed=True translated for this exact hierarchy-preserving move."
             ),

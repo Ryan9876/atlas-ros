@@ -1,0 +1,52 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "actor": {
+      "minLength": 1,
+      "title": "Actor",
+      "type": "string"
+    },
+    "attended": {
+      "title": "Attended",
+      "type": "boolean"
+    },
+    "authorization_digest": {
+      "default": "",
+      "title": "Authorization Digest",
+      "type": "string"
+    },
+    "authorization_id": {
+      "minLength": 1,
+      "title": "Authorization Id",
+      "type": "string"
+    },
+    "authorized_mutation_ids": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Authorized Mutation Ids",
+      "type": "array"
+    },
+    "plan_digest": {
+      "maxLength": 64,
+      "minLength": 64,
+      "title": "Plan Digest",
+      "type": "string"
+    },
+    "plan_id": {
+      "minLength": 1,
+      "title": "Plan Id",
+      "type": "string"
+    }
+  },
+  "required": [
+    "authorization_id",
+    "plan_id",
+    "plan_digest",
+    "actor",
+    "attended",
+    "authorized_mutation_ids"
+  ],
+  "title": "ReconciliationAuthorization",
+  "type": "object"
+}

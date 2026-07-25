@@ -4,12 +4,12 @@ import pytest
 
 from atlas_ros.adapters.notion import FakeNotionAdapter
 from atlas_ros.adapters.todoist import FakeTodoistAdapter, TodoistComment, TodoistTask
-from atlas_ros.runtime.database import RuntimeDatabase
-from atlas_ros.workflows.w04_reconciliation import (
+from atlas_ros.reconciliation.service import (
     MutationType,
     TodoistReconciliationService,
     parse_atlas_command,
 )
+from atlas_ros.runtime.database import RuntimeDatabase
 
 
 def notion_text(value: str) -> dict[str, object]:

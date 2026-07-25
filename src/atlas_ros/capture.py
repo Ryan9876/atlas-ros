@@ -1,4 +1,3 @@
-# ruff: noqa: E501
 from __future__ import annotations
 
 from atlas_ros.domain.models import Capture, ObservabilityEvent
@@ -27,13 +26,16 @@ class CaptureService:
         event = ObservabilityEvent(
             correlation_id=capture.correlation_id,
             event_type="capture.persisted",
-            workflow="w01",
+            workflow="capture",
             status="pending",
         )
         now = capture.created_at.isoformat()
         with self.database.connect() as db:
             db.execute(
-                "INSERT INTO pending_capture(capture_id,correlation_id,content,source,due_date_input,delegation_input,additional_context,created_at) VALUES(?,?,?,?,?,?,?,?)",
+                "INSERT INTO pending_capture("
+                "capture_id,correlation_id,content,source,due_date_input,"
+                "delegation_input,additional_context,created_at"
+                ") VALUES(?,?,?,?,?,?,?,?)",
                 (
                     str(capture.capture_id),
                     str(capture.correlation_id),
@@ -46,7 +48,9 @@ class CaptureService:
                 ),
             )
             db.execute(
-                "INSERT INTO outbox_event(event_id,correlation_id,payload,created_at,updated_at) VALUES(?,?,?,?,?)",
+                "INSERT INTO outbox_event("
+                "event_id,correlation_id,payload,created_at,updated_at"
+                ") VALUES(?,?,?,?,?)",
                 (str(event.event_id), str(event.correlation_id), event.model_dump_json(), now, now),
             )
         return capture

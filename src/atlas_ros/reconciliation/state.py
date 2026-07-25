@@ -75,7 +75,7 @@ class SQLiteReconciliationStateStore(ReconciliationStateStore):
 
 
 class NotionReconciliationStateStore(ReconciliationStateStore):
-    """Shared W04 state for CLI and connector-native Atlas sessions."""
+    """Shared canonical reconciliation state for CLI and connector sessions."""
 
     CHECKPOINT_KEY = "todoist:checkpoint"
 

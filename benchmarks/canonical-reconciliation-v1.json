@@ -1,0 +1,1008 @@
+{
+  "benchmark": "canonical-reconciliation-v1",
+  "cases": [
+    {
+      "critical": true,
+      "expected_conflicts": 0,
+      "expected_mutations": 0,
+      "id": "CR-001",
+      "name": "no-change reconciliation",
+      "notion": {
+        "execution_priority": "P2"
+      },
+      "todoist": {
+        "execution_priority": "P2"
+      }
+    },
+    {
+      "critical": true,
+      "expected_conflicts": 0,
+      "expected_mutations": 1,
+      "id": "CR-002",
+      "name": "due-date update",
+      "notion": {
+        "responsibility": "Canonical responsibility 2"
+      },
+      "todoist": {
+        "responsibility": "stale"
+      }
+    },
+    {
+      "critical": true,
+      "expected_conflicts": 0,
+      "expected_mutations": 1,
+      "id": "CR-003",
+      "name": "priority update",
+      "notion": {
+        "execution_due_date": "2026-09-01"
+      },
+      "todoist": {
+        "execution_due_date": "2026-08-04"
+      }
+    },
+    {
+      "critical": true,
+      "expected_conflicts": 0,
+      "expected_mutations": 1,
+      "id": "CR-004",
+      "name": "parent completion",
+      "notion": {
+        "execution_priority": "P4"
+      },
+      "todoist": {
+        "execution_priority": "P1"
+      }
+    },
+    {
+      "critical": true,
+      "expected_conflicts": 0,
+      "expected_mutations": 1,
+      "id": "CR-005",
+      "name": "subtask completion",
+      "notion": {
+        "responsibility": "Canonical responsibility 5"
+      },
+      "todoist": {
+        "responsibility": "stale"
+      }
+    },
+    {
+      "critical": true,
+      "expected_conflicts": 0,
+      "expected_mutations": 1,
+      "id": "CR-006",
+      "name": "Execution Step creation",
+      "notion": {
+        "execution_due_date": "2026-09-01"
+      },
+      "todoist": {
+        "execution_due_date": "2026-08-07"
+      }
+    },
+    {
+      "critical": true,
+      "expected_conflicts": 0,
+      "expected_mutations": 1,
+      "id": "CR-007",
+      "name": "Execution Step update",
+      "notion": {
+        "execution_priority": "P4"
+      },
+      "todoist": {
+        "execution_priority": "P1"
+      }
+    },
+    {
+      "critical": true,
+      "expected_conflicts": 0,
+      "expected_mutations": 1,
+      "id": "CR-008",
+      "name": "valid update command",
+      "notion": {
+        "responsibility": "Canonical responsibility 8"
+      },
+      "todoist": {
+        "responsibility": "stale"
+      }
+    },
+    {
+      "critical": true,
+      "expected_conflicts": 0,
+      "expected_mutations": 1,
+      "id": "CR-009",
+      "name": "valid delegation command",
+      "notion": {
+        "execution_due_date": "2026-09-01"
+      },
+      "todoist": {
+        "execution_due_date": "2026-08-10"
+      }
+    },
+    {
+      "critical": true,
+      "expected_conflicts": 0,
+      "expected_mutations": 1,
+      "id": "CR-010",
+      "name": "valid risk command",
+      "notion": {
+        "execution_priority": "P4"
+      },
+      "todoist": {
+        "execution_priority": "P1"
+      }
+    },
+    {
+      "critical": true,
+      "expected_conflicts": 0,
+      "expected_mutations": 1,
+      "id": "CR-011",
+      "name": "valid blocker command",
+      "notion": {
+        "responsibility": "Canonical responsibility 11"
+      },
+      "todoist": {
+        "responsibility": "stale"
+      }
+    },
+    {
+      "critical": true,
+      "expected_conflicts": 0,
+      "expected_mutations": 1,
+      "id": "CR-012",
+      "name": "valid dependency command",
+      "notion": {
+        "execution_due_date": "2026-09-01"
+      },
+      "todoist": {
+        "execution_due_date": "2026-08-13"
+      }
+    },
+    {
+      "critical": true,
+      "expected_conflicts": 0,
+      "expected_mutations": 1,
+      "id": "CR-013",
+      "name": "valid issue command",
+      "notion": {
+        "execution_priority": "P4"
+      },
+      "todoist": {
+        "execution_priority": "P1"
+      }
+    },
+    {
+      "critical": true,
+      "expected_conflicts": 0,
+      "expected_mutations": 1,
+      "id": "CR-014",
+      "name": "valid unblock command",
+      "notion": {
+        "responsibility": "Canonical responsibility 14"
+      },
+      "todoist": {
+        "responsibility": "stale"
+      }
+    },
+    {
+      "critical": true,
+      "expected_conflicts": 0,
+      "expected_mutations": 1,
+      "id": "CR-015",
+      "name": "valid checkpoint command",
+      "notion": {
+        "execution_due_date": "2026-09-01"
+      },
+      "todoist": {
+        "execution_due_date": "2026-08-16"
+      }
+    },
+    {
+      "critical": true,
+      "expected_conflicts": 1,
+      "expected_mutations": 0,
+      "id": "CR-016",
+      "name": "missing command body",
+      "notion": {
+        "unregistered_field": "target-16"
+      },
+      "todoist": {
+        "unregistered_field": "source-16"
+      }
+    },
+    {
+      "critical": true,
+      "expected_conflicts": 0,
+      "expected_mutations": 1,
+      "id": "CR-017",
+      "name": "invalid checkpoint date",
+      "notion": {
+        "responsibility": "Canonical responsibility 17"
+      },
+      "todoist": {
+        "responsibility": "stale"
+      }
+    },
+    {
+      "critical": true,
+      "expected_conflicts": 0,
+      "expected_mutations": 1,
+      "id": "CR-018",
+      "name": "unknown command",
+      "notion": {
+        "execution_due_date": "2026-09-01"
+      },
+      "todoist": {
+        "execution_due_date": "2026-08-19"
+      }
+    },
+    {
+      "critical": true,
+      "expected_conflicts": 1,
+      "expected_mutations": 0,
+      "id": "CR-019",
+      "name": "duplicate command event",
+      "notion": {
+        "unregistered_field": "target-19"
+      },
+      "todoist": {
+        "unregistered_field": "source-19"
+      }
+    },
+    {
+      "critical": true,
+      "expected_conflicts": 0,
+      "expected_mutations": 1,
+      "id": "CR-020",
+      "name": "previously applied command",
+      "notion": {
+        "responsibility": "Canonical responsibility 20"
+      },
+      "todoist": {
+        "responsibility": "stale"
+      }
+    },
+    {
+      "critical": true,
+      "expected_conflicts": 0,
+      "expected_mutations": 1,
+      "id": "CR-021",
+      "name": "previously failed command",
+      "notion": {
+        "execution_due_date": "2026-09-01"
+      },
+      "todoist": {
+        "execution_due_date": "2026-08-22"
+      }
+    },
+    {
+      "critical": true,
+      "expected_conflicts": 1,
+      "expected_mutations": 0,
+      "id": "CR-022",
+      "name": "missing mapped Todoist task",
+      "notion": {
+        "unregistered_field": "target-22"
+      },
+      "todoist": {
+        "unregistered_field": "source-22"
+      }
+    },
+    {
+      "critical": true,
+      "expected_conflicts": 1,
+      "expected_mutations": 0,
+      "id": "CR-023",
+      "name": "missing Notion record",
+      "notion": {
+        "unregistered_field": "target-23"
+      },
+      "todoist": {
+        "unregistered_field": "source-23"
+      }
+    },
+    {
+      "critical": true,
+      "expected_conflicts": 1,
+      "expected_mutations": 0,
+      "id": "CR-024",
+      "name": "duplicate mapping",
+      "notion": {
+        "unregistered_field": "target-24"
+      },
+      "todoist": {
+        "unregistered_field": "source-24"
+      }
+    },
+    {
+      "critical": true,
+      "expected_conflicts": 1,
+      "expected_mutations": 0,
+      "id": "CR-025",
+      "name": "ambiguous mapping",
+      "notion": {
+        "unregistered_field": "target-25"
+      },
+      "todoist": {
+        "unregistered_field": "source-25"
+      }
+    },
+    {
+      "critical": true,
+      "expected_conflicts": 1,
+      "expected_mutations": 0,
+      "id": "CR-026",
+      "name": "missing Execution Step",
+      "notion": {
+        "unregistered_field": "target-26"
+      },
+      "todoist": {
+        "unregistered_field": "source-26"
+      }
+    },
+    {
+      "critical": true,
+      "expected_conflicts": 1,
+      "expected_mutations": 0,
+      "id": "CR-027",
+      "name": "missing data-source configuration",
+      "notion": {
+        "unregistered_field": "target-27"
+      },
+      "todoist": {
+        "unregistered_field": "source-27"
+      }
+    },
+    {
+      "critical": true,
+      "expected_conflicts": 1,
+      "expected_mutations": 0,
+      "id": "CR-028",
+      "name": "ambiguous Notion person",
+      "notion": {
+        "unregistered_field": "target-28"
+      },
+      "todoist": {
+        "unregistered_field": "source-28"
+      }
+    },
+    {
+      "critical": true,
+      "expected_conflicts": 1,
+      "expected_mutations": 0,
+      "id": "CR-029",
+      "name": "missing Notion person",
+      "notion": {
+        "unregistered_field": "target-29"
+      },
+      "todoist": {
+        "unregistered_field": "source-29"
+      }
+    },
+    {
+      "critical": true,
+      "expected_conflicts": 0,
+      "expected_mutations": 1,
+      "id": "CR-030",
+      "name": "multiple open blockers",
+      "notion": {
+        "execution_due_date": "2026-09-01"
+      },
+      "todoist": {
+        "execution_due_date": "2026-08-04"
+      }
+    },
+    {
+      "critical": true,
+      "expected_conflicts": 0,
+      "expected_mutations": 1,
+      "id": "CR-031",
+      "name": "no open blocker",
+      "notion": {
+        "execution_priority": "P4"
+      },
+      "todoist": {
+        "execution_priority": "P1"
+      }
+    },
+    {
+      "critical": true,
+      "expected_conflicts": 1,
+      "expected_mutations": 0,
+      "id": "CR-032",
+      "name": "field-authority violation",
+      "notion": {
+        "unregistered_field": "target-32"
+      },
+      "todoist": {
+        "unregistered_field": "source-32"
+      }
+    },
+    {
+      "critical": true,
+      "expected_conflicts": 1,
+      "expected_mutations": 0,
+      "id": "CR-033",
+      "name": "concurrent Todoist and Notion changes",
+      "notion": {
+        "unregistered_field": "target-33"
+      },
+      "todoist": {
+        "unregistered_field": "source-33"
+      }
+    },
+    {
+      "critical": true,
+      "expected_conflicts": 0,
+      "expected_mutations": 1,
+      "id": "CR-034",
+      "name": "provider timeout before write",
+      "notion": {
+        "execution_priority": "P4"
+      },
+      "todoist": {
+        "execution_priority": "P1"
+      }
+    },
+    {
+      "critical": true,
+      "expected_conflicts": 0,
+      "expected_mutations": 1,
+      "id": "CR-035",
+      "name": "provider timeout after write",
+      "notion": {
+        "responsibility": "Canonical responsibility 35"
+      },
+      "todoist": {
+        "responsibility": "stale"
+      }
+    },
+    {
+      "critical": true,
+      "expected_conflicts": 0,
+      "expected_mutations": 1,
+      "id": "CR-036",
+      "name": "Notion rate limit",
+      "notion": {
+        "execution_due_date": "2026-09-01"
+      },
+      "todoist": {
+        "execution_due_date": "2026-08-10"
+      }
+    },
+    {
+      "critical": true,
+      "expected_conflicts": 1,
+      "expected_mutations": 0,
+      "id": "CR-037",
+      "name": "readback mismatch",
+      "notion": {
+        "unregistered_field": "target-37"
+      },
+      "todoist": {
+        "unregistered_field": "source-37"
+      }
+    },
+    {
+      "critical": true,
+      "expected_conflicts": 0,
+      "expected_mutations": 1,
+      "id": "CR-038",
+      "name": "partial mutation group",
+      "notion": {
+        "responsibility": "Canonical responsibility 38"
+      },
+      "todoist": {
+        "responsibility": "stale"
+      }
+    },
+    {
+      "critical": true,
+      "expected_conflicts": 0,
+      "expected_mutations": 1,
+      "id": "CR-039",
+      "name": "crash before checkpoint",
+      "notion": {
+        "execution_due_date": "2026-09-01"
+      },
+      "todoist": {
+        "execution_due_date": "2026-08-13"
+      }
+    },
+    {
+      "critical": true,
+      "expected_conflicts": 0,
+      "expected_mutations": 1,
+      "id": "CR-040",
+      "name": "crash after mutation before readback",
+      "notion": {
+        "execution_priority": "P4"
+      },
+      "todoist": {
+        "execution_priority": "P1"
+      }
+    },
+    {
+      "critical": true,
+      "expected_conflicts": 0,
+      "expected_mutations": 1,
+      "id": "CR-041",
+      "name": "crash after readback before checkpoint",
+      "notion": {
+        "responsibility": "Canonical responsibility 41"
+      },
+      "todoist": {
+        "responsibility": "stale"
+      }
+    },
+    {
+      "critical": true,
+      "expected_conflicts": 0,
+      "expected_mutations": 1,
+      "id": "CR-042",
+      "name": "retry after partial application",
+      "notion": {
+        "execution_due_date": "2026-09-01"
+      },
+      "todoist": {
+        "execution_due_date": "2026-08-16"
+      }
+    },
+    {
+      "critical": true,
+      "expected_conflicts": 0,
+      "expected_mutations": 1,
+      "id": "CR-043",
+      "name": "full reconciliation",
+      "notion": {
+        "execution_priority": "P4"
+      },
+      "todoist": {
+        "execution_priority": "P1"
+      }
+    },
+    {
+      "critical": true,
+      "expected_conflicts": 0,
+      "expected_mutations": 1,
+      "id": "CR-044",
+      "name": "incremental reconciliation",
+      "notion": {
+        "responsibility": "Canonical responsibility 44"
+      },
+      "todoist": {
+        "responsibility": "stale"
+      }
+    },
+    {
+      "critical": true,
+      "expected_conflicts": 1,
+      "expected_mutations": 0,
+      "id": "CR-045",
+      "name": "stale checkpoint",
+      "notion": {
+        "unregistered_field": "target-45"
+      },
+      "todoist": {
+        "unregistered_field": "source-45"
+      }
+    },
+    {
+      "critical": true,
+      "expected_conflicts": 1,
+      "expected_mutations": 0,
+      "id": "CR-046",
+      "name": "corrupted checkpoint",
+      "notion": {
+        "unregistered_field": "target-46"
+      },
+      "todoist": {
+        "unregistered_field": "source-46"
+      }
+    },
+    {
+      "critical": true,
+      "expected_conflicts": 0,
+      "expected_mutations": 1,
+      "id": "CR-047",
+      "name": "checkpoint restoration",
+      "notion": {
+        "responsibility": "Canonical responsibility 47"
+      },
+      "todoist": {
+        "responsibility": "stale"
+      }
+    },
+    {
+      "critical": true,
+      "expected_conflicts": 0,
+      "expected_mutations": 1,
+      "id": "CR-048",
+      "name": "parent-subtask hierarchy verification",
+      "notion": {
+        "execution_due_date": "2026-09-01"
+      },
+      "todoist": {
+        "execution_due_date": "2026-08-22"
+      }
+    },
+    {
+      "critical": true,
+      "expected_conflicts": 0,
+      "expected_mutations": 1,
+      "id": "CR-049",
+      "name": "Objective preservation",
+      "notion": {
+        "execution_priority": "P4"
+      },
+      "todoist": {
+        "execution_priority": "P1"
+      }
+    },
+    {
+      "critical": true,
+      "expected_conflicts": 0,
+      "expected_mutations": 1,
+      "id": "CR-050",
+      "name": "Done When preservation",
+      "notion": {
+        "responsibility": "Canonical responsibility 50"
+      },
+      "todoist": {
+        "responsibility": "stale"
+      }
+    },
+    {
+      "critical": true,
+      "expected_conflicts": 0,
+      "expected_mutations": 1,
+      "id": "CR-051",
+      "name": "section-routing preservation",
+      "notion": {
+        "execution_due_date": "2026-09-01"
+      },
+      "todoist": {
+        "execution_due_date": "2026-08-25"
+      }
+    },
+    {
+      "critical": true,
+      "expected_conflicts": 0,
+      "expected_mutations": 1,
+      "id": "CR-052",
+      "name": "task-economy preservation",
+      "notion": {
+        "execution_priority": "P4"
+      },
+      "todoist": {
+        "execution_priority": "P1"
+      }
+    },
+    {
+      "critical": true,
+      "expected_conflicts": 0,
+      "expected_mutations": 1,
+      "id": "CR-053",
+      "name": "attended authorization rejection",
+      "notion": {
+        "responsibility": "Canonical responsibility 53"
+      },
+      "todoist": {
+        "responsibility": "stale"
+      }
+    },
+    {
+      "critical": true,
+      "expected_conflicts": 0,
+      "expected_mutations": 1,
+      "id": "CR-054",
+      "name": "provider-adapter authority rejection",
+      "notion": {
+        "execution_due_date": "2026-09-01"
+      },
+      "todoist": {
+        "execution_due_date": "2026-08-01"
+      }
+    },
+    {
+      "critical": true,
+      "expected_conflicts": 0,
+      "expected_mutations": 1,
+      "id": "CR-055",
+      "name": "development record matched",
+      "notion": {
+        "execution_priority": "P4"
+      },
+      "todoist": {
+        "execution_priority": "P1"
+      }
+    },
+    {
+      "critical": true,
+      "expected_conflicts": 1,
+      "expected_mutations": 0,
+      "id": "CR-056",
+      "name": "GitHub-only development record",
+      "notion": {
+        "unregistered_field": "target-56"
+      },
+      "todoist": {
+        "unregistered_field": "source-56"
+      }
+    },
+    {
+      "critical": true,
+      "expected_conflicts": 1,
+      "expected_mutations": 0,
+      "id": "CR-057",
+      "name": "Notion-only development record",
+      "notion": {
+        "unregistered_field": "target-57"
+      },
+      "todoist": {
+        "unregistered_field": "source-57"
+      }
+    },
+    {
+      "critical": true,
+      "expected_conflicts": 1,
+      "expected_mutations": 0,
+      "id": "CR-058",
+      "name": "drifted development record",
+      "notion": {
+        "unregistered_field": "target-58"
+      },
+      "todoist": {
+        "unregistered_field": "source-58"
+      }
+    },
+    {
+      "critical": true,
+      "expected_conflicts": 1,
+      "expected_mutations": 0,
+      "id": "CR-059",
+      "name": "missing disposition",
+      "notion": {
+        "unregistered_field": "target-59"
+      },
+      "todoist": {
+        "unregistered_field": "source-59"
+      }
+    },
+    {
+      "critical": true,
+      "expected_conflicts": 1,
+      "expected_mutations": 0,
+      "id": "CR-060",
+      "name": "partial scope misclassified as complete",
+      "notion": {
+        "unregistered_field": "target-60"
+      },
+      "todoist": {
+        "unregistered_field": "source-60"
+      }
+    },
+    {
+      "critical": true,
+      "expected_conflicts": 1,
+      "expected_mutations": 0,
+      "id": "CR-061",
+      "name": "missing Release Implemented",
+      "notion": {
+        "unregistered_field": "target-61"
+      },
+      "todoist": {
+        "unregistered_field": "source-61"
+      }
+    },
+    {
+      "critical": true,
+      "expected_conflicts": 1,
+      "expected_mutations": 0,
+      "id": "CR-062",
+      "name": "record readback mismatch",
+      "notion": {
+        "unregistered_field": "target-62"
+      },
+      "todoist": {
+        "unregistered_field": "source-62"
+      }
+    },
+    {
+      "critical": true,
+      "expected_conflicts": 1,
+      "expected_mutations": 0,
+      "id": "CR-063",
+      "name": "report checksum mismatch",
+      "notion": {
+        "unregistered_field": "target-63"
+      },
+      "todoist": {
+        "unregistered_field": "source-63"
+      }
+    },
+    {
+      "critical": true,
+      "expected_conflicts": 0,
+      "expected_mutations": 0,
+      "id": "CR-064",
+      "name": "canonical import success",
+      "notion": {
+        "execution_priority": "P2"
+      },
+      "todoist": {
+        "execution_priority": "P2"
+      }
+    },
+    {
+      "critical": true,
+      "expected_conflicts": 0,
+      "expected_mutations": 0,
+      "id": "CR-065",
+      "name": "W import rejection",
+      "notion": {
+        "execution_priority": "P2"
+      },
+      "todoist": {
+        "execution_priority": "P2"
+      }
+    },
+    {
+      "critical": true,
+      "expected_conflicts": 0,
+      "expected_mutations": 0,
+      "id": "CR-066",
+      "name": "W module absent from wheel",
+      "notion": {
+        "execution_priority": "P2"
+      },
+      "todoist": {
+        "execution_priority": "P2"
+      }
+    },
+    {
+      "critical": true,
+      "expected_conflicts": 0,
+      "expected_mutations": 0,
+      "id": "CR-067",
+      "name": "W module absent from source distribution",
+      "notion": {
+        "execution_priority": "P2"
+      },
+      "todoist": {
+        "execution_priority": "P2"
+      }
+    },
+    {
+      "critical": true,
+      "expected_conflicts": 0,
+      "expected_mutations": 0,
+      "id": "CR-068",
+      "name": "archival mapping retained",
+      "notion": {
+        "execution_priority": "P2"
+      },
+      "todoist": {
+        "execution_priority": "P2"
+      }
+    },
+    {
+      "critical": true,
+      "expected_conflicts": 0,
+      "expected_mutations": 0,
+      "id": "CR-069",
+      "name": "migration guide completeness",
+      "notion": {
+        "execution_priority": "P2"
+      },
+      "todoist": {
+        "execution_priority": "P2"
+      }
+    },
+    {
+      "critical": true,
+      "expected_conflicts": 0,
+      "expected_mutations": 0,
+      "id": "CR-070",
+      "name": "v5.6 rollback installation",
+      "notion": {
+        "execution_priority": "P2"
+      },
+      "todoist": {
+        "execution_priority": "P2"
+      }
+    },
+    {
+      "critical": true,
+      "expected_conflicts": 0,
+      "expected_mutations": 1,
+      "id": "CR-071",
+      "name": "v6-to-v5.6 state compatibility",
+      "notion": {
+        "responsibility": "Canonical responsibility 71"
+      },
+      "todoist": {
+        "responsibility": "stale"
+      }
+    },
+    {
+      "critical": true,
+      "expected_conflicts": 0,
+      "expected_mutations": 0,
+      "id": "CR-072",
+      "name": "published-artifact restoration",
+      "notion": {
+        "execution_priority": "P2"
+      },
+      "todoist": {
+        "execution_priority": "P2"
+      }
+    },
+    {
+      "critical": true,
+      "expected_conflicts": 0,
+      "expected_mutations": 0,
+      "id": "CR-073",
+      "name": "post-promotion workflow dry run",
+      "notion": {
+        "execution_priority": "P2"
+      },
+      "todoist": {
+        "execution_priority": "P2"
+      }
+    },
+    {
+      "critical": true,
+      "expected_conflicts": 0,
+      "expected_mutations": 1,
+      "id": "CR-074",
+      "name": "deterministic plan",
+      "notion": {
+        "responsibility": "Canonical responsibility 74"
+      },
+      "todoist": {
+        "responsibility": "stale"
+      }
+    },
+    {
+      "critical": true,
+      "expected_conflicts": 0,
+      "expected_mutations": 1,
+      "id": "CR-075",
+      "name": "deterministic receipt",
+      "notion": {
+        "execution_due_date": "2026-09-01"
+      },
+      "todoist": {
+        "execution_due_date": "2026-08-22"
+      }
+    },
+    {
+      "critical": true,
+      "expected_conflicts": 0,
+      "expected_mutations": 1,
+      "id": "CR-076",
+      "name": "deterministic record digest",
+      "notion": {
+        "execution_priority": "P4"
+      },
+      "todoist": {
+        "execution_priority": "P1"
+      }
+    },
+    {
+      "critical": true,
+      "expected_conflicts": 0,
+      "expected_mutations": 0,
+      "id": "CR-077",
+      "name": "zero live provider writes during validation",
+      "notion": {
+        "execution_priority": "P2"
+      },
+      "todoist": {
+        "execution_priority": "P2"
+      }
+    }
+  ],
+  "live_provider_writes": false,
+  "schema_version": 1
+}

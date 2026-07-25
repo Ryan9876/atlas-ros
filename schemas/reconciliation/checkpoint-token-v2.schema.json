@@ -1,0 +1,33 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "applied_event_ids": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Applied Event Ids",
+      "type": "array"
+    },
+    "cursor": {
+      "minLength": 1,
+      "title": "Cursor",
+      "type": "string"
+    },
+    "integration": {
+      "default": "todoist-notion",
+      "title": "Integration",
+      "type": "string"
+    },
+    "integrity_digest": {
+      "default": "",
+      "title": "Integrity Digest",
+      "type": "string"
+    }
+  },
+  "required": [
+    "cursor"
+  ],
+  "title": "CheckpointToken",
+  "type": "object"
+}

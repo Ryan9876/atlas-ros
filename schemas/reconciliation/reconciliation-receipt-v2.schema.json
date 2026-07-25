@@ -1,0 +1,213 @@
+{
+  "$defs": {
+    "AuthoritySource": {
+      "enum": [
+        "todoist",
+        "notion",
+        "derived"
+      ],
+      "title": "AuthoritySource",
+      "type": "string"
+    },
+    "CheckpointToken": {
+      "additionalProperties": false,
+      "properties": {
+        "applied_event_ids": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Applied Event Ids",
+          "type": "array"
+        },
+        "cursor": {
+          "minLength": 1,
+          "title": "Cursor",
+          "type": "string"
+        },
+        "integration": {
+          "default": "todoist-notion",
+          "title": "Integration",
+          "type": "string"
+        },
+        "integrity_digest": {
+          "default": "",
+          "title": "Integrity Digest",
+          "type": "string"
+        }
+      },
+      "required": [
+        "cursor"
+      ],
+      "title": "CheckpointToken",
+      "type": "object"
+    },
+    "OperationStatus": {
+      "enum": [
+        "applied",
+        "already_applied",
+        "failed",
+        "readback_mismatch"
+      ],
+      "title": "OperationStatus",
+      "type": "string"
+    },
+    "ReconciliationOperationResult": {
+      "additionalProperties": false,
+      "properties": {
+        "actual_value": {
+          "default": null,
+          "title": "Actual Value"
+        },
+        "error": {
+          "default": "",
+          "title": "Error",
+          "type": "string"
+        },
+        "expected_value": {
+          "default": null,
+          "title": "Expected Value"
+        },
+        "mutation_id": {
+          "title": "Mutation Id",
+          "type": "string"
+        },
+        "object_id": {
+          "title": "Object Id",
+          "type": "string"
+        },
+        "provider": {
+          "$ref": "#/$defs/AuthoritySource"
+        },
+        "status": {
+          "$ref": "#/$defs/OperationStatus"
+        },
+        "verified": {
+          "default": false,
+          "title": "Verified",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "mutation_id",
+        "provider",
+        "object_id",
+        "status"
+      ],
+      "title": "ReconciliationOperationResult",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "applied_count": {
+      "minimum": 0,
+      "title": "Applied Count",
+      "type": "integer"
+    },
+    "authority_policy_version": {
+      "title": "Authority Policy Version",
+      "type": "string"
+    },
+    "authorization_digest": {
+      "title": "Authorization Digest",
+      "type": "string"
+    },
+    "authorization_id": {
+      "title": "Authorization Id",
+      "type": "string"
+    },
+    "checkpoint_advanced": {
+      "title": "Checkpoint Advanced",
+      "type": "boolean"
+    },
+    "conflict_count": {
+      "minimum": 0,
+      "title": "Conflict Count",
+      "type": "integer"
+    },
+    "consistent": {
+      "title": "Consistent",
+      "type": "boolean"
+    },
+    "correlation_id": {
+      "title": "Correlation Id",
+      "type": "string"
+    },
+    "ignored_count": {
+      "minimum": 0,
+      "title": "Ignored Count",
+      "type": "integer"
+    },
+    "operation_results": {
+      "items": {
+        "$ref": "#/$defs/ReconciliationOperationResult"
+      },
+      "title": "Operation Results",
+      "type": "array"
+    },
+    "plan_digest": {
+      "title": "Plan Digest",
+      "type": "string"
+    },
+    "plan_id": {
+      "title": "Plan Id",
+      "type": "string"
+    },
+    "planned_count": {
+      "minimum": 0,
+      "title": "Planned Count",
+      "type": "integer"
+    },
+    "receipt_digest": {
+      "default": "",
+      "title": "Receipt Digest",
+      "type": "string"
+    },
+    "receipt_id": {
+      "minLength": 1,
+      "title": "Receipt Id",
+      "type": "string"
+    },
+    "recovery_instructions": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Recovery Instructions",
+      "type": "array"
+    },
+    "resulting_checkpoint": {
+      "$ref": "#/$defs/CheckpointToken"
+    },
+    "source_checkpoint": {
+      "$ref": "#/$defs/CheckpointToken"
+    },
+    "verified_count": {
+      "minimum": 0,
+      "title": "Verified Count",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "receipt_id",
+    "plan_id",
+    "plan_digest",
+    "authorization_id",
+    "authorization_digest",
+    "correlation_id",
+    "authority_policy_version",
+    "source_checkpoint",
+    "resulting_checkpoint",
+    "planned_count",
+    "applied_count",
+    "verified_count",
+    "conflict_count",
+    "ignored_count",
+    "operation_results",
+    "checkpoint_advanced",
+    "consistent"
+  ],
+  "title": "ReconciliationReceiptV2",
+  "type": "object"
+}

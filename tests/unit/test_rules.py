@@ -1,6 +1,6 @@
 from atlas_ros.domain.models import Action
+from atlas_ros.planning.decomposition import DecompositionService
 from atlas_ros.rules import RulesEngine, action_rules
-from atlas_ros.workflows.w03a_decomposition import DecompositionService
 
 
 def test_execution_ready_requires_all_gates() -> None:

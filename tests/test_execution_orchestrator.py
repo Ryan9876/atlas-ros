@@ -10,7 +10,7 @@ from atlas_ros.orchestration import (
     ExecutionOrchestrator,
     ExecutionRequest,
 )
-from atlas_ros.workflows.w03_todoist import TodoistService, task_description
+from atlas_ros.services.todoist_execution import TodoistService, task_description
 
 
 def request() -> ExecutionRequest:

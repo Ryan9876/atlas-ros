@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "captured_at": "2026-07-24T19:45:00-04:00",
+  "authority": "Notion Atlas Development Ideas",
+  "records": [
+    {
+      "record_id": "IDEA-5",
+      "url": "https://app.notion.com/3a6b8344ad2c8182b97cd2b2bbe67661",
+      "status": "Validated",
+      "decision": "Approved",
+      "release_implemented": "Atlas ROS v5.1 — retained unchanged through the validated v5.6.0rc1 candidate"
+    },
+    {
+      "record_id": "IDEA-6",
+      "url": "https://app.notion.com/3a6b8344ad2c8134a4cfe39bd2dfa206",
+      "status": "Validated",
+      "decision": "Approved",
+      "release_implemented": "Atlas ROS v5.1 — retained unchanged through the validated v5.6.0rc1 candidate"
+    },
+    {
+      "record_id": "IDEA-7",
+      "url": "https://app.notion.com/3a6b8344ad2c813c8230d6e9a78a0679",
+      "status": "Validated",
+      "decision": "Approved",
+      "release_implemented": "Atlas ROS v5.1 — retained unchanged through the validated v5.6.0rc1 candidate"
+    },
+    {
+      "record_id": "IDEA-8",
+      "url": "https://app.notion.com/3a7b8344ad2c8175821bfb4f7cb79301",
+      "status": "Planned",
+      "decision": "Approved",
+      "release_implemented": null
+    },
+    {
+      "record_id": "IDEA-9",
+      "url": "https://app.notion.com/3a7b8344ad2c819cacdee614c2a52f98",
+      "status": "Validated",
+      "decision": "Approved",
+      "release_implemented": "Atlas ROS v5.5.0 Active — preserved as a validated regression contract in v5.6.0rc1"
+    },
+    {
+      "record_id": "IDEA-10",
+      "url": "https://app.notion.com/3a7b8344ad2c81cb96d2f2ed0b5330ac",
+      "status": "In Development",
+      "decision": "Approved",
+      "release_implemented": "Atlas ROS v5.5.0 Active; Wave 5 validated as v5.6.0rc1"
+    }
+  ]
+}

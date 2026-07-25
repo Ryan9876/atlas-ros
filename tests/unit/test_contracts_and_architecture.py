@@ -1,10 +1,8 @@
-from pathlib import Path
 from uuid import uuid4
 
 import pytest
 from pydantic import ValidationError
 
-from atlas_ros.adapters.llm import FixtureLLMAdapter
 from atlas_ros.contracts import (
     CaptureEnvelope,
     ExecutionPlan,
@@ -15,14 +13,6 @@ from atlas_ros.contracts import (
     ReasoningPackage,
     ReconciliationResult,
 )
-from atlas_ros.domain.models import Action, Capture, Classification, RoutingRecommendation
-from atlas_ros.legacy import (
-    W01CaptureFacade,
-    W02RoutingFacade,
-    W03ADecompositionFacade,
-    W03TodoistFacade,
-)
-from atlas_ros.runtime.database import RuntimeDatabase
 from atlas_ros.validation import validate
 
 
@@ -68,9 +58,7 @@ def test_execution_plan_requires_contiguous_sequence() -> None:
         action_id="A-1",
         objective="Publish the reviewed release",
         destination="Todoist/Work",
-        steps=[
-            ExecutionStep(step_id="S-1", title="Validate", done_when="Checks pass", sequence=1)
-        ],
+        steps=[ExecutionStep(step_id="S-1", title="Validate", done_when="Checks pass", sequence=1)],
     )
     assert valid.steps[0].sequence == 1
 
@@ -124,35 +112,6 @@ def test_execution_receipt_and_reconciliation_fail_closed() -> None:
             mismatches=["priority differs"],
             checkpoint_advanced=True,
         )
-
-
-def test_legacy_facades_delegate_without_behavior_change(tmp_path: Path) -> None:
-    database = RuntimeDatabase(tmp_path / "runtime.db")
-    database.initialize()
-    captured = W01CaptureFacade(database).capture("Prepare the operating review")
-    assert captured.content == "Prepare the operating review"
-
-    recommendation = RoutingRecommendation(
-        classification=Classification.ACTION,
-        destination="action_records",
-        confidence=1.0,
-        desired_outcome="Operating review is ready",
-    )
-    routed = W02RoutingFacade(FixtureLLMAdapter(recommendation)).plan(
-        Capture(content="Prepare the operating review")
-    )
-    assert routed == recommendation
-
-    action = Action(
-        id="A-1",
-        title="Prepare operating review",
-        owner="Ryan",
-        definition_of_done="Operating review is ready",
-        execution_ready=True,
-        delegation_reviewed=True,
-    )
-    assert W03ADecompositionFacade().readiness(action).status.value == "ready"
-    assert W03TodoistFacade().plan(action).action_id == "A-1"
 
 
 def test_current_architecture_has_no_forbidden_dependencies() -> None:

@@ -1,3 +1,4 @@
+from .decomposition import DecompositionService
 from .execution import (
     CandidateExtractionResult,
     DuplicateAnalyzer,
@@ -16,4 +17,5 @@ __all__ = [
     "ExecutionPlanningPolicy",
     "ExistingRepresentationMatcher",
     "ProgressiveHorizonPolicy",
+    "DecompositionService",
 ]

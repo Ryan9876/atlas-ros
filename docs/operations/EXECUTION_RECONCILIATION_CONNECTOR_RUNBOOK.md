@@ -1,8 +1,8 @@
-# W04 Connector-Native Todoist-to-Notion Reconciliation
+# Connector-Native Execution Reconciliation
 
 ## Purpose
 
-Allow Atlas in ChatGPT to execute the same attended, review-first W04 transaction as the local CLI while sharing replay state with CLI executions.
+Allow Atlas in ChatGPT to execute the same attended, review-first reconciliation transaction as the local CLI while sharing replay state with CLI executions.
 
 ## Invocation
 
@@ -25,7 +25,7 @@ Allow Atlas in ChatGPT to execute the same attended, review-first W04 transactio
 
 ## Shared ledger schema
 
-Data source: `W04 Reconciliation State`
+Data source: `Execution Reconciliation State`
 
 - State Key (title; unique logical key)
 - State Type (Checkpoint, Processed Event)
@@ -55,4 +55,3 @@ No unattended apply, autonomous scheduling, messaging, email, calendar action, o
 - Record Todoist comment IDs in shared reconciliation state before advancing the checkpoint.
 - Preserve ordinary comments without mutation.
 - Surface missing mappings, ambiguous people, and malformed commands as reviewable conflicts.
-

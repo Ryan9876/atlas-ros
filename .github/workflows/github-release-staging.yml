@@ -2,7 +2,7 @@ name: github-release-staging
 
 on:
   push:
-    branches: [release/v5.6-candidate]
+    branches: [release/v6.0-candidate]
   workflow_run:
     workflows: [release-candidate]
     types: [completed]
@@ -17,7 +17,7 @@ on:
         required: true
         type: string
       tag:
-        description: Draft release tag, for example v5.6.0-rc.1
+        description: Draft release tag, for example v6.0.0-rc.1
         required: true
         type: string
       release_name:
@@ -40,7 +40,7 @@ permissions:
   pull-requests: write
 
 concurrency:
-  group: github-release-staging-v5.6.0-rc.1
+  group: github-release-staging-v6.0.0-rc.1
   cancel-in-progress: false
 
 jobs:
@@ -48,17 +48,17 @@ jobs:
     if: >-
       github.event_name == 'workflow_dispatch' ||
       (github.event.workflow_run.conclusion == 'success' &&
-       github.event.workflow_run.head_branch == 'release/v5.6-candidate') ||
+       github.event.workflow_run.head_branch == 'release/v6.0-candidate') ||
       (github.event_name == 'push' &&
-       contains(github.event.head_commit.message, '[stage-v5.6.0rc1]'))
+       contains(github.event.head_commit.message, '[stage-v6.0.0rc1]'))
     runs-on: ubuntu-24.04
     timeout-minutes: 20
 
     env:
       RUN_ID: ${{ github.event.workflow_run.id || inputs.candidate_run_id }}
-      ARTIFACT_NAME: ${{ inputs.artifact_name || 'atlas-ros-v5.6.0rc1-release-candidate' }}
-      TAG: ${{ inputs.tag || 'v5.6.0-rc.1' }}
-      RELEASE_NAME: ${{ inputs.release_name || 'Atlas ROS v5.6.0 Execution Orchestration and Provider Separation Release Candidate 1' }}
+      ARTIFACT_NAME: ${{ inputs.artifact_name || 'atlas-ros-v6.0.0rc1-release-candidate' }}
+      TAG: ${{ inputs.tag || 'v6.0.0-rc.1' }}
+      RELEASE_NAME: ${{ inputs.release_name || 'Atlas ROS v6.0.0 Canonical Reconciliation Release Candidate 1' }}
       TARGET_COMMITISH: ${{ github.event.workflow_run.head_sha || inputs.target_commitish || github.sha }}
       EXPECTED_PACKAGE_SHA256: ${{ inputs.expected_package_sha256 || '' }}
 
@@ -207,6 +207,8 @@ jobs:
               ProjectionDecision,
           )
           from atlas_ros.orchestration import ExecutionCommandFactory, ExecutionOrchestratorV2
+          from atlas_ros.reconciliation import CanonicalReconciliationService
+          from atlas_ros.contracts import ReconciliationPlanV2, ReconciliationReceiptV2
           from atlas_ros.adapters.notion_execution import NotionExecutionAdapterV2
           from atlas_ros.adapters.todoist_execution import TodoistExecutionAdapterV2
           from atlas_ros.planning import (
@@ -221,6 +223,8 @@ jobs:
           assert ExecutionAuthorizationV2 and ExecutionCommandV2
           assert ExecutionTransactionV2 and ExecutionReceiptV2
           assert ExecutionCommandFactory and ExecutionOrchestratorV2
+          assert CanonicalReconciliationService and ReconciliationPlanV2
+          assert ReconciliationReceiptV2
           assert NotionExecutionAdapterV2 and TodoistExecutionAdapterV2
           PY
           source_root="$(find restored-source/extracted -maxdepth 1 -type d -name 'atlas_ros-*' -print -quit)"
@@ -234,6 +238,10 @@ jobs:
             "${restored_venv}/bin/python" scripts/evaluate_execution_orchestration.py \
               --dataset benchmarks/execution-orchestration-v1.json \
               --output restored-execution-orchestration-report.json
+            "${restored_venv}/bin/python" scripts/evaluate_canonical_reconciliation.py \
+              --dataset benchmarks/canonical-reconciliation-v1.json \
+              --output restored-reconciliation-report.json
+            "${restored_venv}/bin/python" scripts/inventory_w_references.py
           )
           restored-venv/bin/python - <<'PY'
           import json
@@ -247,6 +255,12 @@ jobs:
           assert orchestration["zero_unauthorized_provider_writes"]
           assert orchestration["zero_live_writes"]
           assert orchestration["false_success_rejection"] == 1.0
+          reconciliation = json.loads(next(Path("restored-source").rglob("restored-reconciliation-report.json")).read_text())
+          assert reconciliation["eligible"] and reconciliation["case_count"] >= 75
+          assert reconciliation["live_provider_writes"] == 0
+          inventory = json.loads(next(Path("restored-source").rglob("W_NUMBER_RETIREMENT_INVENTORY.json")).read_text())
+          assert inventory["runtime_w_module_count"] == 0
+          assert inventory["blocking_reference_count"] == 0
           PY
 
       - name: Verify draft release metadata
@@ -291,5 +305,5 @@ jobs:
               --jq '.[0].number // empty'
           )"
           if [[ -n "${pr_number}" ]]; then
-            gh pr comment "${pr_number}" --repo "${GITHUB_REPOSITORY}" --body "Atlas ROS v5.6.0rc1 draft staging failed closed. Staging run: \`${GITHUB_RUN_ID}\`. Candidate run: \`${RUN_ID:-unresolved}\`. Target: \`${TARGET_COMMITISH}\`. Production promotion remains blocked and production authority is unchanged."
+            gh pr comment "${pr_number}" --repo "${GITHUB_REPOSITORY}" --body "Atlas ROS v6.0.0rc1 draft staging failed closed. Staging run: \`${GITHUB_RUN_ID}\`. Candidate run: \`${RUN_ID:-unresolved}\`. Target: \`${TARGET_COMMITISH}\`. Production promotion remains blocked and production authority is unchanged."
           fi

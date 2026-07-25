@@ -1,3 +1,4 @@
+from atlas_ros.capture import CaptureService
 from atlas_ros.engines import (
     ClassificationExplainability,
     KnowledgeCompositionEngine,
@@ -12,18 +13,25 @@ from atlas_ros.models import (
     PlanningModelRegistry,
     load_default_registries,
 )
-from atlas_ros.orchestration import ExecutionCommandFactory, ExecutionOrchestratorV2
+from atlas_ros.orchestration import (
+    ExecutionCommandFactory,
+    ExecutionOrchestratorV2,
+)
 from atlas_ros.planning import (
+    DecompositionService,
     DuplicateAnalyzer,
     ExecutionCandidateExtractor,
     ExecutionPlanner,
     ExistingRepresentationMatcher,
     ProgressiveHorizonPolicy,
 )
-from atlas_ros.services import ExecutionReconciliationService, RecordRoutingService
-from atlas_ros.workflows.w01_capture import CaptureService
-from atlas_ros.workflows.w03_todoist import TodoistService
-from atlas_ros.workflows.w03a_decomposition import DecompositionService
+from atlas_ros.reconciliation import CanonicalReconciliationService
+from atlas_ros.services import (
+    ExecutionReconciliationService,
+    RecordRoutingService,
+    RoutingService,
+    TodoistService,
+)
 
 __all__ = [
     "CaptureService",
@@ -37,6 +45,7 @@ __all__ = [
     "ExistingRepresentationMatcher",
     "ProgressiveHorizonPolicy",
     "ExecutionReconciliationService",
+    "CanonicalReconciliationService",
     "KnowledgeCompositionEngine",
     "KnowledgeDependencyResolver",
     "KnowledgeModuleRegistry",
@@ -46,6 +55,7 @@ __all__ = [
     "ManagementStructureEngine",
     "ResponsibilityClassifier",
     "RecordRoutingService",
+    "RoutingService",
     "TodoistService",
     "load_default_registries",
 ]

@@ -7,8 +7,8 @@ from pathlib import Path
 import pytest
 
 from atlas_ros import cli
+from atlas_ros.capture import CaptureService
 from atlas_ros.runtime.database import RuntimeDatabase
-from atlas_ros.workflows.w01_capture import CaptureService
 
 
 def test_capture_preserves_optional_assertions(
@@ -53,8 +53,7 @@ def test_capture_assertions_are_persisted_for_inbox_processing(tmp_path: Path) -
     )
     with database.connect() as db:
         row = db.execute(
-            "SELECT due_date_input, delegation_input, additional_context "
-            "FROM pending_capture"
+            "SELECT due_date_input, delegation_input, additional_context FROM pending_capture"
         ).fetchone()
     assert tuple(row) == (
         "next Friday",

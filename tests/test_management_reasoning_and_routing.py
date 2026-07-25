@@ -4,7 +4,7 @@ from atlas_ros.adapters.llm import FixtureLLMAdapter
 from atlas_ros.domain.models import Capture, Classification, RoutingRecommendation
 from atlas_ros.engines import ManagementReasoningEngine
 from atlas_ros.services import RecordRoutingService, RoutingShadowComparator
-from atlas_ros.workflows.w02_routing import RoutingService
+from atlas_ros.services.routing import RoutingService
 
 
 def recommendation(

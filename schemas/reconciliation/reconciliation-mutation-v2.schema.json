@@ -1,0 +1,70 @@
+{
+  "$defs": {
+    "AuthoritySource": {
+      "enum": [
+        "todoist",
+        "notion",
+        "derived"
+      ],
+      "title": "AuthoritySource",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "authority": {
+      "$ref": "#/$defs/AuthoritySource"
+    },
+    "command_event_id": {
+      "default": "",
+      "title": "Command Event Id",
+      "type": "string"
+    },
+    "desired_value": {
+      "default": null,
+      "title": "Desired Value"
+    },
+    "expected_value": {
+      "default": null,
+      "title": "Expected Value"
+    },
+    "field": {
+      "minLength": 1,
+      "title": "Field",
+      "type": "string"
+    },
+    "idempotency_key": {
+      "minLength": 1,
+      "title": "Idempotency Key",
+      "type": "string"
+    },
+    "mutation_id": {
+      "minLength": 1,
+      "title": "Mutation Id",
+      "type": "string"
+    },
+    "object_id": {
+      "minLength": 1,
+      "title": "Object Id",
+      "type": "string"
+    },
+    "provider": {
+      "$ref": "#/$defs/AuthoritySource"
+    },
+    "readback_required": {
+      "default": true,
+      "title": "Readback Required",
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "mutation_id",
+    "provider",
+    "object_id",
+    "field",
+    "authority",
+    "idempotency_key"
+  ],
+  "title": "ReconciliationMutationV2",
+  "type": "object"
+}
