@@ -4,32 +4,7 @@ import argparse
 import json
 from pathlib import Path
 
-REQUIRED = (
-    "final_release_verified",
-    "production_source_verified",
-    "release_index_v6_active",
-    "system_state_v6_active",
-    "manifest_v6_active",
-    "integrations_current",
-    "registry_matches_notion",
-    "notion_matches_registry",
-    "promotion_decision_active",
-    "full_validation_passed",
-    "rollback_v5_6_immutable",
-)
-
-
-def evaluate(snapshot: dict[str, bool], *, production: bool = False) -> dict[str, object]:
-    checks = {name: bool(snapshot.get(name, False)) for name in REQUIRED}
-    settled = all(checks.values())
-    if not production and settled:
-        raise ValueError("dry-run mode cannot report post-promotion success")
-    return {
-        "mode": "production" if production else "dry-run",
-        "checks": checks,
-        "settled": settled,
-        "fail_closed": not settled,
-    }
+from atlas_ros.release.post_promotion import evaluate_post_promotion
 
 
 def main() -> None:
@@ -45,7 +20,7 @@ def main() -> None:
         if args.snapshot
         else {}
     )
-    report = evaluate(
+    report = evaluate_post_promotion(
         snapshot,
         production=production,
     )
