@@ -34,6 +34,12 @@ jobs:
         run: |
           set -o pipefail
           pytest 2>&1 | tee pytest-output.txt
+      - name: Evaluate Execution Planning and Task Economy
+        run: |
+          mkdir -p execution-planning-evidence
+          python scripts/evaluate_execution_planning.py \
+            --dataset benchmarks/execution-planning-v1.json \
+            --output execution-planning-evidence/EXECUTION_PLANNING_REPORT.json
       - name: Retain pytest diagnostics
         if: failure() && steps.pytest.outcome == 'failure'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02

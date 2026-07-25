@@ -1,0 +1,269 @@
+{
+  "$defs": {
+    "DuplicateFinding": {
+      "additionalProperties": false,
+      "properties": {
+        "ambiguous": {
+          "default": false,
+          "title": "Ambiguous",
+          "type": "boolean"
+        },
+        "candidate_id": {
+          "title": "Candidate Id",
+          "type": "string"
+        },
+        "duplicate": {
+          "default": false,
+          "title": "Duplicate",
+          "type": "boolean"
+        },
+        "layer": {
+          "default": "none",
+          "maxLength": 100,
+          "title": "Layer",
+          "type": "string"
+        },
+        "matched_candidate_id": {
+          "default": "",
+          "title": "Matched Candidate Id",
+          "type": "string"
+        },
+        "rationale": {
+          "default": "",
+          "maxLength": 2000,
+          "title": "Rationale",
+          "type": "string"
+        }
+      },
+      "required": [
+        "candidate_id"
+      ],
+      "title": "DuplicateFinding",
+      "type": "object"
+    },
+    "HorizonState": {
+      "enum": [
+        "current",
+        "next",
+        "conditional",
+        "future",
+        "blocked",
+        "completed",
+        "not_applicable"
+      ],
+      "title": "HorizonState",
+      "type": "string"
+    },
+    "ProjectedObjectType": {
+      "enum": [
+        "none",
+        "parent",
+        "subtask"
+      ],
+      "title": "ProjectedObjectType",
+      "type": "string"
+    },
+    "ProjectionDecisionStatus": {
+      "enum": [
+        "project_parent",
+        "project_subtask",
+        "retain_in_management",
+        "defer_future_horizon",
+        "suppress_duplicate",
+        "suppress_existing_representation",
+        "withhold_not_owned",
+        "withhold_not_ready",
+        "withhold_unresolved",
+        "withhold_already_complete",
+        "withhold_not_execution_object",
+        "review_required"
+      ],
+      "title": "ProjectionDecisionStatus",
+      "type": "string"
+    },
+    "ProjectionTestResult": {
+      "additionalProperties": false,
+      "properties": {
+        "condition": {
+          "maxLength": 100,
+          "minLength": 1,
+          "title": "Condition",
+          "type": "string"
+        },
+        "detail": {
+          "default": "",
+          "maxLength": 2000,
+          "title": "Detail",
+          "type": "string"
+        },
+        "passed": {
+          "title": "Passed",
+          "type": "boolean"
+        },
+        "reason_code": {
+          "maxLength": 100,
+          "minLength": 1,
+          "title": "Reason Code",
+          "type": "string"
+        }
+      },
+      "required": [
+        "condition",
+        "passed",
+        "reason_code"
+      ],
+      "title": "ProjectionTestResult",
+      "type": "object"
+    },
+    "RepresentationMatch": {
+      "additionalProperties": false,
+      "properties": {
+        "candidate_id": {
+          "title": "Candidate Id",
+          "type": "string"
+        },
+        "outcome": {
+          "$ref": "#/$defs/RepresentationMatchKind"
+        },
+        "rationale": {
+          "default": "",
+          "maxLength": 2000,
+          "title": "Rationale",
+          "type": "string"
+        },
+        "representation_ids": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Representation Ids",
+          "type": "array"
+        }
+      },
+      "required": [
+        "candidate_id",
+        "outcome"
+      ],
+      "title": "RepresentationMatch",
+      "type": "object"
+    },
+    "RepresentationMatchKind": {
+      "enum": [
+        "exact_existing_parent",
+        "exact_existing_subtask",
+        "equivalent_open_representation",
+        "equivalent_completed_representation",
+        "related_but_non_equivalent",
+        "no_match",
+        "ambiguous_match_requiring_review"
+      ],
+      "title": "RepresentationMatchKind",
+      "type": "string"
+    }
+  },
+  "$id": "https://atlas-ros.local/schemas/execution/projection-decision-v2.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "candidate_id": {
+      "title": "Candidate Id",
+      "type": "string"
+    },
+    "decision_digest": {
+      "maxLength": 64,
+      "minLength": 64,
+      "title": "Decision Digest",
+      "type": "string"
+    },
+    "duplicate_result": {
+      "$ref": "#/$defs/DuplicateFinding"
+    },
+    "evidence": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Evidence",
+      "type": "array"
+    },
+    "existing_representation_result": {
+      "$ref": "#/$defs/RepresentationMatch"
+    },
+    "horizon": {
+      "$ref": "#/$defs/HorizonState"
+    },
+    "human_decision_required": {
+      "default": false,
+      "title": "Human Decision Required",
+      "type": "boolean"
+    },
+    "non_projection_reasons": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Non Projection Reasons",
+      "type": "array"
+    },
+    "parent_relationship": {
+      "default": "",
+      "title": "Parent Relationship",
+      "type": "string"
+    },
+    "policy_version": {
+      "maxLength": 100,
+      "minLength": 1,
+      "title": "Policy Version",
+      "type": "string"
+    },
+    "projected_object_type": {
+      "$ref": "#/$defs/ProjectedObjectType",
+      "default": "none"
+    },
+    "projection_rationale": {
+      "default": "",
+      "title": "Projection Rationale",
+      "type": "string"
+    },
+    "review_required": {
+      "default": false,
+      "title": "Review Required",
+      "type": "boolean"
+    },
+    "sequence": {
+      "anyOf": [
+        {
+          "minimum": 1,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Sequence"
+    },
+    "status": {
+      "$ref": "#/$defs/ProjectionDecisionStatus"
+    },
+    "task_projection_test": {
+      "items": {
+        "$ref": "#/$defs/ProjectionTestResult"
+      },
+      "title": "Task Projection Test",
+      "type": "array"
+    }
+  },
+  "required": [
+    "candidate_id",
+    "status",
+    "task_projection_test",
+    "horizon",
+    "duplicate_result",
+    "existing_representation_result",
+    "policy_version",
+    "decision_digest"
+  ],
+  "title": "ProjectionDecision",
+  "type": "object"
+}

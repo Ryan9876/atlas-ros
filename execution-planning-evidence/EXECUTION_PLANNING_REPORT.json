@@ -1,0 +1,1063 @@
+{
+  "case_count": 52,
+  "critical_fixture_pass_rate": 1.0,
+  "dataset_version": 1,
+  "metrics": {
+    "anti_bloat": {
+      "cases": 11,
+      "passed": 11,
+      "rate": 1.0
+    },
+    "authorization": {
+      "cases": 3,
+      "passed": 3,
+      "rate": 1.0
+    },
+    "compatibility": {
+      "cases": 3,
+      "passed": 3,
+      "rate": 1.0
+    },
+    "completion": {
+      "cases": 2,
+      "passed": 2,
+      "rate": 1.0
+    },
+    "critical": {
+      "cases": 22,
+      "passed": 22,
+      "rate": 1.0
+    },
+    "determinism": {
+      "cases": 3,
+      "passed": 3,
+      "rate": 1.0
+    },
+    "domain": {
+      "cases": 1,
+      "passed": 1,
+      "rate": 1.0
+    },
+    "done_when": {
+      "cases": 2,
+      "passed": 2,
+      "rate": 1.0
+    },
+    "duplicate": {
+      "cases": 4,
+      "passed": 4,
+      "rate": 1.0
+    },
+    "existing": {
+      "cases": 4,
+      "passed": 4,
+      "rate": 1.0
+    },
+    "future": {
+      "cases": 4,
+      "passed": 4,
+      "rate": 1.0
+    },
+    "horizon": {
+      "cases": 3,
+      "passed": 3,
+      "rate": 1.0
+    },
+    "module_invariance": {
+      "cases": 1,
+      "passed": 1,
+      "rate": 1.0
+    },
+    "over_compression": {
+      "cases": 2,
+      "passed": 2,
+      "rate": 1.0
+    },
+    "ownership": {
+      "cases": 2,
+      "passed": 2,
+      "rate": 1.0
+    },
+    "provider_write": {
+      "cases": 1,
+      "passed": 1,
+      "rate": 1.0
+    },
+    "routing": {
+      "cases": 3,
+      "passed": 3,
+      "rate": 1.0
+    },
+    "section_order": {
+      "cases": 2,
+      "passed": 2,
+      "rate": 1.0
+    },
+    "task_budget": {
+      "cases": 5,
+      "passed": 5,
+      "rate": 1.0
+    },
+    "unresolved": {
+      "cases": 1,
+      "passed": 1,
+      "rate": 1.0
+    }
+  },
+  "passed": true,
+  "policy_version": "execution-planning-v2.0.0",
+  "results": [
+    {
+      "authorized": false,
+      "case_id": "parent-only",
+      "child_statuses": [],
+      "parent_plan_count": 1,
+      "passed": true,
+      "plan_digests": [
+        "f7047403e97808941882398e4971b9f11b5e54f7d0bf56413ff1c0c0ff379461"
+      ],
+      "projected_subtasks": 0,
+      "review_status": "not_required",
+      "tags": [
+        "critical",
+        "determinism"
+      ]
+    },
+    {
+      "authorized": false,
+      "case_id": "one-subtask",
+      "child_statuses": [
+        "project_subtask"
+      ],
+      "parent_plan_count": 1,
+      "passed": true,
+      "plan_digests": [
+        "809509515a398a447ac4b9b7dc13677ee7e95080c7939383f8a7f6e4f568e665"
+      ],
+      "projected_subtasks": 1,
+      "review_status": "not_required",
+      "tags": [
+        "critical",
+        "task_budget"
+      ]
+    },
+    {
+      "authorized": false,
+      "case_id": "three-subtasks",
+      "child_statuses": [
+        "project_subtask",
+        "project_subtask",
+        "project_subtask"
+      ],
+      "parent_plan_count": 1,
+      "passed": true,
+      "plan_digests": [
+        "c8e42a2d2179ebdac1e8843b19aac85853a2c2027a20938ab0c2b9b94f831d2c"
+      ],
+      "projected_subtasks": 3,
+      "review_status": "not_required",
+      "tags": [
+        "critical",
+        "task_budget"
+      ]
+    },
+    {
+      "authorized": false,
+      "case_id": "four-justified",
+      "child_statuses": [
+        "project_subtask",
+        "project_subtask",
+        "project_subtask",
+        "project_subtask"
+      ],
+      "parent_plan_count": 1,
+      "passed": true,
+      "plan_digests": [
+        "f1ca470089cd2796fb801a5d57ad756c94353e56cfb6fbe1be3d36ed50ae7a95"
+      ],
+      "projected_subtasks": 4,
+      "review_status": "not_required",
+      "tags": [
+        "critical",
+        "task_budget"
+      ]
+    },
+    {
+      "authorized": false,
+      "case_id": "five-justified",
+      "child_statuses": [
+        "project_subtask",
+        "project_subtask",
+        "project_subtask",
+        "project_subtask",
+        "project_subtask"
+      ],
+      "parent_plan_count": 1,
+      "passed": true,
+      "plan_digests": [
+        "5bd1e5f0779d213ac0ea2a24802df61faf077cad023404fc0b0dfa26c1f0b7f1"
+      ],
+      "projected_subtasks": 5,
+      "review_status": "not_required",
+      "tags": [
+        "critical",
+        "task_budget"
+      ]
+    },
+    {
+      "authorized": false,
+      "case_id": "six-review",
+      "child_statuses": [
+        "review_required",
+        "review_required",
+        "review_required",
+        "review_required",
+        "review_required",
+        "review_required"
+      ],
+      "parent_plan_count": 1,
+      "passed": true,
+      "plan_digests": [
+        "1f515e5bb8ee39657f64703986dc3b8b2656186a5a55408702758c8cccd1c4b2"
+      ],
+      "projected_subtasks": 0,
+      "review_status": "required",
+      "tags": [
+        "critical",
+        "task_budget",
+        "authorization"
+      ]
+    },
+    {
+      "authorized": false,
+      "case_id": "multiple-parent-legitimate",
+      "child_statuses": [
+        "project_subtask",
+        "project_parent",
+        "project_subtask"
+      ],
+      "parent_plan_count": 2,
+      "passed": true,
+      "plan_digests": [
+        "df8955cc7d13ee90ec16b32e4c4c8c9a39ded0a232a104cfc8d84e4ef351d7ab",
+        "0b804aad7bd087ca8d9909187465aebee490b26b388660e85c4b188cb6870e50"
+      ],
+      "projected_subtasks": 2,
+      "review_status": "not_required",
+      "tags": [
+        "critical",
+        "over_compression"
+      ]
+    },
+    {
+      "authorized": false,
+      "case_id": "multiple-parent-artificial",
+      "child_statuses": [
+        "project_subtask"
+      ],
+      "parent_plan_count": 1,
+      "passed": true,
+      "plan_digests": [
+        "d52a23e142067d051986fca7fb019df955ec4b02600337c3ac1f91a2d4401223"
+      ],
+      "projected_subtasks": 1,
+      "review_status": "not_required",
+      "tags": [
+        "critical",
+        "over_compression"
+      ]
+    },
+    {
+      "authorized": false,
+      "case_id": "not-ryan-owned",
+      "child_statuses": [
+        "withhold_not_owned"
+      ],
+      "parent_plan_count": 1,
+      "passed": true,
+      "plan_digests": [
+        "d895072845dbb6668b6f035d5a55849b5a38eb74657748173b15844d36cf5f77"
+      ],
+      "projected_subtasks": 0,
+      "review_status": "not_required",
+      "tags": [
+        "critical",
+        "ownership"
+      ]
+    },
+    {
+      "authorized": false,
+      "case_id": "mixed-ownership",
+      "child_statuses": [
+        "project_subtask",
+        "withhold_not_owned"
+      ],
+      "parent_plan_count": 1,
+      "passed": true,
+      "plan_digests": [
+        "9901d2575c4e6c63c1738e8acb801339a173fcbf9e9c905c495e77230a7d1071"
+      ],
+      "projected_subtasks": 1,
+      "review_status": "not_required",
+      "tags": [
+        "ownership"
+      ]
+    },
+    {
+      "authorized": false,
+      "case_id": "unresolved-decision",
+      "child_statuses": [
+        "withhold_unresolved"
+      ],
+      "parent_plan_count": 1,
+      "passed": true,
+      "plan_digests": [
+        "b8f2c1daa3733bebe79db870d7eaf5eec9228588eba99f7297bfc4e1710f1aca"
+      ],
+      "projected_subtasks": 0,
+      "review_status": "not_required",
+      "tags": [
+        "critical",
+        "unresolved"
+      ]
+    },
+    {
+      "authorized": false,
+      "case_id": "missing-done-when",
+      "child_statuses": [
+        "withhold_not_ready"
+      ],
+      "parent_plan_count": 1,
+      "passed": true,
+      "plan_digests": [
+        "952d090895045f9790eaaa5ed74a877e4ad33781364ee1a68588ab5ab4793a1d"
+      ],
+      "projected_subtasks": 0,
+      "review_status": "not_required",
+      "tags": [
+        "critical",
+        "done_when"
+      ]
+    },
+    {
+      "authorized": false,
+      "case_id": "vague-done-when",
+      "child_statuses": [
+        "withhold_not_ready"
+      ],
+      "parent_plan_count": 1,
+      "passed": true,
+      "plan_digests": [
+        "b4e00f686948d344d326173416c8edf06509abaf11ac738bf49645698522a667"
+      ],
+      "projected_subtasks": 0,
+      "review_status": "not_required",
+      "tags": [
+        "done_when"
+      ]
+    },
+    {
+      "authorized": false,
+      "case_id": "already-completed",
+      "child_statuses": [
+        "withhold_already_complete"
+      ],
+      "parent_plan_count": 1,
+      "passed": true,
+      "plan_digests": [
+        "26463d1e75fcee4e316cfd8a9b2064c44f7b3f51b0539b5af61b81c1f1d735c9"
+      ],
+      "projected_subtasks": 0,
+      "review_status": "not_required",
+      "tags": [
+        "critical",
+        "completion"
+      ]
+    },
+    {
+      "authorized": false,
+      "case_id": "completed-current-interaction",
+      "child_statuses": [
+        "withhold_already_complete"
+      ],
+      "parent_plan_count": 1,
+      "passed": true,
+      "plan_digests": [
+        "4e2b0800465cb7a54daeeb0aca70372a1664dd6a361d43c090316c616ac473a7"
+      ],
+      "projected_subtasks": 0,
+      "review_status": "not_required",
+      "tags": [
+        "completion"
+      ]
+    },
+    {
+      "authorized": false,
+      "case_id": "exact-duplicate",
+      "child_statuses": [
+        "project_subtask",
+        "suppress_duplicate"
+      ],
+      "parent_plan_count": 1,
+      "passed": true,
+      "plan_digests": [
+        "335ed4e01119ca2e2b695221560129f99404a163036ba14e3052c985beb66a69"
+      ],
+      "projected_subtasks": 1,
+      "review_status": "not_required",
+      "tags": [
+        "critical",
+        "duplicate"
+      ]
+    },
+    {
+      "authorized": false,
+      "case_id": "normalized-duplicate",
+      "child_statuses": [
+        "project_subtask",
+        "suppress_duplicate"
+      ],
+      "parent_plan_count": 1,
+      "passed": true,
+      "plan_digests": [
+        "8590df6ae01d506b57e256f612e25044e609bcc13dd285b73145a82cefe3bd0b"
+      ],
+      "projected_subtasks": 1,
+      "review_status": "not_required",
+      "tags": [
+        "duplicate"
+      ]
+    },
+    {
+      "authorized": false,
+      "case_id": "signature-duplicate",
+      "child_statuses": [
+        "project_subtask",
+        "suppress_duplicate"
+      ],
+      "parent_plan_count": 1,
+      "passed": true,
+      "plan_digests": [
+        "6de0caac5e31fca077c6768af5fc3ad203d451c3dbc971cab858c412ddf27a27"
+      ],
+      "projected_subtasks": 1,
+      "review_status": "not_required",
+      "tags": [
+        "duplicate"
+      ]
+    },
+    {
+      "authorized": false,
+      "case_id": "ambiguous-duplicate",
+      "child_statuses": [
+        "project_subtask",
+        "review_required"
+      ],
+      "parent_plan_count": 1,
+      "passed": true,
+      "plan_digests": [
+        "8ca07445e691bd764cf6d938b5562b26445edbdc2efb5498dc34bae4ee2240bc"
+      ],
+      "projected_subtasks": 1,
+      "review_status": "not_required",
+      "tags": [
+        "critical",
+        "duplicate"
+      ]
+    },
+    {
+      "authorized": false,
+      "case_id": "existing-open-parent",
+      "child_statuses": [
+        "suppress_existing_representation"
+      ],
+      "parent_plan_count": 1,
+      "passed": true,
+      "plan_digests": [
+        "0cba5996aac0d74647fec6ddf890e04e7a8ed5104e61f62325d8f00320dd6f8b"
+      ],
+      "projected_subtasks": 0,
+      "review_status": "not_required",
+      "tags": [
+        "critical",
+        "existing"
+      ]
+    },
+    {
+      "authorized": false,
+      "case_id": "existing-open-subtask",
+      "child_statuses": [
+        "suppress_existing_representation"
+      ],
+      "parent_plan_count": 1,
+      "passed": true,
+      "plan_digests": [
+        "ce4d68d7faf787b49bceeb47ddff8a9f66716da0ae7fbf1fb22da993653ab7d7"
+      ],
+      "projected_subtasks": 0,
+      "review_status": "not_required",
+      "tags": [
+        "existing"
+      ]
+    },
+    {
+      "authorized": false,
+      "case_id": "existing-completed-recurring",
+      "child_statuses": [
+        "project_subtask"
+      ],
+      "parent_plan_count": 1,
+      "passed": true,
+      "plan_digests": [
+        "e9a47bf2086097939d8d2088c15a81744cc2c3886fb34a94a2d3ec15f25889f2"
+      ],
+      "projected_subtasks": 1,
+      "review_status": "not_required",
+      "tags": [
+        "existing"
+      ]
+    },
+    {
+      "authorized": false,
+      "case_id": "existing-completed-nonrecurring",
+      "child_statuses": [
+        "suppress_existing_representation"
+      ],
+      "parent_plan_count": 1,
+      "passed": true,
+      "plan_digests": [
+        "ff0dbcb8a911655198d580e80b5511c5ae0dce8e30e9240b58dbb83615ca8564"
+      ],
+      "projected_subtasks": 0,
+      "review_status": "not_required",
+      "tags": [
+        "existing"
+      ]
+    },
+    {
+      "authorized": false,
+      "case_id": "reference-information",
+      "child_statuses": [
+        "withhold_not_execution_object"
+      ],
+      "parent_plan_count": 1,
+      "passed": true,
+      "plan_digests": [
+        "941a147485c6beb5d7c0dda2fec13ef0e18259d00430c5325ea5f15b035072bd"
+      ],
+      "projected_subtasks": 0,
+      "review_status": "not_required",
+      "tags": [
+        "anti_bloat"
+      ]
+    },
+    {
+      "authorized": false,
+      "case_id": "governance-requirement",
+      "child_statuses": [
+        "withhold_not_execution_object"
+      ],
+      "parent_plan_count": 1,
+      "passed": true,
+      "plan_digests": [
+        "16fe8cd80e56b89faaf902984ceaaffb897aa0b91209306dbafa1cb98fe54f67"
+      ],
+      "projected_subtasks": 0,
+      "review_status": "not_required",
+      "tags": [
+        "anti_bloat"
+      ]
+    },
+    {
+      "authorized": false,
+      "case_id": "evidence-requirement",
+      "child_statuses": [
+        "withhold_not_execution_object"
+      ],
+      "parent_plan_count": 1,
+      "passed": true,
+      "plan_digests": [
+        "e1b25319eeac816988db4e22af557e22c883c8dead0a17495dc2cfaf8213e4f0"
+      ],
+      "projected_subtasks": 0,
+      "review_status": "not_required",
+      "tags": [
+        "anti_bloat"
+      ]
+    },
+    {
+      "authorized": false,
+      "case_id": "approval-requirement",
+      "child_statuses": [
+        "withhold_not_execution_object"
+      ],
+      "parent_plan_count": 1,
+      "passed": true,
+      "plan_digests": [
+        "cd08b9d5e7980c31e2829b41842839fb1984825bb8816413e0c09ba4c5eeb54c"
+      ],
+      "projected_subtasks": 0,
+      "review_status": "not_required",
+      "tags": [
+        "anti_bloat"
+      ]
+    },
+    {
+      "authorized": false,
+      "case_id": "decision-point",
+      "child_statuses": [
+        "withhold_not_execution_object"
+      ],
+      "parent_plan_count": 1,
+      "passed": true,
+      "plan_digests": [
+        "a57d7cb5a6ea00d456c1a06fd5ff4352df454b36a96421afc7b915fada5315c9"
+      ],
+      "projected_subtasks": 0,
+      "review_status": "not_required",
+      "tags": [
+        "anti_bloat"
+      ]
+    },
+    {
+      "authorized": false,
+      "case_id": "risk-context",
+      "child_statuses": [
+        "withhold_not_execution_object"
+      ],
+      "parent_plan_count": 1,
+      "passed": true,
+      "plan_digests": [
+        "57ef89a8b1b04e33eaaff48902b0b096a39882f621dd2b6fc1a3391a77e3aa29"
+      ],
+      "projected_subtasks": 0,
+      "review_status": "not_required",
+      "tags": [
+        "anti_bloat"
+      ]
+    },
+    {
+      "authorized": false,
+      "case_id": "blocked-action",
+      "child_statuses": [
+        "withhold_not_ready"
+      ],
+      "parent_plan_count": 1,
+      "passed": true,
+      "plan_digests": [
+        "2c17a37d9d74ab8ae623609c8a4324d267121458b5b1eb979ee763e5bfada798"
+      ],
+      "projected_subtasks": 0,
+      "review_status": "not_required",
+      "tags": [
+        "horizon"
+      ]
+    },
+    {
+      "authorized": false,
+      "case_id": "ryan-unblock-action",
+      "child_statuses": [
+        "project_subtask"
+      ],
+      "parent_plan_count": 1,
+      "passed": true,
+      "plan_digests": [
+        "e82c35a91e31cb8132e94268cb4698e5a1b0e209440d292f90c14c3a6a7e9eff"
+      ],
+      "projected_subtasks": 1,
+      "review_status": "not_required",
+      "tags": [
+        "horizon"
+      ]
+    },
+    {
+      "authorized": false,
+      "case_id": "future-phase",
+      "child_statuses": [
+        "defer_future_horizon"
+      ],
+      "parent_plan_count": 1,
+      "passed": true,
+      "plan_digests": [
+        "f277d6a3e5f4b68f2e1d488eb4cb37961f68bbbd18464e9abc395d2edce0f0b3"
+      ],
+      "projected_subtasks": 0,
+      "review_status": "not_required",
+      "tags": [
+        "critical",
+        "future"
+      ]
+    },
+    {
+      "authorized": false,
+      "case_id": "conditional-false",
+      "child_statuses": [
+        "defer_future_horizon"
+      ],
+      "parent_plan_count": 1,
+      "passed": true,
+      "plan_digests": [
+        "c2464b84324a612bfa53eab468e0eb834533295db14360be60265cbf02d1abd0"
+      ],
+      "projected_subtasks": 0,
+      "review_status": "not_required",
+      "tags": [
+        "future"
+      ]
+    },
+    {
+      "authorized": false,
+      "case_id": "conditional-true",
+      "child_statuses": [
+        "project_subtask"
+      ],
+      "parent_plan_count": 1,
+      "passed": true,
+      "plan_digests": [
+        "09c25ec21b6e13f154a2903846b5f41a598899c9c74cc8fda586993948b4d7d2"
+      ],
+      "projected_subtasks": 1,
+      "review_status": "not_required",
+      "tags": [
+        "future"
+      ]
+    },
+    {
+      "authorized": false,
+      "case_id": "module-count-increase",
+      "child_statuses": [
+        "project_subtask"
+      ],
+      "parent_plan_count": 1,
+      "passed": true,
+      "plan_digests": [
+        "992bc8f8e6f31832ad36b5c478479b95fbea95f00e11b06efa826176c7502d0d"
+      ],
+      "projected_subtasks": 1,
+      "review_status": "not_required",
+      "tags": [
+        "critical",
+        "anti_bloat",
+        "module_invariance"
+      ]
+    },
+    {
+      "authorized": false,
+      "case_id": "section-count-increase",
+      "child_statuses": [
+        "project_subtask"
+      ],
+      "parent_plan_count": 1,
+      "passed": true,
+      "plan_digests": [
+        "f40ec0b183a67b9ff3659a025f6810dee2c31c794ef09dd5b479807134d71da2"
+      ],
+      "projected_subtasks": 1,
+      "review_status": "not_required",
+      "tags": [
+        "anti_bloat",
+        "section_order"
+      ]
+    },
+    {
+      "authorized": false,
+      "case_id": "governance-overlay-increase",
+      "child_statuses": [
+        "project_subtask"
+      ],
+      "parent_plan_count": 1,
+      "passed": true,
+      "plan_digests": [
+        "a53321d299e87d19908a011f6f675cf2f653f06e7ab72eb50aa159598e38d49a"
+      ],
+      "projected_subtasks": 1,
+      "review_status": "not_required",
+      "tags": [
+        "anti_bloat"
+      ]
+    },
+    {
+      "authorized": false,
+      "case_id": "team-model-minimal-path",
+      "child_statuses": [
+        "project_subtask",
+        "project_subtask"
+      ],
+      "parent_plan_count": 1,
+      "passed": true,
+      "plan_digests": [
+        "0e2e02d7d5b0a6b9d9ff9d98114225476414efca029c1ec51ec452a7335ebf09"
+      ],
+      "projected_subtasks": 2,
+      "review_status": "not_required",
+      "tags": [
+        "critical",
+        "anti_bloat"
+      ]
+    },
+    {
+      "authorized": false,
+      "case_id": "project-plan-minimal-path",
+      "child_statuses": [
+        "project_subtask",
+        "project_subtask",
+        "project_subtask"
+      ],
+      "parent_plan_count": 1,
+      "passed": true,
+      "plan_digests": [
+        "bf93058932b630bdce7ff145d94d5909a1dee8e48750a05968af60f3c3f86fc1"
+      ],
+      "projected_subtasks": 3,
+      "review_status": "not_required",
+      "tags": [
+        "anti_bloat"
+      ]
+    },
+    {
+      "authorized": false,
+      "case_id": "incident-current-horizon",
+      "child_statuses": [
+        "project_subtask",
+        "project_subtask",
+        "project_subtask"
+      ],
+      "parent_plan_count": 1,
+      "passed": true,
+      "plan_digests": [
+        "10f04ddfc1f6f19f11c5ee6adab56983e00b0294dbc2ddc0c7f40c3f39b18c68"
+      ],
+      "projected_subtasks": 3,
+      "review_status": "not_required",
+      "tags": [
+        "horizon"
+      ]
+    },
+    {
+      "authorized": false,
+      "case_id": "strategic-deferred-work",
+      "child_statuses": [
+        "project_subtask",
+        "defer_future_horizon"
+      ],
+      "parent_plan_count": 1,
+      "passed": true,
+      "plan_digests": [
+        "0e7b97f5eb5f5ea33a10c9d21a95243d922dcebc74efa208d2d159e517a9be18"
+      ],
+      "projected_subtasks": 1,
+      "review_status": "not_required",
+      "tags": [
+        "future"
+      ]
+    },
+    {
+      "authorized": false,
+      "case_id": "vendor-review",
+      "child_statuses": [
+        "project_subtask",
+        "project_subtask"
+      ],
+      "parent_plan_count": 1,
+      "passed": true,
+      "plan_digests": [
+        "37aec132a250fee3e2aa46a2ad6367ac65431a1217a2708a0fd505b362fbdb4d"
+      ],
+      "projected_subtasks": 2,
+      "review_status": "not_required",
+      "tags": [
+        "domain"
+      ]
+    },
+    {
+      "authorized": false,
+      "case_id": "people-leadership",
+      "child_statuses": [
+        "project_subtask",
+        "project_subtask"
+      ],
+      "parent_plan_count": 1,
+      "passed": true,
+      "plan_digests": [
+        "dbf4282e18603979c26a3e45b6cf99b1bbf0e00cbd427d32ac6bd1fc8bcaa4de"
+      ],
+      "projected_subtasks": 2,
+      "review_status": "not_required",
+      "tags": [
+        "routing"
+      ]
+    },
+    {
+      "authorized": false,
+      "case_id": "operations-plan",
+      "child_statuses": [
+        "project_subtask",
+        "project_subtask"
+      ],
+      "parent_plan_count": 1,
+      "passed": true,
+      "plan_digests": [
+        "30dc1804a84b6f1167eec670fcd866b9bb474029298ffd688355e4696383939f"
+      ],
+      "projected_subtasks": 2,
+      "review_status": "not_required",
+      "tags": [
+        "routing"
+      ]
+    },
+    {
+      "authorized": false,
+      "case_id": "destination-compatibility",
+      "child_statuses": [
+        "project_subtask"
+      ],
+      "parent_plan_count": 1,
+      "passed": true,
+      "plan_digests": [
+        "f7e2810f03c783c084ba8adc6cfc33d5382350e34628bc17d92c2d512f17fd1e"
+      ],
+      "projected_subtasks": 1,
+      "review_status": "not_required",
+      "tags": [
+        "routing"
+      ]
+    },
+    {
+      "authorized": false,
+      "case_id": "w03a-compatibility",
+      "child_statuses": [
+        "project_subtask"
+      ],
+      "parent_plan_count": 1,
+      "passed": true,
+      "plan_digests": [
+        "a8dee75dcc5bd83fd8147d69663a6a87f0bb37abd13075d53651c7b1b34bf13c"
+      ],
+      "projected_subtasks": 1,
+      "review_status": "not_required",
+      "tags": [
+        "critical",
+        "compatibility"
+      ]
+    },
+    {
+      "authorized": false,
+      "case_id": "planner-authorization-rejection",
+      "child_statuses": [
+        "project_subtask"
+      ],
+      "parent_plan_count": 1,
+      "passed": true,
+      "plan_digests": [
+        "40424c4351ea5b6b64938ff94952f3f3f69b2d90f9a8d705cc9c7315650c6401"
+      ],
+      "projected_subtasks": 1,
+      "review_status": "not_required",
+      "tags": [
+        "critical",
+        "authorization"
+      ]
+    },
+    {
+      "authorized": false,
+      "case_id": "provider-import-rejection",
+      "child_statuses": [
+        "project_subtask"
+      ],
+      "parent_plan_count": 1,
+      "passed": true,
+      "plan_digests": [
+        "ea0e2bb40509955656ca12a682e1b25e63d04438b20bbe58528530d9bebc8c52"
+      ],
+      "projected_subtasks": 1,
+      "review_status": "not_required",
+      "tags": [
+        "critical",
+        "provider_write"
+      ]
+    },
+    {
+      "authorized": false,
+      "case_id": "deterministic-repeat",
+      "child_statuses": [
+        "project_subtask",
+        "project_subtask",
+        "project_subtask"
+      ],
+      "parent_plan_count": 1,
+      "passed": true,
+      "plan_digests": [
+        "b9c7d2c1b771467f7390aa697a7a8be59039414c711a4c574f72ed5e4ab17400"
+      ],
+      "projected_subtasks": 3,
+      "review_status": "not_required",
+      "tags": [
+        "critical",
+        "determinism"
+      ]
+    },
+    {
+      "authorized": false,
+      "case_id": "registration-order-variation",
+      "child_statuses": [
+        "project_subtask",
+        "project_subtask",
+        "project_subtask"
+      ],
+      "parent_plan_count": 1,
+      "passed": true,
+      "plan_digests": [
+        "00f1243565adfd5ba0c60e2c9d1de6b09c8c3484f242fd6c09b5c565ce4ea07e"
+      ],
+      "projected_subtasks": 3,
+      "review_status": "not_required",
+      "tags": [
+        "determinism",
+        "section_order"
+      ]
+    },
+    {
+      "authorized": false,
+      "case_id": "safe-v1-projection",
+      "child_statuses": [
+        "project_subtask",
+        "project_subtask"
+      ],
+      "parent_plan_count": 1,
+      "passed": true,
+      "plan_digests": [
+        "0d23fa1621f573b5f7eb41898dcb4d0ed9e100f93fd8420b1d26f21c436a8704"
+      ],
+      "projected_subtasks": 2,
+      "review_status": "not_required",
+      "tags": [
+        "compatibility"
+      ]
+    },
+    {
+      "authorized": false,
+      "case_id": "unsafe-lossy-v1",
+      "child_statuses": [
+        "review_required",
+        "review_required",
+        "review_required",
+        "review_required",
+        "review_required",
+        "review_required"
+      ],
+      "parent_plan_count": 1,
+      "passed": true,
+      "plan_digests": [
+        "ca8096ab0d42aca3e5dfc2dc730a02d5ab90be6044ec2b8c1b88dcda2b7ed724"
+      ],
+      "projected_subtasks": 0,
+      "review_status": "required",
+      "tags": [
+        "compatibility",
+        "authorization"
+      ]
+    }
+  ],
+  "zero_provider_writes": true,
+  "zero_unauthorized_execution_objects": true
+}

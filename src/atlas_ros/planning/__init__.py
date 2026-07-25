@@ -1,3 +1,19 @@
-from .execution import ExecutionPlanner, ExecutionPlanningPolicy
+from .execution import (
+    CandidateExtractionResult,
+    DuplicateAnalyzer,
+    ExecutionCandidateExtractor,
+    ExecutionPlanner,
+    ExecutionPlanningPolicy,
+    ExistingRepresentationMatcher,
+    ProgressiveHorizonPolicy,
+)
 
-__all__ = ["ExecutionPlanner", "ExecutionPlanningPolicy"]
+__all__ = [
+    "CandidateExtractionResult",
+    "DuplicateAnalyzer",
+    "ExecutionCandidateExtractor",
+    "ExecutionPlanner",
+    "ExecutionPlanningPolicy",
+    "ExistingRepresentationMatcher",
+    "ProgressiveHorizonPolicy",
+]

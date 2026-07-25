@@ -1,0 +1,614 @@
+{
+  "$defs": {
+    "ContractKind": {
+      "enum": [
+        "capture",
+        "reasoning",
+        "knowledge",
+        "management",
+        "execution_plan",
+        "execution_receipt",
+        "reconciliation"
+      ],
+      "title": "ContractKind",
+      "type": "string"
+    },
+    "DuplicateFinding": {
+      "additionalProperties": false,
+      "properties": {
+        "ambiguous": {
+          "default": false,
+          "title": "Ambiguous",
+          "type": "boolean"
+        },
+        "candidate_id": {
+          "title": "Candidate Id",
+          "type": "string"
+        },
+        "duplicate": {
+          "default": false,
+          "title": "Duplicate",
+          "type": "boolean"
+        },
+        "layer": {
+          "default": "none",
+          "maxLength": 100,
+          "title": "Layer",
+          "type": "string"
+        },
+        "matched_candidate_id": {
+          "default": "",
+          "title": "Matched Candidate Id",
+          "type": "string"
+        },
+        "rationale": {
+          "default": "",
+          "maxLength": 2000,
+          "title": "Rationale",
+          "type": "string"
+        }
+      },
+      "required": [
+        "candidate_id"
+      ],
+      "title": "DuplicateFinding",
+      "type": "object"
+    },
+    "ExecutionStepV2": {
+      "additionalProperties": false,
+      "properties": {
+        "dependencies": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Dependencies",
+          "type": "array"
+        },
+        "done_when": {
+          "maxLength": 10000,
+          "minLength": 1,
+          "title": "Done When",
+          "type": "string"
+        },
+        "horizon": {
+          "$ref": "#/$defs/HorizonState"
+        },
+        "objective": {
+          "maxLength": 10000,
+          "minLength": 1,
+          "title": "Objective",
+          "type": "string"
+        },
+        "projection_rationale": {
+          "maxLength": 2000,
+          "minLength": 1,
+          "title": "Projection Rationale",
+          "type": "string"
+        },
+        "sequence": {
+          "minimum": 1,
+          "title": "Sequence",
+          "type": "integer"
+        },
+        "source_candidate_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Source Candidate Id",
+          "type": "string"
+        },
+        "source_provenance": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Source Provenance",
+          "type": "array"
+        },
+        "step_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Step Id",
+          "type": "string"
+        },
+        "title": {
+          "maxLength": 500,
+          "minLength": 1,
+          "title": "Title",
+          "type": "string"
+        }
+      },
+      "required": [
+        "step_id",
+        "title",
+        "objective",
+        "done_when",
+        "sequence",
+        "source_candidate_id",
+        "horizon",
+        "projection_rationale"
+      ],
+      "title": "ExecutionStepV2",
+      "type": "object"
+    },
+    "HorizonState": {
+      "enum": [
+        "current",
+        "next",
+        "conditional",
+        "future",
+        "blocked",
+        "completed",
+        "not_applicable"
+      ],
+      "title": "HorizonState",
+      "type": "string"
+    },
+    "ProjectedObjectType": {
+      "enum": [
+        "none",
+        "parent",
+        "subtask"
+      ],
+      "title": "ProjectedObjectType",
+      "type": "string"
+    },
+    "ProjectionDecision": {
+      "additionalProperties": false,
+      "properties": {
+        "candidate_id": {
+          "title": "Candidate Id",
+          "type": "string"
+        },
+        "decision_digest": {
+          "maxLength": 64,
+          "minLength": 64,
+          "title": "Decision Digest",
+          "type": "string"
+        },
+        "duplicate_result": {
+          "$ref": "#/$defs/DuplicateFinding"
+        },
+        "evidence": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Evidence",
+          "type": "array"
+        },
+        "existing_representation_result": {
+          "$ref": "#/$defs/RepresentationMatch"
+        },
+        "horizon": {
+          "$ref": "#/$defs/HorizonState"
+        },
+        "human_decision_required": {
+          "default": false,
+          "title": "Human Decision Required",
+          "type": "boolean"
+        },
+        "non_projection_reasons": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Non Projection Reasons",
+          "type": "array"
+        },
+        "parent_relationship": {
+          "default": "",
+          "title": "Parent Relationship",
+          "type": "string"
+        },
+        "policy_version": {
+          "maxLength": 100,
+          "minLength": 1,
+          "title": "Policy Version",
+          "type": "string"
+        },
+        "projected_object_type": {
+          "$ref": "#/$defs/ProjectedObjectType",
+          "default": "none"
+        },
+        "projection_rationale": {
+          "default": "",
+          "title": "Projection Rationale",
+          "type": "string"
+        },
+        "review_required": {
+          "default": false,
+          "title": "Review Required",
+          "type": "boolean"
+        },
+        "sequence": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sequence"
+        },
+        "status": {
+          "$ref": "#/$defs/ProjectionDecisionStatus"
+        },
+        "task_projection_test": {
+          "items": {
+            "$ref": "#/$defs/ProjectionTestResult"
+          },
+          "title": "Task Projection Test",
+          "type": "array"
+        }
+      },
+      "required": [
+        "candidate_id",
+        "status",
+        "task_projection_test",
+        "horizon",
+        "duplicate_result",
+        "existing_representation_result",
+        "policy_version",
+        "decision_digest"
+      ],
+      "title": "ProjectionDecision",
+      "type": "object"
+    },
+    "ProjectionDecisionStatus": {
+      "enum": [
+        "project_parent",
+        "project_subtask",
+        "retain_in_management",
+        "defer_future_horizon",
+        "suppress_duplicate",
+        "suppress_existing_representation",
+        "withhold_not_owned",
+        "withhold_not_ready",
+        "withhold_unresolved",
+        "withhold_already_complete",
+        "withhold_not_execution_object",
+        "review_required"
+      ],
+      "title": "ProjectionDecisionStatus",
+      "type": "string"
+    },
+    "ProjectionTestResult": {
+      "additionalProperties": false,
+      "properties": {
+        "condition": {
+          "maxLength": 100,
+          "minLength": 1,
+          "title": "Condition",
+          "type": "string"
+        },
+        "detail": {
+          "default": "",
+          "maxLength": 2000,
+          "title": "Detail",
+          "type": "string"
+        },
+        "passed": {
+          "title": "Passed",
+          "type": "boolean"
+        },
+        "reason_code": {
+          "maxLength": 100,
+          "minLength": 1,
+          "title": "Reason Code",
+          "type": "string"
+        }
+      },
+      "required": [
+        "condition",
+        "passed",
+        "reason_code"
+      ],
+      "title": "ProjectionTestResult",
+      "type": "object"
+    },
+    "RepresentationMatch": {
+      "additionalProperties": false,
+      "properties": {
+        "candidate_id": {
+          "title": "Candidate Id",
+          "type": "string"
+        },
+        "outcome": {
+          "$ref": "#/$defs/RepresentationMatchKind"
+        },
+        "rationale": {
+          "default": "",
+          "maxLength": 2000,
+          "title": "Rationale",
+          "type": "string"
+        },
+        "representation_ids": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Representation Ids",
+          "type": "array"
+        }
+      },
+      "required": [
+        "candidate_id",
+        "outcome"
+      ],
+      "title": "RepresentationMatch",
+      "type": "object"
+    },
+    "RepresentationMatchKind": {
+      "enum": [
+        "exact_existing_parent",
+        "exact_existing_subtask",
+        "equivalent_open_representation",
+        "equivalent_completed_representation",
+        "related_but_non_equivalent",
+        "no_match",
+        "ambiguous_match_requiring_review"
+      ],
+      "title": "RepresentationMatchKind",
+      "type": "string"
+    },
+    "TaskBudgetResult": {
+      "additionalProperties": false,
+      "properties": {
+        "candidate_count": {
+          "minimum": 0,
+          "title": "Candidate Count",
+          "type": "integer"
+        },
+        "compression_alternatives": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Compression Alternatives",
+          "type": "array"
+        },
+        "default_limit": {
+          "default": 3,
+          "minimum": 0,
+          "title": "Default Limit",
+          "type": "integer"
+        },
+        "expanded_budget_used": {
+          "default": false,
+          "title": "Expanded Budget Used",
+          "type": "boolean"
+        },
+        "multiple_parent_outcomes": {
+          "default": false,
+          "title": "Multiple Parent Outcomes",
+          "type": "boolean"
+        },
+        "projected_subtask_count": {
+          "minimum": 0,
+          "title": "Projected Subtask Count",
+          "type": "integer"
+        },
+        "rationale": {
+          "default": "",
+          "title": "Rationale",
+          "type": "string"
+        },
+        "review_threshold": {
+          "default": 5,
+          "minimum": 1,
+          "title": "Review Threshold",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "candidate_count",
+        "projected_subtask_count"
+      ],
+      "title": "TaskBudgetResult",
+      "type": "object"
+    }
+  },
+  "$id": "https://atlas-ros.local/schemas/execution/execution-plan-v2.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "action_id": {
+      "maxLength": 256,
+      "minLength": 1,
+      "title": "Action Id",
+      "type": "string"
+    },
+    "authorized": {
+      "const": false,
+      "default": false,
+      "title": "Authorized",
+      "type": "boolean"
+    },
+    "candidate_set_digest": {
+      "maxLength": 64,
+      "minLength": 64,
+      "title": "Candidate Set Digest",
+      "type": "string"
+    },
+    "contract_kind": {
+      "$ref": "#/$defs/ContractKind",
+      "default": "execution_plan"
+    },
+    "contract_version": {
+      "const": 2,
+      "default": 2,
+      "title": "Contract Version",
+      "type": "integer"
+    },
+    "correlation_id": {
+      "format": "uuid",
+      "title": "Correlation Id",
+      "type": "string"
+    },
+    "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+    },
+    "decomposition_review_status": {
+      "default": "not_required",
+      "enum": [
+        "not_required",
+        "required",
+        "approved"
+      ],
+      "title": "Decomposition Review Status",
+      "type": "string"
+    },
+    "deferred_candidates": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Deferred Candidates",
+      "type": "array"
+    },
+    "destination_intent": {
+      "maxLength": 200,
+      "minLength": 1,
+      "title": "Destination Intent",
+      "type": "string"
+    },
+    "duplicate_findings": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/DuplicateFinding"
+      },
+      "title": "Duplicate Findings",
+      "type": "array"
+    },
+    "existing_representation_findings": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/RepresentationMatch"
+      },
+      "title": "Existing Representation Findings",
+      "type": "array"
+    },
+    "horizon_summary": {
+      "additionalProperties": {
+        "type": "integer"
+      },
+      "title": "Horizon Summary",
+      "type": "object"
+    },
+    "human_decision_requirements": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Human Decision Requirements",
+      "type": "array"
+    },
+    "non_projection_explanations": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Non Projection Explanations",
+      "type": "array"
+    },
+    "parent_outcome": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ExecutionStepV2"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "plan_digest": {
+      "maxLength": 64,
+      "minLength": 64,
+      "title": "Plan Digest",
+      "type": "string"
+    },
+    "plan_id": {
+      "maxLength": 256,
+      "minLength": 1,
+      "title": "Plan Id",
+      "type": "string"
+    },
+    "planner_policy_version": {
+      "maxLength": 100,
+      "minLength": 1,
+      "title": "Planner Policy Version",
+      "type": "string"
+    },
+    "projected_steps": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/ExecutionStepV2"
+      },
+      "title": "Projected Steps",
+      "type": "array"
+    },
+    "projection_decisions": {
+      "items": {
+        "$ref": "#/$defs/ProjectionDecision"
+      },
+      "title": "Projection Decisions",
+      "type": "array"
+    },
+    "projection_explanation": {
+      "default": "",
+      "title": "Projection Explanation",
+      "type": "string"
+    },
+    "retained_management_items": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Retained Management Items",
+      "type": "array"
+    },
+    "source_component": {
+      "const": "planning.execution",
+      "default": "planning.execution",
+      "title": "Source Component",
+      "type": "string"
+    },
+    "source_management_digest": {
+      "maxLength": 64,
+      "minLength": 64,
+      "title": "Source Management Digest",
+      "type": "string"
+    },
+    "source_management_reference": {
+      "maxLength": 500,
+      "minLength": 1,
+      "title": "Source Management Reference",
+      "type": "string"
+    },
+    "task_budget": {
+      "$ref": "#/$defs/TaskBudgetResult"
+    }
+  },
+  "required": [
+    "plan_id",
+    "action_id",
+    "correlation_id",
+    "source_management_reference",
+    "source_management_digest",
+    "planner_policy_version",
+    "destination_intent",
+    "projection_decisions",
+    "task_budget",
+    "candidate_set_digest",
+    "plan_digest"
+  ],
+  "title": "ExecutionPlanV2",
+  "type": "object"
+}

@@ -1,4 +1,28 @@
-# Unreleased — Classification Intelligence Phase 1
+# Unreleased — Execution Planning and Task Economy Phase 3
+
+- Added immutable Execution Candidate, Projection Decision, Existing
+  Representation Index, and Execution Plan V2 contracts.
+- Added deterministic, model-agnostic candidate extraction from Management
+  Package V2 with content-safe observability.
+- Added the full Task Projection Test, progressive execution horizons, layered
+  duplicate suppression, and provider-neutral existing-representation matching.
+- Added governed 0–3 and justified 4–5 task budgets; more than five candidates
+  require decomposition review and never authorize execution.
+- Added independently validated multiple-parent proposals without artificial
+  plan splitting.
+- Preserved W03A and Execution Plan V1 compatibility through explicit safe
+  projections that fail closed when V2 meaning would be lost.
+- Added a 52-case release-blocking benchmark, JSON schemas, ADR-007, migration
+  guidance, architecture gates, candidate evidence, and draft restoration tests.
+
+## v5.4.0 — Knowledge Composition and Management Structure Phase 2
+
+- Added versioned knowledge, planning-model, and module registries.
+- Added deterministic dependency resolution and digest-bound provenance.
+- Added provider-free Management Package V2 output and declarative Team
+  Operating Model generation.
+
+## v5.1.0 — Classification Intelligence Phase 1
 
 - Added responsibility-first classification across People Leadership, Project Delivery, Operational Stewardship, External Dependency, and Capability Building.
 - Added version 2 reasoning contracts with structured evidence, workstream, operating context, challenge state, fallback reason, and explicit version 1 projection.
