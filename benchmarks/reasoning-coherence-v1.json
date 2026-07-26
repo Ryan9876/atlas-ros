@@ -1,0 +1,184 @@
+{
+  "benchmark": "reasoning-coherence-v1",
+  "base_input": "Task = arista cloud vision code upgrade automation pilot.",
+  "cases": [
+    {
+      "id": "cloudvision-base",
+      "family": "cloudvision-metadata-invariance",
+      "input": "Task = arista cloud vision code upgrade automation pilot.",
+      "expected_passed": true,
+      "expected_metadata": {
+        "planning_model": "controlled-technology-pilot",
+        "classification": "project",
+        "destination": "Portfolio Projects",
+        "responsibility_domain": "project_delivery",
+        "workstream": "Active Projects",
+        "requires_human_decision": false
+      }
+    },
+    {
+      "id": "cloudvision-preserve",
+      "family": "cloudvision-metadata-invariance",
+      "input": "Task = arista cloud vision code upgrade automation pilot.\nPreserve every v5.2 through v6.0 record unchanged.",
+      "expected_passed": true,
+      "expected_metadata": {
+        "planning_model": "controlled-technology-pilot",
+        "classification": "project",
+        "destination": "Portfolio Projects",
+        "responsibility_domain": "project_delivery",
+        "workstream": "Active Projects",
+        "requires_human_decision": false
+      }
+    },
+    {
+      "id": "cloudvision-duplicate-exception",
+      "family": "cloudvision-metadata-invariance",
+      "input": "Task = arista cloud vision code upgrade automation pilot.\nDo not block creation as a duplicate for this test.",
+      "expected_passed": true,
+      "expected_metadata": {
+        "planning_model": "controlled-technology-pilot",
+        "classification": "project",
+        "destination": "Portfolio Projects",
+        "responsibility_domain": "project_delivery",
+        "workstream": "Active Projects",
+        "requires_human_decision": false
+      }
+    },
+    {
+      "id": "cloudvision-version-comparison",
+      "family": "cloudvision-metadata-invariance",
+      "input": "Task = arista cloud vision code upgrade automation pilot.\nCompare the output against v5.2 through v6.0.",
+      "expected_passed": true,
+      "expected_metadata": {
+        "planning_model": "controlled-technology-pilot",
+        "classification": "project",
+        "destination": "Portfolio Projects",
+        "responsibility_domain": "project_delivery",
+        "workstream": "Active Projects",
+        "requires_human_decision": false
+      }
+    },
+    {
+      "id": "cloudvision-execution-receipt",
+      "family": "cloudvision-metadata-invariance",
+      "input": "Task = arista cloud vision code upgrade automation pilot.\nRequire attended authorization, provider readback, and an execution receipt.",
+      "expected_passed": true,
+      "expected_metadata": {
+        "planning_model": "controlled-technology-pilot",
+        "classification": "project",
+        "destination": "Portfolio Projects",
+        "responsibility_domain": "project_delivery",
+        "workstream": "Active Projects",
+        "requires_human_decision": false
+      }
+    },
+    {
+      "id": "cloudvision-reconciliation",
+      "family": "cloudvision-metadata-invariance",
+      "input": "Task = arista cloud vision code upgrade automation pilot.\nRequire reconciliation evidence, checkpoint integrity, and a reconciliation receipt.",
+      "expected_passed": true,
+      "expected_metadata": {
+        "planning_model": "controlled-technology-pilot",
+        "classification": "project",
+        "destination": "Portfolio Projects",
+        "responsibility_domain": "project_delivery",
+        "workstream": "Active Projects",
+        "requires_human_decision": false
+      }
+    },
+    {
+      "id": "cloudvision-all-controls",
+      "family": "cloudvision-metadata-invariance",
+      "input": "Task = arista cloud vision code upgrade automation pilot.\nCompare against v5.2 through v6.0. Preserve previous records. Do not block the new task as a duplicate. Require attended authorization, transaction journaling, Todoist and Notion readback, execution receipt, reconciliation checkpoints, preservation evidence, and reconciliation receipt.",
+      "expected_passed": true,
+      "expected_metadata": {
+        "planning_model": "controlled-technology-pilot",
+        "classification": "project",
+        "destination": "Portfolio Projects",
+        "responsibility_domain": "project_delivery",
+        "workstream": "Active Projects",
+        "requires_human_decision": false
+      }
+    },
+    {
+      "id": "cisco-controlled-pilot",
+      "input": "Task = Pilot for automating Cisco code upgrades.",
+      "expected_passed": true,
+      "expected_metadata": {
+        "planning_model": "controlled-technology-pilot",
+        "responsibility_domain": "project_delivery",
+        "workstream": "Active Projects",
+        "requires_human_decision": false
+      }
+    },
+    {
+      "id": "monitoring-controlled-pilot",
+      "input": "Outcome = infrastructure monitoring automation pilot.",
+      "expected_passed": true,
+      "expected_metadata": {
+        "planning_model": "controlled-technology-pilot",
+        "responsibility_domain": "project_delivery",
+        "workstream": "Active Projects",
+        "requires_human_decision": false
+      }
+    },
+    {
+      "id": "automation-proof-of-concept",
+      "input": "Launch a proof of concept for automating infrastructure compliance checks.",
+      "expected_passed": true,
+      "expected_metadata": {
+        "planning_model": "controlled-technology-pilot",
+        "responsibility_domain": "project_delivery",
+        "workstream": "Active Projects",
+        "requires_human_decision": false
+      }
+    },
+    {
+      "id": "controlled-infrastructure-trial",
+      "input": "Run a controlled trial for automated network configuration validation.",
+      "expected_passed": true,
+      "expected_metadata": {
+        "planning_model": "controlled-technology-pilot",
+        "responsibility_domain": "project_delivery",
+        "workstream": "Active Projects",
+        "requires_human_decision": false
+      }
+    },
+    {
+      "id": "high-model-confidence-unresolved-responsibility",
+      "mutation": "unresolved_responsibility",
+      "expected_passed": false
+    },
+    {
+      "id": "no-review-clarification-language",
+      "mutation": "clarification_language",
+      "expected_passed": false
+    },
+    {
+      "id": "routing-destination-conflict",
+      "mutation": "routing_conflict",
+      "expected_passed": false
+    },
+    {
+      "id": "valid-plan-inaccurate-explanation",
+      "mutation": "inaccurate_explanation",
+      "expected_passed": false
+    },
+    {
+      "id": "low-material-ownership-confidence",
+      "mutation": "low_material_confidence",
+      "expected_passed": false
+    },
+    {
+      "id": "nonblocking-reference-gap",
+      "mutation": "nonblocking_reference_gap",
+      "expected_passed": true,
+      "expected_metadata": {
+        "planning_model": "controlled-technology-pilot",
+        "responsibility_domain": "project_delivery",
+        "workstream": "Active Projects",
+        "requires_human_decision": false
+      }
+    }
+  ]
+}
