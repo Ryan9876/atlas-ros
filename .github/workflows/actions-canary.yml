@@ -3,6 +3,8 @@ name: actions-canary
 on:
   push:
     branches: [diagnostic/actions-canary]
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
