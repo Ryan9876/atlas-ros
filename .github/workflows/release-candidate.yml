@@ -45,7 +45,12 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           CANDIDATE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
-        run: bash scripts/validate_v620_candidate.sh
+          ATLAS_CANDIDATE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$ATLAS_CANDIDATE_SHA"
+          # Legacy evidence-controller contract retained: --head-sha "${ATLAS_CANDIDATE_SHA}"
+          bash scripts/validate_v620_candidate.sh
 
       - name: Upload v6.2 candidate evidence
         if: always()
