@@ -38,20 +38,35 @@ class ReasoningCoherenceGate:
             and reasoning.selection_confidence >= 0.90
             and bool(reasoning.primary_business_outcome)
             and not reasoning.intent_partition_ambiguities
+            and not reasoning.unresolved_planning_questions
         )
-        classification = "project" if is_governed_pilot else reasoning.classification
+        is_governed_single_outcome = (
+            reasoning.selected_planning_model_id == "single-business-outcome"
+            and reasoning.selection_confidence >= 0.80
+            and bool(reasoning.primary_business_outcome)
+            and not reasoning.intent_partition_ambiguities
+            and not reasoning.unresolved_planning_questions
+        )
+        governed_resolution = is_governed_pilot or is_governed_single_outcome
+        classification = (
+            "project"
+            if is_governed_pilot
+            else "action"
+            if is_governed_single_outcome
+            else reasoning.classification
+        )
         destination = (
             self._expected_destination(classification) or reasoning.destination
-            if is_governed_pilot
+            if governed_resolution
             else reasoning.destination
         )
         responsibility = (
-            "project_delivery" if is_governed_pilot else reasoning.responsibility_domain
+            "project_delivery" if governed_resolution else reasoning.responsibility_domain
         )
-        workstream = "Active Projects" if is_governed_pilot else reasoning.workstream
+        workstream = "Active Projects" if governed_resolution else reasoning.workstream
         legacy_confidence = (
-            max(reasoning.confidence, 0.95)
-            if is_governed_pilot
+            max(reasoning.confidence, 0.95 if is_governed_pilot else 0.85)
+            if governed_resolution
             else reasoning.confidence
         )
         review_pending = bool(
@@ -86,7 +101,7 @@ class ReasoningCoherenceGate:
                     )
                 ,),
                 "challenge_status": (
-                    "corrected" if is_governed_pilot else reasoning.challenge_status
+                    "corrected" if governed_resolution else reasoning.challenge_status
                 ),
                 "requires_human_decision": review_pending,
                 "confidence_dimensions": dimensions,
