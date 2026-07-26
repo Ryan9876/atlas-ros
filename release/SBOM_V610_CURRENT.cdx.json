@@ -4,11 +4,11 @@
   "version": 1,
   "metadata": {
     "component": {
-      "bom-ref": "pkg:pypi/atlas-ros@6.1.0rc1",
+      "bom-ref": "pkg:pypi/atlas-ros@6.1.0",
       "type": "application",
       "name": "atlas-ros",
-      "version": "6.1.0rc1",
-      "purl": "pkg:pypi/atlas-ros@6.1.0rc1"
+      "version": "6.1.0",
+      "purl": "pkg:pypi/atlas-ros@6.1.0"
     }
   },
   "components": [
@@ -21,7 +21,7 @@
     {"bom-ref": "pkg:pypi/typing-inspection@0.4.2", "type": "library", "name": "typing-inspection", "version": "0.4.2", "purl": "pkg:pypi/typing-inspection@0.4.2"}
   ],
   "dependencies": [
-    {"ref": "pkg:pypi/atlas-ros@6.1.0rc1", "dependsOn": ["pkg:pypi/platformdirs@4.10.0", "pkg:pypi/pydantic@2.13.4", "pkg:pypi/pyyaml@6.0.3"]},
+    {"ref": "pkg:pypi/atlas-ros@6.1.0", "dependsOn": ["pkg:pypi/platformdirs@4.10.0", "pkg:pypi/pydantic@2.13.4", "pkg:pypi/pyyaml@6.0.3"]},
     {"ref": "pkg:pypi/pydantic@2.13.4", "dependsOn": ["pkg:pypi/annotated-types@0.7.0", "pkg:pypi/pydantic-core@2.46.4", "pkg:pypi/typing-extensions@4.15.0", "pkg:pypi/typing-inspection@0.4.2"]},
     {"ref": "pkg:pypi/pydantic-core@2.46.4", "dependsOn": ["pkg:pypi/typing-extensions@4.15.0"]},
     {"ref": "pkg:pypi/typing-inspection@0.4.2", "dependsOn": ["pkg:pypi/typing-extensions@4.15.0"]}
