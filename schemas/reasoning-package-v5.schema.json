@@ -1,0 +1,281 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas.local/schemas/reasoning-package-v5.schema.json",
+  "title": "Atlas ROS Enhanced Reasoning Package V5",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contract_version",
+    "contract_kind",
+    "architecture_version",
+    "source_component",
+    "classification",
+    "destination",
+    "responsibility_domain",
+    "workstream",
+    "planning_model",
+    "planning_model_confidence",
+    "canonical_intent",
+    "outcomes",
+    "archetype_selection",
+    "domain_knowledge_context",
+    "intent_graph",
+    "dependencies",
+    "constraint_result",
+    "confidence_profile",
+    "risk_profile",
+    "clarification",
+    "reflection",
+    "planning_style",
+    "memory_entry_ids",
+    "projection",
+    "user_facing_summary",
+    "provider_writes",
+    "execution_authorized",
+    "requires_human_decision",
+    "package_digest"
+  ],
+  "properties": {
+    "contract_version": {"const": 5},
+    "contract_kind": {"const": "reasoning"},
+    "architecture_version": {"const": "6.2"},
+    "source_component": {"const": "engines.input_pipeline_v62"},
+    "classification": {"type": "string", "minLength": 1},
+    "destination": {"type": "string", "minLength": 1},
+    "responsibility_domain": {"type": "string", "minLength": 1},
+    "workstream": {"type": "string", "minLength": 1},
+    "planning_model": {"type": "string", "minLength": 1},
+    "planning_model_confidence": {"type": "number", "minimum": 0, "maximum": 1},
+    "canonical_intent": {"$ref": "#/$defs/canonicalIntent"},
+    "outcomes": {"$ref": "#/$defs/outcomeSet"},
+    "archetype_selection": {"$ref": "#/$defs/archetypeSelection"},
+    "domain_knowledge_context": {"$ref": "#/$defs/domainContext"},
+    "intent_graph": {"$ref": "#/$defs/intentGraph"},
+    "dependencies": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/dependency"}
+    },
+    "constraint_result": {"$ref": "#/$defs/constraintResult"},
+    "confidence_profile": {"$ref": "#/$defs/confidenceProfile"},
+    "risk_profile": {"$ref": "#/$defs/riskProfile"},
+    "clarification": {"$ref": "#/$defs/clarification"},
+    "reflection": {"$ref": "#/$defs/reflection"},
+    "planning_style": {
+      "enum": ["executive", "strategic", "project_management", "engineering", "operational", "research", "concise"]
+    },
+    "memory_entry_ids": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+    "projection": {"$ref": "#/$defs/projection"},
+    "user_facing_summary": {"type": "string", "minLength": 1},
+    "provider_writes": {"const": 0},
+    "execution_authorized": {"const": false},
+    "requires_human_decision": {"type": "boolean"},
+    "package_digest": {"$ref": "#/$defs/digest"}
+  },
+  "$defs": {
+    "digest": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source", "detail"],
+      "properties": {
+        "source": {"type": "string", "minLength": 1},
+        "detail": {"type": "string", "minLength": 1}
+      }
+    },
+    "canonicalIntent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["contract_version", "raw_input", "canonical_text", "intent_type", "domain", "normalization_steps", "material_qualifiers", "semantic_fingerprint"],
+      "properties": {
+        "contract_version": {"const": 1},
+        "raw_input": {"type": "string", "minLength": 1},
+        "canonical_text": {"type": "string", "minLength": 1},
+        "intent_type": {"type": "string", "minLength": 1},
+        "domain": {"type": "string", "minLength": 1},
+        "normalization_steps": {"type": "array", "items": {"type": "string"}},
+        "material_qualifiers": {"type": "array", "items": {"type": "string"}},
+        "semantic_fingerprint": {"$ref": "#/$defs/digest"}
+      }
+    },
+    "outcome": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["outcome_id", "text", "role", "priority", "explicit", "provenance"],
+      "properties": {
+        "outcome_id": {"type": "string", "minLength": 1},
+        "text": {"type": "string", "minLength": 1},
+        "role": {"enum": ["primary", "secondary", "supporting", "constraint", "evidence", "competing"]},
+        "priority": {"type": "integer", "minimum": 1},
+        "explicit": {"type": "boolean"},
+        "provenance": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "outcomeSet": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["contract_version", "primary", "secondary", "supporting", "competing", "ranking_requires_clarification", "outcome_digest"],
+      "properties": {
+        "contract_version": {"const": 1},
+        "primary": {"$ref": "#/$defs/outcome"},
+        "secondary": {"type": "array", "items": {"$ref": "#/$defs/outcome"}},
+        "supporting": {"type": "array", "items": {"$ref": "#/$defs/outcome"}},
+        "competing": {"type": "array", "items": {"$ref": "#/$defs/outcome"}},
+        "ranking_requires_clarification": {"type": "boolean"},
+        "outcome_digest": {"$ref": "#/$defs/digest"}
+      }
+    },
+    "archetypeSelection": {
+      "type": "object",
+      "required": ["archetype_id", "archetype_version", "confidence", "evidence", "alternatives", "selection_digest"],
+      "properties": {
+        "archetype_id": {"type": "string", "minLength": 1},
+        "archetype_version": {"type": "string", "minLength": 1},
+        "confidence": {"type": "number", "minimum": 0, "maximum": 1},
+        "evidence": {"type": "array", "items": {"$ref": "#/$defs/evidence"}},
+        "alternatives": {"type": "array", "items": {"type": "string"}},
+        "selection_digest": {"$ref": "#/$defs/digest"}
+      }
+    },
+    "domainContext": {
+      "type": "object",
+      "required": ["selection", "facts", "terminology", "context_digest"],
+      "properties": {
+        "selection": {
+          "type": "object",
+          "required": ["requested_domain", "selected_pack_id", "selected_pack_version", "confidence", "sufficient", "missing_requirements", "selection_digest"],
+          "properties": {
+            "requested_domain": {"type": "string"},
+            "selected_pack_id": {"type": "string"},
+            "selected_pack_version": {"type": "string"},
+            "confidence": {"type": "number", "minimum": 0, "maximum": 1},
+            "sufficient": {"type": "boolean"},
+            "missing_requirements": {"type": "array", "items": {"type": "string"}},
+            "selection_digest": {"$ref": "#/$defs/digest"}
+          }
+        },
+        "facts": {"type": "object"},
+        "terminology": {"type": "array", "items": {"type": "string"}},
+        "context_digest": {"$ref": "#/$defs/digest"}
+      }
+    },
+    "intentNode": {
+      "type": "object",
+      "required": ["node_id", "node_type", "title", "horizon", "material", "projection_eligible", "provenance"],
+      "properties": {
+        "node_id": {"type": "string", "minLength": 1},
+        "node_type": {"type": "string", "minLength": 1},
+        "title": {"type": "string", "minLength": 1},
+        "description": {"type": "string"},
+        "owner": {"type": "string"},
+        "horizon": {"enum": ["current", "next", "conditional", "future", "reference", "blocked"]},
+        "material": {"type": "boolean"},
+        "projection_eligible": {"type": "boolean"},
+        "provenance": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "intentEdge": {
+      "type": "object",
+      "required": ["edge_id", "source_node_id", "target_node_id", "edge_type", "rationale"],
+      "properties": {
+        "edge_id": {"type": "string", "minLength": 1},
+        "source_node_id": {"type": "string", "minLength": 1},
+        "target_node_id": {"type": "string", "minLength": 1},
+        "edge_type": {"type": "string", "minLength": 1},
+        "rationale": {"type": "string"}
+      }
+    },
+    "intentGraph": {
+      "type": "object",
+      "required": ["contract_version", "nodes", "edges", "blocked", "findings", "graph_digest"],
+      "properties": {
+        "contract_version": {"const": 1},
+        "nodes": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/intentNode"}},
+        "edges": {"type": "array", "items": {"$ref": "#/$defs/intentEdge"}},
+        "blocked": {"type": "boolean"},
+        "findings": {"type": "array", "items": {"type": "string"}},
+        "graph_digest": {"$ref": "#/$defs/digest"}
+      }
+    },
+    "dependency": {
+      "type": "object",
+      "required": ["dependency_id", "category", "description", "state", "material", "confidence", "affected_node_ids"],
+      "properties": {
+        "dependency_id": {"type": "string"},
+        "category": {"type": "string"},
+        "description": {"type": "string"},
+        "state": {"enum": ["confirmed", "inferred", "optional", "unresolved"]},
+        "material": {"type": "boolean"},
+        "confidence": {"type": "number", "minimum": 0, "maximum": 1},
+        "affected_node_ids": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "constraintResult": {
+      "type": "object",
+      "required": ["constraints", "hard_conflicts", "affected_nodes", "execution_eligible", "result_digest"],
+      "properties": {
+        "constraints": {"type": "array", "items": {"type": "object"}},
+        "hard_conflicts": {"type": "array", "items": {"type": "string"}},
+        "affected_nodes": {"type": "object"},
+        "execution_eligible": {"type": "boolean"},
+        "result_digest": {"$ref": "#/$defs/digest"}
+      }
+    },
+    "confidenceProfile": {
+      "type": "object",
+      "required": ["dimensions", "ambiguity_score", "contradiction_score", "material_confidence_floor", "execution_eligible", "profile_digest"],
+      "properties": {
+        "dimensions": {"type": "array", "minItems": 13, "items": {"type": "object"}},
+        "ambiguity_score": {"type": "number", "minimum": 0, "maximum": 1},
+        "contradiction_score": {"type": "number", "minimum": 0, "maximum": 1},
+        "material_confidence_floor": {"type": "number", "minimum": 0, "maximum": 1},
+        "execution_eligible": {"type": "boolean"},
+        "profile_digest": {"$ref": "#/$defs/digest"}
+      }
+    },
+    "riskProfile": {
+      "type": "object",
+      "required": ["dimensions", "overall_level", "review_required", "profile_digest"],
+      "properties": {
+        "dimensions": {"type": "array", "minItems": 12, "items": {"type": "object"}},
+        "overall_level": {"enum": ["low", "moderate", "high", "critical"]},
+        "review_required": {"type": "boolean"},
+        "profile_digest": {"$ref": "#/$defs/digest"}
+      }
+    },
+    "clarification": {
+      "type": "object",
+      "required": ["status", "question", "expected_information_value", "material_issue", "alternatives", "decision_digest"],
+      "properties": {
+        "status": {"enum": ["not_required", "required", "human_review_required", "optional_enrichment", "nonblocking_warning"]},
+        "question": {"type": "string"},
+        "expected_information_value": {"type": "number", "minimum": 0, "maximum": 1},
+        "material_issue": {"type": "string"},
+        "alternatives": {"type": "array", "items": {"type": "string"}},
+        "decision_digest": {"$ref": "#/$defs/digest"}
+      }
+    },
+    "reflection": {
+      "type": "object",
+      "required": ["findings", "revision_count", "passed", "review_required", "result_digest"],
+      "properties": {
+        "findings": {"type": "array", "items": {"type": "object"}},
+        "revision_count": {"type": "integer", "minimum": 0, "maximum": 2},
+        "passed": {"type": "boolean"},
+        "review_required": {"type": "boolean"},
+        "result_digest": {"$ref": "#/$defs/digest"}
+      }
+    },
+    "projection": {
+      "type": "object",
+      "required": ["band", "projected_node_ids", "withheld_node_ids", "explanation", "review_required", "decision_digest"],
+      "properties": {
+        "band": {"enum": ["small", "medium", "large", "program"]},
+        "projected_node_ids": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+        "withheld_node_ids": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+        "explanation": {"type": "string", "minLength": 1},
+        "review_required": {"type": "boolean"},
+        "decision_digest": {"$ref": "#/$defs/digest"}
+      }
+    }
+  }
+}
