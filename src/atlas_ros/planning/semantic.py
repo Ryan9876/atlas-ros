@@ -256,16 +256,20 @@ class SemanticExecutionPlanner:
             }
         )
         passed = all(item.passed for item in conditions)
-        arguments = {
-            "primary_outcome_reference": parent.primary_outcome_reference,
-            "conditions": conditions,
-            "passed": passed,
-            "review_required": not passed,
-            "business_plan_fingerprint": fingerprint,
-        }
-        unsigned = SemanticFidelityResultV1(result_digest="0" * 64, **arguments)
+        unsigned = SemanticFidelityResultV1(
+            primary_outcome_reference=parent.primary_outcome_reference,
+            conditions=conditions,
+            passed=passed,
+            review_required=not passed,
+            business_plan_fingerprint=fingerprint,
+            result_digest="0" * 64,
+        )
         return SemanticFidelityResultV1(
-            **arguments,
+            primary_outcome_reference=parent.primary_outcome_reference,
+            conditions=conditions,
+            passed=passed,
+            review_required=not passed,
+            business_plan_fingerprint=fingerprint,
             result_digest=deterministic_digest(unsigned.digest_payload()),
         )
 
