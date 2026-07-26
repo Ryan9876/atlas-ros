@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Any
+
 from atlas_ros.contracts.coherence_v1 import (
     CoherenceConditionResultV1,
     ConfidenceDimensionV1,
@@ -215,7 +217,7 @@ class ReasoningCoherenceGate:
         )
         passed = not failures
         summary = self._summary(reasoning, failures)
-        values: dict[str, object] = {
+        values: dict[str, Any] = {
             "conditions": checks,
             "passed": passed,
             "review_required": not passed,
