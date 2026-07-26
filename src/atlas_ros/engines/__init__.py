@@ -1,8 +1,4 @@
-from .archetypes_v62 import (
-    ArchetypeRegistryV62,
-    ArchetypeSelectionEngineV62,
-    MultiOutcomeEngineV62,
-)
+from .archetypes_v62 import ArchetypeRegistryV62, ArchetypeSelectionEngineV62
 from .canonical_intent_v62 import CanonicalIntentEngineV62
 from .classification_explainability import ClassificationExplainability
 from .coherent_management_structure import ManagementStructureEngine
@@ -26,6 +22,7 @@ from .intent_partitioning import IntentPartitioner
 from .knowledge_composition import KnowledgeCompositionEngine
 from .management_reasoning import ManagementReasoningEngine
 from .manager_intent import IntentAssessment, ManagerIntentInferer
+from .multi_outcome_v62 import MultiOutcomeEngineV62
 from .reasoning_coherence import ReasoningCoherenceGate
 from .responsibility_classification import ResponsibilityAssessment, ResponsibilityClassifier
 
