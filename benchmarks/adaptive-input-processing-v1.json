@@ -1,0 +1,43 @@
+{
+  "benchmark": "adaptive-input-processing-v1",
+  "architecture": "6.2",
+  "critical_contract": {
+    "input": "Task = arista cloud vision code upgrade automation pilot.",
+    "parent": "Launch the Arista CloudVision code-upgrade automation pilot",
+    "checkpoints": [
+      "Define and approve pilot scope and success measures",
+      "Assign the technical owner and confirm low-risk pilot targets",
+      "Approve pre-checks, change controls, evidence requirements, and rollback plan"
+    ],
+    "planning_model": "controlled-technology-pilot",
+    "responsibility_domain": "project_delivery",
+    "workstream": "Active Projects",
+    "clarification": "not_required"
+  },
+  "cases": [
+    {"id": "cloudvision-base", "group": "cloudvision", "input": "Task = arista cloud vision code upgrade automation pilot.", "expected_model": "controlled-technology-pilot", "expected_parent": "Launch the Arista CloudVision code-upgrade automation pilot", "expected_checkpoint_count": 3, "expected_clarification": "not_required", "should_project": true},
+    {"id": "cloudvision-preserve", "group": "cloudvision", "input": "Task = arista cloud vision code upgrade automation pilot. Preserve every v5.2 through v6.1.1 record unchanged.", "expected_model": "controlled-technology-pilot", "expected_parent": "Launch the Arista CloudVision code-upgrade automation pilot", "expected_checkpoint_count": 3, "expected_clarification": "not_required", "should_project": true},
+    {"id": "cloudvision-duplicate", "group": "cloudvision", "input": "Task = arista cloud vision code upgrade automation pilot. Do not block creation as a duplicate for this benchmark.", "expected_model": "controlled-technology-pilot", "expected_parent": "Launch the Arista CloudVision code-upgrade automation pilot", "expected_checkpoint_count": 3, "expected_clarification": "not_required", "should_project": true},
+    {"id": "cloudvision-compare", "group": "cloudvision", "input": "Task = arista cloud vision code upgrade automation pilot. Compare the output against v5.2 through v6.1.1.", "expected_model": "controlled-technology-pilot", "expected_parent": "Launch the Arista CloudVision code-upgrade automation pilot", "expected_checkpoint_count": 3, "expected_clarification": "not_required", "should_project": true},
+    {"id": "cloudvision-execution-controls", "group": "cloudvision", "input": "Task = arista cloud vision code upgrade automation pilot. Require attended authorization, provider readback, and an execution receipt.", "expected_model": "controlled-technology-pilot", "expected_parent": "Launch the Arista CloudVision code-upgrade automation pilot", "expected_checkpoint_count": 3, "expected_clarification": "not_required", "should_project": true},
+    {"id": "cloudvision-reconciliation-controls", "group": "cloudvision", "input": "Task = arista cloud vision code upgrade automation pilot. Require reconciliation evidence, checkpoint integrity, and a reconciliation receipt.", "expected_model": "controlled-technology-pilot", "expected_parent": "Launch the Arista CloudVision code-upgrade automation pilot", "expected_checkpoint_count": 3, "expected_clarification": "not_required", "should_project": true},
+    {"id": "cloudvision-all-controls", "group": "cloudvision", "input": "Task = arista cloud vision code upgrade automation pilot. Compare against v5.2 through v6.1.1. Preserve previous records. Do not block the new task as a duplicate. Require attended authorization, transaction journaling, provider readback, execution receipt, reconciliation checkpoints, preservation evidence, and reconciliation receipt.", "expected_model": "controlled-technology-pilot", "expected_parent": "Launch the Arista CloudVision code-upgrade automation pilot", "expected_checkpoint_count": 3, "expected_clarification": "not_required", "should_project": true},
+    {"id": "cloudvision-typo", "input": "arista cloud vision code ugrade automation", "expected_model": "controlled-technology-pilot", "expected_parent": "Launch the Arista CloudVision code-upgrade automation pilot", "expected_checkpoint_count": 3, "expected_clarification": "not_required", "should_project": true},
+    {"id": "cloudvision-no-downtime", "input": "CloudVision code upgrade automation pilot with no downtime", "expected_model": "controlled-technology-pilot", "expected_parent": "Launch the Arista CloudVision code-upgrade automation pilot", "expected_checkpoint_count": 3, "expected_clarification": "not_required", "should_project": true},
+    {"id": "cloudvision-constraint-conflict", "input": "CloudVision code upgrade automation pilot with no downtime; downtime is allowed", "expected_model": "controlled-technology-pilot", "expected_parent": "Launch the Arista CloudVision code-upgrade automation pilot", "expected_checkpoint_count": 0, "expected_clarification": "human_review_required", "should_project": false},
+    {"id": "cloudvision-provider-request", "input": "CloudVision code upgrade automation pilot; run the upgrade now", "expected_model": "controlled-technology-pilot", "expected_parent": "Launch the Arista CloudVision code-upgrade automation pilot", "expected_checkpoint_count": 0, "expected_clarification": "human_review_required", "should_project": false},
+    {"id": "cloudvision-multi-outcome", "input": "Upgrade CloudVision while reducing downtime and documenting the process", "expected_model": "controlled-technology-pilot", "expected_parent": "Launch the Arista CloudVision code-upgrade automation pilot", "expected_checkpoint_count": 3, "expected_clarification": "not_required", "should_project": true},
+    {"id": "cisco-cross-domain", "input": "Pilot for automating Cisco code upgrades", "expected_model": "controlled-technology-pilot", "expected_checkpoint_count": 3, "expected_clarification": "not_required", "should_project": true},
+    {"id": "monitoring-cross-domain", "input": "Outcome = infrastructure monitoring automation pilot", "expected_model": "controlled-technology-pilot", "expected_checkpoint_count": 0, "expected_clarification": "required", "should_project": false},
+    {"id": "migration", "input": "Migrate the network monitoring platform to a new service", "expected_model": "migration", "expected_checkpoint_count": 3, "expected_clarification": "not_required", "should_project": true},
+    {"id": "decommission", "input": "Decommission the legacy network monitoring service", "expected_model": "decommission", "expected_checkpoint_count": 3, "expected_clarification": "not_required", "should_project": true},
+    {"id": "compliance", "input": "Prepare security audit readiness for the network platform", "expected_model": "compliance-readiness", "expected_checkpoint_count": 3, "expected_clarification": "not_required", "should_project": true},
+    {"id": "vendor-evaluation", "input": "Evaluate vendor options for network monitoring", "expected_model": "vendor-evaluation", "expected_checkpoint_count": 3, "expected_clarification": "not_required", "should_project": true},
+    {"id": "incident-follow-up", "input": "Complete incident follow-up for the network outage", "expected_model": "incident-follow-up", "expected_checkpoint_count": 3, "expected_clarification": "not_required", "should_project": true},
+    {"id": "missing-domain", "input": "Launch a controlled technology pilot", "expected_model": "controlled-technology-pilot", "expected_checkpoint_count": 0, "expected_clarification": "required", "should_project": false},
+    {"id": "unresolved-owner", "input": "CloudVision code upgrade automation pilot; owner unknown", "expected_model": "controlled-technology-pilot", "expected_checkpoint_count": 0, "expected_clarification": "required", "should_project": false},
+    {"id": "competing-outcomes", "input": "Pilot CloudVision code upgrades versus a manual upgrade process", "expected_model": "controlled-technology-pilot", "expected_checkpoint_count": 0, "expected_clarification": "required", "should_project": false},
+    {"id": "lab-only", "input": "CloudVision code upgrade automation pilot, lab only", "expected_model": "controlled-technology-pilot", "expected_parent": "Launch the Arista CloudVision code-upgrade automation pilot", "expected_checkpoint_count": 3, "expected_clarification": "not_required", "should_project": true},
+    {"id": "environment-conflict", "input": "CloudVision code upgrade automation pilot, lab only and production only", "expected_model": "controlled-technology-pilot", "expected_parent": "Launch the Arista CloudVision code-upgrade automation pilot", "expected_checkpoint_count": 0, "expected_clarification": "human_review_required", "should_project": false}
+  ]
+}
