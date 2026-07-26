@@ -26,6 +26,7 @@ from .decision_support_v62 import (
     ReflectionGateV62,
     RiskProfileEngineV62,
 )
+from .domain_knowledge_v62 import DomainKnowledgeRegistryV62
 from .intent_graph_v62 import (
     ConstraintPropagationEngineV62,
     DependencyDiscoveryEngineV62,
@@ -40,9 +41,11 @@ class AdaptiveInputProcessingPipelineV62:
         self,
         *,
         registry: ArchetypeRegistryV62 | None = None,
+        domain_registry: DomainKnowledgeRegistryV62 | None = None,
         projection_policy: ProjectionPolicy | None = None,
     ) -> None:
         self.registry = registry or ArchetypeRegistryV62()
+        self.domain_registry = domain_registry or DomainKnowledgeRegistryV62()
         self.canonical_intent = CanonicalIntentEngineV62()
         self.multi_outcome = MultiOutcomeEngineV62()
         self.archetype_selection = ArchetypeSelectionEngineV62(self.registry)
@@ -65,6 +68,7 @@ class AdaptiveInputProcessingPipelineV62:
         planning_memory: tuple[PlanningMemoryEntry, ...] = (),
     ) -> EnhancedReasoningPackageV62:
         canonical = self.canonical_intent.canonicalize(raw_input)
+        domain_context = self.domain_registry.select(canonical)
         outcomes = self.multi_outcome.recognize(canonical)
         selection = self.archetype_selection.select(canonical)
         archetype = self.registry.get(selection.archetype_id)
@@ -193,6 +197,7 @@ class AdaptiveInputProcessingPipelineV62:
             "workstream": workstream,
             "planning_model": selection.archetype_id,
             "planning_model_confidence": selection.confidence,
+            "domain_knowledge_context": domain_context.model_dump(mode="json"),
             "requires_human_decision": requires_human_decision,
         }
         return EnhancedReasoningPackageV62(
@@ -216,6 +221,7 @@ class AdaptiveInputProcessingPipelineV62:
             workstream=workstream,
             planning_model=selection.archetype_id,
             planning_model_confidence=selection.confidence,
+            domain_knowledge_context=domain_context,
             requires_human_decision=requires_human_decision,
             package_digest=deterministic_digest(values),
         )
