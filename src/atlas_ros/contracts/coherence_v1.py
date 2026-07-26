@@ -53,7 +53,7 @@ class ReasoningCoherenceResultV1(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
     contract_version: Literal[1] = 1
-    primary_business_outcome: str = Field(min_length=1, max_length=10_000)
+    primary_business_outcome: str = Field(default="", max_length=10_000)
     planning_model_id: str = Field(min_length=1, max_length=200)
     confidence_dimensions: tuple[ConfidenceDimensionV1, ...]
     conditions: tuple[CoherenceConditionResultV1, ...]
