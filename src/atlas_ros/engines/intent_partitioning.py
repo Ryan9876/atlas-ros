@@ -131,29 +131,52 @@ class IntentPartitioner:
         ambiguities = list(dict.fromkeys(ambiguities))
         requires_human_decision = bool(ambiguities)
 
-        arguments = {
-            "correlation_id": correlation_id,
-            "primary_business_outcome": primary_outcome,
-            "current_business_actions": tuple(roles[InstructionRole.CURRENT_BUSINESS_ACTION]),
-            "delegated_actions": tuple(roles[InstructionRole.DELEGATED_ACTION]),
-            "conditional_actions": tuple(roles[InstructionRole.CONDITIONAL_ACTION]),
-            "evaluation_context": tuple(roles[InstructionRole.EVALUATION_CONTEXT]),
-            "audit_requirements": tuple(roles[InstructionRole.AUDIT_REQUIREMENT]),
-            "execution_constraints": tuple(roles[InstructionRole.EXECUTION_CONSTRAINT]),
-            "reference_context": tuple(roles[InstructionRole.REFERENCE_CONTEXT]),
-            "source_clauses": {
-                role.value: tuple(values)
-                for role, values in sorted(
-                    roles.items(), key=lambda item: item[0].value
-                )
-            },
-            "confidence": confidence,
-            "ambiguities": tuple(ambiguities),
-            "requires_human_decision": requires_human_decision,
+        current_business_actions = tuple(
+            roles[InstructionRole.CURRENT_BUSINESS_ACTION]
+        )
+        delegated_actions = tuple(roles[InstructionRole.DELEGATED_ACTION])
+        conditional_actions = tuple(roles[InstructionRole.CONDITIONAL_ACTION])
+        evaluation_context = tuple(roles[InstructionRole.EVALUATION_CONTEXT])
+        audit_requirements = tuple(roles[InstructionRole.AUDIT_REQUIREMENT])
+        execution_constraints = tuple(roles[InstructionRole.EXECUTION_CONSTRAINT])
+        reference_context = tuple(roles[InstructionRole.REFERENCE_CONTEXT])
+        source_clauses = {
+            role.value: tuple(values)
+            for role, values in sorted(
+                roles.items(), key=lambda item: item[0].value
+            )
         }
-        unsigned = IntentPartitionV1(partition_digest="0" * 64, **arguments)
+        ambiguity_tuple = tuple(ambiguities)
+        unsigned = IntentPartitionV1(
+            correlation_id=correlation_id,
+            primary_business_outcome=primary_outcome,
+            current_business_actions=current_business_actions,
+            delegated_actions=delegated_actions,
+            conditional_actions=conditional_actions,
+            evaluation_context=evaluation_context,
+            audit_requirements=audit_requirements,
+            execution_constraints=execution_constraints,
+            reference_context=reference_context,
+            source_clauses=source_clauses,
+            confidence=confidence,
+            ambiguities=ambiguity_tuple,
+            requires_human_decision=requires_human_decision,
+            partition_digest="0" * 64,
+        )
         return IntentPartitionV1(
-            **arguments,
+            correlation_id=correlation_id,
+            primary_business_outcome=primary_outcome,
+            current_business_actions=current_business_actions,
+            delegated_actions=delegated_actions,
+            conditional_actions=conditional_actions,
+            evaluation_context=evaluation_context,
+            audit_requirements=audit_requirements,
+            execution_constraints=execution_constraints,
+            reference_context=reference_context,
+            source_clauses=source_clauses,
+            confidence=confidence,
+            ambiguities=ambiguity_tuple,
+            requires_human_decision=requires_human_decision,
             partition_digest=deterministic_digest(unsigned.digest_payload()),
         )
 
