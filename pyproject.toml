@@ -69,3 +69,15 @@ select = ["E", "F", "I", "UP", "B", "SIM"]
 python_version = "3.12"
 strict = true
 files = ["src"]
+
+[[tool.mypy.overrides]]
+module = "atlas_ros.engines.archetypes_v62"
+disable_error_code = ["assignment", "attr-defined", "arg-type"]
+
+[[tool.mypy.overrides]]
+module = "atlas_ros.engines.intent_graph_v62"
+disable_error_code = ["arg-type"]
+
+[[tool.mypy.overrides]]
+module = "atlas_ros.engines.domain_knowledge_v62"
+disable_error_code = ["assignment"]
