@@ -62,7 +62,7 @@ def evaluate(rollback_source: Path) -> dict[str, Any]:
     }
     return {
         "baseline": "Atlas ROS v6.0.0",
-        "candidate": "Atlas ROS v6.1.0rc1",
+        "candidate": "Atlas ROS v6.1.0",
         "compared_fields": len(set(historical) | set(semantic)),
         "unexplained_differences": differences,
         "unexplained_drift_count": len(differences),
