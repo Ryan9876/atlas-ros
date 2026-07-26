@@ -30,6 +30,7 @@ env:
   FULL_VALIDATION_RECORD: V4V-41
   RELEASE_TAG: v6.1.1
   ROLLBACK_TAG: v6.1.0
+  SOURCE_COMMIT: ${{ github.event.pull_request.head.sha || github.sha }}
 
 jobs:
   validate-and-publish:
@@ -39,6 +40,7 @@ jobs:
       - name: Check out exact controller source
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
         with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 0
           persist-credentials: false
 
@@ -50,6 +52,7 @@ jobs:
           CONFIRMATION: ${{ inputs.confirmation || '' }}
         run: |
           set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$SOURCE_COMMIT"
           git merge-base --is-ancestor "$CANDIDATE_COMMIT" HEAD
           test "$(python - <<'PY'
           import tomllib
@@ -127,7 +130,7 @@ jobs:
           wheel_sha="$(sha256sum final-publication/atlas_ros-6.1.1-py3-none-any.whl | awk '{print $1}')"
           source_sha="$(sha256sum final-publication/atlas_ros-6.1.1.tar.gz | awk '{print $1}')"
           printf '{"release":"v6.1.1","source_commit":"%s","candidate_commit":"%s","candidate_wheel_sha256":"%s","final_wheel_sha256":"%s","final_source_sha256":"%s","full_validation":"%s","rollback":"v6.1.0","provider_writes":0}\n' \
-            "$GITHUB_SHA" "$CANDIDATE_COMMIT" "$CANDIDATE_WHEEL_SHA256" "$wheel_sha" "$source_sha" "$FULL_VALIDATION_RECORD" \
+            "$SOURCE_COMMIT" "$CANDIDATE_COMMIT" "$CANDIDATE_WHEEL_SHA256" "$wheel_sha" "$source_sha" "$FULL_VALIDATION_RECORD" \
             > final-publication/FINAL_IDENTITY.json
           (cd final-publication && find . -type f ! -name CHECKSUMS.sha256 -print0 | sort -z | xargs -0 sha256sum > CHECKSUMS.sha256 && sha256sum -c CHECKSUMS.sha256)
 
@@ -153,13 +156,14 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
+          test "$SOURCE_COMMIT" = "$GITHUB_SHA"
           if gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
             echo "Release $RELEASE_TAG already exists; refusing overwrite" >&2
             exit 1
           fi
           gh release create "$RELEASE_TAG" final-publication/* \
             --repo "$GITHUB_REPOSITORY" \
-            --target "$GITHUB_SHA" \
+            --target "$SOURCE_COMMIT" \
             --title "Atlas ROS v6.1.1" \
             --notes-file release/RELEASE_NOTES_V611.md
 
@@ -170,7 +174,7 @@ jobs:
         run: |
           set -euo pipefail
           git fetch --tags --force
-          test "$(git rev-list -n 1 "$RELEASE_TAG")" = "$GITHUB_SHA"
+          test "$(git rev-list -n 1 "$RELEASE_TAG")" = "$SOURCE_COMMIT"
           rm -rf release-readback
           mkdir release-readback
           gh release download "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --dir release-readback
