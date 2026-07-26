@@ -4,6 +4,7 @@ from typing import Literal
 
 from pydantic import ConfigDict, Field, model_validator
 
+from .domain_v62 import DomainKnowledgeContextV62
 from .v62 import ClarificationStatus, EnhancedReasoningPackage
 
 
@@ -19,6 +20,7 @@ class EnhancedReasoningPackageV62(EnhancedReasoningPackage):
     workstream: str = Field(min_length=1, max_length=200)
     planning_model: str = Field(min_length=1, max_length=200)
     planning_model_confidence: float = Field(ge=0, le=1)
+    domain_knowledge_context: DomainKnowledgeContextV62
     requires_human_decision: bool = False
 
     @model_validator(mode="after")
@@ -50,4 +52,8 @@ class EnhancedReasoningPackageV62(EnhancedReasoningPackage):
             raise ValueError("human-decision state must match clarification decision")
         if self.requires_human_decision and self.projection.projected_node_ids:
             raise ValueError("human-review reasoning cannot project execution work")
+        if self.domain_knowledge_context.selection.requested_domain != (
+            self.canonical_intent.domain
+        ):
+            raise ValueError("domain context must match canonical intent domain")
         return self
