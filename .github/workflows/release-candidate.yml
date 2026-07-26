@@ -1,9 +1,6 @@
 name: release-candidate
 
 on:
-  push:
-    branches:
-      - release/v6.0-candidate
   pull_request:
     branches: [main]
   workflow_dispatch:
@@ -16,14 +13,20 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  build-and-verify:
+  validate-v620-candidate:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.head_ref == 'agent/v620-adaptive-input-processing' ||
+      startsWith(github.head_ref, 'release/v620')
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 60
 
     steps:
-      - name: Check out candidate source
+      - name: Check out exact candidate source
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
         with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
           persist-credentials: false
 
       - name: Set up Python
@@ -32,288 +35,23 @@ jobs:
           python-version: '3.12.10'
           cache: pip
 
-      - name: Resolve package metadata
-        id: metadata
-        shell: bash
+      - name: Install locked candidate toolchain
         run: |
           set -euo pipefail
-          python - <<'PY' >> "$GITHUB_ENV"
-          import tomllib
-          from pathlib import Path
+          python -m pip install --disable-pip-version-check --upgrade pip
+          python -m pip install --disable-pip-version-check -e '.[dev]'
 
-          project = tomllib.loads(Path("pyproject.toml").read_text(encoding="utf-8"))["project"]
-          distribution = project["name"].replace("-", "_")
-          version = project["version"]
-          release_label = version.removesuffix(".dev0")
-
-          print(f"ATLAS_DISTRIBUTION={distribution}")
-          print(f"ATLAS_VERSION={version}")
-          print(f"ATLAS_RELEASE_LABEL={release_label}")
-          print(f"ATLAS_SDIST={distribution}-{version}.tar.gz")
-          print(f"ATLAS_WHEEL={distribution}-{version}-py3-none-any.whl")
-          print(f"ATLAS_SOURCE_DIR={distribution}-{version}")
-          print(f"ATLAS_PACKAGE_BASENAME=Atlas_ROS_v{release_label}_release_candidate")
-          PY
-
-      - name: Install validation toolchain
-        run: |
-          set -euo pipefail
-          python -m pip install --upgrade pip
-          python -m pip install -e '.[dev]'
-
-      - name: Static analysis
-        run: |
-          set -euo pipefail
-          ruff check .
-          python scripts/validate_architecture.py
-          mypy src
-
-      - name: Test with branch coverage
-        run: |
-          set -euo pipefail
-          mkdir -p test-results
-          pytest --junitxml=test-results/pytest.xml --cov-report=json:test-results/coverage.json
-
-      - name: Evaluate Classification Intelligence regression
-        run: |
-          set -euo pipefail
-          mkdir -p classification-evidence
-          python scripts/evaluate_classification_intelligence.py \
-            --dataset benchmarks/classification-intelligence-v1.json \
-            --output classification-evidence/CLASSIFICATION_INTELLIGENCE_REPORT.json
-
-      - name: Evaluate Knowledge Composition and Management Structure
-        run: |
-          set -euo pipefail
-          mkdir -p knowledge-management-evidence
-          python scripts/evaluate_knowledge_management.py \
-            --dataset benchmarks/knowledge-management-v2.json \
-            --output knowledge-management-evidence/KNOWLEDGE_MANAGEMENT_REPORT.json
-
-      - name: Evaluate Semantic Fidelity and Test-Instruction Invariance
-        run: |
-          set -euo pipefail
-          mkdir -p semantic-fidelity-evidence
-          python scripts/evaluate_semantic_fidelity.py \
-            --dataset benchmarks/semantic-fidelity-v1.json \
-            --output semantic-fidelity-evidence/SEMANTIC_FIDELITY_REPORT.json
-
-      - name: Evaluate Execution Planning and Task Economy
-        run: |
-          set -euo pipefail
-          mkdir -p execution-planning-evidence
-          python scripts/evaluate_execution_planning.py \
-            --dataset benchmarks/execution-planning-v1.json \
-            --output execution-planning-evidence/EXECUTION_PLANNING_REPORT.json
-
-      - name: Evaluate Execution Orchestration and Provider Separation
-        run: |
-          set -euo pipefail
-          mkdir -p execution-orchestration-evidence
-          python scripts/evaluate_execution_orchestration.py \
-            --dataset benchmarks/execution-orchestration-v1.json \
-            --output execution-orchestration-evidence/EXECUTION_ORCHESTRATION_REPORT.json
-
-      - name: Evaluate Canonical Reconciliation
-        run: |
-          set -euo pipefail
-          mkdir -p reconciliation-evidence
-          python scripts/evaluate_canonical_reconciliation.py \
-            --dataset benchmarks/canonical-reconciliation-v1.json \
-            --output reconciliation-evidence/CANONICAL_RECONCILIATION_REPORT.json
-          python scripts/inventory_w_references.py
-          python scripts/post_promotion_reconciliation.py \
-            --mode dry-run \
-            --output reconciliation-evidence/POST_PROMOTION_DRY_RUN.json
-
-      - name: Differential validation against v6.0 rollback
+      - name: Execute exact candidate validation controller
         env:
           GH_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          mkdir -p rollback-source differential-evidence
-          gh release download v6.0.0 \
-            --repo "${GITHUB_REPOSITORY}" \
-            --pattern 'atlas_ros-6.0*.tar.gz' \
-            --dir rollback-source
-          BASELINE_ARCHIVE="$(find rollback-source -maxdepth 1 -type f -name 'atlas_ros-6.0*.tar.gz' -print -quit)"
-          test -n "${BASELINE_ARCHIVE}"
-          tar -xzf "${BASELINE_ARCHIVE}" -C rollback-source
-          BASELINE_SOURCE="$(find rollback-source -maxdepth 1 -type d -name 'atlas_ros-6.0*' -print -quit)"
-          test -n "${BASELINE_SOURCE}"
-          python scripts/evaluate_v61_differential.py \
-            --rollback-source "${BASELINE_SOURCE}" \
-            --output differential-evidence/V610_DIFFERENTIAL_REPORT.json
+          CANDIDATE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: bash scripts/validate_v620_candidate.sh
 
-      - name: Validate dependency policy and advisories
-        run: |
-          set -euo pipefail
-          mkdir -p audit
-          python scripts/validate_dependency_lock.py requirements.runtime.lock
-          python scripts/validate_vulnerability_exceptions.py
-          pip-audit --disable-pip --require-hashes --no-deps --vulnerability-service pypi --requirement requirements.runtime.lock --format json --output audit/pip-audit-pypi.json
-          pip-audit --disable-pip --require-hashes --no-deps --vulnerability-service osv --requirement requirements.runtime.lock --format json --output audit/pip-audit-osv.json
-          python scripts/evaluate_dependency_audit.py audit/pip-audit-pypi.json audit/pip-audit-osv.json
-
-      - name: Validate authority-migration records
-        run: |
-          set -euo pipefail
-          mkdir -p authority-migration-evidence
-          atlas release classify-drive-inventory \
-            release/authority-migration/drive-root-items.json \
-            authority-migration-evidence/drive-root-inventory.json \
-            --source-folder-id 1TG_2OP6iZpCmih734SumSsi62gOQ1zH4 \
-            --bootstrap-file-id 1F8fXT9oLtXnorbyL--5Vw0Ajo6MyW0Xk
-          atlas release validate-drive-inventory \
-            authority-migration-evidence/drive-root-inventory.json
-          atlas release validate-implementation-registry \
-            release/implementation-registry.json
-
-      - name: Generate canonical source manifest
-        run: |
-          set -euo pipefail
-          rm -f release/CHECKSUMS.sha256
-          atlas release checksums --root . --checksum-file release/CHECKSUMS.sha256
-          atlas release verify --root . --checksum-file release/CHECKSUMS.sha256
-
-      - name: Build source distribution and wheel
-        run: |
-          set -euo pipefail
-          python -m build
-          test -f "dist/${ATLAS_SDIST}"
-          test -f "dist/${ATLAS_WHEEL}"
-
-      - name: Verify extracted source manifest
-        run: |
-          set -euo pipefail
-          mkdir -p extracted source-verification
-          tar -xzf "dist/${ATLAS_SDIST}" -C extracted
-          test -f "extracted/${ATLAS_SOURCE_DIR}/release/CHECKSUMS.sha256"
-          PYTHONPATH="extracted/${ATLAS_SOURCE_DIR}/src" python - <<'PY'
-          import json
-          import os
-          from pathlib import Path
-          from atlas_ros.release.tooling import verify
-
-          root = Path("extracted") / os.environ["ATLAS_SOURCE_DIR"]
-          checksum_file = root / "release" / "CHECKSUMS.sha256"
-          errors = verify(root, checksum_file)
-          Path("source-verification/mismatches.json").write_text(
-              json.dumps({"valid": not errors, "mismatches": errors}, indent=2) + "\n",
-              encoding="utf-8",
-          )
-          if errors:
-              raise SystemExit(1)
-          PY
-
-      - name: Retain source verification diagnostics
+      - name: Upload v6.2 candidate evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: v610-source-verification
-          path: source-verification/mismatches.json
+          name: atlas-ros-v620-candidate-${{ github.event.pull_request.head.sha || github.sha }}
+          path: publication/
           if-no-files-found: warn
-          retention-days: 7
-
-      - name: Clean wheel install and policy smoke test
-        run: |
-          set -euo pipefail
-          python -m venv clean-wheel
-          clean-wheel/bin/python -m pip install --disable-pip-version-check "dist/${ATLAS_WHEEL}"
-          clean-wheel/bin/python -c "from atlas_ros.models import load_default_registries; models, modules = load_default_registries(); assert models.get('team-operating-model', '^2.0.0'); assert models.get('controlled-technology-pilot', '^3.0.0'); assert len(modules.list()) >= 16"
-          clean-wheel/bin/python -c "from atlas_ros.contracts import IntentPartitionV1, ReasoningPackageV4, ManagementPackageV3, ExecutionPlanV3, SemanticFidelityResultV1; from atlas_ros.engines import IntentPartitioner; from atlas_ros.planning import SemanticExecutionPlanner; assert all((IntentPartitionV1, ReasoningPackageV4, ManagementPackageV3, ExecutionPlanV3, SemanticFidelityResultV1, IntentPartitioner, SemanticExecutionPlanner))"
-          clean-wheel/bin/python -c "from atlas_ros.contracts import ExecutionCandidate, ProjectionDecision, ExistingRepresentationIndex, ExecutionPlanV2; from atlas_ros.planning import ExecutionCandidateExtractor, DuplicateAnalyzer, ProgressiveHorizonPolicy, ExecutionPlanner; assert all((ExecutionCandidate, ProjectionDecision, ExistingRepresentationIndex, ExecutionPlanV2, ExecutionCandidateExtractor, DuplicateAnalyzer, ProgressiveHorizonPolicy, ExecutionPlanner))"
-          clean-wheel/bin/python -c "from atlas_ros.contracts import ExecutionAuthorizationV2, ExecutionCommandV2, ExecutionTransactionV2, ExecutionReceiptV2; from atlas_ros.orchestration import ExecutionCommandFactory, ExecutionOrchestratorV2; assert all((ExecutionAuthorizationV2, ExecutionCommandV2, ExecutionTransactionV2, ExecutionReceiptV2, ExecutionCommandFactory, ExecutionOrchestratorV2))"
-          clean-wheel/bin/python -c "from atlas_ros.contracts import ReconciliationPlanV2, ReconciliationReceiptV2; from atlas_ros.reconciliation import CanonicalReconciliationService; assert all((ReconciliationPlanV2, ReconciliationReceiptV2, CanonicalReconciliationService))"
-          clean-wheel/bin/python -c "import importlib.util; assert importlib.util.find_spec('atlas_ros.workflows') is None; assert importlib.util.find_spec('atlas_ros.legacy') is None"
-          ! tar -tzf "dist/${ATLAS_SDIST}" | grep -E '/atlas_ros/(workflows|legacy)/'
-          clean-wheel/bin/atlas status
-
-      - name: Generate commit-bound candidate evidence
-        env:
-          ATLAS_CANDIDATE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
-        run: |
-          set -euo pipefail
-          python scripts/build_v610_candidate_evidence.py \
-            --project-root . \
-            --output-dir candidate-evidence \
-            --head-sha "${ATLAS_CANDIDATE_SHA}" \
-            --workflow-run-id "${GITHUB_RUN_ID}" \
-            --cases benchmarks/ryan-intelligence-evaluation-set-v1.json \
-            --knowledge-report knowledge-management-evidence/KNOWLEDGE_MANAGEMENT_REPORT.json \
-            --execution-report execution-planning-evidence/EXECUTION_PLANNING_REPORT.json \
-            --orchestration-report execution-orchestration-evidence/EXECUTION_ORCHESTRATION_REPORT.json \
-            --reconciliation-report reconciliation-evidence/CANONICAL_RECONCILIATION_REPORT.json \
-            --semantic-report semantic-fidelity-evidence/SEMANTIC_FIDELITY_REPORT.json \
-            --differential-report differential-evidence/V610_DIFFERENTIAL_REPORT.json \
-            --retirement-inventory release/W_NUMBER_RETIREMENT_INVENTORY.json \
-            --junit test-results/pytest.xml \
-            --coverage test-results/coverage.json \
-            --source-manifest release/CHECKSUMS.sha256 \
-            --sbom release/SBOM_V610_CURRENT.cdx.json
-
-      - name: Assemble immutable v6.1 candidate publication set
-        run: |
-          set -euo pipefail
-          mkdir -p publication/audit
-          cp "dist/${ATLAS_SDIST}" publication/
-          cp "dist/${ATLAS_WHEEL}" publication/
-          cp candidate-evidence/RELEASE_MANIFEST_V610_CANDIDATE.md publication/RELEASE_MANIFEST.md
-          cp candidate-evidence/V610_PROMOTION_PREPARATION_REPORT.md publication/
-          cp candidate-evidence/V610_PROMOTION_PREPARATION_STATUS.json publication/
-          cp candidate-evidence/V610_PROMOTION_PREPARATION_STATUS.sha256 publication/
-          cp candidate-evidence/V610_RELEASE_VALIDATION_WORKBENCH_REPORT.md publication/
-          cp candidate-evidence/V610_CALIBRATION_REPORT.json publication/
-          cp candidate-evidence/V610_KNOWLEDGE_MANAGEMENT_REPORT.json publication/
-          cp candidate-evidence/V610_EXECUTION_PLANNING_REPORT.json publication/
-          cp candidate-evidence/V610_EXECUTION_ORCHESTRATION_REPORT.json publication/
-          cp candidate-evidence/V610_CANONICAL_RECONCILIATION_REPORT.json publication/
-          cp candidate-evidence/V610_SEMANTIC_FIDELITY_REPORT.json publication/
-          cp candidate-evidence/V610_DIFFERENTIAL_REPORT.json publication/
-          cp candidate-evidence/V610_ROLLBACK_REHEARSAL.json publication/
-          cp candidate-evidence/V610_ROLLBACK_REHEARSAL.md publication/
-          cp execution-planning-evidence/EXECUTION_PLANNING_REPORT.json publication/TASK_ECONOMY_EVIDENCE.json
-          cp execution-orchestration-evidence/EXECUTION_ORCHESTRATION_REPORT.json publication/ORCHESTRATION_EVIDENCE.json
-          cp reconciliation-evidence/CANONICAL_RECONCILIATION_REPORT.json publication/RECONCILIATION_EVIDENCE.json
-          cp semantic-fidelity-evidence/SEMANTIC_FIDELITY_REPORT.json publication/SEMANTIC_FIDELITY_EVIDENCE.json
-          cp reconciliation-evidence/POST_PROMOTION_DRY_RUN.json publication/
-          cp release/W_NUMBER_RETIREMENT_INVENTORY.json publication/
-          cp release/DEVELOPMENT_RECORD_RECONCILIATION.json publication/
-          cp release/DEVELOPMENT_RECORD_RECONCILIATION.md publication/
-          cp release/development-record-snapshots.json publication/
-          cp release/RELEASE_SCOPE_V610.md publication/
-          cp release/RELEASE_NOTES_V610.md publication/
-          cp docs/adr/ADR-010-SEMANTIC-INTENT-SEPARATION-AND-OUTPUT-FIDELITY.md publication/
-          cp docs/architecture/SEMANTIC_FIDELITY_ARCHITECTURE.md publication/
-          cp docs/migration/V61_SEMANTIC_CONTRACT_MIGRATION.md publication/
-          cp docs/migration/V6_ROLLBACK_GUIDE.md publication/
-          cp release/SBOM_V610_CURRENT.cdx.json publication/SBOM.cdx.json
-          mkdir -p publication/schemas
-          find schemas -name '*.schema.json' -print0 | sort -z | xargs -0 cp -t publication/schemas/
-          cp release/CHECKSUMS.sha256 publication/SOURCE_CHECKSUMS.sha256
-          cp requirements.runtime.lock publication/
-          cp security/vulnerability-exceptions.yml publication/
-          mkdir -p publication/authority-migration
-          cp release/implementation-registry.json publication/authority-migration/
-          cp authority-migration-evidence/drive-root-inventory.json publication/authority-migration/
-          cp schemas/release/implementation-registry.schema.json publication/authority-migration/
-          cp schemas/release/drive-authority-inventory.schema.json publication/authority-migration/
-          cp audit/pip-audit-pypi.json publication/audit/
-          cp audit/pip-audit-osv.json publication/audit/
-          (
-            cd publication
-            find . -type f ! -name CHECKSUMS.sha256 -print0 | sort -z | xargs -0 sha256sum > CHECKSUMS.sha256
-          )
-          zip -q -X -r "${ATLAS_PACKAGE_BASENAME}.zip" publication
-          sha256sum "${ATLAS_PACKAGE_BASENAME}.zip" > "${ATLAS_PACKAGE_BASENAME}.zip.sha256"
-
-      - name: Retain v6.1 release candidate evidence
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
-        with:
-          name: atlas-ros-v${{ env.ATLAS_RELEASE_LABEL }}-release-candidate
-          path: |
-            publication/
-            ${{ env.ATLAS_PACKAGE_BASENAME }}.zip
-            ${{ env.ATLAS_PACKAGE_BASENAME }}.zip.sha256
-          if-no-files-found: error
-          retention-days: 90
+          retention-days: 30
