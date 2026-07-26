@@ -3,6 +3,9 @@ name: v611-apply-patch-once
 on:
   push:
     branches: [agent/v611-reasoning-coherence]
+  pull_request:
+    branches: [main]
+    types: [opened, reopened, synchronize]
 
 permissions:
   contents: write
@@ -13,7 +16,7 @@ concurrency:
 
 jobs:
   apply:
-    if: contains(github.event.head_commit.message, '[apply-v611-patch]')
+    if: github.head_ref == 'agent/v611-reasoning-coherence' || contains(github.event.head_commit.message, '[apply-v611-patch]')
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
