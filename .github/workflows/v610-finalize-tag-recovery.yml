@@ -1,0 +1,116 @@
+name: v610-finalize-tag-recovery
+
+on:
+  push:
+    branches: [release/v6.1-finalization]
+
+permissions:
+  actions: read
+  contents: read
+  pull-requests: write
+
+jobs:
+  finalize-tag-recovery:
+    if: contains(github.event.head_commit.message, '[finalize-v6.1.0-tag]')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      FINAL_TAG: v6.1.0
+      FINAL_SOURCE: 15a62f670d250ec3728242f776d08449a9a95d1c
+      FINAL_PACKAGE_SHA256: 37cb2916d0750da5370510bd5d61d40dfde1b9c8785b0839e21db802cb4a9cd4
+      EXPECTED_CANDIDATE: 7cfa5e20fc3f30abf02d1a428c4ca3632811c1d7
+      EXPECTED_MERGE: bbed48eb3d00427486a480cf27eea493af9e9538
+
+    steps:
+      - name: Check out final source and tags
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          ref: ${{ env.FINAL_SOURCE }}
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Verify release metadata and tag identity
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir final-readback
+          gh release view "${FINAL_TAG}" --repo "${GITHUB_REPOSITORY}" --json isDraft,isPrerelease,tagName,targetCommitish,url,assets > final-readback/FINAL_RELEASE_METADATA.json
+          jq -e --arg tag "${FINAL_TAG}" '.isDraft == false and .isPrerelease == false and .tagName == $tag' final-readback/FINAL_RELEASE_METADATA.json
+          local_target="$(git rev-parse "refs/tags/${FINAL_TAG}^{commit}")"
+          test "${local_target}" = "${FINAL_SOURCE}"
+          remote_target="$(git ls-remote "https://github.com/${GITHUB_REPOSITORY}.git" "refs/tags/${FINAL_TAG}" | awk '{print $1}')"
+          test "${remote_target}" = "${FINAL_SOURCE}"
+          printf 'TAG_TARGET=%s\n' "${local_target}" >> "${GITHUB_ENV}"
+
+      - name: Reconfirm final package checksum from published assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh release download "${FINAL_TAG}" --repo "${GITHUB_REPOSITORY}" --pattern 'Atlas_ROS_v6.1.0_release.zip*' --dir final-readback
+          (cd final-readback && sha256sum -c Atlas_ROS_v6.1.0_release.zip.sha256)
+          actual="$(sha256sum final-readback/Atlas_ROS_v6.1.0_release.zip | awk '{print $1}')"
+          test "${actual}" = "${FINAL_PACKAGE_SHA256}"
+
+      - name: Create final publication receipt
+        run: |
+          set -euo pipefail
+          mkdir final-receipt
+          cp final-readback/FINAL_RELEASE_METADATA.json final-receipt/
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          receipt = {
+              'release': 'Atlas ROS v6.1.0',
+              'tag': os.environ['FINAL_TAG'],
+              'candidate_head': os.environ['EXPECTED_CANDIDATE'],
+              'production_merge_commit': os.environ['EXPECTED_MERGE'],
+              'production_source_commit': os.environ['FINAL_SOURCE'],
+              'tag_target': os.environ['TAG_TARGET'],
+              'original_publication_run': '30191824161',
+              'restored_asset_verification_run': '30192028212',
+              'tag_finalization_run': os.environ['GITHUB_RUN_ID'],
+              'final_package_sha256': os.environ['FINAL_PACKAGE_SHA256'],
+              'full_validation': 'V4V-38',
+              'promotion_decision': 'V4D-31',
+              'semantic_fidelity': '12/12',
+              'cloudvision_invariance': '7/7',
+              'execution_planning': '52/52',
+              'execution_orchestration': '64/64',
+              'critical_orchestration': '54/54',
+              'canonical_reconciliation': '77/77',
+              'rollback': 'Atlas ROS v6.0.0',
+              'live_provider_writes': 0,
+              'final_release_readback_verified': True,
+              'drive_independent_restoration_verified': True,
+              'tag_target_verified': True,
+              'live_authority_switch_pending': True,
+          }
+          Path('final-receipt/V610_FINAL_PUBLICATION_RECEIPT.json').write_text(json.dumps(receipt, indent=2, sort_keys=True) + '\n', encoding='utf-8')
+          PY
+          (cd final-receipt && sha256sum * > CHECKSUMS.sha256 && sha256sum -c CHECKSUMS.sha256)
+
+      - name: Upload final receipt
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: atlas-ros-v6.1.0-final-publication-receipt
+          path: final-receipt/
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Record successful tag finalization
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          receipt_sha="$(sha256sum final-receipt/V610_FINAL_PUBLICATION_RECEIPT.json | awk '{print $1}')"
+          release_url="$(gh release view "${FINAL_TAG}" --repo "${GITHUB_REPOSITORY}" --json url --jq '.url')"
+          gh pr comment 18 --repo "${GITHUB_REPOSITORY}" --body "Atlas ROS v6.1.0 final release verification is complete. Publication run: \`30191824161\`; restored-asset verification run: \`30192028212\`; tag-finalization run: \`${GITHUB_RUN_ID}\`. Production source and tag target: \`${FINAL_SOURCE}\`. Final package SHA-256: \`${FINAL_PACKAGE_SHA256}\`. Receipt SHA-256: \`${receipt_sha}\`. Final release: ${release_url}. Live authority switching is eligible."
+
+      - name: Record fail-closed tag finalization failure
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh pr comment 18 --repo "${GITHUB_REPOSITORY}" --body "Atlas ROS v6.1.0 tag-finalization verification failed closed. Run: \`${GITHUB_RUN_ID}\`. Release Index and System State must remain on v6.0.0."
