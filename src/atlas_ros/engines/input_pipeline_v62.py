@@ -11,11 +11,7 @@ from atlas_ros.contracts.v62 import (
     ProjectionPolicy,
 )
 
-from .archetypes_v62 import (
-    ArchetypeRegistryV62,
-    ArchetypeSelectionEngineV62,
-    MultiOutcomeEngineV62,
-)
+from .archetypes_v62 import ArchetypeRegistryV62, ArchetypeSelectionEngineV62
 from .canonical_intent_v62 import CanonicalIntentEngineV62
 from .decision_support_v62 import (
     AdaptiveProjectionEngineV62,
@@ -32,6 +28,7 @@ from .intent_graph_v62 import (
     DependencyDiscoveryEngineV62,
     IntentGraphEngineV62,
 )
+from .multi_outcome_v62 import MultiOutcomeEngineV62
 
 
 class AdaptiveInputProcessingPipelineV62:
