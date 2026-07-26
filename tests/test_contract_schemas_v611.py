@@ -10,7 +10,6 @@ from atlas_ros.contracts import (
     ReasoningPackageV4,
 )
 
-
 SCHEMAS = {
     Path("schemas/reasoning/confidence-dimension-v1.schema.json"): ConfidenceDimensionV1,
     Path("schemas/reasoning/reasoning-coherence-result-v1.schema.json"): ReasoningCoherenceResultV1,
