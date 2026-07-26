@@ -1,6 +1,10 @@
+import importlib
+import sys
 from pathlib import Path
 
-from scripts.evaluate_semantic_fidelity import evaluate
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
+evaluate = importlib.import_module("scripts.evaluate_semantic_fidelity").evaluate
 
 
 def test_semantic_fidelity_gold_and_invariance() -> None:
