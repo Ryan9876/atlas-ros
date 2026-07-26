@@ -3,8 +3,6 @@ from .coherence_v1 import (
     BenchmarkMode,
     CoherenceConditionResultV1,
     ConfidenceDimensionV1,
-    ConfidenceSubject,
-    HorizonEvidenceV1,
     HorizonPromotionProposalV1,
     ReasoningCoherenceResultV1,
 )
@@ -104,8 +102,6 @@ __all__ = [
     "BenchmarkMode",
     "CoherenceConditionResultV1",
     "ConfidenceDimensionV1",
-    "ConfidenceSubject",
-    "HorizonEvidenceV1",
     "HorizonPromotionProposalV1",
     "ReasoningCoherenceResultV1",
     "InstructionRole",
