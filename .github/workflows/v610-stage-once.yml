@@ -24,7 +24,8 @@ jobs:
       TAG: v6.1.0-rc.1
       RELEASE_NAME: Atlas ROS v6.1.0 Semantic Fidelity Release Candidate 1
       TARGET_COMMITISH: 7cfa5e20fc3f30abf02d1a428c4ca3632811c1d7
-      EXPECTED_PACKAGE_SHA256: 7230c205958a452bd256435998ad8897779557a1b74504fb29eb79333fe727a0
+      EXPECTED_ARTIFACT_DIGEST: 7230c205958a452bd256435998ad8897779557a1b74504fb29eb79333fe727a0
+      EXPECTED_PACKAGE_SHA256: 9aa9e6fd0447879881bce5c91ce8decefe5e6685e6c9ddc3b9dc8d1809c02237
 
     steps:
       - name: Check out exact candidate tooling
@@ -217,6 +218,7 @@ jobs:
               'draft_release': True,
               'candidate_head': os.environ['TARGET_COMMITISH'],
               'candidate_run_id': os.environ['CANDIDATE_RUN_ID'],
+              'candidate_artifact_digest': os.environ['EXPECTED_ARTIFACT_DIGEST'],
               'candidate_package_sha256': os.environ['PACKAGE_SHA256'],
               'canonical_publication_checksums_verified': True,
               'draft_asset_readback_verified': True,
@@ -252,7 +254,7 @@ jobs:
           set -euo pipefail
           marker='<!-- atlas-v610-draft-staging -->'
           run_url="https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
-          body="${marker}\nAtlas ROS v6.1.0rc1 draft staging status: **${JOB_STATUS}**\n\n- Exact candidate: \`${TARGET_COMMITISH}\`\n- Candidate artifact run: \`${CANDIDATE_RUN_ID}\`\n- Expected package SHA-256: \`${EXPECTED_PACKAGE_SHA256}\`\n- Staging workflow run: ${run_url}\n- Production authority changed: **No**\n- Promotion authorized: **No**"
+          body="${marker}\nAtlas ROS v6.1.0rc1 draft staging status: **${JOB_STATUS}**\n\n- Exact candidate: \`${TARGET_COMMITISH}\`\n- Candidate artifact run: \`${CANDIDATE_RUN_ID}\`\n- Candidate artifact-wrapper digest: \`${EXPECTED_ARTIFACT_DIGEST}\`\n- Candidate package SHA-256: \`${EXPECTED_PACKAGE_SHA256}\`\n- Staging workflow run: ${run_url}\n- Production authority changed: **No**\n- Promotion authorized: **No**"
           if [[ "${JOB_STATUS}" == "success" ]]; then
             release_url="$(gh release view "${TAG}" --repo "${GITHUB_REPOSITORY}" --json url --jq '.url')"
             receipt_sha="$(sha256sum staging-receipt/V610_DRAFT_STAGING_RECEIPT.json | awk '{print $1}')"
