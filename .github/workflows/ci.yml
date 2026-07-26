@@ -28,7 +28,19 @@ jobs:
           retention-days: 7
       - name: Validate architecture boundaries
         run: python scripts/validate_architecture.py
-      - run: mypy src
+      - name: Strict MyPy
+        id: mypy
+        run: |
+          set -o pipefail
+          mypy src 2>&1 | tee mypy-output.txt
+      - name: Retain MyPy diagnostics
+        if: failure() && steps.mypy.outcome == 'failure'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: mypy-diagnostics
+          path: mypy-output.txt
+          if-no-files-found: error
+          retention-days: 7
       - name: Test
         id: pytest
         run: |
