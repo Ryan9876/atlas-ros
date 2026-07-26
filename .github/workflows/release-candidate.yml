@@ -57,6 +57,8 @@ jobs:
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: atlas-ros-v620-candidate-${{ github.event.pull_request.head.sha || github.sha }}
-          path: publication/
+          path: |
+            publication/
+            candidate-evidence/
           if-no-files-found: warn
           retention-days: 30
