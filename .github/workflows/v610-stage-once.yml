@@ -7,6 +7,7 @@ on:
 permissions:
   actions: read
   contents: write
+  pull-requests: write
 
 concurrency:
   group: v610-stage-once
@@ -241,3 +242,20 @@ jobs:
           path: staging-receipt/
           if-no-files-found: error
           retention-days: 90
+
+      - name: Report staging status to PR
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          JOB_STATUS: ${{ job.status }}
+        run: |
+          set -euo pipefail
+          marker='<!-- atlas-v610-draft-staging -->'
+          run_url="https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          body="${marker}\nAtlas ROS v6.1.0rc1 draft staging status: **${JOB_STATUS}**\n\n- Exact candidate: \`${TARGET_COMMITISH}\`\n- Candidate artifact run: \`${CANDIDATE_RUN_ID}\`\n- Expected package SHA-256: \`${EXPECTED_PACKAGE_SHA256}\`\n- Staging workflow run: ${run_url}\n- Production authority changed: **No**\n- Promotion authorized: **No**"
+          if [[ "${JOB_STATUS}" == "success" ]]; then
+            release_url="$(gh release view "${TAG}" --repo "${GITHUB_REPOSITORY}" --json url --jq '.url')"
+            receipt_sha="$(sha256sum staging-receipt/V610_DRAFT_STAGING_RECEIPT.json | awk '{print $1}')"
+            body="${body}\n- Draft release: ${release_url}\n- Staging receipt SHA-256: \`${receipt_sha}\`"
+          fi
+          gh pr comment 18 --repo "${GITHUB_REPOSITORY}" --body "${body}"
