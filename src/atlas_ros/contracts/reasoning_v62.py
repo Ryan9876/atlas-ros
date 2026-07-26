@@ -36,20 +36,30 @@ class EnhancedReasoningPackageV62(EnhancedReasoningPackage):
         }.get(self.classification)
         if expected_destination is not None and self.destination != expected_destination:
             raise ValueError("classification and destination must resolve to one route")
-        unresolved = (
-            self.responsibility_domain == "unresolved"
-            or self.workstream == "Needs Clarification"
-        )
-        if self.planning_model_confidence >= 0.85 and unresolved:
-            raise ValueError(
-                "high-confidence planning cannot coexist with unresolved routing metadata"
-            )
         clarification_review = self.clarification.status in {
             ClarificationStatus.REQUIRED,
             ClarificationStatus.HUMAN_REVIEW_REQUIRED,
         }
         if self.requires_human_decision != clarification_review:
             raise ValueError("human-decision state must match clarification decision")
+        unresolved = (
+            self.responsibility_domain == "unresolved"
+            or self.workstream == "Needs Clarification"
+        )
+        if (
+            self.planning_model_confidence >= 0.85
+            and unresolved
+            and not clarification_review
+        ):
+            raise ValueError(
+                "high-confidence planning cannot coexist with unresolved routing metadata "
+                "without an explicit clarification or review gate"
+            )
+        if unresolved and (
+            self.classification != "needs_clarification"
+            or self.destination != "universal_inbox"
+        ):
+            raise ValueError("unresolved routing metadata must use the clarification route")
         if self.requires_human_decision and self.projection.projected_node_ids:
             raise ValueError("human-review reasoning cannot project execution work")
         if self.domain_knowledge_context.selection.requested_domain != (
