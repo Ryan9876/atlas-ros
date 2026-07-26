@@ -1,0 +1,317 @@
+name: v620-candidate
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: v620-candidate-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  BASELINE_TAG: v6.1.1
+  HISTORICAL_ROLLBACK_TAG: v6.1.0
+
+jobs:
+  validate-candidate:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.head_ref == 'agent/v620-adaptive-input-processing' ||
+      startsWith(github.head_ref, 'release/v620')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+
+    steps:
+      - name: Check out exact candidate source
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.12.10'
+          cache: pip
+
+      - name: Resolve candidate metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY' >> "$GITHUB_ENV"
+          import tomllib
+          from pathlib import Path
+          project = tomllib.loads(Path("pyproject.toml").read_text(encoding="utf-8"))["project"]
+          version = project["version"]
+          distribution = project["name"].replace("-", "_")
+          if version != "6.2.0rc1":
+              raise SystemExit(f"unexpected candidate version: {version}")
+          print(f"ATLAS_VERSION={version}")
+          print(f"ATLAS_DISTRIBUTION={distribution}")
+          print(f"ATLAS_SDIST={distribution}-{version}.tar.gz")
+          print(f"ATLAS_WHEEL={distribution}-{version}-py3-none-any.whl")
+          print(f"ATLAS_SOURCE_DIR={distribution}-{version}")
+          PY
+
+      - name: Install validation toolchain
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          python -m pip install -e '.[dev]'
+
+      - name: Static analysis and architecture boundaries
+        run: |
+          set -euo pipefail
+          ruff check .
+          python scripts/validate_architecture.py
+          mypy src
+
+      - name: Run complete test suite
+        run: |
+          set -euo pipefail
+          mkdir -p candidate-evidence/test-results
+          pytest \
+            --junitxml=candidate-evidence/test-results/pytest.xml \
+            --cov-report=json:candidate-evidence/test-results/coverage.json
+
+      - name: Run legacy benchmark suite
+        run: |
+          set -euo pipefail
+          mkdir -p candidate-evidence/benchmarks
+          python scripts/evaluate_classification_intelligence.py \
+            --dataset benchmarks/classification-intelligence-v1.json \
+            --output candidate-evidence/benchmarks/classification-intelligence.json
+          python scripts/evaluate_knowledge_management.py \
+            --dataset benchmarks/knowledge-management-v2.json \
+            --output candidate-evidence/benchmarks/knowledge-management.json
+          python scripts/evaluate_semantic_fidelity.py \
+            --dataset benchmarks/semantic-fidelity-v1.json \
+            --output candidate-evidence/benchmarks/semantic-fidelity.json
+          python scripts/evaluate_reasoning_coherence.py \
+            --dataset benchmarks/reasoning-coherence-v1.json \
+            --output candidate-evidence/benchmarks/reasoning-coherence.json
+          python scripts/evaluate_execution_planning.py \
+            --dataset benchmarks/execution-planning-v1.json \
+            --output candidate-evidence/benchmarks/execution-planning.json
+          python scripts/evaluate_execution_orchestration.py \
+            --dataset benchmarks/execution-orchestration-v1.json \
+            --output candidate-evidence/benchmarks/execution-orchestration.json
+          python scripts/evaluate_canonical_reconciliation.py \
+            --dataset benchmarks/canonical-reconciliation-v1.json \
+            --output candidate-evidence/benchmarks/canonical-reconciliation.json
+
+      - name: Run v6.2 adaptive input-processing benchmark
+        run: |
+          set -euo pipefail
+          python scripts/evaluate_adaptive_input_processing.py \
+            --dataset benchmarks/adaptive-input-processing-v1.json \
+            --output candidate-evidence/benchmarks/adaptive-input-processing.json
+
+      - name: Scan candidate source for secrets
+        run: |
+          set -euo pipefail
+          python scripts/scan_candidate_secrets.py \
+            --root . \
+            --output candidate-evidence/secret-scan.json
+
+      - name: Download production baseline and historical rollback
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p baseline-assets historical-rollback-assets baseline-source rollback-source
+          gh release download "$BASELINE_TAG" \
+            --repo "$GITHUB_REPOSITORY" \
+            --pattern 'atlas_ros-6.1.1*.tar.gz' \
+            --pattern 'atlas_ros-6.1.1*.whl' \
+            --dir baseline-assets
+          gh release download "$HISTORICAL_ROLLBACK_TAG" \
+            --repo "$GITHUB_REPOSITORY" \
+            --pattern 'atlas_ros-6.1.0*.tar.gz' \
+            --pattern 'atlas_ros-6.1.0*.whl' \
+            --dir historical-rollback-assets
+          BASELINE_SDIST="$(find baseline-assets -type f -name 'atlas_ros-6.1.1*.tar.gz' -print -quit)"
+          ROLLBACK_SDIST="$(find historical-rollback-assets -type f -name 'atlas_ros-6.1.0*.tar.gz' -print -quit)"
+          test -n "$BASELINE_SDIST"
+          test -n "$ROLLBACK_SDIST"
+          tar -xzf "$BASELINE_SDIST" -C baseline-source
+          tar -xzf "$ROLLBACK_SDIST" -C rollback-source
+          BASELINE_SOURCE="$(find baseline-source -mindepth 1 -maxdepth 1 -type d -print -quit)"
+          ROLLBACK_SOURCE="$(find rollback-source -mindepth 1 -maxdepth 1 -type d -print -quit)"
+          test -n "$BASELINE_SOURCE"
+          test -n "$ROLLBACK_SOURCE"
+          echo "BASELINE_SOURCE=$BASELINE_SOURCE" >> "$GITHUB_ENV"
+          echo "ROLLBACK_SOURCE=$ROLLBACK_SOURCE" >> "$GITHUB_ENV"
+
+      - name: Compare v6.2 performance with v6.1.1 baseline
+        run: |
+          set -euo pipefail
+          python scripts/compare_v62_performance.py \
+            --baseline-source "$BASELINE_SOURCE" \
+            --output candidate-evidence/performance-comparison.json \
+            --iterations 100 \
+            --warmup 20 \
+            --max-regression 0.20
+
+      - name: Generate canonical source manifest
+        run: |
+          set -euo pipefail
+          rm -f release/CHECKSUMS.sha256
+          atlas release checksums --root . --checksum-file release/CHECKSUMS.sha256
+          atlas release verify --root . --checksum-file release/CHECKSUMS.sha256
+
+      - name: Build source distribution and wheel
+        run: |
+          set -euo pipefail
+          python -m build
+          test -f "dist/$ATLAS_SDIST"
+          test -f "dist/$ATLAS_WHEEL"
+          sha256sum "dist/$ATLAS_SDIST" "dist/$ATLAS_WHEEL" \
+            > candidate-evidence/candidate-artifacts.sha256
+
+      - name: Verify extracted candidate source
+        run: |
+          set -euo pipefail
+          mkdir -p candidate-source
+          tar -xzf "dist/$ATLAS_SDIST" -C candidate-source
+          test -f "candidate-source/$ATLAS_SOURCE_DIR/release/CHECKSUMS.sha256"
+          PYTHONPATH="candidate-source/$ATLAS_SOURCE_DIR/src" python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          from atlas_ros.release.tooling import verify
+          root = Path("candidate-source") / os.environ["ATLAS_SOURCE_DIR"]
+          errors = verify(root, root / "release" / "CHECKSUMS.sha256")
+          output = Path("candidate-evidence/source-restoration.json")
+          output.write_text(json.dumps({"valid": not errors, "errors": errors}, indent=2))
+          if errors:
+              raise SystemExit(1)
+          PY
+
+      - name: Clean candidate wheel install and smoke test
+        run: |
+          set -euo pipefail
+          python -m venv clean-candidate
+          clean-candidate/bin/python -m pip install --disable-pip-version-check "dist/$ATLAS_WHEEL"
+          clean-candidate/bin/python - <<'PY'
+          import atlas_ros
+          from atlas_ros.engines import AdaptiveInputProcessingPipelineV62
+          assert atlas_ros.__version__ == "6.2.0rc1"
+          result = AdaptiveInputProcessingPipelineV62().process(
+              "Task = arista cloud vision code upgrade automation pilot."
+          )
+          assert result.outcomes.primary.text == (
+              "Launch the Arista CloudVision code-upgrade automation pilot"
+          )
+          assert result.provider_writes == 0
+          assert result.execution_authorized is False
+          assert result.verify_digest()
+          PY
+
+      - name: Verify v6.1.1 and v6.1.0 restoration
+        run: |
+          set -euo pipefail
+          BASELINE_WHEEL="$(find baseline-assets -type f -name 'atlas_ros-6.1.1*.whl' -print -quit)"
+          ROLLBACK_WHEEL="$(find historical-rollback-assets -type f -name 'atlas_ros-6.1.0*.whl' -print -quit)"
+          test -n "$BASELINE_WHEEL"
+          test -n "$ROLLBACK_WHEEL"
+          python -m venv restore-v611
+          restore-v611/bin/python -m pip install --disable-pip-version-check "$BASELINE_WHEEL"
+          restore-v611/bin/python -c "import atlas_ros; assert atlas_ros.__version__ == '6.1.1'"
+          python -m venv restore-v610
+          restore-v610/bin/python -m pip install --disable-pip-version-check "$ROLLBACK_WHEEL"
+          restore-v610/bin/python -c "import atlas_ros; assert atlas_ros.__version__ == '6.1.0'"
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          Path("candidate-evidence/rollback-restoration.json").write_text(
+              json.dumps(
+                  {
+                      "production_baseline": "v6.1.1",
+                      "production_baseline_restored": True,
+                      "historical_immediate_rollback": "v6.1.0",
+                      "historical_rollback_restored": True,
+                  },
+                  indent=2,
+                  sort_keys=True,
+              )
+          )
+          PY
+
+      - name: Generate commit-bound candidate manifest
+        env:
+          CANDIDATE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          cp release/SBOM_V620_CURRENT.cdx.json candidate-evidence/SBOM.cdx.json
+          cp release/RELEASE_SCOPE_V620.md candidate-evidence/
+          cp release/RELEASE_NOTES_V620.md candidate-evidence/
+          cp release/CHECKSUMS.sha256 candidate-evidence/SOURCE_CHECKSUMS.sha256
+          python - <<'PY'
+          import hashlib
+          import json
+          import os
+          from pathlib import Path
+          evidence = Path("candidate-evidence")
+          status = {
+              "release": "Atlas ROS v6.2.0rc1",
+              "status": "candidate_validated_not_promoted",
+              "candidate_sha": os.environ["CANDIDATE_SHA"],
+              "workflow_run_id": os.environ["GITHUB_RUN_ID"],
+              "source_distribution": os.environ["ATLAS_SDIST"],
+              "wheel": os.environ["ATLAS_WHEEL"],
+              "provider_writes": 0,
+              "production_promotion_authorized": False,
+              "production_baseline": "v6.1.1",
+              "historical_rollback": "v6.1.0",
+          }
+          status_path = evidence / "V620_CANDIDATE_STATUS.json"
+          status_path.write_text(json.dumps(status, indent=2, sort_keys=True))
+          status_digest = hashlib.sha256(status_path.read_bytes()).hexdigest()
+          (evidence / "V620_CANDIDATE_STATUS.sha256").write_text(
+              f"{status_digest}  {status_path.name}\n"
+          )
+          manifest = f"""# Atlas ROS v6.2.0rc1 Candidate Manifest
+
+Status: Validated release candidate; not promoted.
+
+- Candidate commit: `{status['candidate_sha']}`
+- Validation workflow run: `{status['workflow_run_id']}`
+- Source distribution: `{status['source_distribution']}`
+- Wheel: `{status['wheel']}`
+- Production baseline restored: `v6.1.1`
+- Historical rollback restored: `v6.1.0`
+- Provider writes during provider-free validation: `0`
+- Final production promotion: not authorized
+
+The candidate must not update the fixed Drive Release Index, Notion System State, immutable production tag, GitHub Release, or rollback state without a separate explicit Ryan authorization.
+"""
+          (evidence / "RELEASE_MANIFEST_V620_CANDIDATE.md").write_text(manifest)
+          PY
+          find candidate-evidence -type f -print0 | sort -z | xargs -0 sha256sum \
+            > candidate-evidence/EVIDENCE_CHECKSUMS.sha256
+
+      - name: Assemble immutable candidate evidence package
+        run: |
+          set -euo pipefail
+          mkdir -p publication
+          cp "dist/$ATLAS_SDIST" publication/
+          cp "dist/$ATLAS_WHEEL" publication/
+          cp -R candidate-evidence publication/evidence
+          tar -czf "publication/Atlas_ROS_v6.2.0rc1_candidate_evidence.tar.gz" \
+            -C publication evidence
+          sha256sum publication/* > publication/PUBLICATION_CHECKSUMS.sha256
+
+      - name: Upload v6.2 candidate validation evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: atlas-ros-v620-candidate-${{ github.event.pull_request.head.sha || github.sha }}
+          path: publication/
+          if-no-files-found: warn
+          retention-days: 30
