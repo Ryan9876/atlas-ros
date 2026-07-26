@@ -8,6 +8,7 @@ from .execution import (
     ExistingRepresentationMatcher,
     ProgressiveHorizonPolicy,
 )
+from .horizon import HorizonPromotionEngine
 from .semantic import SemanticExecutionPlanner
 
 __all__ = [
@@ -19,5 +20,6 @@ __all__ = [
     "ExistingRepresentationMatcher",
     "ProgressiveHorizonPolicy",
     "DecompositionService",
+    "HorizonPromotionEngine",
     "SemanticExecutionPlanner",
 ]
