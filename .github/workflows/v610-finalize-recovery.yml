@@ -1,0 +1,179 @@
+name: v610-finalize-recovery
+
+on:
+  push:
+    branches: [release/v6.1-finalization]
+
+permissions:
+  actions: read
+  contents: read
+  pull-requests: write
+
+jobs:
+  verify-final-release:
+    if: contains(github.event.head_commit.message, '[verify-v6.1.0-final]')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      FINAL_TAG: v6.1.0
+      FINAL_SOURCE: 15a62f670d250ec3728242f776d08449a9a95d1c
+      EXPECTED_CANDIDATE: 7cfa5e20fc3f30abf02d1a428c4ca3632811c1d7
+      EXPECTED_MERGE: bbed48eb3d00427486a480cf27eea493af9e9538
+
+    steps:
+      - name: Check out final production source
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          ref: ${{ env.FINAL_SOURCE }}
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.12.10'
+
+      - name: Download final release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir final-readback
+          gh release download "${FINAL_TAG}" --repo "${GITHUB_REPOSITORY}" --dir final-readback
+          ls -la final-readback
+
+      - name: Verify final package checksum and canonical contents
+        run: |
+          set -euo pipefail
+          (cd final-readback && sha256sum -c Atlas_ROS_v6.1.0_release.zip.sha256)
+          mkdir final-restored
+          unzip -q final-readback/Atlas_ROS_v6.1.0_release.zip -d final-restored
+          (cd final-restored/publication && sha256sum -c CHECKSUMS.sha256)
+          printf 'FINAL_PACKAGE_SHA256=%s\n' "$(sha256sum final-readback/Atlas_ROS_v6.1.0_release.zip | awk '{print $1}')" >> "${GITHUB_ENV}"
+
+      - name: Verify restoration companion and source package
+        run: |
+          set -euo pipefail
+          (cd final-restored/publication/restoration && sha256sum -c CHECKSUMS.sha256)
+          mkdir restored-source
+          tar -xzf final-restored/publication/atlas_ros-6.1.0.tar.gz -C restored-source
+          source_root="$(find restored-source -maxdepth 1 -type d -name 'atlas_ros-6.1.0' -print -quit)"
+          test -n "${source_root}"
+          printf 'SOURCE_ROOT=%s\n' "${source_root}" >> "${GITHUB_ENV}"
+
+      - name: Install and verify final wheel
+        run: |
+          set -euo pipefail
+          python -m venv restored-venv
+          restored-venv/bin/python -m pip install --disable-pip-version-check final-restored/publication/atlas_ros-6.1.0-py3-none-any.whl
+          restored-venv/bin/python - <<'PY'
+          from importlib.metadata import version
+          from atlas_ros.contracts import ExecutionPlanV3, IntentPartitionV1, SemanticFidelityResultV1
+          from atlas_ros.engines import IntentPartitioner
+          from atlas_ros.planning import SemanticExecutionPlanner
+          assert version('atlas-ros') == '6.1.0'
+          assert all((ExecutionPlanV3, IntentPartitionV1, SemanticFidelityResultV1, IntentPartitioner, SemanticExecutionPlanner))
+          PY
+
+      - name: Reproduce restored semantic and execution benchmarks
+        run: |
+          set -euo pipefail
+          restored_python="$(pwd)/restored-venv/bin/python"
+          (
+            cd "${SOURCE_ROOT}"
+            "${restored_python}" scripts/evaluate_semantic_fidelity.py --dataset benchmarks/semantic-fidelity-v1.json --output restored-semantic.json
+            "${restored_python}" scripts/evaluate_execution_planning.py --dataset benchmarks/execution-planning-v1.json --output restored-planning.json
+            "${restored_python}" scripts/evaluate_execution_orchestration.py --dataset benchmarks/execution-orchestration-v1.json --output restored-orchestration.json
+            "${restored_python}" scripts/evaluate_canonical_reconciliation.py --dataset benchmarks/canonical-reconciliation-v1.json --output restored-reconciliation.json
+          )
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          root = Path(os.environ['SOURCE_ROOT'])
+          semantic = json.loads((root / 'restored-semantic.json').read_text())
+          planning = json.loads((root / 'restored-planning.json').read_text())
+          orchestration = json.loads((root / 'restored-orchestration.json').read_text())
+          reconciliation = json.loads((root / 'restored-reconciliation.json').read_text())
+          assert semantic['eligible'] and semantic['passed'] == 12
+          assert semantic['metamorphic_invariance'] == {'cloudvision-invariance': True}
+          assert semantic['live_provider_writes'] == 0
+          assert planning['passed'] and planning['case_count'] == 52 and planning['zero_provider_writes']
+          assert orchestration['passed'] and orchestration['case_count'] == 64
+          assert orchestration['critical_passed_count'] == orchestration['critical_count'] == 54
+          assert orchestration['zero_live_writes']
+          assert reconciliation['eligible'] and reconciliation['case_count'] == 77
+          assert reconciliation['live_provider_writes'] == 0
+          PY
+
+      - name: Verify final release metadata and immutable tag target
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh release view "${FINAL_TAG}" --repo "${GITHUB_REPOSITORY}" --json isDraft,isPrerelease,tagName,targetCommitish,url,assets > final-readback/FINAL_RELEASE_METADATA.json
+          jq -e --arg tag "${FINAL_TAG}" '.isDraft == false and .isPrerelease == false and .tagName == $tag' final-readback/FINAL_RELEASE_METADATA.json
+          git fetch --force origin "refs/tags/${FINAL_TAG}:refs/tags/${FINAL_TAG}"
+          actual_target="$(git rev-list -n 1 "${FINAL_TAG}")"
+          test "${actual_target}" = "${FINAL_SOURCE}"
+          printf 'TAG_TARGET=%s\n' "${actual_target}" >> "${GITHUB_ENV}"
+
+      - name: Create final publication receipt
+        run: |
+          set -euo pipefail
+          mkdir final-receipt
+          cp final-readback/FINAL_RELEASE_METADATA.json final-receipt/
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          receipt = {
+              'release': 'Atlas ROS v6.1.0',
+              'tag': os.environ['FINAL_TAG'],
+              'candidate_head': os.environ['EXPECTED_CANDIDATE'],
+              'production_merge_commit': os.environ['EXPECTED_MERGE'],
+              'production_source_commit': os.environ['FINAL_SOURCE'],
+              'tag_target': os.environ['TAG_TARGET'],
+              'original_publication_run': '30191824161',
+              'recovery_verification_run': os.environ['GITHUB_RUN_ID'],
+              'final_package_sha256': os.environ['FINAL_PACKAGE_SHA256'],
+              'full_validation': 'V4V-38',
+              'promotion_decision': 'V4D-31',
+              'semantic_fidelity': '12/12',
+              'cloudvision_invariance': '7/7',
+              'execution_planning': '52/52',
+              'execution_orchestration': '64/64',
+              'critical_orchestration': '54/54',
+              'canonical_reconciliation': '77/77',
+              'rollback': 'Atlas ROS v6.0.0',
+              'live_provider_writes': 0,
+              'final_release_readback_verified': True,
+              'drive_independent_restoration_verified': True,
+              'live_authority_switch_pending': True,
+          }
+          Path('final-receipt/V610_FINAL_PUBLICATION_RECEIPT.json').write_text(json.dumps(receipt, indent=2, sort_keys=True) + '\n', encoding='utf-8')
+          PY
+          (cd final-receipt && sha256sum * > CHECKSUMS.sha256 && sha256sum -c CHECKSUMS.sha256)
+
+      - name: Upload final receipt
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: atlas-ros-v6.1.0-final-publication-receipt
+          path: final-receipt/
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Record successful final verification
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          receipt_sha="$(sha256sum final-receipt/V610_FINAL_PUBLICATION_RECEIPT.json | awk '{print $1}')"
+          release_url="$(gh release view "${FINAL_TAG}" --repo "${GITHUB_REPOSITORY}" --json url --jq '.url')"
+          gh pr comment 18 --repo "${GITHUB_REPOSITORY}" --body "Atlas ROS v6.1.0 final release recovery verification passed. Original publication run: \`30191824161\`. Recovery verification run: \`${GITHUB_RUN_ID}\`. Production source and tag target: \`${FINAL_SOURCE}\`. Final package SHA-256: \`${FINAL_PACKAGE_SHA256}\`. Receipt SHA-256: \`${receipt_sha}\`. Final release: ${release_url}. Live authority switching is now eligible."
+
+      - name: Record fail-closed recovery failure
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh pr comment 18 --repo "${GITHUB_REPOSITORY}" --body "Atlas ROS v6.1.0 final recovery verification failed closed. Run: \`${GITHUB_RUN_ID}\`. Release Index and System State must remain on v6.0.0."
