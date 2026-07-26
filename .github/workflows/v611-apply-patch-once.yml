@@ -29,7 +29,21 @@ jobs:
       - name: Verify and apply exact implementation payload
         run: |
           set -euo pipefail
-          base64 --decode tools/v611_patch.tar.gz.b64 > /tmp/v611_patch.tar.gz
+          cat tools/v611_patch.part{00..09}.b64 > /tmp/v611_patch.tar.gz.b64
+          cat > /tmp/v611_part_checksums.sha256 <<'EOF'
+          0c88a07d97b2fc253e4bf0a96ccbc6de144c89f939b64ce3b2e81717f6978418  tools/v611_patch.part00.b64
+          e23b8c0699b8aa36dec6e8fab24c97aee7fd84a26461156c0816073b84285eab  tools/v611_patch.part01.b64
+          68be07b74e83e8973a0fde833126c60ea635a9c2867be7fb735804557c58431e  tools/v611_patch.part02.b64
+          557d6cbe85e4347feb8657415ce5008f40460c65a3efc2f3014bf14e10e45516  tools/v611_patch.part03.b64
+          fa7b9ce450355fc5f7deb77b567f2609915389246a94d4477ed6e78a898f7de7  tools/v611_patch.part04.b64
+          f94c73633836a6135c2a48ba954ee8997a9c5b5cd3cab8bca6dd403eb641a660  tools/v611_patch.part05.b64
+          886238edb3097e163adf33af117a7bedd95885d6aa6f4c979529a691a4e3b3b4  tools/v611_patch.part06.b64
+          de913a4e1a97474a6ef4135f4904943ddd53f47ef7ba3d734fd6d347e025a7a2  tools/v611_patch.part07.b64
+          e92890955643216934f4fbaa7d122ccf3ce94ce620cacd2d12f8521567fa9a20  tools/v611_patch.part08.b64
+          c8cffd3f31f989c92e8f6bccde7009486a7a6ed0c37a51e9a7b1b6e060f5403e  tools/v611_patch.part09.b64
+          EOF
+          sha256sum -c /tmp/v611_part_checksums.sha256
+          base64 --decode /tmp/v611_patch.tar.gz.b64 > /tmp/v611_patch.tar.gz
           echo '83aec2a557a5e15974d32f7128386417d5df9a3be89e516a7e0875cc41ec3280  /tmp/v611_patch.tar.gz' | sha256sum -c -
           tar -tzf /tmp/v611_patch.tar.gz >/tmp/v611_patch_files.txt
           test "$(wc -l </tmp/v611_patch_files.txt)" -eq 31
@@ -40,18 +54,22 @@ jobs:
           version = tomllib.loads(Path('pyproject.toml').read_text(encoding='utf-8'))['project']['version']
           assert version == '6.1.1rc1'
           assert Path('src/atlas_ros/engines/reasoning_coherence.py').is_file()
+          assert Path('src/atlas_ros/planning/horizon.py').is_file()
           assert Path('benchmarks/reasoning-coherence-v1.json').is_file()
           assert Path('schemas/reasoning/reasoning-coherence-result-v1.schema.json').is_file()
           PY
 
-      - name: Remove one-time transport files and commit implementation
+      - name: Remove one-time transport and alternate files and commit exact implementation
         run: |
           set -euo pipefail
-          rm tools/v611_patch.tar.gz.b64
-          rm .github/workflows/v611-apply-patch-once.yml
+          rm -f tools/v611_patch.tar.gz.b64
+          rm -f tools/v611_patch.part{00..09}.b64
+          rm -f .github/workflows/v611-apply-patch-once.yml
+          rm -f src/atlas_ros/benchmarking.py
+          rm -f src/atlas_ros/engines/horizon_promotion.py
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add -A
           git diff --cached --check
-          git commit -m 'Implement v6.1.1 reasoning coherence remediation'
+          git commit -m 'Implement exact v6.1.1 reasoning coherence remediation'
           git push origin HEAD:agent/v611-reasoning-coherence
