@@ -22,7 +22,6 @@ class CanonicalIntentEngineV62(_BaseCanonicalIntentEngineV62):
         cloudvision_upgrade = (
             ("cloudvision" in normalized or "cloud vision" in normalized)
             and ("upgrade" in normalized or "upgrades" in normalized or "ugrade" in normalized)
-            and any(term in normalized for term in ("automation", "automate", "pilot", "trial"))
         )
         if not cloudvision_upgrade:
             return super().canonicalize(raw_input)
