@@ -4,6 +4,7 @@ from atlas_ros.config.loader import load_config
 from atlas_ros.contracts import (
     CaptureEnvelope,
     PlanningModelCandidate,
+    ReasoningCoherenceResultV1,
     ReasoningPackage,
     ReasoningPackageV2,
     ReasoningPackageV3,
@@ -21,6 +22,7 @@ from atlas_ros.domain.models import (
 from atlas_ros.engines.classification_explainability import ClassificationExplainability
 from atlas_ros.engines.intent_partitioning import IntentPartitioner
 from atlas_ros.engines.manager_intent import ManagerIntentInferer
+from atlas_ros.engines.reasoning_coherence import ReasoningCoherenceGate
 from atlas_ros.engines.responsibility_classification import ResponsibilityClassifier
 
 
@@ -34,6 +36,7 @@ class ManagementReasoningEngine:
         self._explainability = ClassificationExplainability(self._intelligence_config)
         self._intent = ManagerIntentInferer(self._intelligence_config)
         self._partitioner = IntentPartitioner()
+        self._coherence = ReasoningCoherenceGate()
 
     def reason(
         self,
@@ -120,7 +123,15 @@ class ManagementReasoningEngine:
         )
 
     def reason_v4(self, capture: Capture) -> ReasoningPackageV4:
-        """Partition business intent from controls before selecting a planning model."""
+        """Return coherent semantic reasoning for management-plan approval."""
+        reasoning, _ = self.reason_v4_with_coherence(capture)
+        return reasoning
+
+    def reason_v4_with_coherence(
+        self,
+        capture: Capture,
+    ) -> tuple[ReasoningPackageV4, ReasoningCoherenceResultV1]:
+        """Partition intent, select a model, and apply the fail-closed coherence gate."""
         reasoning_v2 = self.reason_v2(capture)
         combined = "\n".join(
             value for value in (capture.content, capture.additional_context) if value.strip()
@@ -186,7 +197,7 @@ class ManagementReasoningEngine:
             known_inputs=known_inputs,
             unresolved_questions=partition.ambiguities,
         )
-        return ReasoningPackageV4.from_v3(
+        draft = ReasoningPackageV4.from_v3(
             selected_v3,
             partition,
             responsibility_domain=reasoning_v2.responsibility_domain,
@@ -199,6 +210,7 @@ class ManagementReasoningEngine:
             rationale=tuple(reasoning_v2.rationale),
             challenge_status=reasoning_v2.challenge_status,
         )
+        return self._coherence.apply(draft)
 
     @staticmethod
     def _is_controlled_pilot(value: str) -> bool:

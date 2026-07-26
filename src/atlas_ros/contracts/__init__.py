@@ -1,3 +1,11 @@
+from .coherence_v1 import (
+    BenchmarkExecutionPolicyV1,
+    BenchmarkMode,
+    CoherenceConditionResultV1,
+    ConfidenceDimensionV1,
+    HorizonPromotionProposalV1,
+    ReasoningCoherenceResultV1,
+)
 from .execution_v2 import (
     CandidateType,
     CompletionState,
@@ -90,6 +98,12 @@ from .semantic_v1 import (
 )
 
 __all__ = [
+    "BenchmarkExecutionPolicyV1",
+    "BenchmarkMode",
+    "CoherenceConditionResultV1",
+    "ConfidenceDimensionV1",
+    "HorizonPromotionProposalV1",
+    "ReasoningCoherenceResultV1",
     "InstructionRole",
     "IntentPartitionV1",
     "ReasoningPackageV4",

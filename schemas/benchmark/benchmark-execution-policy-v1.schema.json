@@ -1,0 +1,21 @@
+{
+  "$defs": {
+    "BenchmarkMode": {
+      "enum": ["provider_free", "shadow_orchestration", "attended_provider_canary"],
+      "title": "BenchmarkMode",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "contract_version": {"const": 1, "default": 1, "title": "Contract Version", "type": "integer"},
+    "explicit_authorization_required": {"default": false, "title": "Explicit Authorization Required", "type": "boolean"},
+    "mode": {"$ref": "#/$defs/BenchmarkMode", "default": "provider_free"},
+    "object_budget": {"default": 0, "minimum": 0, "title": "Object Budget", "type": "integer"},
+    "provider_readback_required": {"default": false, "title": "Provider Readback Required", "type": "boolean"},
+    "provider_writes_allowed": {"default": false, "title": "Provider Writes Allowed", "type": "boolean"},
+    "reconciliation_required": {"default": false, "title": "Reconciliation Required", "type": "boolean"}
+  },
+  "title": "BenchmarkExecutionPolicyV1",
+  "type": "object"
+}

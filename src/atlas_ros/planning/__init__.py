@@ -1,3 +1,4 @@
+from .coherent_semantic import SemanticExecutionPlanner
 from .decomposition import DecompositionService
 from .execution import (
     CandidateExtractionResult,
@@ -8,7 +9,7 @@ from .execution import (
     ExistingRepresentationMatcher,
     ProgressiveHorizonPolicy,
 )
-from .semantic import SemanticExecutionPlanner
+from .horizon import HorizonPromotionEngine
 
 __all__ = [
     "CandidateExtractionResult",
@@ -19,5 +20,6 @@ __all__ = [
     "ExistingRepresentationMatcher",
     "ProgressiveHorizonPolicy",
     "DecompositionService",
+    "HorizonPromotionEngine",
     "SemanticExecutionPlanner",
 ]

@@ -1,0 +1,16 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "attended_authorization_required": {"default": true, "title": "Attended Authorization Required", "type": "boolean"},
+    "contract_version": {"const": 1, "default": 1, "title": "Contract Version", "type": "integer"},
+    "current_stage": {"maxLength": 100, "minLength": 1, "title": "Current Stage", "type": "string"},
+    "eligible": {"title": "Eligible", "type": "boolean"},
+    "proposed_action": {"maxLength": 500, "minLength": 1, "title": "Proposed Action", "type": "string"},
+    "proposed_stage": {"maxLength": 100, "minLength": 1, "title": "Proposed Stage", "type": "string"},
+    "provider_writes": {"const": 0, "default": 0, "title": "Provider Writes", "type": "integer"},
+    "rationale": {"maxLength": 2000, "minLength": 1, "title": "Rationale", "type": "string"}
+  },
+  "required": ["current_stage", "proposed_stage", "proposed_action", "eligible", "rationale"],
+  "title": "HorizonPromotionProposalV1",
+  "type": "object"
+}

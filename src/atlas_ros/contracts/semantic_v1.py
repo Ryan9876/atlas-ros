@@ -7,6 +7,7 @@ from uuid import UUID, uuid4
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from .coherence_v1 import ConfidenceDimensionV1, ReasoningCoherenceResultV1
 from .intent_v1 import IntentPartitionV1
 from .models import (
     ContractKind,
@@ -76,6 +77,9 @@ class ReasoningPackageV4(BaseModel):
     intent_partition_digest: str = Field(min_length=64, max_length=64)
     unresolved_planning_questions: tuple[str, ...] = ()
     requires_human_decision: bool = False
+    confidence_dimensions: tuple[ConfidenceDimensionV1, ...] = ()
+    coherence_result: ReasoningCoherenceResultV1 | None = None
+    user_facing_summary: str = Field(default="", max_length=3_000)
 
     @model_validator(mode="after")
     def validate_selection_and_intent(self) -> ReasoningPackageV4:
@@ -88,6 +92,14 @@ class ReasoningPackageV4(BaseModel):
             raise ValueError("human decision requires a governed ambiguity")
         if not self.requires_human_decision and not self.primary_business_outcome:
             raise ValueError("semantic reasoning requires a primary business outcome")
+        if self.coherence_result is not None and not self.coherence_result.verify_digest():
+            raise ValueError("reasoning coherence digest verification failed")
+        if (
+            self.coherence_result is not None
+            and self.coherence_result.review_required
+            and not self.requires_human_decision
+        ):
+            raise ValueError("coherence review requirement must fail closed")
         return self
 
     @classmethod
@@ -240,6 +252,9 @@ class ManagementPackageV3(BaseModel):
     audit_requirements: tuple[str, ...] = ()
     execution_constraints: tuple[str, ...] = ()
     reference_context: tuple[str, ...] = ()
+    confidence_dimensions: tuple[ConfidenceDimensionV1, ...] = ()
+    reasoning_coherence: ReasoningCoherenceResultV1 | None = None
+    user_facing_summary: str = Field(default="", max_length=3_000)
     semantic_provenance: dict[str, tuple[str, ...]] = Field(default_factory=dict)
     assumptions: tuple[str, ...] = ()
     unresolved_items: tuple[str, ...] = ()
@@ -249,6 +264,18 @@ class ManagementPackageV3(BaseModel):
     configuration_digest: str = Field(min_length=64, max_length=64)
     intent_partition_digest: str = Field(min_length=64, max_length=64)
     package_digest: str = Field(min_length=64, max_length=64)
+
+    @model_validator(mode="after")
+    def validate_coherence(self) -> ManagementPackageV3:
+        if self.reasoning_coherence is not None and not self.reasoning_coherence.verify_digest():
+            raise ValueError("management reasoning coherence digest verification failed")
+        if (
+            self.reasoning_coherence is not None
+            and self.reasoning_coherence.review_required
+            and self.lifecycle_status == "structurally_complete"
+        ):
+            raise ValueError("management package cannot be complete when coherence requires review")
+        return self
 
     def digest_payload(self) -> dict[str, Any]:
         return self.model_dump(mode="json", exclude={"created_at", "package_digest"})

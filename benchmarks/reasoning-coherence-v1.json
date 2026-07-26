@@ -1,0 +1,26 @@
+{
+  "benchmark": "reasoning-coherence-v1",
+  "cloudvision_cases": [
+    {"id": "base", "input": "Task = arista cloud vision code upgrade automation pilot."},
+    {"id": "preserve", "input": "Task = arista cloud vision code upgrade automation pilot.\nPreserve every v5.2 through v6.0 record unchanged."},
+    {"id": "duplicate", "input": "Task = arista cloud vision code upgrade automation pilot.\nDo not block creation as a duplicate for this test."},
+    {"id": "compare", "input": "Task = arista cloud vision code upgrade automation pilot.\nCompare the output against v5.2 through v6.0."},
+    {"id": "execution", "input": "Task = arista cloud vision code upgrade automation pilot.\nRequire attended authorization, provider readback, and an execution receipt."},
+    {"id": "reconciliation", "input": "Task = arista cloud vision code upgrade automation pilot.\nRequire reconciliation evidence, checkpoint integrity, and a reconciliation receipt."},
+    {"id": "all-controls", "input": "Task = arista cloud vision code upgrade automation pilot.\nCompare against v5.2 through v6.0. Preserve previous records. Do not block the new task as a duplicate. Require attended authorization, transaction journaling, provider readback, execution receipt, reconciliation checkpoints, preservation evidence, and reconciliation receipt."}
+  ],
+  "cross_domain_cases": [
+    {"id": "cisco", "input": "Task = Pilot for automating Cisco code upgrades."},
+    {"id": "monitoring", "input": "Outcome = infrastructure monitoring automation pilot."},
+    {"id": "automation-poc", "input": "Launch a proof of concept for infrastructure configuration automation."},
+    {"id": "controlled-trial", "input": "Run a controlled trial of automated server patching."}
+  ],
+  "contradiction_cases": [
+    {"id": "high-model-unresolved", "mutation": "high_model_unresolved", "expected_review": true},
+    {"id": "no-review-clarification", "mutation": "no_review_clarification", "expected_review": true},
+    {"id": "routing-mismatch", "mutation": "routing_mismatch", "expected_review": true},
+    {"id": "inaccurate-explanation", "mutation": "inaccurate_explanation", "expected_review": true},
+    {"id": "low-material-responsibility", "mutation": "low_material_responsibility", "expected_review": true},
+    {"id": "nonblocking-reference-gap", "mutation": "nonblocking_reference_gap", "expected_review": false}
+  ]
+}
