@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import ConfigDict, Field, model_validator
 
@@ -22,6 +22,25 @@ class EnhancedReasoningPackageV62(EnhancedReasoningPackage):
     planning_model_confidence: float = Field(ge=0, le=1)
     domain_knowledge_context: DomainKnowledgeContextV62
     requires_human_decision: bool = False
+
+    @model_validator(mode="before")
+    @classmethod
+    def reject_silent_metadata_contradiction(cls, value: Any) -> Any:
+        if not isinstance(value, dict):
+            return value
+        confidence = float(value.get("planning_model_confidence", 0.0))
+        unresolved = (
+            value.get("responsibility_domain") == "unresolved"
+            or value.get("workstream") == "Needs Clarification"
+        )
+        if confidence >= 0.85 and unresolved and not bool(
+            value.get("requires_human_decision", False)
+        ):
+            raise ValueError(
+                "high-confidence planning cannot coexist with unresolved routing metadata "
+                "without an explicit clarification or review gate"
+            )
+        return value
 
     @model_validator(mode="after")
     def validate_coherent_metadata(self) -> EnhancedReasoningPackageV62:
