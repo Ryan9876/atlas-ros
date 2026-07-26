@@ -1,0 +1,20 @@
+name: actions-canary
+
+on:
+  push:
+    branches: [diagnostic/actions-canary]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  canary:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Runner started
+        run: |
+          echo "runner-started"
+          uname -a
+          python --version || true
