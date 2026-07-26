@@ -1,0 +1,56 @@
+name: v611-apply-ruff-fix-once
+
+on:
+  push:
+    branches: [agent/v611-reasoning-coherence]
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: contains(github.event.head_commit.message, '[apply-v611-ruff-fix]')
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          ref: agent/v611-reasoning-coherence
+          fetch-depth: 0
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.12.10'
+      - run: python -m pip install --disable-pip-version-check ruff==0.12.12
+      - name: Apply exact formatter and line-length fixes
+        run: |
+          set -euo pipefail
+          ruff check --fix src/atlas_ros/contracts/coherence_v1.py src/atlas_ros/engines/reasoning_coherence.py tests/test_contract_schemas_v611.py || true
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('src/atlas_ros/engines/reasoning_coherence.py')
+          text = path.read_text(encoding='utf-8')
+          text = text.replace(
+              '        legacy_confidence = max(reasoning.confidence, 0.95) if is_governed_pilot else reasoning.confidence\n',
+              '        legacy_confidence = (\n'
+              '            max(reasoning.confidence, 0.95)\n'
+              '            if is_governed_pilot\n'
+              '            else reasoning.confidence\n'
+              '        )\n',
+          )
+          text = text.replace(
+              '                    else "Atlas retained the governed classification and responsibility evidence."\n',
+              '                    else (\n'
+              '                        "Atlas retained the governed classification and "\n'
+              '                        "responsibility evidence."\n'
+              '                    )\n',
+          )
+          path.write_text(text, encoding='utf-8')
+          PY
+          ruff check src/atlas_ros/contracts/coherence_v1.py src/atlas_ros/engines/reasoning_coherence.py tests/test_contract_schemas_v611.py
+          rm .github/workflows/v611-apply-ruff-fix-once.yml
+          rm .github/workflows/v611-ruff-fix-preview.yml
+          git diff --check
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'Apply exact v6.1.1 Ruff fixes and retire preview helpers'
+          git push origin HEAD:agent/v611-reasoning-coherence
