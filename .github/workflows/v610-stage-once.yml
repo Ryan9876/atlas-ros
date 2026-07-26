@@ -1,0 +1,243 @@
+name: v610-stage-once
+
+on:
+  push:
+    branches: [release/v6.1-candidate]
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: v610-stage-once
+  cancel-in-progress: false
+
+jobs:
+  stage-draft-release:
+    if: contains(github.event.head_commit.message, '[stage-v6.1.0rc1]')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      CANDIDATE_RUN_ID: '30190241886'
+      ARTIFACT_NAME: atlas-ros-v6.1.0rc1-release-candidate
+      TAG: v6.1.0-rc.1
+      RELEASE_NAME: Atlas ROS v6.1.0 Semantic Fidelity Release Candidate 1
+      TARGET_COMMITISH: 7cfa5e20fc3f30abf02d1a428c4ca3632811c1d7
+      EXPECTED_PACKAGE_SHA256: 7230c205958a452bd256435998ad8897779557a1b74504fb29eb79333fe727a0
+
+    steps:
+      - name: Check out exact candidate tooling
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          ref: ${{ env.TARGET_COMMITISH }}
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.12.10'
+          cache: pip
+
+      - name: Download exact validated candidate artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p candidate
+          gh run download "${CANDIDATE_RUN_ID}" --repo "${GITHUB_REPOSITORY}" --name "${ARTIFACT_NAME}" --dir candidate
+
+      - name: Verify candidate package and canonical publication checksums
+        run: |
+          set -euo pipefail
+          package="$(find candidate -maxdepth 3 -type f -name 'Atlas_ROS_v6.1.0rc1_release_candidate.zip' -print -quit)"
+          test -n "${package}"
+          checksum_file="${package}.sha256"
+          test -f "${checksum_file}"
+          (cd "$(dirname "${package}")" && sha256sum -c "$(basename "${checksum_file}")")
+          actual_sha256="$(sha256sum "${package}" | awk '{print $1}')"
+          test "${actual_sha256}" = "${EXPECTED_PACKAGE_SHA256}"
+          rm -rf verified-candidate
+          mkdir verified-candidate
+          unzip -q "${package}" -d verified-candidate
+          (cd verified-candidate/publication && sha256sum -c CHECKSUMS.sha256)
+          grep -Fq "Candidate head: \`${TARGET_COMMITISH}\`" verified-candidate/publication/RELEASE_MANIFEST.md
+          grep -Fq 'Promotion authorized: No' verified-candidate/publication/RELEASE_MANIFEST.md
+          printf 'PACKAGE=%s\n' "${package}" >> "${GITHUB_ENV}"
+          printf 'PACKAGE_SHA256=%s\n' "${actual_sha256}" >> "${GITHUB_ENV}"
+
+      - name: Prepare deterministic release assets
+        run: |
+          set -euo pipefail
+          rm -rf staging-assets
+          mkdir staging-assets
+          python - <<'PY'
+          import json
+          import shutil
+          from pathlib import Path
+
+          source = Path('verified-candidate/publication')
+          destination = Path('staging-assets')
+          mapping: dict[str, str] = {}
+          for path in sorted(item for item in source.rglob('*') if item.is_file()):
+              relative = path.relative_to(source).as_posix()
+              asset_name = relative.replace('/', '__')
+              if asset_name in mapping.values():
+                  raise SystemExit(f'duplicate staged asset name: {asset_name}')
+              shutil.copy2(path, destination / asset_name)
+              mapping[relative] = asset_name
+          (destination / 'DRAFT_ASSET_MAP.json').write_text(
+              json.dumps(mapping, indent=2, sort_keys=True) + '\n', encoding='utf-8'
+          )
+          PY
+          (
+            cd staging-assets
+            find . -maxdepth 1 -type f ! -name DRAFT_ASSET_CHECKSUMS.sha256 -print0 | sort -z | xargs -0 sha256sum > DRAFT_ASSET_CHECKSUMS.sha256
+            sha256sum -c DRAFT_ASSET_CHECKSUMS.sha256
+          )
+
+      - name: Create or update checksum-bound draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          notes_file="verified-candidate/publication/RELEASE_MANIFEST.md"
+          if gh release view "${TAG}" --repo "${GITHUB_REPOSITORY}" >/dev/null 2>&1; then
+            gh release edit "${TAG}" --repo "${GITHUB_REPOSITORY}" --draft --title "${RELEASE_NAME}" --target "${TARGET_COMMITISH}" --notes-file "${notes_file}"
+          else
+            gh release create "${TAG}" --repo "${GITHUB_REPOSITORY}" --draft --title "${RELEASE_NAME}" --target "${TARGET_COMMITISH}" --notes-file "${notes_file}"
+          fi
+
+      - name: Upload exact candidate and deterministic readback assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mapfile -d '' assets < <(find staging-assets -maxdepth 1 -type f -print0 | sort -z)
+          gh release upload "${TAG}" --repo "${GITHUB_REPOSITORY}" --clobber "${PACKAGE}" "${PACKAGE}.sha256" "${assets[@]}"
+
+      - name: Download and verify draft release readback
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          rm -rf release-readback restored-candidate
+          mkdir release-readback restored-candidate
+          gh release download "${TAG}" --repo "${GITHUB_REPOSITORY}" --dir release-readback
+          downloaded_package="release-readback/$(basename "${PACKAGE}")"
+          test -f "${downloaded_package}"
+          test "$(sha256sum "${downloaded_package}" | awk '{print $1}')" = "${PACKAGE_SHA256}"
+          (cd release-readback && sha256sum -c "$(basename "${PACKAGE}").sha256")
+          (cd release-readback && sha256sum -c DRAFT_ASSET_CHECKSUMS.sha256)
+          unzip -q "${downloaded_package}" -d restored-candidate
+          (cd restored-candidate/publication && sha256sum -c CHECKSUMS.sha256)
+          gh release view "${TAG}" --repo "${GITHUB_REPOSITORY}" --json isDraft,tagName,targetCommitish,url,assets > release-readback/RELEASE_READBACK.json
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          readback = json.loads(Path('release-readback/RELEASE_READBACK.json').read_text())
+          assert readback['isDraft'] is True
+          assert readback['tagName'] == os.environ['TAG']
+          assert readback['targetCommitish'] == os.environ['TARGET_COMMITISH']
+          names = {item['name'] for item in readback['assets']}
+          expected = {
+              Path(os.environ['PACKAGE']).name,
+              Path(os.environ['PACKAGE']).name + '.sha256',
+              'DRAFT_ASSET_CHECKSUMS.sha256',
+              'DRAFT_ASSET_MAP.json',
+          }
+          assert expected <= names
+          PY
+
+      - name: Prove exact-artifact restoration without Drive
+        run: |
+          set -euo pipefail
+          source_archive="$(find restored-candidate/publication -maxdepth 1 -type f -name 'atlas_ros-6.1.0rc1.tar.gz' -print -quit)"
+          wheel="$(find restored-candidate/publication -maxdepth 1 -type f -name 'atlas_ros-6.1.0rc1-py3-none-any.whl' -print -quit)"
+          test -n "${source_archive}"
+          test -n "${wheel}"
+          rm -rf restored-source restored-venv restored-evidence
+          mkdir restored-source restored-evidence
+          tar -xzf "${source_archive}" -C restored-source
+          python -m venv restored-venv
+          restored-venv/bin/python -m pip install --disable-pip-version-check "${wheel}"
+          source_root="$(find restored-source -maxdepth 1 -type d -name 'atlas_ros-6.1.0rc1' -print -quit)"
+          test -n "${source_root}"
+          (cd "${source_root}/release/atlas-ros-v4.1.0-restoration-companion" && sha256sum -c CHECKSUMS.sha256)
+          restored-venv/bin/python - <<'PY'
+          from atlas_ros.contracts import ExecutionPlanV3, IntentPartitionV1, SemanticFidelityResultV1
+          from atlas_ros.engines import IntentPartitioner
+          from atlas_ros.planning import SemanticExecutionPlanner
+          assert all((ExecutionPlanV3, IntentPartitionV1, SemanticFidelityResultV1, IntentPartitioner, SemanticExecutionPlanner))
+          PY
+          restored_venv="$(pwd)/restored-venv"
+          (
+            cd "${source_root}"
+            "${restored_venv}/bin/python" scripts/evaluate_semantic_fidelity.py --dataset benchmarks/semantic-fidelity-v1.json --output "${GITHUB_WORKSPACE}/restored-evidence/SEMANTIC_FIDELITY_REPORT.json"
+            "${restored_venv}/bin/python" scripts/evaluate_execution_planning.py --dataset benchmarks/execution-planning-v1.json --output "${GITHUB_WORKSPACE}/restored-evidence/EXECUTION_PLANNING_REPORT.json"
+            "${restored_venv}/bin/python" scripts/evaluate_execution_orchestration.py --dataset benchmarks/execution-orchestration-v1.json --output "${GITHUB_WORKSPACE}/restored-evidence/EXECUTION_ORCHESTRATION_REPORT.json"
+            "${restored_venv}/bin/python" scripts/evaluate_canonical_reconciliation.py --dataset benchmarks/canonical-reconciliation-v1.json --output "${GITHUB_WORKSPACE}/restored-evidence/CANONICAL_RECONCILIATION_REPORT.json"
+          )
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          root = Path('restored-evidence')
+          semantic = json.loads((root / 'SEMANTIC_FIDELITY_REPORT.json').read_text())
+          planning = json.loads((root / 'EXECUTION_PLANNING_REPORT.json').read_text())
+          orchestration = json.loads((root / 'EXECUTION_ORCHESTRATION_REPORT.json').read_text())
+          reconciliation = json.loads((root / 'CANONICAL_RECONCILIATION_REPORT.json').read_text())
+          assert semantic['eligible'] and semantic['passed'] == 12
+          assert semantic['metamorphic_invariance'] == {'cloudvision-invariance': True}
+          assert semantic['live_provider_writes'] == 0
+          assert planning['passed'] and planning['case_count'] == 52 and planning['zero_provider_writes']
+          assert orchestration['passed'] and orchestration['case_count'] == 64
+          assert orchestration['critical_passed_count'] == orchestration['critical_count'] == 54
+          assert orchestration['zero_live_writes']
+          assert reconciliation['eligible'] and reconciliation['case_count'] == 77
+          assert reconciliation['live_provider_writes'] == 0
+          PY
+
+      - name: Create staging and restoration receipt
+        run: |
+          set -euo pipefail
+          mkdir -p staging-receipt
+          cp release-readback/RELEASE_READBACK.json staging-receipt/
+          cp restored-evidence/*.json staging-receipt/
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          receipt = {
+              'release': 'Atlas ROS v6.1.0rc1',
+              'draft_tag': os.environ['TAG'],
+              'draft_release': True,
+              'candidate_head': os.environ['TARGET_COMMITISH'],
+              'candidate_run_id': os.environ['CANDIDATE_RUN_ID'],
+              'candidate_package_sha256': os.environ['PACKAGE_SHA256'],
+              'canonical_publication_checksums_verified': True,
+              'draft_asset_readback_verified': True,
+              'drive_independent_restoration_verified': True,
+              'restoration_companion_verified': True,
+              'semantic_fidelity_cases': 12,
+              'cloudvision_invariance': True,
+              'execution_planning_cases': 52,
+              'execution_orchestration_cases': 64,
+              'canonical_reconciliation_cases': 77,
+              'live_provider_writes': 0,
+              'production_authority_changed': False,
+              'promotion_authorized': False,
+          }
+          Path('staging-receipt/V610_DRAFT_STAGING_RECEIPT.json').write_text(json.dumps(receipt, indent=2, sort_keys=True) + '\n', encoding='utf-8')
+          PY
+          (cd staging-receipt && sha256sum * > CHECKSUMS.sha256 && sha256sum -c CHECKSUMS.sha256)
+
+      - name: Retain draft staging evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: atlas-ros-v6.1.0rc1-draft-staging-receipt
+          path: staging-receipt/
+          if-no-files-found: error
+          retention-days: 90
