@@ -7,7 +7,6 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from .models import deterministic_digest
 
-
 ConfidenceDimensionName = Literal[
     "intent_partition",
     "planning_model",
