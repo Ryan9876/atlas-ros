@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from atlas_ros.contracts.coherence_v1 import (
     CoherenceConditionResultV1,
+    ConfidenceDimensionV1,
     ReasoningCoherenceResultV1,
 )
 from atlas_ros.contracts.models import deterministic_digest
@@ -25,7 +26,95 @@ _CLARIFICATION_TERMS = (
 
 
 class ReasoningCoherenceGate:
-    """Validate one governed conclusion across reasoning and execution metadata."""
+    """Resolve and validate one governed conclusion before management approval."""
+
+    def apply(
+        self, reasoning: ReasoningPackageV4
+    ) -> tuple[ReasoningPackageV4, ReasoningCoherenceResultV1]:
+        is_governed_pilot = (
+            reasoning.selected_planning_model_id == "controlled-technology-pilot"
+            and reasoning.selection_confidence >= 0.90
+            and bool(reasoning.primary_business_outcome)
+            and not reasoning.intent_partition_ambiguities
+        )
+        classification = "project" if is_governed_pilot else reasoning.classification
+        destination = (
+            self._expected_destination(classification) or reasoning.destination
+            if is_governed_pilot
+            else reasoning.destination
+        )
+        responsibility = (
+            "project_delivery" if is_governed_pilot else reasoning.responsibility_domain
+        )
+        workstream = "Active Projects" if is_governed_pilot else reasoning.workstream
+        legacy_confidence = max(reasoning.confidence, 0.95) if is_governed_pilot else reasoning.confidence
+        review_pending = bool(
+            reasoning.intent_partition_ambiguities or reasoning.unresolved_planning_questions
+        )
+        dimensions = self._confidence_dimensions(
+            reasoning,
+            classification_confidence=(0.95 if is_governed_pilot else legacy_confidence),
+            responsibility_confidence=(0.95 if is_governed_pilot else legacy_confidence),
+            routing_confidence=(0.95 if is_governed_pilot else legacy_confidence),
+            requires_review=review_pending,
+            is_governed_pilot=is_governed_pilot,
+        )
+        provisional = reasoning.model_copy(
+            update={
+                "classification": classification,
+                "destination": destination,
+                "responsibility_domain": responsibility,
+                "workstream": workstream,
+                "confidence": legacy_confidence,
+                "rationale": (
+                    (
+                        "Atlas selected the controlled-technology-pilot model and resolved "
+                        "project-delivery responsibility from governed model evidence."
+                    )
+                    if is_governed_pilot
+                    else "Atlas retained the governed classification and responsibility evidence."
+                ,),
+                "challenge_status": "corrected" if is_governed_pilot else reasoning.challenge_status,
+                "requires_human_decision": review_pending,
+                "confidence_dimensions": dimensions,
+                "coherence_result": None,
+                "user_facing_summary": "Reasoning coherence evaluation is pending.",
+            }
+        )
+        result = self.evaluate(provisional)
+        final_review = review_pending or result.review_required
+        questions = tuple(
+            dict.fromkeys(
+                (
+                    *provisional.unresolved_planning_questions,
+                    *(
+                        f"Reasoning coherence: {item}."
+                        for item in result.material_contradictions
+                    ),
+                )
+            )
+        )
+        final = provisional.model_copy(
+            update={
+                "requires_human_decision": final_review,
+                "unresolved_planning_questions": questions,
+                "intent_partition_ambiguities": (
+                    provisional.intent_partition_ambiguities
+                    if not result.review_required
+                    else tuple(
+                        dict.fromkeys(
+                            (
+                                *provisional.intent_partition_ambiguities,
+                                *result.material_contradictions,
+                            )
+                        )
+                    )
+                ),
+                "coherence_result": result,
+                "user_facing_summary": result.user_facing_summary,
+            }
+        )
+        return final, result
 
     def evaluate(self, reasoning: ReasoningPackageV4) -> ReasoningCoherenceResultV1:
         explanation = " ".join((*reasoning.rationale, reasoning.user_facing_summary)).casefold()
@@ -71,8 +160,7 @@ class ReasoningCoherenceGate:
             ),
             (
                 "responsibility_consistency",
-                not unresolved_responsibility
-                or reasoning.requires_human_decision,
+                not unresolved_responsibility or reasoning.requires_human_decision,
                 True,
                 "responsibility_consistent",
                 (
@@ -132,6 +220,72 @@ class ReasoningCoherenceGate:
             non_blocking_findings=(),
             user_facing_summary=summary,
             result_digest=deterministic_digest(unsigned.digest_payload()),
+        )
+
+    @staticmethod
+    def _confidence_dimensions(
+        reasoning: ReasoningPackageV4,
+        *,
+        classification_confidence: float,
+        responsibility_confidence: float,
+        routing_confidence: float,
+        requires_review: bool,
+        is_governed_pilot: bool,
+    ) -> tuple[ConfidenceDimensionV1, ...]:
+        model_evidence = (
+            "Governed controlled-technology-pilot model evidence."
+            if is_governed_pilot
+            else "Governed single-business-outcome model evidence."
+        )
+        values = (
+            (
+                "intent_partition",
+                "Primary business outcome and instruction-role separation",
+                reasoning.intent_partition_confidence,
+                "Intent Partition V1 deterministic role precedence.",
+            ),
+            (
+                "planning_model",
+                "Governed planning-model selection",
+                reasoning.selection_confidence,
+                model_evidence,
+            ),
+            (
+                "classification",
+                "Canonical record classification",
+                classification_confidence,
+                model_evidence,
+            ),
+            (
+                "responsibility_resolution",
+                "Accountable responsibility domain",
+                responsibility_confidence,
+                model_evidence,
+            ),
+            (
+                "routing",
+                "Canonical management destination",
+                routing_confidence,
+                "Classification-to-destination policy mapping.",
+            ),
+            (
+                "semantic_fidelity",
+                "Pre-plan semantic eligibility",
+                min(reasoning.intent_partition_confidence, reasoning.selection_confidence),
+                "Primary outcome and control-plane separation evidence.",
+            ),
+        )
+        return tuple(
+            ConfidenceDimensionV1(
+                dimension=dimension,  # type: ignore[arg-type]
+                subject=subject,
+                score=score,
+                evidence_basis=(evidence,),
+                affects_execution_eligibility=True,
+                requires_attended_review=requires_review and score < 0.75,
+                relationship=("Must agree with the other governed confidence dimensions.",),
+            )
+            for dimension, subject, score, evidence in values
         )
 
     @staticmethod
