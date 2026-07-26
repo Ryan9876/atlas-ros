@@ -3,6 +3,8 @@ name: v611-final-publication
 on:
   push:
     branches: [release/v611-governed-controller]
+  pull_request:
+    branches: [main]
   workflow_dispatch:
     inputs:
       publish:
@@ -159,8 +161,7 @@ jobs:
             --repo "$GITHUB_REPOSITORY" \
             --target "$GITHUB_SHA" \
             --title "Atlas ROS v6.1.1" \
-            --notes-file release/RELEASE_NOTES_V611.md \
-            --verify-tag
+            --notes-file release/RELEASE_NOTES_V611.md
 
       - name: Read back published release and restore assets
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.publish == true }}
@@ -168,6 +169,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
+          git fetch --tags --force
           test "$(git rev-list -n 1 "$RELEASE_TAG")" = "$GITHUB_SHA"
           rm -rf release-readback
           mkdir release-readback
