@@ -1,0 +1,54 @@
+name: v611-apply-patch-once
+
+on:
+  push:
+    branches: [agent/v611-reasoning-coherence]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: v611-apply-patch-once
+  cancel-in-progress: false
+
+jobs:
+  apply:
+    if: contains(github.event.head_commit.message, '[apply-v611-patch]')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Check out isolated development branch
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          ref: agent/v611-reasoning-coherence
+          fetch-depth: 0
+
+      - name: Verify and apply exact implementation payload
+        run: |
+          set -euo pipefail
+          base64 --decode tools/v611_patch.tar.gz.b64 > /tmp/v611_patch.tar.gz
+          echo '83aec2a557a5e15974d32f7128386417d5df9a3be89e516a7e0875cc41ec3280  /tmp/v611_patch.tar.gz' | sha256sum -c -
+          tar -tzf /tmp/v611_patch.tar.gz >/tmp/v611_patch_files.txt
+          test "$(wc -l </tmp/v611_patch_files.txt)" -eq 31
+          tar -xzf /tmp/v611_patch.tar.gz -C .
+          python - <<'PY'
+          import tomllib
+          from pathlib import Path
+          version = tomllib.loads(Path('pyproject.toml').read_text(encoding='utf-8'))['project']['version']
+          assert version == '6.1.1rc1'
+          assert Path('src/atlas_ros/engines/reasoning_coherence.py').is_file()
+          assert Path('benchmarks/reasoning-coherence-v1.json').is_file()
+          assert Path('schemas/reasoning/reasoning-coherence-result-v1.schema.json').is_file()
+          PY
+
+      - name: Remove one-time transport files and commit implementation
+        run: |
+          set -euo pipefail
+          rm tools/v611_patch.tar.gz.b64
+          rm .github/workflows/v611-apply-patch-once.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git diff --cached --check
+          git commit -m 'Implement v6.1.1 reasoning coherence remediation'
+          git push origin HEAD:agent/v611-reasoning-coherence
