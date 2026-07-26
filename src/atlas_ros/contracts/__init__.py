@@ -16,6 +16,13 @@ from .execution_v2 import (
     RepresentationMatchKind,
     TaskBudgetResult,
 )
+from .execution_v3 import (
+    ExecutionCandidateV3,
+    ExecutionPlanV3,
+    ExecutionStepV3,
+    ProjectionDecisionV3,
+)
+from .intent_v1 import InstructionRole, IntentPartitionV1
 from .models import (
     CaptureEnvelope,
     ClassificationChallenge,
@@ -73,8 +80,28 @@ from .reconciliation_v2 import (
     ReconciliationSnapshot,
     UpdateDirection,
 )
+from .semantic_v1 import (
+    ManagementActionV1,
+    ManagementPackageV3,
+    ReasoningPackageV4,
+    SemanticConditionResult,
+    SemanticFidelityResultV1,
+    SemanticRole,
+)
 
 __all__ = [
+    "InstructionRole",
+    "IntentPartitionV1",
+    "ReasoningPackageV4",
+    "ManagementActionV1",
+    "ManagementPackageV3",
+    "SemanticRole",
+    "SemanticConditionResult",
+    "SemanticFidelityResultV1",
+    "ExecutionCandidateV3",
+    "ProjectionDecisionV3",
+    "ExecutionStepV3",
+    "ExecutionPlanV3",
     "CaptureEnvelope",
     "ClassificationChallenge",
     "ClassificationChallengeReceipt",

@@ -11,6 +11,7 @@ from atlas_ros.contracts import (
     ReasoningPackage,
     ReasoningPackageV2,
     ReasoningPackageV3,
+    ReasoningPackageV4,
     deterministic_digest,
 )
 from atlas_ros.models import (
@@ -63,7 +64,7 @@ class KnowledgeCompositionEngine:
 
     def compose_v2(
         self,
-        reasoning: ReasoningPackageV3,
+        reasoning: ReasoningPackageV3 | ReasoningPackageV4,
         *,
         context: dict[str, Any] | None = None,
         include_optional: tuple[str, ...] = (),
@@ -143,7 +144,9 @@ class KnowledgeCompositionEngine:
         ).hexdigest()
         arguments: dict[str, Any] = {
             "correlation_id": reasoning.correlation_id,
-            "source_reasoning_reference": (f"reasoning-package/v3/{reasoning.correlation_id}"),
+            "source_reasoning_reference": (
+                f"reasoning-package/v{reasoning.contract_version}/{reasoning.correlation_id}"
+            ),
             "selected_planning_model_id": model.model_id,
             "selected_planning_model_version": model.version,
             "required_modules": tuple(
@@ -194,7 +197,7 @@ class KnowledgeCompositionEngine:
     def _emit(
         self,
         event: str,
-        reasoning: ReasoningPackageV3,
+        reasoning: ReasoningPackageV3 | ReasoningPackageV4,
         model_id: str,
         model_version: str,
         package_digest: str,

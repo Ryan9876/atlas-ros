@@ -1,0 +1,44 @@
+modules:
+  - module_id: controlled-technology-pilot
+    version: 3.0.0
+    category: project-delivery
+    lifecycle_status: active
+    purpose: Define the minimum outcome-centered management path for a controlled technology pilot.
+    provided_knowledge_keys:
+      - primary_done_when
+      - current_actions
+      - delegated_actions
+      - conditional_actions
+      - future_actions
+    facts:
+      primary_done_when: Pilot scope, success measures, technical ownership, low-risk targets, change controls, validation requirements, and rollback approach are approved and the technical pilot is authorized to proceed.
+      current_actions:
+        - title: Define and approve pilot scope and success measures
+          objective: Establish the pilot boundary, intended operational value, measurable success criteria, and explicit exclusions before technical work begins.
+          done_when: The pilot scope, in-scope and out-of-scope conditions, success measures, required evidence, and approval criteria are documented and approved.
+        - title: Assign the technical owner and confirm low-risk pilot targets
+          objective: Establish implementation accountability and identify the exact low-risk or non-production targets for the pilot.
+          done_when: The technical owner accepts the assignment and the pilot devices or environment, prerequisites, access, dependencies, and ownership boundaries are confirmed.
+        - title: Approve pre-checks, change controls, evidence requirements, and rollback plan
+          objective: Ensure the pilot can be executed safely, observably, reversibly, and under existing operational governance.
+          done_when: Pre-checks, execution controls, post-checks, evidence capture, exception handling, rollback criteria, rollback actions, and approval path are reviewed and approved.
+      delegated_actions:
+        - title: Build and execute the technical pilot
+          objective: Implement and run the approved technical pilot against the authorized targets.
+          done_when: The approved pilot is executed and the required evidence package is complete.
+      conditional_actions:
+        - title: Review pilot evidence and record the go/no-go decision
+          objective: Evaluate results and decide whether the technology should proceed, be revised, or stop.
+          done_when: Results, exceptions, safety outcomes, manual intervention, time savings, and rollback evidence are reviewed and a documented go, revise, or stop decision is recorded.
+          trigger: Technical pilot execution evidence is complete.
+      future_actions:
+        - title: Expand beyond the pilot
+          objective: Plan a broader rollout after an affirmative decision and separately approved rollout scope.
+          done_when: A separately authorized rollout plan is approved.
+          trigger: The pilot receives an affirmative go decision.
+    governance_overlays:
+      - Evaluation, audit, provider-control, and system-evidence content remains non-projectable by default.
+    evidence_overlays:
+      - The business plan is invariant when benchmark and audit controls are added or removed.
+    validation_rules:
+      - controlled_pilot_gold_path_present

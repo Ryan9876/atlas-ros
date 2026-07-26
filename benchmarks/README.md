@@ -26,3 +26,21 @@ adjusted option scores. It is separate from the recommendation record's absolute
 action-safety confidence. The generated corpus remains deterministic pipeline
 and calibration evidence rather than an independently labeled measure of
 real-world reasoning accuracy.
+
+## Semantic Fidelity and Test-Instruction Invariance
+
+`semantic-fidelity-v1.json` is the release-blocking v6.1 benchmark. It contains
+expert-approved golden outputs, seven CloudVision metamorphic variants, audit-primary
+negative controls, reusable controlled-pilot cases, and fail-closed ambiguity cases.
+
+Run:
+
+```bash
+python scripts/evaluate_semantic_fidelity.py \
+  --dataset benchmarks/semantic-fidelity-v1.json \
+  --output semantic-fidelity-evidence/SEMANTIC_FIDELITY_REPORT.json
+```
+
+Promotion requires every critical case and every metamorphic family to pass with zero
+live provider writes. Structural compatibility remains necessary but is not a substitute
+for expert semantic gold.

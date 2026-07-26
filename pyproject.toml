@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "atlas-ros"
-version = "6.0.0"
+version = "6.1.0rc1"
 description = "Policy-driven executable core for Atlas Ryan Operating System"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -33,7 +33,6 @@ exclude = [
   "/clean-wheel",
   "/dist",
   "/extracted",
-  "/rollback-source",
   "/source-verification",
   "/test-results",
 ]

@@ -108,10 +108,25 @@ def load_knowledge_module(payload: dict[str, Any]) -> KnowledgeModule:
 
 
 def load_default_registries() -> tuple[PlanningModelRegistry, KnowledgeModuleRegistry]:
-    model = load_planning_model(_read_packaged("planning-models/team-operating-model.yaml"))
-    module_payload = _read_packaged("knowledge-modules/team-operating-model.yaml")
-    modules = tuple(load_knowledge_module(item) for item in module_payload["modules"])
-    return PlanningModelRegistry((model,)), KnowledgeModuleRegistry(modules)
+    data_root = files("atlas_ros.data")
+    models = tuple(
+        load_planning_model(yaml.safe_load(path.read_text(encoding="utf-8")))
+        for path in sorted(
+            data_root.joinpath("planning-models").iterdir(), key=lambda item: item.name
+        )
+        if path.name.endswith(".yaml")
+    )
+    module_items: list[KnowledgeModule] = []
+    for path in sorted(
+        data_root.joinpath("knowledge-modules").iterdir(), key=lambda item: item.name
+    ):
+        if not path.name.endswith(".yaml"):
+            continue
+        payload = yaml.safe_load(path.read_text(encoding="utf-8"))
+        if not isinstance(payload, dict):
+            raise ValueError(f"configuration {path.name} must contain a mapping")
+        module_items.extend(load_knowledge_module(item) for item in payload["modules"])
+    return PlanningModelRegistry(models), KnowledgeModuleRegistry(tuple(module_items))
 
 
 def configuration_digest(root: Path) -> str:

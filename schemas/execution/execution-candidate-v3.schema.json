@@ -1,0 +1,27 @@
+{
+  "$defs": {"SemanticRole": {"enum": ["parent_business_outcome", "current_business_action", "delegated_action", "conditional_action", "evaluation_only", "audit_only", "provider_control", "reference_only"], "title": "SemanticRole", "type": "string"}},
+  "$id": "https://atlas-ros.local/schemas/execution/execution-candidate-v3.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "candidate_digest": {"maxLength": 64, "minLength": 64, "title": "Candidate Digest", "type": "string"},
+    "candidate_id": {"maxLength": 256, "minLength": 1, "title": "Candidate Id", "type": "string"},
+    "contract_version": {"const": 3, "default": 3, "title": "Contract Version", "type": "integer"},
+    "correlation_id": {"format": "uuid", "title": "Correlation Id", "type": "string"},
+    "done_when": {"maxLength": 10000, "minLength": 1, "title": "Done When", "type": "string"},
+    "execution_ready": {"default": false, "title": "Execution Ready", "type": "boolean"},
+    "horizon": {"enum": ["current", "next", "conditional", "future", "blocked"], "title": "Horizon", "type": "string"},
+    "owner": {"default": "", "maxLength": 200, "title": "Owner", "type": "string"},
+    "primary_outcome_reference": {"maxLength": 500, "minLength": 1, "title": "Primary Outcome Reference", "type": "string"},
+    "proposed_objective": {"maxLength": 10000, "minLength": 1, "title": "Proposed Objective", "type": "string"},
+    "semantic_provenance": {"default": [], "items": {"type": "string"}, "title": "Semantic Provenance", "type": "array"},
+    "semantic_role": {"$ref": "#/$defs/SemanticRole"},
+    "source_instruction_role": {"maxLength": 100, "minLength": 1, "title": "Source Instruction Role", "type": "string"},
+    "source_management_reference": {"maxLength": 500, "minLength": 1, "title": "Source Management Reference", "type": "string"},
+    "title": {"maxLength": 500, "minLength": 1, "title": "Title", "type": "string"},
+    "trigger": {"default": "", "maxLength": 2000, "title": "Trigger", "type": "string"}
+  },
+  "required": ["candidate_id", "correlation_id", "source_management_reference", "title", "proposed_objective", "done_when", "semantic_role", "horizon", "primary_outcome_reference", "source_instruction_role", "candidate_digest"],
+  "title": "ExecutionCandidateV3",
+  "type": "object"
+}

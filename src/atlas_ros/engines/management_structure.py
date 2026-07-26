@@ -7,12 +7,16 @@ from uuid import UUID
 from atlas_ros.contracts import (
     KnowledgePackage,
     KnowledgePackageV2,
+    ManagementActionV1,
     ManagementPackage,
     ManagementPackageV2,
+    ManagementPackageV3,
     ManagementSection,
     ReasoningPackage,
     ReasoningPackageV2,
     ReasoningPackageV3,
+    ReasoningPackageV4,
+    SemanticRole,
     ValidationResult,
     deterministic_digest,
 )
@@ -153,11 +157,11 @@ class ManagementStructureEngine:
         )
         package_arguments: dict[str, Any] = {
             "correlation_id": reasoning.correlation_id,
-            "artifact_id": (f"{model.artifact_type}:{reasoning.correlation_id}:{model.version}"),
+            "artifact_id": f"{model.artifact_type}:{reasoning.correlation_id}:{model.version}",
             "artifact_type": model.artifact_type,
             "planning_model_id": model.model_id,
             "planning_model_version": model.version,
-            "source_reasoning_reference": (f"reasoning-package/v3/{reasoning.correlation_id}"),
+            "source_reasoning_reference": f"reasoning-package/v3/{reasoning.correlation_id}",
             "source_knowledge_reference": f"knowledge-package/v2/{knowledge.package_digest}",
             "responsibility": responsibility,
             "desired_outcome": desired_outcome,
@@ -197,6 +201,208 @@ class ManagementStructureEngine:
                     "model_version": model.version,
                     "status": lifecycle,
                     "registry_digest": self._registry.digest(),
+                    "package_digest": package.package_digest,
+                },
+            )
+        return package
+
+    def structure_v3(
+        self,
+        reasoning: ReasoningPackageV4,
+        knowledge: KnowledgePackageV2,
+        *,
+        owner: str | None = None,
+        workstream: str | None = None,
+    ) -> ManagementPackageV3:
+        """Construct a semantic management package without control-plane leakage."""
+        self._validate_correlations(reasoning.correlation_id, knowledge)
+        if not knowledge.verify_digest():
+            raise ValueError("Knowledge Package V2 digest verification failed")
+        model = self._registry.get(
+            knowledge.selected_planning_model_id,
+            knowledge.selected_planning_model_version,
+        )
+        if reasoning.contract_version not in model.supported_reasoning_package_versions:
+            raise ValueError("planning model does not support Reasoning Package V4")
+        if 3 not in model.supported_management_package_versions:
+            raise ValueError("planning model does not support Management Package V3")
+
+        accountable_owner = (owner if owner is not None else model.default_owner) or str(
+            reasoning.known_inputs.get("owner", "Ryan")
+        )
+        primary_done_when = str(
+            knowledge.composed_facts.get(
+                "primary_done_when",
+                "The primary business outcome is complete and verified.",
+            )
+        )
+        primary_reference = f"intent-partition/{reasoning.intent_partition_digest}/primary"
+
+        def actions_from(
+            key: str,
+            role: SemanticRole,
+            horizon: str,
+            source_role: str,
+            *,
+            ready: bool,
+        ) -> list[ManagementActionV1]:
+            raw_items = knowledge.composed_facts.get(key, ())
+            if not isinstance(raw_items, list | tuple):
+                return []
+            result: list[ManagementActionV1] = []
+            for index, raw in enumerate(raw_items, 1):
+                if not isinstance(raw, dict):
+                    continue
+                title = str(raw.get("title", "")).strip()
+                if not title:
+                    continue
+                action_id = (
+                    f"{reasoning.selected_planning_model_id}:{source_role}:{index}:"
+                    f"{deterministic_digest(title)[:16]}"
+                )
+                result.append(
+                    ManagementActionV1(
+                        action_id=action_id,
+                        title=title,
+                        objective=str(raw.get("objective", title)).strip(),
+                        done_when=str(
+                            raw.get("done_when", f"{title} is complete and verified.")
+                        ).strip(),
+                        owner=(
+                            accountable_owner
+                            if role is SemanticRole.CURRENT_BUSINESS_ACTION
+                            else ""
+                        ),
+                        semantic_role=role,
+                        horizon=horizon,  # type: ignore[arg-type]
+                        source_instruction_role=source_role,
+                        semantic_provenance=(
+                            primary_reference,
+                            f"knowledge/{key}/{index}",
+                        ),
+                        execution_ready=ready,
+                        trigger=str(raw.get("trigger", "")).strip(),
+                    )
+                )
+            return result
+
+        current = actions_from(
+            "current_actions",
+            SemanticRole.CURRENT_BUSINESS_ACTION,
+            "current",
+            "current_business_action",
+            ready=True,
+        )
+        known_titles = {item.title.casefold() for item in current}
+        for index, title in enumerate(reasoning.current_business_actions, len(current) + 1):
+            cleaned = title.strip().rstrip(".")
+            if not cleaned or cleaned.casefold() in known_titles:
+                continue
+            current.append(
+                ManagementActionV1(
+                    action_id=f"explicit-current:{index}:{deterministic_digest(cleaned)[:16]}",
+                    title=cleaned,
+                    objective=cleaned,
+                    done_when=f"{cleaned} is complete and verified.",
+                    owner=accountable_owner,
+                    semantic_role=SemanticRole.CURRENT_BUSINESS_ACTION,
+                    horizon="current",
+                    source_instruction_role="current_business_action",
+                    semantic_provenance=(primary_reference, "reasoning/current_business_actions"),
+                    execution_ready=True,
+                )
+            )
+            known_titles.add(cleaned.casefold())
+
+        delegated = actions_from(
+            "delegated_actions",
+            SemanticRole.DELEGATED_ACTION,
+            "next",
+            "delegated_action",
+            ready=False,
+        )
+        conditional = actions_from(
+            "conditional_actions",
+            SemanticRole.CONDITIONAL_ACTION,
+            "conditional",
+            "conditional_action",
+            ready=False,
+        )
+        conditional.extend(
+            actions_from(
+                "future_actions",
+                SemanticRole.CONDITIONAL_ACTION,
+                "future",
+                "conditional_action",
+                ready=False,
+            )
+        )
+        unresolved = tuple(
+            dict.fromkeys(
+                (*reasoning.intent_partition_ambiguities, *knowledge.unresolved_questions)
+            )
+        )
+        lifecycle = (
+            "decision_required"
+            if reasoning.requires_human_decision or unresolved
+            else "structurally_complete"
+        )
+        semantic_provenance = {
+            "primary_outcome": (primary_reference,),
+            "evaluation_context": tuple(
+                f"intent-partition/{reasoning.intent_partition_digest}/evaluation/{index}"
+                for index, _ in enumerate(reasoning.evaluation_context, 1)
+            ),
+            "audit_requirements": tuple(
+                f"intent-partition/{reasoning.intent_partition_digest}/audit/{index}"
+                for index, _ in enumerate(reasoning.audit_requirements, 1)
+            ),
+            "execution_constraints": tuple(
+                f"intent-partition/{reasoning.intent_partition_digest}/constraint/{index}"
+                for index, _ in enumerate(reasoning.execution_constraints, 1)
+            ),
+        }
+        arguments: dict[str, Any] = {
+            "correlation_id": reasoning.correlation_id,
+            "artifact_id": f"{model.artifact_type}:{reasoning.correlation_id}:{model.version}",
+            "artifact_type": model.artifact_type,
+            "planning_model_id": model.model_id,
+            "planning_model_version": model.version,
+            "source_reasoning_reference": f"reasoning-package/v4/{reasoning.correlation_id}",
+            "source_knowledge_reference": f"knowledge-package/v2/{knowledge.package_digest}",
+            "responsibility": reasoning.responsibility_domain,
+            "primary_outcome": reasoning.primary_business_outcome,
+            "primary_outcome_done_when": primary_done_when,
+            "owner": accountable_owner,
+            "workstream": model.default_workstream if workstream is None else workstream,
+            "execution_candidates": tuple(current),
+            "delegated_outcomes": tuple(delegated),
+            "conditional_outcomes": tuple(conditional),
+            "evaluation_context": reasoning.evaluation_context,
+            "audit_requirements": reasoning.audit_requirements,
+            "execution_constraints": reasoning.execution_constraints,
+            "reference_context": reasoning.reference_context,
+            "semantic_provenance": semantic_provenance,
+            "assumptions": knowledge.assumptions,
+            "unresolved_items": unresolved,
+            "lifecycle_status": lifecycle,
+            "planning_registry_digest": self._registry.digest(),
+            "module_registry_digest": knowledge.module_registry_digest,
+            "configuration_digest": knowledge.configuration_digest,
+            "intent_partition_digest": reasoning.intent_partition_digest,
+        }
+        unsigned = ManagementPackageV3(package_digest="0" * 64, **arguments)
+        package = ManagementPackageV3(
+            **arguments,
+            package_digest=deterministic_digest(unsigned.digest_payload()),
+        )
+        if self._event_sink:
+            self._event_sink(
+                "semantic_management_package_constructed",
+                {
+                    "correlation_id": str(reasoning.correlation_id),
+                    "model_id": model.model_id,
+                    "status": lifecycle,
                     "package_digest": package.package_digest,
                 },
             )

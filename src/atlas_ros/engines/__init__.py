@@ -1,4 +1,5 @@
 from .classification_explainability import ClassificationExplainability
+from .intent_partitioning import IntentPartitioner
 from .knowledge_composition import KnowledgeCompositionEngine
 from .management_reasoning import ManagementReasoningEngine
 from .management_structure import ManagementStructureEngine
@@ -8,6 +9,7 @@ from .responsibility_classification import ResponsibilityAssessment, Responsibil
 __all__ = [
     "ClassificationExplainability",
     "IntentAssessment",
+    "IntentPartitioner",
     "KnowledgeCompositionEngine",
     "ManagementReasoningEngine",
     "ManagementStructureEngine",

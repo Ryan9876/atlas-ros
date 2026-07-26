@@ -1,0 +1,24 @@
+model_id: single-business-outcome
+version: 3.0.0
+lifecycle_status: active
+purpose: Represent one explicit business outcome without importing unrelated control-plane context.
+supported_management_patterns: [Single Business Outcome]
+artifact_type: business_outcome
+default_owner: Ryan
+default_workstream: Active Projects
+allow_degraded_composition: false
+supported_reasoning_package_versions: [4]
+supported_knowledge_package_versions: [2]
+supported_management_package_versions: [3]
+required_modules:
+  - {module_id: single-business-outcome, version_constraint: "^3.0.0"}
+sections:
+  - {section_id: primary-outcome, title: Primary outcome, contribution_keys: [primary_done_when]}
+planning_rules:
+  - Preserve the explicit primary business outcome.
+  - Keep evaluation and audit controls outside the execution title unless they are the primary outcome.
+governance_rules:
+  - Semantic fidelity is required before projection.
+completion_evidence:
+  - The explicitly requested business outcome is complete and verified.
+validation_rules: [accountable_owner_required, semantic_fidelity_required]
