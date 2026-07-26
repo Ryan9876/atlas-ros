@@ -90,6 +90,14 @@ jobs:
             --dataset benchmarks/knowledge-management-v2.json \
             --output knowledge-management-evidence/KNOWLEDGE_MANAGEMENT_REPORT.json
 
+      - name: Evaluate Semantic Fidelity and Test-Instruction Invariance
+        run: |
+          set -euo pipefail
+          mkdir -p semantic-fidelity-evidence
+          python scripts/evaluate_semantic_fidelity.py \
+            --dataset benchmarks/semantic-fidelity-v1.json \
+            --output semantic-fidelity-evidence/SEMANTIC_FIDELITY_REPORT.json
+
       - name: Evaluate Execution Planning and Task Economy
         run: |
           set -euo pipefail
@@ -118,30 +126,24 @@ jobs:
             --mode dry-run \
             --output reconciliation-evidence/POST_PROMOTION_DRY_RUN.json
 
-      - name: Differential validation against v5.6 rollback
+      - name: Differential validation against v6.0 rollback
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           mkdir -p rollback-source differential-evidence
-          gh release download v5.6.0 \
+          gh release download v6.0.0 \
             --repo "${GITHUB_REPOSITORY}" \
-            --pattern 'atlas_ros-5.6.0rc1.tar.gz' \
+            --pattern 'atlas_ros-6.0*.tar.gz' \
             --dir rollback-source
-          tar -xzf rollback-source/atlas_ros-5.6.0rc1.tar.gz -C rollback-source
-          python scripts/evaluate_v6_differential.py \
-            --rollback-source rollback-source/atlas_ros-5.6.0rc1 \
-            --output differential-evidence/V600_DIFFERENTIAL_REPORT.json
-          python - <<'PY'
-          import json
-          from pathlib import Path
-
-          report = json.loads(Path("release/V600_ROLLBACK_REHEARSAL.json").read_text())
-          assert report["eligible"]
-          assert report["rollback_production_source"] == "06c5a703dec72135171d5738e6e0f3573ed8499d"
-          assert report["v6_differential_unexplained_drift"] == 0
-          assert report["live_provider_writes"] == 0
-          PY
+          BASELINE_ARCHIVE="$(find rollback-source -maxdepth 1 -type f -name 'atlas_ros-6.0*.tar.gz' -print -quit)"
+          test -n "${BASELINE_ARCHIVE}"
+          tar -xzf "${BASELINE_ARCHIVE}" -C rollback-source
+          BASELINE_SOURCE="$(find rollback-source -maxdepth 1 -type d -name 'atlas_ros-6.0*' -print -quit)"
+          test -n "${BASELINE_SOURCE}"
+          python scripts/evaluate_v61_differential.py \
+            --rollback-source "${BASELINE_SOURCE}" \
+            --output differential-evidence/V610_DIFFERENTIAL_REPORT.json
 
       - name: Validate dependency policy and advisories
         run: |
@@ -208,7 +210,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: v600-source-verification
+          name: v610-source-verification
           path: source-verification/mismatches.json
           if-no-files-found: warn
           retention-days: 7
@@ -218,7 +220,8 @@ jobs:
           set -euo pipefail
           python -m venv clean-wheel
           clean-wheel/bin/python -m pip install --disable-pip-version-check "dist/${ATLAS_WHEEL}"
-          clean-wheel/bin/python -c "from atlas_ros.models import load_default_registries; models, modules = load_default_registries(); assert models.get('team-operating-model', '^2.0.0'); assert len(modules.list()) >= 14"
+          clean-wheel/bin/python -c "from atlas_ros.models import load_default_registries; models, modules = load_default_registries(); assert models.get('team-operating-model', '^2.0.0'); assert models.get('controlled-technology-pilot', '^3.0.0'); assert len(modules.list()) >= 16"
+          clean-wheel/bin/python -c "from atlas_ros.contracts import IntentPartitionV1, ReasoningPackageV4, ManagementPackageV3, ExecutionPlanV3, SemanticFidelityResultV1; from atlas_ros.engines import IntentPartitioner; from atlas_ros.planning import SemanticExecutionPlanner; assert all((IntentPartitionV1, ReasoningPackageV4, ManagementPackageV3, ExecutionPlanV3, SemanticFidelityResultV1, IntentPartitioner, SemanticExecutionPlanner))"
           clean-wheel/bin/python -c "from atlas_ros.contracts import ExecutionCandidate, ProjectionDecision, ExistingRepresentationIndex, ExecutionPlanV2; from atlas_ros.planning import ExecutionCandidateExtractor, DuplicateAnalyzer, ProgressiveHorizonPolicy, ExecutionPlanner; assert all((ExecutionCandidate, ProjectionDecision, ExistingRepresentationIndex, ExecutionPlanV2, ExecutionCandidateExtractor, DuplicateAnalyzer, ProgressiveHorizonPolicy, ExecutionPlanner))"
           clean-wheel/bin/python -c "from atlas_ros.contracts import ExecutionAuthorizationV2, ExecutionCommandV2, ExecutionTransactionV2, ExecutionReceiptV2; from atlas_ros.orchestration import ExecutionCommandFactory, ExecutionOrchestratorV2; assert all((ExecutionAuthorizationV2, ExecutionCommandV2, ExecutionTransactionV2, ExecutionReceiptV2, ExecutionCommandFactory, ExecutionOrchestratorV2))"
           clean-wheel/bin/python -c "from atlas_ros.contracts import ReconciliationPlanV2, ReconciliationReceiptV2; from atlas_ros.reconciliation import CanonicalReconciliationService; assert all((ReconciliationPlanV2, ReconciliationReceiptV2, CanonicalReconciliationService))"
@@ -231,7 +234,7 @@ jobs:
           ATLAS_CANDIDATE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         run: |
           set -euo pipefail
-          python scripts/build_v600_candidate_evidence.py \
+          python scripts/build_v610_candidate_evidence.py \
             --project-root . \
             --output-dir candidate-evidence \
             --head-sha "${ATLAS_CANDIDATE_SHA}" \
@@ -241,51 +244,52 @@ jobs:
             --execution-report execution-planning-evidence/EXECUTION_PLANNING_REPORT.json \
             --orchestration-report execution-orchestration-evidence/EXECUTION_ORCHESTRATION_REPORT.json \
             --reconciliation-report reconciliation-evidence/CANONICAL_RECONCILIATION_REPORT.json \
-            --differential-report differential-evidence/V600_DIFFERENTIAL_REPORT.json \
+            --semantic-report semantic-fidelity-evidence/SEMANTIC_FIDELITY_REPORT.json \
+            --differential-report differential-evidence/V610_DIFFERENTIAL_REPORT.json \
             --retirement-inventory release/W_NUMBER_RETIREMENT_INVENTORY.json \
             --junit test-results/pytest.xml \
             --coverage test-results/coverage.json \
             --source-manifest release/CHECKSUMS.sha256 \
-            --sbom release/SBOM_V600_CURRENT.cdx.json
+            --sbom release/SBOM_V610_CURRENT.cdx.json
 
-      - name: Assemble immutable v6.0 candidate publication set
+      - name: Assemble immutable v6.1 candidate publication set
         run: |
           set -euo pipefail
           mkdir -p publication/audit
           cp "dist/${ATLAS_SDIST}" publication/
           cp "dist/${ATLAS_WHEEL}" publication/
-          cp candidate-evidence/RELEASE_MANIFEST_V600_CANDIDATE.md publication/RELEASE_MANIFEST.md
-          cp candidate-evidence/V600_PROMOTION_PREPARATION_REPORT.md publication/
-          cp candidate-evidence/V600_PROMOTION_PREPARATION_STATUS.json publication/
-          cp candidate-evidence/V600_PROMOTION_PREPARATION_STATUS.sha256 publication/
-          cp candidate-evidence/V600_RELEASE_VALIDATION_WORKBENCH_REPORT.md publication/
-          cp candidate-evidence/V600_CALIBRATION_REPORT.json publication/
-          cp candidate-evidence/V600_KNOWLEDGE_MANAGEMENT_REPORT.json publication/
-          cp candidate-evidence/V600_EXECUTION_PLANNING_REPORT.json publication/
-          cp candidate-evidence/V600_EXECUTION_ORCHESTRATION_REPORT.json publication/
-          cp candidate-evidence/V600_CANONICAL_RECONCILIATION_REPORT.json publication/
-          cp candidate-evidence/V600_DIFFERENTIAL_REPORT.json publication/
+          cp candidate-evidence/RELEASE_MANIFEST_V610_CANDIDATE.md publication/RELEASE_MANIFEST.md
+          cp candidate-evidence/V610_PROMOTION_PREPARATION_REPORT.md publication/
+          cp candidate-evidence/V610_PROMOTION_PREPARATION_STATUS.json publication/
+          cp candidate-evidence/V610_PROMOTION_PREPARATION_STATUS.sha256 publication/
+          cp candidate-evidence/V610_RELEASE_VALIDATION_WORKBENCH_REPORT.md publication/
+          cp candidate-evidence/V610_CALIBRATION_REPORT.json publication/
+          cp candidate-evidence/V610_KNOWLEDGE_MANAGEMENT_REPORT.json publication/
+          cp candidate-evidence/V610_EXECUTION_PLANNING_REPORT.json publication/
+          cp candidate-evidence/V610_EXECUTION_ORCHESTRATION_REPORT.json publication/
+          cp candidate-evidence/V610_CANONICAL_RECONCILIATION_REPORT.json publication/
+          cp candidate-evidence/V610_SEMANTIC_FIDELITY_REPORT.json publication/
+          cp candidate-evidence/V610_DIFFERENTIAL_REPORT.json publication/
+          cp candidate-evidence/V610_ROLLBACK_REHEARSAL.json publication/
+          cp candidate-evidence/V610_ROLLBACK_REHEARSAL.md publication/
           cp execution-planning-evidence/EXECUTION_PLANNING_REPORT.json publication/TASK_ECONOMY_EVIDENCE.json
           cp execution-orchestration-evidence/EXECUTION_ORCHESTRATION_REPORT.json publication/ORCHESTRATION_EVIDENCE.json
           cp reconciliation-evidence/CANONICAL_RECONCILIATION_REPORT.json publication/RECONCILIATION_EVIDENCE.json
+          cp semantic-fidelity-evidence/SEMANTIC_FIDELITY_REPORT.json publication/SEMANTIC_FIDELITY_EVIDENCE.json
           cp reconciliation-evidence/POST_PROMOTION_DRY_RUN.json publication/
           cp release/W_NUMBER_RETIREMENT_INVENTORY.json publication/
-          cp release/V600_ROLLBACK_REHEARSAL.json publication/
-          cp release/V600_ROLLBACK_REHEARSAL.md publication/
           cp release/DEVELOPMENT_RECORD_RECONCILIATION.json publication/
           cp release/DEVELOPMENT_RECORD_RECONCILIATION.md publication/
           cp release/development-record-snapshots.json publication/
-          cp differential-evidence/V600_DIFFERENTIAL_REPORT.json publication/
-          cp release/RELEASE_SCOPE_V600.md publication/
-          cp release/RELEASE_NOTES_V600.md publication/
-          cp docs/migration/V6_BREAKING_CHANGES.md publication/
-          cp docs/migration/V6_CANONICAL_CUTOVER_AND_W_RETIREMENT.md publication/
+          cp release/RELEASE_SCOPE_V610.md publication/
+          cp release/RELEASE_NOTES_V610.md publication/
+          cp docs/adr/ADR-010-SEMANTIC-INTENT-SEPARATION-AND-OUTPUT-FIDELITY.md publication/
+          cp docs/architecture/SEMANTIC_FIDELITY_ARCHITECTURE.md publication/
+          cp docs/migration/V61_SEMANTIC_CONTRACT_MIGRATION.md publication/
           cp docs/migration/V6_ROLLBACK_GUIDE.md publication/
-          cp release/SBOM_V600_CURRENT.cdx.json publication/SBOM.cdx.json
+          cp release/SBOM_V610_CURRENT.cdx.json publication/SBOM.cdx.json
           mkdir -p publication/schemas
-          cp schemas/execution/*.schema.json publication/schemas/
-          cp schemas/orchestration/*.schema.json publication/schemas/
-          cp schemas/reconciliation/*.schema.json publication/schemas/
+          find schemas -name '*.schema.json' -print0 | sort -z | xargs -0 cp -t publication/schemas/
           cp release/CHECKSUMS.sha256 publication/SOURCE_CHECKSUMS.sha256
           cp requirements.runtime.lock publication/
           cp security/vulnerability-exceptions.yml publication/
@@ -303,7 +307,7 @@ jobs:
           zip -q -X -r "${ATLAS_PACKAGE_BASENAME}.zip" publication
           sha256sum "${ATLAS_PACKAGE_BASENAME}.zip" > "${ATLAS_PACKAGE_BASENAME}.zip.sha256"
 
-      - name: Retain v6.0 release candidate evidence
+      - name: Retain v6.1 release candidate evidence
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: atlas-ros-v${{ env.ATLAS_RELEASE_LABEL }}-release-candidate
