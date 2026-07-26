@@ -1,10 +1,11 @@
 # Atlas ROS v6.1.0 Release Manifest
 
-Status: Promotion authorized under V4D-31; final publication, restoration readback, and live authority switching remain fail-closed until the final release controller passes.
+Status: Active production release after exact-candidate validation, checksum-bound draft staging and readback, Full Validation V4V-38, Ryan Smith's explicit promotion authorization V4D-31, final GitHub publication, Drive-independent restoration, and immutable tag verification on 2026-07-26.
 
 - Package version: `6.1.0`
 - Validated candidate head: `7cfa5e20fc3f30abf02d1a428c4ca3632811c1d7`
 - Production merge commit: `bbed48eb3d00427486a480cf27eea493af9e9538`
+- Production source and final tag target: `15a62f670d250ec3728242f776d08449a9a95d1c`
 - Standard CI run: `30190241909`
 - Release-candidate run: `30190241886`
 - Validated candidate artifact ID: `8628317565`
@@ -12,11 +13,14 @@ Status: Promotion authorized under V4D-31; final publication, restoration readba
 - Validated candidate package SHA-256: `9aa9e6fd0447879881bce5c91ce8decefe5e6685e6c9ddc3b9dc8d1809c02237`
 - Draft staging and restoration run: `30191103157` — passed
 - Draft staging receipt SHA-256: `8fc7d226338647a4ea877308f4145cf15c99e588df99c4dba078de3b5d3479be`
+- Final publication run: `30191824161`
+- Restored-asset verification run: `30192028212`
+- Tag-finalization run: `30192125866`
+- Final release package SHA-256: `089f132c7f90c6ce02a6f64c0240e8eaaa56d9c58632d68d23049673f6b75cdc`
+- Final publication receipt SHA-256: `5f4f5a3ae8d6e5849eefd76a866de907d6d424e94ec1396e88b0b2d9da10b674`
 - Governed review: `V4V-38 — Atlas ROS v6.1.0rc1 Exact-Artifact Full Validation` — Passed; no blocking findings
-- Promotion decision: `V4D-31 — Promote exact Atlas ROS v6.1.0 candidate to Active production`
-- Promotion authorized: Yes — Ryan Smith, 2026-07-26
-- Previous Active authority and immediate immutable rollback after promotion: Atlas ROS v6.0.0
-- Final publication and restoration run: pending
+- Promotion decision: `V4D-31 — Promote exact Atlas ROS v6.1.0 candidate to Active production` — Active
+- Immediate immutable rollback: Atlas ROS v6.0.0 at production source `0843215caa677ef586b6112b658a29971c8b6354`
 
 ## Authority model
 
@@ -61,7 +65,6 @@ draft publication/readback, Drive-independent restoration, Decision Log readback
 readback, Automation Register validation, Integration Inventory validation, and v6.0 rollback
 integrity confirmation passed.
 
-The readable published workspace is valid only after the final release controller verifies the final
-tag target, final assets, package checksums, restored wheel, restored semantic/planning/orchestration/
-reconciliation benchmarks, v6.0 rollback, and final GitHub Release metadata. Secrets and private
-signing material are excluded.
+The readable published workspace is valid: final release `v6.1.0`, final assets, package checksums,
+restored wheel, restored semantic/planning/orchestration/reconciliation benchmarks, v6.0 rollback,
+and final tag target were read back and verified. Secrets and private signing material are excluded.
