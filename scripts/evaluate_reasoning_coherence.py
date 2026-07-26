@@ -5,173 +5,164 @@ import json
 from pathlib import Path
 from typing import Any
 
-from atlas_ros.contracts import deterministic_digest
+from atlas_ros.contracts import ConfidenceDimensionV1
 from atlas_ros.domain.models import Capture
-from atlas_ros.engines import ManagementReasoningEngine, ReasoningCoherenceGate
+from atlas_ros.engines import (
+    KnowledgeCompositionEngine,
+    ManagementReasoningEngine,
+    ManagementStructureEngine,
+    ReasoningCoherenceGate,
+)
+from atlas_ros.models import load_default_registries
+
+
+def _fingerprint(reasoning: Any, management: Any) -> dict[str, Any]:
+    return {
+        "primary_outcome": management.primary_outcome,
+        "current_actions": [item.title for item in management.execution_candidates],
+        "delegated_actions": [item.title for item in management.delegated_outcomes],
+        "conditional_actions": [item.title for item in management.conditional_outcomes],
+        "planning_model": reasoning.selected_planning_model_id,
+        "responsibility_domain": reasoning.responsibility_domain,
+        "workstream": reasoning.workstream,
+        "requires_human_decision": reasoning.requires_human_decision,
+        "summary": management.user_facing_summary,
+    }
 
 
 def _mutate(reasoning: Any, mutation: str) -> Any:
-    payload = reasoning.model_dump(mode="python")
-    if mutation == "unresolved_responsibility":
-        payload.update(
-            {
-                "selected_planning_model_id": "single-business-outcome",
-                "selection_confidence": 0.95,
-                "responsibility_domain": "unresolved",
-                "workstream": "Active Projects",
-                "classification": "project",
-                "destination": "Portfolio Projects",
-                "confidence": 0.95,
-                "rationale": ("The business outcome is otherwise fully specified.",),
+    if mutation == "high_model_unresolved":
+        return reasoning.model_copy(
+            update={"responsibility_domain": "unresolved", "workstream": "Needs Clarification"}
+        )
+    if mutation == "no_review_clarification":
+        return reasoning.model_copy(
+            update={
                 "requires_human_decision": False,
+                "rationale": ("Needs clarification before routing.",),
+                "user_facing_summary": "Clarification is required before execution.",
             }
         )
-    elif mutation == "clarification_language":
-        payload.update(
-            {
-                "selected_planning_model_id": "single-business-outcome",
-                "selection_confidence": 0.95,
-                "responsibility_domain": "project_delivery",
-                "workstream": "Active Projects",
-                "classification": "project",
-                "destination": "Portfolio Projects",
-                "confidence": 0.95,
-                "rationale": ("Clarification required before proceeding.",),
-                "requires_human_decision": False,
+    if mutation == "routing_mismatch":
+        return reasoning.model_copy(update={"destination": "Portfolio Projects"})
+    if mutation == "inaccurate_explanation":
+        return reasoning.model_copy(
+            update={"user_facing_summary": "Atlas needs clarification before execution."}
+        )
+    if mutation == "low_material_responsibility":
+        dimensions = tuple(
+            ConfidenceDimensionV1(
+                **{
+                    **item.model_dump(),
+                    "score": 0.40,
+                    "requires_attended_review": False,
+                }
+            )
+            if item.dimension == "responsibility_resolution"
+            else item
+            for item in reasoning.confidence_dimensions
+        )
+        return reasoning.model_copy(update={"confidence_dimensions": dimensions})
+    if mutation == "nonblocking_reference_gap":
+        return reasoning.model_copy(
+            update={
+                "reference_context": (
+                    *reasoning.reference_context,
+                    "Unresolved reference-only note.",
+                )
             }
         )
-    elif mutation == "routing_conflict":
-        payload.update(
-            {
-                "selected_planning_model_id": "single-business-outcome",
-                "selection_confidence": 0.95,
-                "responsibility_domain": "project_delivery",
-                "workstream": "Active Projects",
-                "classification": "needs_clarification",
-                "destination": "Needs Clarification",
-                "confidence": 0.95,
-                "rationale": ("The business outcome is fully specified.",),
-                "requires_human_decision": False,
-            }
-        )
-    elif mutation == "inaccurate_explanation":
-        payload.update(
-            {
-                "selected_planning_model_id": "single-business-outcome",
-                "selection_confidence": 0.95,
-                "responsibility_domain": "project_delivery",
-                "workstream": "Active Projects",
-                "classification": "project",
-                "destination": "Portfolio Projects",
-                "confidence": 0.95,
-                "rationale": ("This valid plan still requires clarification.",),
-                "requires_human_decision": False,
-            }
-        )
-    elif mutation == "low_material_confidence":
-        payload.update(
-            {
-                "selected_planning_model_id": "single-business-outcome",
-                "selection_confidence": 0.95,
-                "responsibility_domain": "project_delivery",
-                "workstream": "Active Projects",
-                "classification": "project",
-                "destination": "Portfolio Projects",
-                "confidence": 0.20,
-                "rationale": ("Responsibility evidence is materially weak.",),
-                "requires_human_decision": False,
-            }
-        )
-    elif mutation == "nonblocking_reference_gap":
-        payload["known_inputs"] = {
-            **payload["known_inputs"],
-            "nonblocking_reference_gap": "A reference-only source was unavailable.",
-        }
-    else:
-        raise ValueError(f"unsupported mutation: {mutation}")
-    return reasoning.__class__.model_validate(payload)
+    raise ValueError(f"unsupported mutation: {mutation}")
 
 
 def evaluate(dataset: Path) -> dict[str, Any]:
     payload = json.loads(dataset.read_text(encoding="utf-8"))
     engine = ManagementReasoningEngine()
     gate = ReasoningCoherenceGate()
-    results: list[dict[str, Any]] = []
-    family_fingerprints: dict[str, set[str]] = {}
-    for case in payload["cases"]:
-        reasoning, coherence = engine.reason_v4_with_coherence(
-            Capture(content=case.get("input", payload["base_input"]))
-        )
-        mutation = case.get("mutation")
-        if mutation:
-            mutated = _mutate(reasoning, mutation)
-            reasoning, coherence = gate.apply(mutated)
-        expected_passed = bool(case["expected_passed"])
-        metadata = {
-            "planning_model": reasoning.selected_planning_model_id,
-            "classification": reasoning.classification,
-            "destination": reasoning.destination,
-            "responsibility_domain": reasoning.responsibility_domain,
-            "workstream": reasoning.workstream,
-            "requires_human_decision": reasoning.requires_human_decision,
-            "explanation": coherence.explanation,
-        }
-        expected_metadata = case.get("expected_metadata", {})
-        metadata_matches = all(metadata.get(key) == value for key, value in expected_metadata.items())
+    models, modules = load_default_registries()
+    composer = KnowledgeCompositionEngine(modules, models)
+    structurer = ManagementStructureEngine(models)
+    cloudvision: list[dict[str, Any]] = []
+    fingerprints: set[str] = set()
+    for case in payload["cloudvision_cases"]:
+        reasoning = engine.reason_v4(Capture(content=case["input"]))
+        result = gate.evaluate(reasoning)
+        knowledge = composer.compose_v2(reasoning)
+        management = structurer.structure_v3(reasoning, knowledge)
+        fingerprint = json.dumps(_fingerprint(reasoning, management), sort_keys=True)
+        fingerprints.add(fingerprint)
+        dimensions = {item.dimension: item for item in reasoning.confidence_dimensions}
         passed = (
-            coherence.passed == expected_passed
-            and coherence.review_required == (not expected_passed)
-            and reasoning.requires_human_decision == (not expected_passed)
-            and metadata_matches
-            and coherence.verify_digest()
-            and coherence.provider_writes == 0
+            result.passed
+            and not result.review_required
+            and result.verify_digest()
+            and reasoning.responsibility_domain == "project_delivery"
+            and reasoning.workstream == "Active Projects"
+            and not reasoning.requires_human_decision
+            and dimensions["planning_model"].score >= 0.95
+            and dimensions["responsibility_resolution"].score >= 0.85
+            and "needs clarification" not in reasoning.user_facing_summary.casefold()
+            and "clarification is required" not in reasoning.user_facing_summary.casefold()
+            and management.reasoning_coherence is not None
+            and management.reasoning_coherence.passed
         )
-        family = case.get("family")
-        fingerprint = deterministic_digest(metadata)
-        if family:
-            family_fingerprints.setdefault(family, set()).add(fingerprint)
-        results.append(
+        cloudvision.append(
+            {"id": case["id"], "passed": passed, **_fingerprint(reasoning, management)}
+        )
+
+    cross_domain: list[dict[str, Any]] = []
+    for case in payload["cross_domain_cases"]:
+        reasoning = engine.reason_v4(Capture(content=case["input"]))
+        result = gate.evaluate(reasoning)
+        passed = (
+            result.passed
+            and not result.review_required
+            and reasoning.selected_planning_model_id == "controlled-technology-pilot"
+            and reasoning.responsibility_domain == "project_delivery"
+            and reasoning.workstream == "Active Projects"
+        )
+        cross_domain.append({"id": case["id"], "passed": passed})
+
+    contradictions: list[dict[str, Any]] = []
+    base = engine.reason_v4(
+        Capture(content="Launch the Arista CloudVision code-upgrade automation pilot")
+    )
+    for case in payload["contradiction_cases"]:
+        mutated = _mutate(base, case["mutation"])
+        result = gate.evaluate(mutated)
+        expected_review = bool(case["expected_review"])
+        passed = result.review_required == expected_review and result.verify_digest()
+        contradictions.append(
             {
                 "id": case["id"],
-                "critical": bool(case.get("critical", True)),
                 "passed": passed,
-                "coherence_passed": coherence.passed,
-                "review_required": coherence.review_required,
-                "metadata": metadata,
-                "metadata_fingerprint": fingerprint,
+                "review_required": result.review_required,
                 "failed_conditions": [
-                    condition.condition for condition in coherence.conditions if not condition.passed
+                    item.condition for item in result.conditions if not item.passed
                 ],
-                "low_confidence_dimensions": [
-                    subject.value for subject in coherence.low_confidence_dimensions
-                ],
-                "provider_writes": coherence.provider_writes,
             }
         )
-    invariance = {
-        family: len(fingerprints) == 1
-        for family, fingerprints in family_fingerprints.items()
-    }
-    critical_passed = all(item["passed"] for item in results if item["critical"])
-    eligible = critical_passed and all(invariance.values())
+
+    results = [*cloudvision, *cross_domain, *contradictions]
+    invariant = len(fingerprints) == 1
+    eligible = all(item["passed"] for item in results) and invariant
     return {
         "benchmark": payload["benchmark"],
         "cases": len(results),
         "passed": sum(1 for item in results if item["passed"]),
-        "critical_passed": critical_passed,
-        "metadata_invariance": invariance,
-        "live_provider_writes": 0,
+        "cloudvision_invariant": invariant,
+        "provider_writes": 0,
         "eligible": eligible,
-        "results": results,
+        "cloudvision": cloudvision,
+        "cross_domain": cross_domain,
+        "contradictions": contradictions,
     }
 
 
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--dataset",
-        type=Path,
-        default=Path("benchmarks/reasoning-coherence-v1.json"),
+        "--dataset", type=Path, default=Path("benchmarks/reasoning-coherence-v1.json")
     )
     parser.add_argument(
         "--output",
@@ -181,10 +172,7 @@ def main() -> None:
     args = parser.parse_args()
     report = evaluate(args.dataset)
     args.output.parent.mkdir(parents=True, exist_ok=True)
-    args.output.write_text(
-        json.dumps(report, indent=2, sort_keys=True) + "\n",
-        encoding="utf-8",
-    )
+    args.output.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     print(json.dumps(report, sort_keys=True))
     if not report["eligible"]:
         raise SystemExit(1)
