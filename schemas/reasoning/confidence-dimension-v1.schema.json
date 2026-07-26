@@ -1,0 +1,20 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "affects_execution_eligibility": {"title": "Affects Execution Eligibility", "type": "boolean"},
+    "contract_version": {"const": 1, "default": 1, "title": "Contract Version", "type": "integer"},
+    "dimension": {
+      "enum": ["intent_partition", "planning_model", "classification", "responsibility_resolution", "routing", "semantic_fidelity"],
+      "title": "Dimension",
+      "type": "string"
+    },
+    "evidence_basis": {"default": [], "items": {"type": "string"}, "title": "Evidence Basis", "type": "array"},
+    "relationship": {"default": [], "items": {"type": "string"}, "title": "Relationship", "type": "array"},
+    "requires_attended_review": {"title": "Requires Attended Review", "type": "boolean"},
+    "score": {"maximum": 1, "minimum": 0, "title": "Score", "type": "number"},
+    "subject": {"maxLength": 500, "minLength": 1, "title": "Subject", "type": "string"}
+  },
+  "required": ["dimension", "subject", "score", "affects_execution_eligibility", "requires_attended_review"],
+  "title": "ConfidenceDimensionV1",
+  "type": "object"
+}
