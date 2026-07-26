@@ -1,0 +1,66 @@
+{
+  "registry_version": "1.0.0",
+  "governance": {
+    "provider_free": true,
+    "execution_authority": false,
+    "silent_learning": false
+  },
+  "packs": [
+    {
+      "pack_id": "general",
+      "version": "1.0.0",
+      "domain": "general",
+      "description": "Domain-neutral business planning vocabulary and controls.",
+      "terminology": ["outcome", "owner", "dependency", "constraint", "evidence", "risk"],
+      "planning_facts": ["Domain knowledge may enrich planning but cannot authorize execution."]
+    },
+    {
+      "pack_id": "networking",
+      "version": "1.0.0",
+      "domain": "networking",
+      "description": "Provider-neutral network engineering and operations planning knowledge.",
+      "terminology": ["device", "topology", "maintenance window", "pre-check", "post-check", "rollback"],
+      "planning_facts": ["Network changes require bounded scope, observability, change controls, and rollback readiness."]
+    },
+    {
+      "pack_id": "network-automation",
+      "version": "1.0.0",
+      "domain": "network_automation",
+      "description": "Provider-neutral network automation pilot planning knowledge.",
+      "terminology": ["automation workflow", "pilot target", "pre-check", "change control", "evidence", "rollback"],
+      "planning_facts": ["A controlled network automation pilot separates management approval from delegated technical execution."]
+    },
+    {
+      "pack_id": "cloud-infrastructure",
+      "version": "1.0.0",
+      "domain": "cloud_infrastructure",
+      "description": "Provider-neutral cloud infrastructure planning knowledge.",
+      "terminology": ["environment", "service", "availability", "identity", "observability", "rollback"],
+      "planning_facts": ["Cloud infrastructure plans should identify environment scope, availability controls, and recovery evidence."]
+    },
+    {
+      "pack_id": "security-compliance",
+      "version": "1.0.0",
+      "domain": "security_compliance",
+      "description": "Security and compliance planning knowledge without external execution authority.",
+      "terminology": ["control", "obligation", "scope", "evidence", "gap", "remediation"],
+      "planning_facts": ["Compliance readiness requires authoritative scope, mapped controls, and traceable evidence."]
+    },
+    {
+      "pack_id": "people-operations",
+      "version": "1.0.0",
+      "domain": "people_operations",
+      "description": "People and organizational planning knowledge.",
+      "terminology": ["role", "stakeholder", "development", "performance", "policy", "evidence"],
+      "planning_facts": ["People decisions require explicit ownership, appropriate privacy, and evidence-based review."]
+    },
+    {
+      "pack_id": "finance",
+      "version": "1.0.0",
+      "domain": "finance",
+      "description": "Financial planning and decision-support knowledge.",
+      "terminology": ["budget", "cost", "benefit", "forecast", "approval", "variance"],
+      "planning_facts": ["Financial plans should distinguish confirmed amounts, estimates, constraints, and approval authority."]
+    }
+  ]
+}
