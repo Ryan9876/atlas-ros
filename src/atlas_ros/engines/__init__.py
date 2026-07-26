@@ -1,9 +1,9 @@
 from .archetypes_v62 import (
     ArchetypeRegistryV62,
     ArchetypeSelectionEngineV62,
-    CanonicalIntentEngineV62,
     MultiOutcomeEngineV62,
 )
+from .canonical_intent_v62 import CanonicalIntentEngineV62
 from .classification_explainability import ClassificationExplainability
 from .coherent_management_structure import ManagementStructureEngine
 from .decision_support_v62 import (
