@@ -1,3 +1,4 @@
+from .coherent_semantic import SemanticExecutionPlanner
 from .decomposition import DecompositionService
 from .execution import (
     CandidateExtractionResult,
@@ -9,7 +10,6 @@ from .execution import (
     ProgressiveHorizonPolicy,
 )
 from .horizon import HorizonPromotionEngine
-from .semantic import SemanticExecutionPlanner
 
 __all__ = [
     "CandidateExtractionResult",
