@@ -14,9 +14,9 @@ from atlas_ros.contracts.v62 import (
 from .archetypes_v62 import (
     ArchetypeRegistryV62,
     ArchetypeSelectionEngineV62,
-    CanonicalIntentEngineV62,
     MultiOutcomeEngineV62,
 )
+from .canonical_intent_v62 import CanonicalIntentEngineV62
 from .decision_support_v62 import (
     AdaptiveProjectionEngineV62,
     ClarificationEngineV62,
