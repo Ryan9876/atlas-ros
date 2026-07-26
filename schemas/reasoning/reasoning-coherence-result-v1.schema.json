@@ -1,0 +1,31 @@
+{
+  "$defs": {
+    "CoherenceConditionResultV1": {
+      "additionalProperties": false,
+      "properties": {
+        "condition": {"maxLength": 100, "minLength": 1, "title": "Condition", "type": "string"},
+        "detail": {"default": "", "maxLength": 2000, "title": "Detail", "type": "string"},
+        "material": {"title": "Material", "type": "boolean"},
+        "passed": {"title": "Passed", "type": "boolean"},
+        "reason_code": {"maxLength": 100, "minLength": 1, "title": "Reason Code", "type": "string"}
+      },
+      "required": ["condition", "passed", "material", "reason_code"],
+      "title": "CoherenceConditionResultV1",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "conditions": {"items": {"$ref": "#/$defs/CoherenceConditionResultV1"}, "title": "Conditions", "type": "array"},
+    "contract_version": {"const": 1, "default": 1, "title": "Contract Version", "type": "integer"},
+    "material_contradictions": {"default": [], "items": {"type": "string"}, "title": "Material Contradictions", "type": "array"},
+    "non_blocking_findings": {"default": [], "items": {"type": "string"}, "title": "Non Blocking Findings", "type": "array"},
+    "passed": {"title": "Passed", "type": "boolean"},
+    "result_digest": {"maxLength": 64, "minLength": 64, "title": "Result Digest", "type": "string"},
+    "review_required": {"title": "Review Required", "type": "boolean"},
+    "user_facing_summary": {"maxLength": 3000, "minLength": 1, "title": "User Facing Summary", "type": "string"}
+  },
+  "required": ["conditions", "passed", "review_required", "user_facing_summary", "result_digest"],
+  "title": "ReasoningCoherenceResultV1",
+  "type": "object"
+}
