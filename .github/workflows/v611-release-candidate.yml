@@ -1,0 +1,114 @@
+name: v611-release-candidate
+
+on:
+  push:
+    branches: [agent/v611-reasoning-coherence]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: v611-release-candidate-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate-candidate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.12.10'
+          cache: pip
+      - name: Install locked development dependencies
+        run: |
+          python -m pip install --disable-pip-version-check --upgrade pip
+          python -m pip install --disable-pip-version-check -e '.[dev]'
+      - name: Static and architecture gates
+        run: |
+          ruff check .
+          python scripts/validate_architecture.py
+          mypy src
+      - name: Full tests and coverage
+        run: pytest
+      - name: Provider-free release benchmarks
+        run: |
+          mkdir -p candidate-evidence/reports
+          python scripts/evaluate_semantic_fidelity.py --dataset benchmarks/semantic-fidelity-v1.json --output candidate-evidence/reports/V611_SEMANTIC_FIDELITY_REPORT.json
+          python scripts/evaluate_reasoning_coherence.py --dataset benchmarks/reasoning-coherence-v1.json --output candidate-evidence/reports/V611_REASONING_COHERENCE_REPORT.json
+          python scripts/evaluate_execution_planning.py --dataset benchmarks/execution-planning-v1.json --output candidate-evidence/reports/V611_EXECUTION_PLANNING_REPORT.json
+          python scripts/evaluate_execution_orchestration.py --dataset benchmarks/execution-orchestration-v1.json --output candidate-evidence/reports/V611_EXECUTION_ORCHESTRATION_REPORT.json
+          python scripts/evaluate_canonical_reconciliation.py --dataset benchmarks/canonical-reconciliation-v1.json --output candidate-evidence/reports/V611_CANONICAL_RECONCILIATION_REPORT.json
+          python scripts/evaluate_knowledge_management.py --dataset benchmarks/knowledge-management-v2.json --output candidate-evidence/reports/V611_KNOWLEDGE_MANAGEMENT_REPORT.json
+      - name: Build source and wheel
+        run: |
+          rm -rf dist build clean-wheel
+          python -m build
+          test -f dist/atlas_ros-6.1.1rc1.tar.gz
+          test -f dist/atlas_ros-6.1.1rc1-py3-none-any.whl
+          python -m venv clean-wheel
+          clean-wheel/bin/python -m pip install --disable-pip-version-check dist/atlas_ros-6.1.1rc1-py3-none-any.whl
+          clean-wheel/bin/python - <<'PY'
+          from importlib.metadata import version
+          from atlas_ros.contracts import ConfidenceDimensionV1, ReasoningCoherenceResultV1
+          from atlas_ros.engines import ReasoningCoherenceGate
+          from atlas_ros.planning import HorizonPromotionEngine
+          assert version('atlas-ros') == '6.1.1rc1'
+          assert all((ConfidenceDimensionV1, ReasoningCoherenceResultV1, ReasoningCoherenceGate, HorizonPromotionEngine))
+          PY
+      - name: Restore and compare v6.1.0 rollback
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p rollback-source
+          gh release download v6.1.0 --repo "${GITHUB_REPOSITORY}" --pattern 'atlas_ros-6.1.0*.tar.gz' --dir rollback-source
+          archive="$(find rollback-source -maxdepth 1 -type f -name 'atlas_ros-6.1.0*.tar.gz' -print -quit)"
+          test -n "${archive}"
+          tar -xzf "${archive}" -C rollback-source
+          source_root="$(find rollback-source -maxdepth 1 -type d -name 'atlas_ros-6.1.0*' -print -quit)"
+          test -n "${source_root}"
+          python scripts/evaluate_v611_differential.py --rollback-source "${source_root}" --output candidate-evidence/reports/V611_DIFFERENTIAL_REPORT.json
+      - name: Restore exact candidate artifact
+        run: |
+          rm -rf restored-source restored-wheel
+          mkdir restored-source
+          tar -xzf dist/atlas_ros-6.1.1rc1.tar.gz -C restored-source
+          source_root="$(find restored-source -maxdepth 1 -type d -name 'atlas_ros-6.1.1rc1' -print -quit)"
+          test -n "${source_root}"
+          python -m venv restored-wheel
+          restored-wheel/bin/python -m pip install --disable-pip-version-check dist/atlas_ros-6.1.1rc1-py3-none-any.whl
+          restored_python="$(pwd)/restored-wheel/bin/python"
+          (
+            cd "${source_root}"
+            "${restored_python}" scripts/evaluate_semantic_fidelity.py --dataset benchmarks/semantic-fidelity-v1.json --output restored-semantic.json
+            "${restored_python}" scripts/evaluate_reasoning_coherence.py --dataset benchmarks/reasoning-coherence-v1.json --output restored-coherence.json
+            "${restored_python}" scripts/evaluate_execution_planning.py --dataset benchmarks/execution-planning-v1.json --output restored-planning.json
+            "${restored_python}" scripts/evaluate_execution_orchestration.py --dataset benchmarks/execution-orchestration-v1.json --output restored-orchestration.json
+            "${restored_python}" scripts/evaluate_canonical_reconciliation.py --dataset benchmarks/canonical-reconciliation-v1.json --output restored-reconciliation.json
+          )
+      - name: Assemble candidate evidence
+        run: |
+          cp dist/atlas_ros-6.1.1rc1.tar.gz candidate-evidence/
+          cp dist/atlas_ros-6.1.1rc1-py3-none-any.whl candidate-evidence/
+          cp release/V611_CANDIDATE_MANIFEST.md candidate-evidence/
+          cp release/RELEASE_SCOPE_V611.md candidate-evidence/
+          cp release/RELEASE_NOTES_V611.md candidate-evidence/
+          cp release/SBOM_V611_CURRENT.cdx.json candidate-evidence/SBOM.cdx.json
+          git ls-files -z | sort -z | xargs -0 sha256sum > candidate-evidence/SOURCE_CHECKSUMS.sha256
+          (cd candidate-evidence && find . -type f ! -name CHECKSUMS.sha256 -print0 | sort -z | xargs -0 sha256sum > CHECKSUMS.sha256 && sha256sum -c CHECKSUMS.sha256)
+          printf '{"candidate_commit":"%s","package_sha256":"%s","provider_writes":0,"active_release":"v6.1.0","rollback":"v6.0.0"}\n' \
+            "${GITHUB_SHA}" "$(sha256sum candidate-evidence/atlas_ros-6.1.1rc1-py3-none-any.whl | awk '{print $1}')" \
+            > candidate-evidence/CANDIDATE_IDENTITY.json
+          (cd candidate-evidence && sha256sum CANDIDATE_IDENTITY.json >> CHECKSUMS.sha256)
+      - name: Upload exact candidate evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: atlas-ros-v6.1.1rc1-candidate
+          path: candidate-evidence/
+          if-no-files-found: error
+          retention-days: 90
