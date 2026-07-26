@@ -7,6 +7,7 @@ from atlas_ros.contracts import (
     ReasoningPackage,
     ReasoningPackageV2,
     ReasoningPackageV3,
+    ReasoningPackageV4,
 )
 from atlas_ros.domain.models import (
     Capture,
@@ -18,6 +19,7 @@ from atlas_ros.domain.models import (
     RoutingRecommendation,
 )
 from atlas_ros.engines.classification_explainability import ClassificationExplainability
+from atlas_ros.engines.intent_partitioning import IntentPartitioner
 from atlas_ros.engines.manager_intent import ManagerIntentInferer
 from atlas_ros.engines.responsibility_classification import ResponsibilityClassifier
 
@@ -31,6 +33,7 @@ class ManagementReasoningEngine:
         self._classifier = ResponsibilityClassifier(self._intelligence_config)
         self._explainability = ClassificationExplainability(self._intelligence_config)
         self._intent = ManagerIntentInferer(self._intelligence_config)
+        self._partitioner = IntentPartitioner()
 
     def reason(
         self,
@@ -115,6 +118,120 @@ class ManagementReasoningEngine:
             fallback_reason=fallback_reason,
             requires_human_decision=requires_human_decision,
         )
+
+    def reason_v4(self, capture: Capture) -> ReasoningPackageV4:
+        """Partition business intent from controls before selecting a planning model."""
+        reasoning_v2 = self.reason_v2(capture)
+        combined = "\n".join(
+            value for value in (capture.content, capture.additional_context) if value.strip()
+        )
+        partition = self._partitioner.partition(
+            combined, correlation_id=reasoning_v2.correlation_id
+        )
+        audit_primary = self._is_audit_primary(partition.primary_business_outcome)
+        is_pilot = (
+            self._is_controlled_pilot(partition.primary_business_outcome)
+            and not audit_primary
+        )
+        candidates = (
+            PlanningModelCandidate(
+                model_id="controlled-technology-pilot",
+                version_constraint="^3.0.0",
+                confidence=0.99 if is_pilot else 0.20,
+                rationale=(
+                    "Primary outcome is a controlled technology pilot."
+                    if is_pilot
+                    else "No controlled-pilot signal was identified."
+                ),
+            ),
+            PlanningModelCandidate(
+                model_id="single-business-outcome",
+                version_constraint="^3.0.0",
+                confidence=0.20 if is_pilot else 0.95,
+                rationale="Provider-neutral single-outcome model for non-pilot business work.",
+            ),
+        )
+        selected = "controlled-technology-pilot" if is_pilot else "single-business-outcome"
+        version = "^3.0.0"
+        known_inputs: dict[str, object] = {
+            "owner": "Ryan",
+            "desired_outcome": partition.primary_business_outcome,
+            "primary_business_outcome": partition.primary_business_outcome,
+            "technology": self._technology_from_outcome(partition.primary_business_outcome),
+            "current_business_actions": partition.current_business_actions,
+            "delegated_actions": partition.delegated_actions,
+            "conditional_actions": partition.conditional_actions,
+            "evaluation_context": partition.evaluation_context,
+            "audit_requirements": partition.audit_requirements,
+            "execution_constraints": partition.execution_constraints,
+            "reference_context": partition.reference_context,
+            "intent_partition_digest": partition.partition_digest,
+        }
+        selected_v3 = self.select_planning_model(
+            reasoning_v2,
+            normalized_intent=partition.primary_business_outcome or combined,
+            management_pattern=(
+                "Controlled Technology Pilot" if is_pilot else reasoning_v2.workstream
+            ),
+            candidates=candidates,
+            selected_model_id=selected,
+            selected_version_constraint=version,
+            selection_method="policy_selected",
+            selection_confidence=0.99 if is_pilot else 0.80,
+            selection_rationale=(
+                "Selected from the governed primary business outcome, excluding "
+                "evaluation, audit, and execution-control clauses."
+            ),
+            constraints=partition.execution_constraints,
+            known_inputs=known_inputs,
+            unresolved_questions=partition.ambiguities,
+        )
+        return ReasoningPackageV4.from_v3(
+            selected_v3,
+            partition,
+            responsibility_domain=reasoning_v2.responsibility_domain,
+            workstream=reasoning_v2.workstream,
+            activity_summary=reasoning_v2.activity_summary,
+            confidence=reasoning_v2.confidence,
+            operating_context=reasoning_v2.operating_context,
+            operating_context_confidence=reasoning_v2.operating_context_confidence,
+            decisive_evidence=tuple(reasoning_v2.decisive_evidence),
+            rationale=tuple(reasoning_v2.rationale),
+            challenge_status=reasoning_v2.challenge_status,
+        )
+
+    @staticmethod
+    def _is_controlled_pilot(value: str) -> bool:
+        lowered = value.casefold()
+        return any(
+            signal in lowered
+            for signal in (
+                " pilot",
+                "pilot ",
+                "proof of concept",
+                "poc",
+                "controlled trial",
+                "limited deployment",
+                "validation pilot",
+            )
+        )
+
+    @staticmethod
+    def _is_audit_primary(value: str) -> bool:
+        lowered = value.casefold()
+        return (
+            lowered.startswith(("produce ", "generate ", "prepare ", "review "))
+            and any(token in lowered for token in ("audit", "report", "receipt", "reconciliation"))
+        )
+
+    @staticmethod
+    def _technology_from_outcome(value: str) -> str:
+        technology = value.strip()
+        if technology.casefold().startswith("launch the "):
+            technology = technology[11:]
+        if technology.casefold().endswith(" pilot"):
+            technology = technology[:-6]
+        return technology.strip()
 
     def recommendation_from_v2(self, reasoning: ReasoningPackageV2) -> RoutingRecommendation:
         return RoutingRecommendation(

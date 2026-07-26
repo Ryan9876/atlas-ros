@@ -8,6 +8,7 @@ from .execution import (
     ExistingRepresentationMatcher,
     ProgressiveHorizonPolicy,
 )
+from .semantic import SemanticExecutionPlanner
 
 __all__ = [
     "CandidateExtractionResult",
@@ -18,4 +19,5 @@ __all__ = [
     "ExistingRepresentationMatcher",
     "ProgressiveHorizonPolicy",
     "DecompositionService",
+    "SemanticExecutionPlanner",
 ]

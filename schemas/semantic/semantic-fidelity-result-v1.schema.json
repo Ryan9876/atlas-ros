@@ -1,0 +1,18 @@
+{
+  "$defs": {"SemanticConditionResult": {"additionalProperties": false, "properties": {"condition": {"maxLength": 100, "minLength": 1, "title": "Condition", "type": "string"}, "detail": {"default": "", "maxLength": 2000, "title": "Detail", "type": "string"}, "passed": {"title": "Passed", "type": "boolean"}, "reason_code": {"maxLength": 100, "minLength": 1, "title": "Reason Code", "type": "string"}}, "required": ["condition", "passed", "reason_code"], "title": "SemanticConditionResult", "type": "object"}},
+  "$id": "https://atlas-ros.local/schemas/semantic/semantic-fidelity-result-v1.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "business_plan_fingerprint": {"maxLength": 64, "minLength": 64, "title": "Business Plan Fingerprint", "type": "string"},
+    "conditions": {"items": {"$ref": "#/$defs/SemanticConditionResult"}, "title": "Conditions", "type": "array"},
+    "contract_version": {"const": 1, "default": 1, "title": "Contract Version", "type": "integer"},
+    "passed": {"title": "Passed", "type": "boolean"},
+    "primary_outcome_reference": {"maxLength": 500, "minLength": 1, "title": "Primary Outcome Reference", "type": "string"},
+    "result_digest": {"maxLength": 64, "minLength": 64, "title": "Result Digest", "type": "string"},
+    "review_required": {"title": "Review Required", "type": "boolean"}
+  },
+  "required": ["primary_outcome_reference", "conditions", "passed", "review_required", "business_plan_fingerprint", "result_digest"],
+  "title": "SemanticFidelityResultV1",
+  "type": "object"
+}

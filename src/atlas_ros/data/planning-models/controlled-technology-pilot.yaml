@@ -1,0 +1,36 @@
+model_id: controlled-technology-pilot
+version: 3.0.0
+lifecycle_status: active
+purpose: Govern a controlled technology pilot from scope through evidence-backed expansion decision.
+supported_management_patterns:
+  - Controlled Technology Pilot
+  - Proof of Concept
+artifact_type: controlled_technology_pilot
+default_owner: Ryan
+default_workstream: Active Projects
+allow_degraded_composition: false
+supported_reasoning_package_versions: [4]
+supported_knowledge_package_versions: [2]
+supported_management_package_versions: [3]
+required_modules:
+  - {module_id: controlled-technology-pilot, version_constraint: "^3.0.0"}
+sections:
+  - {section_id: primary-outcome, title: Primary outcome, contribution_keys: [primary_done_when]}
+  - {section_id: current-execution, title: Current execution path, contribution_keys: [current_actions]}
+  - {section_id: delegated-execution, title: Delegated execution, contribution_keys: [delegated_actions]}
+  - {section_id: conditional-execution, title: Conditional execution, contribution_keys: [conditional_actions, future_actions]}
+planning_rules:
+  - Primary business outcome is separate from evaluation and audit controls.
+  - Scope, ownership and targets, and control approval are independent current outcomes.
+  - Technical implementation remains delegated until assigned.
+  - Evidence review remains conditional until execution evidence exists.
+governance_rules:
+  - Benchmark and system-evidence instructions cannot become execution objects unless explicitly requested as the primary outcome.
+  - Pilot controls require rollback, evidence, and change-control boundaries.
+required_approvals:
+  - Accountable owner approval before technical execution.
+completion_evidence:
+  - Pilot scope, success measures, technical ownership, low-risk targets, change controls, validation requirements, and rollback approach are approved and the technical pilot is authorized to proceed.
+validation_rules:
+  - accountable_owner_required
+  - semantic_fidelity_required

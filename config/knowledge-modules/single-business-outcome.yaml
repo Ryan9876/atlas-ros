@@ -1,0 +1,11 @@
+modules:
+  - module_id: single-business-outcome
+    version: 3.0.0
+    category: execution
+    lifecycle_status: active
+    purpose: Provide completion evidence for one explicit business outcome.
+    provided_knowledge_keys: [primary_done_when]
+    facts:
+      primary_done_when: The explicitly requested business outcome is complete and verified.
+    evidence_overlays:
+      - The projected parent preserves the explicit primary business outcome.

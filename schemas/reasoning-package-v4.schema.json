@@ -1,0 +1,84 @@
+{
+  "$defs": {
+    "ContractKind": {
+      "enum": ["capture", "reasoning", "knowledge", "management", "execution_plan", "execution_receipt", "reconciliation"],
+      "title": "ContractKind",
+      "type": "string"
+    },
+    "EvidenceSignal": {
+      "additionalProperties": false,
+      "properties": {
+        "category": {"maxLength": 100, "minLength": 1, "title": "Category", "type": "string"},
+        "signal": {"maxLength": 500, "minLength": 1, "title": "Signal", "type": "string"},
+        "source": {"default": "capture", "maxLength": 100, "minLength": 1, "title": "Source", "type": "string"},
+        "weight": {"exclusiveMinimum": 0, "maximum": 10, "title": "Weight", "type": "number"}
+      },
+      "required": ["category", "signal", "weight"],
+      "title": "EvidenceSignal",
+      "type": "object"
+    },
+    "PlanningModelCandidate": {
+      "additionalProperties": false,
+      "properties": {
+        "confidence": {"maximum": 1, "minimum": 0, "title": "Confidence", "type": "number"},
+        "model_id": {"maxLength": 200, "minLength": 1, "title": "Model Id", "type": "string"},
+        "rationale": {"maxLength": 2000, "minLength": 1, "title": "Rationale", "type": "string"},
+        "version_constraint": {"default": "*", "maxLength": 100, "minLength": 1, "title": "Version Constraint", "type": "string"}
+      },
+      "required": ["model_id", "confidence", "rationale"],
+      "title": "PlanningModelCandidate",
+      "type": "object"
+    }
+  },
+  "$id": "https://atlas-ros.local/schemas/reasoning-package-v4.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Reasoning contract with first-class semantic intent partitioning.",
+  "properties": {
+    "activity_summary": {"maxLength": 1000, "minLength": 1, "title": "Activity Summary", "type": "string"},
+    "alternatives_considered": {"default": [], "items": {"type": "string"}, "title": "Alternatives Considered", "type": "array"},
+    "audit_requirements": {"default": [], "items": {"type": "string"}, "title": "Audit Requirements", "type": "array"},
+    "candidate_planning_models": {"items": {"$ref": "#/$defs/PlanningModelCandidate"}, "title": "Candidate Planning Models", "type": "array"},
+    "challenge_status": {"default": "unchallenged", "maxLength": 100, "minLength": 1, "title": "Challenge Status", "type": "string"},
+    "classification": {"maxLength": 100, "minLength": 1, "title": "Classification", "type": "string"},
+    "conditional_actions": {"default": [], "items": {"type": "string"}, "title": "Conditional Actions", "type": "array"},
+    "confidence": {"maximum": 1, "minimum": 0, "title": "Confidence", "type": "number"},
+    "contract_kind": {"$ref": "#/$defs/ContractKind", "default": "reasoning"},
+    "contract_version": {"const": 4, "default": 4, "title": "Contract Version", "type": "integer"},
+    "correlation_id": {"format": "uuid", "title": "Correlation Id", "type": "string"},
+    "created_at": {"format": "date-time", "title": "Created At", "type": "string"},
+    "current_business_actions": {"default": [], "items": {"type": "string"}, "title": "Current Business Actions", "type": "array"},
+    "decisive_evidence": {"default": [], "items": {"$ref": "#/$defs/EvidenceSignal"}, "title": "Decisive Evidence", "type": "array"},
+    "delegated_actions": {"default": [], "items": {"type": "string"}, "title": "Delegated Actions", "type": "array"},
+    "destination": {"maxLength": 200, "minLength": 1, "title": "Destination", "type": "string"},
+    "evaluation_context": {"default": [], "items": {"type": "string"}, "title": "Evaluation Context", "type": "array"},
+    "execution_constraints": {"default": [], "items": {"type": "string"}, "title": "Execution Constraints", "type": "array"},
+    "intent_partition_ambiguities": {"default": [], "items": {"type": "string"}, "title": "Intent Partition Ambiguities", "type": "array"},
+    "intent_partition_confidence": {"maximum": 1, "minimum": 0, "title": "Intent Partition Confidence", "type": "number"},
+    "intent_partition_digest": {"maxLength": 64, "minLength": 64, "title": "Intent Partition Digest", "type": "string"},
+    "known_inputs": {"additionalProperties": true, "title": "Known Inputs", "type": "object"},
+    "known_stakeholders": {"default": [], "items": {"type": "string"}, "title": "Known Stakeholders", "type": "array"},
+    "management_pattern": {"maxLength": 200, "minLength": 1, "title": "Management Pattern", "type": "string"},
+    "normalized_intent": {"maxLength": 10000, "minLength": 1, "title": "Normalized Intent", "type": "string"},
+    "operating_context": {"default": "", "maxLength": 100, "title": "Operating Context", "type": "string"},
+    "operating_context_confidence": {"default": 0, "maximum": 1, "minimum": 0, "title": "Operating Context Confidence", "type": "number"},
+    "planning_assumptions": {"default": [], "items": {"type": "string"}, "title": "Planning Assumptions", "type": "array"},
+    "planning_constraints": {"default": [], "items": {"type": "string"}, "title": "Planning Constraints", "type": "array"},
+    "primary_business_outcome": {"default": "", "maxLength": 10000, "title": "Primary Business Outcome", "type": "string"},
+    "rationale": {"default": [], "items": {"type": "string"}, "title": "Rationale", "type": "array"},
+    "reference_context": {"default": [], "items": {"type": "string"}, "title": "Reference Context", "type": "array"},
+    "requires_human_decision": {"default": false, "title": "Requires Human Decision", "type": "boolean"},
+    "responsibility_domain": {"maxLength": 100, "minLength": 1, "title": "Responsibility Domain", "type": "string"},
+    "selected_planning_model_id": {"maxLength": 200, "minLength": 1, "title": "Selected Planning Model Id", "type": "string"},
+    "selected_planning_model_version_constraint": {"default": "*", "maxLength": 100, "title": "Selected Planning Model Version Constraint", "type": "string"},
+    "selection_confidence": {"maximum": 1, "minimum": 0, "title": "Selection Confidence", "type": "number"},
+    "selection_method": {"enum": ["inferred", "user_selected", "policy_selected"], "title": "Selection Method", "type": "string"},
+    "selection_rationale": {"maxLength": 2000, "minLength": 1, "title": "Selection Rationale", "type": "string"},
+    "source_component": {"maxLength": 200, "minLength": 1, "title": "Source Component", "type": "string"},
+    "unresolved_planning_questions": {"default": [], "items": {"type": "string"}, "title": "Unresolved Planning Questions", "type": "array"},
+    "workstream": {"maxLength": 200, "minLength": 1, "title": "Workstream", "type": "string"}
+  },
+  "required": ["source_component", "classification", "destination", "responsibility_domain", "workstream", "activity_summary", "confidence", "normalized_intent", "management_pattern", "candidate_planning_models", "selected_planning_model_id", "selection_method", "selection_confidence", "selection_rationale", "intent_partition_confidence", "intent_partition_digest"],
+  "title": "ReasoningPackageV4",
+  "type": "object"
+}

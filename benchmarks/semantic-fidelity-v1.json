@@ -1,0 +1,150 @@
+{
+  "benchmark": "semantic-fidelity-v1",
+  "critical_parent": "Launch the Arista CloudVision code-upgrade automation pilot",
+  "critical_subtasks": [
+    "Define and approve pilot scope and success measures",
+    "Assign the technical owner and confirm low-risk pilot targets",
+    "Approve pre-checks, change controls, evidence requirements, and rollback plan"
+  ],
+  "cases": [
+    {
+      "id": "cloudvision-base",
+      "critical": true,
+      "family": "cloudvision-invariance",
+      "input": "Task = arista cloud vision code upgrade automation pilot.",
+      "expected_parent": "Launch the Arista CloudVision code-upgrade automation pilot",
+      "expected_subtasks": [
+        "Define and approve pilot scope and success measures",
+        "Assign the technical owner and confirm low-risk pilot targets",
+        "Approve pre-checks, change controls, evidence requirements, and rollback plan"
+      ],
+      "expected_review": false
+    },
+    {
+      "id": "cloudvision-preserve",
+      "critical": true,
+      "family": "cloudvision-invariance",
+      "input": "Task = arista cloud vision code upgrade automation pilot.\nPreserve every v5.2 through v6.0 record unchanged.",
+      "expected_parent": "Launch the Arista CloudVision code-upgrade automation pilot",
+      "expected_subtasks": [
+        "Define and approve pilot scope and success measures",
+        "Assign the technical owner and confirm low-risk pilot targets",
+        "Approve pre-checks, change controls, evidence requirements, and rollback plan"
+      ],
+      "expected_review": false
+    },
+    {
+      "id": "cloudvision-duplicate-exception",
+      "critical": true,
+      "family": "cloudvision-invariance",
+      "input": "Task = arista cloud vision code upgrade automation pilot.\nDo not block creation as a duplicate for this test.",
+      "expected_parent": "Launch the Arista CloudVision code-upgrade automation pilot",
+      "expected_subtasks": [
+        "Define and approve pilot scope and success measures",
+        "Assign the technical owner and confirm low-risk pilot targets",
+        "Approve pre-checks, change controls, evidence requirements, and rollback plan"
+      ],
+      "expected_review": false
+    },
+    {
+      "id": "cloudvision-version-comparison",
+      "critical": true,
+      "family": "cloudvision-invariance",
+      "input": "Task = arista cloud vision code upgrade automation pilot.\nCompare the output against v5.2, v5.3, v5.4, v5.5, v5.6, and v6.0.",
+      "expected_parent": "Launch the Arista CloudVision code-upgrade automation pilot",
+      "expected_subtasks": [
+        "Define and approve pilot scope and success measures",
+        "Assign the technical owner and confirm low-risk pilot targets",
+        "Approve pre-checks, change controls, evidence requirements, and rollback plan"
+      ],
+      "expected_review": false
+    },
+    {
+      "id": "cloudvision-execution-receipt",
+      "critical": true,
+      "family": "cloudvision-invariance",
+      "input": "Task = arista cloud vision code upgrade automation pilot.\nRequire attended authorization, provider readback, and an execution receipt.",
+      "expected_parent": "Launch the Arista CloudVision code-upgrade automation pilot",
+      "expected_subtasks": [
+        "Define and approve pilot scope and success measures",
+        "Assign the technical owner and confirm low-risk pilot targets",
+        "Approve pre-checks, change controls, evidence requirements, and rollback plan"
+      ],
+      "expected_review": false
+    },
+    {
+      "id": "cloudvision-reconciliation",
+      "critical": true,
+      "family": "cloudvision-invariance",
+      "input": "Task = arista cloud vision code upgrade automation pilot.\nRequire reconciliation evidence, checkpoint integrity, and a reconciliation receipt.",
+      "expected_parent": "Launch the Arista CloudVision code-upgrade automation pilot",
+      "expected_subtasks": [
+        "Define and approve pilot scope and success measures",
+        "Assign the technical owner and confirm low-risk pilot targets",
+        "Approve pre-checks, change controls, evidence requirements, and rollback plan"
+      ],
+      "expected_review": false
+    },
+    {
+      "id": "cloudvision-all-controls",
+      "critical": true,
+      "family": "cloudvision-invariance",
+      "input": "Task = arista cloud vision code upgrade automation pilot.\nCompare against v5.2 through v6.0.\nPreserve previous records.\nDo not block the new task as a duplicate.\nRequire attended authorization, transaction journaling, Todoist and Notion readback, execution receipt, reconciliation checkpoints, preservation evidence, and reconciliation receipt.",
+      "expected_parent": "Launch the Arista CloudVision code-upgrade automation pilot",
+      "expected_subtasks": [
+        "Define and approve pilot scope and success measures",
+        "Assign the technical owner and confirm low-risk pilot targets",
+        "Approve pre-checks, change controls, evidence requirements, and rollback plan"
+      ],
+      "expected_review": false
+    },
+    {
+      "id": "audit-primary-negative-control",
+      "critical": true,
+      "input": "Produce a reconciliation audit report for the CloudVision pilot.",
+      "expected_parent": "Produce a reconciliation audit report for the CloudVision pilot",
+      "expected_subtasks": [],
+      "expected_review": false
+    },
+    {
+      "id": "cisco-controlled-pilot",
+      "critical": true,
+      "input": "Task = Pilot for automating Cisco code upgrades.",
+      "expected_parent": "Launch the Cisco code-upgrade automation pilot",
+      "expected_subtasks": [
+        "Define and approve pilot scope and success measures",
+        "Assign the technical owner and confirm low-risk pilot targets",
+        "Approve pre-checks, change controls, evidence requirements, and rollback plan"
+      ],
+      "expected_review": false
+    },
+    {
+      "id": "monitoring-controlled-pilot",
+      "critical": true,
+      "input": "Outcome = infrastructure monitoring automation pilot.",
+      "expected_parent": "Launch the Infrastructure monitoring automation pilot",
+      "expected_subtasks": [
+        "Define and approve pilot scope and success measures",
+        "Assign the technical owner and confirm low-risk pilot targets",
+        "Approve pre-checks, change controls, evidence requirements, and rollback plan"
+      ],
+      "expected_review": false
+    },
+    {
+      "id": "explicit-benchmark-analysis",
+      "critical": true,
+      "input": "Compare Atlas v5.2 through v6.0 CloudVision outputs.",
+      "expected_parent": "Compare Atlas v5.2 through v6.0 CloudVision outputs",
+      "expected_subtasks": [],
+      "expected_review": false
+    },
+    {
+      "id": "ambiguous-multiple-outcomes",
+      "critical": true,
+      "input": "Create a financial budget. Launch a network automation pilot.",
+      "expected_parent": null,
+      "expected_subtasks": [],
+      "expected_review": true
+    }
+  ]
+}

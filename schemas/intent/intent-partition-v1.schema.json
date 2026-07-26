@@ -1,0 +1,26 @@
+{
+  "$id": "https://atlas-ros.local/schemas/intent/intent-partition-v1.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Provider-independent separation of business intent from control-plane instructions.",
+  "properties": {
+    "ambiguities": {"default": [], "items": {"type": "string"}, "title": "Ambiguities", "type": "array"},
+    "audit_requirements": {"default": [], "items": {"type": "string"}, "title": "Audit Requirements", "type": "array"},
+    "conditional_actions": {"default": [], "items": {"type": "string"}, "title": "Conditional Actions", "type": "array"},
+    "confidence": {"maximum": 1, "minimum": 0, "title": "Confidence", "type": "number"},
+    "contract_version": {"const": 1, "default": 1, "title": "Contract Version", "type": "integer"},
+    "correlation_id": {"format": "uuid", "title": "Correlation Id", "type": "string"},
+    "current_business_actions": {"default": [], "items": {"type": "string"}, "title": "Current Business Actions", "type": "array"},
+    "delegated_actions": {"default": [], "items": {"type": "string"}, "title": "Delegated Actions", "type": "array"},
+    "evaluation_context": {"default": [], "items": {"type": "string"}, "title": "Evaluation Context", "type": "array"},
+    "execution_constraints": {"default": [], "items": {"type": "string"}, "title": "Execution Constraints", "type": "array"},
+    "partition_digest": {"maxLength": 64, "minLength": 64, "title": "Partition Digest", "type": "string"},
+    "primary_business_outcome": {"default": "", "maxLength": 10000, "title": "Primary Business Outcome", "type": "string"},
+    "reference_context": {"default": [], "items": {"type": "string"}, "title": "Reference Context", "type": "array"},
+    "requires_human_decision": {"default": false, "title": "Requires Human Decision", "type": "boolean"},
+    "source_clauses": {"additionalProperties": {"items": {"type": "string"}, "type": "array"}, "title": "Source Clauses", "type": "object"}
+  },
+  "required": ["confidence", "partition_digest"],
+  "title": "IntentPartitionV1",
+  "type": "object"
+}

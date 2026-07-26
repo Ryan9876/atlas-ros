@@ -1,0 +1,24 @@
+{
+  "$defs": {"SemanticRole": {"enum": ["parent_business_outcome", "current_business_action", "delegated_action", "conditional_action", "evaluation_only", "audit_only", "provider_control", "reference_only"], "title": "SemanticRole", "type": "string"}},
+  "$id": "https://atlas-ros.local/schemas/execution/projection-decision-v3.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "advances_primary_outcome": {"title": "Advances Primary Outcome", "type": "boolean"},
+    "candidate_id": {"maxLength": 256, "minLength": 1, "title": "Candidate Id", "type": "string"},
+    "contract_version": {"const": 3, "default": 3, "title": "Contract Version", "type": "integer"},
+    "decision_digest": {"maxLength": 64, "minLength": 64, "title": "Decision Digest", "type": "string"},
+    "primary_outcome_reference": {"maxLength": 500, "minLength": 1, "title": "Primary Outcome Reference", "type": "string"},
+    "projected_object_type": {"default": "none", "enum": ["none", "parent", "subtask"], "title": "Projected Object Type", "type": "string"},
+    "rationale": {"maxLength": 2000, "minLength": 1, "title": "Rationale", "type": "string"},
+    "review_required": {"default": false, "title": "Review Required", "type": "boolean"},
+    "semantic_fidelity_conditions": {"default": [], "items": {"type": "string"}, "title": "Semantic Fidelity Conditions", "type": "array"},
+    "semantic_role": {"$ref": "#/$defs/SemanticRole"},
+    "sequence": {"anyOf": [{"minimum": 1, "type": "integer"}, {"type": "null"}], "default": null, "title": "Sequence"},
+    "source_instruction_role": {"maxLength": 100, "minLength": 1, "title": "Source Instruction Role", "type": "string"},
+    "status": {"enum": ["project_parent", "project_subtask", "retain_in_management", "defer_future_horizon", "withhold_not_owned", "withhold_not_ready", "review_required"], "title": "Status", "type": "string"}
+  },
+  "required": ["candidate_id", "semantic_role", "status", "primary_outcome_reference", "source_instruction_role", "advances_primary_outcome", "rationale", "decision_digest"],
+  "title": "ProjectionDecisionV3",
+  "type": "object"
+}
