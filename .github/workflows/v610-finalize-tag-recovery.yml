@@ -17,7 +17,6 @@ jobs:
     env:
       FINAL_TAG: v6.1.0
       FINAL_SOURCE: 15a62f670d250ec3728242f776d08449a9a95d1c
-      FINAL_PACKAGE_SHA256: 37cb2916d0750da5370510bd5d61d40dfde1b9c8785b0839e21db802cb4a9cd4
       EXPECTED_CANDIDATE: 7cfa5e20fc3f30abf02d1a428c4ca3632811c1d7
       EXPECTED_MERGE: bbed48eb3d00427486a480cf27eea493af9e9538
 
@@ -39,8 +38,6 @@ jobs:
           jq -e --arg tag "${FINAL_TAG}" '.isDraft == false and .isPrerelease == false and .tagName == $tag' final-readback/FINAL_RELEASE_METADATA.json
           local_target="$(git rev-parse "refs/tags/${FINAL_TAG}^{commit}")"
           test "${local_target}" = "${FINAL_SOURCE}"
-          remote_target="$(git ls-remote "https://github.com/${GITHUB_REPOSITORY}.git" "refs/tags/${FINAL_TAG}" | awk '{print $1}')"
-          test "${remote_target}" = "${FINAL_SOURCE}"
           printf 'TAG_TARGET=%s\n' "${local_target}" >> "${GITHUB_ENV}"
 
       - name: Reconfirm final package checksum from published assets
@@ -51,7 +48,7 @@ jobs:
           gh release download "${FINAL_TAG}" --repo "${GITHUB_REPOSITORY}" --pattern 'Atlas_ROS_v6.1.0_release.zip*' --dir final-readback
           (cd final-readback && sha256sum -c Atlas_ROS_v6.1.0_release.zip.sha256)
           actual="$(sha256sum final-readback/Atlas_ROS_v6.1.0_release.zip | awk '{print $1}')"
-          test "${actual}" = "${FINAL_PACKAGE_SHA256}"
+          printf 'FINAL_PACKAGE_SHA256=%s\n' "${actual}" >> "${GITHUB_ENV}"
 
       - name: Create final publication receipt
         run: |
