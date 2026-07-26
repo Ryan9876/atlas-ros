@@ -15,6 +15,7 @@ from .decision_support_v62 import (
     ReflectionGateV62,
     RiskProfileEngineV62,
 )
+from .domain_knowledge_v62 import DomainKnowledgeRegistryV62
 from .input_pipeline_v62 import AdaptiveInputProcessingPipelineV62
 from .intent_graph_v62 import (
     ConstraintPropagationEngineV62,
@@ -38,6 +39,7 @@ __all__ = [
     "ConfidenceProfileEngineV62",
     "ConstraintPropagationEngineV62",
     "DependencyDiscoveryEngineV62",
+    "DomainKnowledgeRegistryV62",
     "IntentGraphEngineV62",
     "MultiOutcomeEngineV62",
     "PlanningMemoryEngineV62",
