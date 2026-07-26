@@ -1,3 +1,13 @@
+# Changelog
+
+## 6.1.0rc1 - 2026-07-26
+
+- Added first-class intent partitioning that separates primary business outcomes from current, delegated, conditional, evaluation, audit, provider-control, and reference instructions.
+- Added Reasoning Package V4, Management Package V3, Execution Candidate/Decision/Plan V3, and Semantic Fidelity Result V1 contracts and schemas.
+- Added reusable controlled-technology-pilot and single-business-outcome planning models.
+- Added a fail-closed Semantic Fidelity Gate and expert golden/metamorphic benchmark.
+- Preserved v6 orchestration, reconciliation, provider-separation, attended-authorization, and rollback boundaries.
+
 # Unreleased — Execution Planning and Task Economy Phase 3
 
 - Added immutable Execution Candidate, Projection Decision, Existing
