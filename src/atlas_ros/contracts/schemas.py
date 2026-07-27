@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 from collections.abc import Mapping
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from pydantic import BaseModel
 
@@ -46,7 +46,10 @@ def expected_contract_schema(descriptor: ContractDescriptor) -> dict[str, Any]:
             f"no canonical model is registered for {descriptor.contract_id}"
         ) from error
     _verify_model_identity(model, descriptor)
-    schema = _remove_schema_descriptions(model.model_json_schema(mode="validation"))
+    schema = cast(
+        dict[str, Any],
+        _remove_schema_descriptions(model.model_json_schema(mode="validation")),
+    )
     schema["$schema"] = _SCHEMA_DRAFT
     schema["$id"] = _SCHEMA_ID_BASE + descriptor.schema_path
     return schema
