@@ -34,12 +34,16 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           CANDIDATE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
-        run: bash scripts/validate_v700_candidate.sh
+        run: |
+          set -o pipefail
+          bash scripts/validate_v700_candidate.sh 2>&1 | tee v700-candidate-validation.log
       - name: Retain build-once v7 candidate artifacts and evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: atlas-ros-v700-candidate-${{ github.event.pull_request.head.sha || github.sha }}
-          path: v700-publication/
-          if-no-files-found: warn
+          path: |
+            v700-publication/
+            v700-candidate-validation.log
+          if-no-files-found: error
           retention-days: 90
