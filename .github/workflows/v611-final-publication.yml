@@ -3,8 +3,6 @@ name: v611-final-publication
 on:
   push:
     branches: [release/v611-governed-controller]
-  pull_request:
-    branches: [main]
   workflow_dispatch:
     inputs:
       publish:
@@ -30,7 +28,7 @@ env:
   FULL_VALIDATION_RECORD: V4V-41
   RELEASE_TAG: v6.1.1
   ROLLBACK_TAG: v6.1.0
-  SOURCE_COMMIT: ${{ github.event.pull_request.head.sha || github.sha }}
+  SOURCE_COMMIT: ${{ github.sha }}
 
 jobs:
   validate-and-publish:
@@ -40,7 +38,7 @@ jobs:
       - name: Check out exact controller source
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
         with:
-          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          ref: ${{ github.sha }}
           fetch-depth: 0
           persist-credentials: false
 

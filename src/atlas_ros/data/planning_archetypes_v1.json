@@ -1,0 +1,134 @@
+{
+  "registry_version": "1.0.0",
+  "governance": {
+    "authority": "Atlas ROS v6.2 governed planning archetype registry",
+    "promotion_policy": "observe-qualify-recommend-decide-implement-measure-retain-revise-retire",
+    "silent_learning": false
+  },
+  "archetypes": [
+    {
+      "archetype_id": "controlled-technology-pilot",
+      "version": "1.0.0",
+      "title": "Controlled technology pilot",
+      "description": "Launch a bounded technical pilot with explicit scope, ownership, controls, evidence, and rollback readiness.",
+      "trigger_terms": ["pilot", "controlled trial", "technology trial"],
+      "current_checkpoint_templates": [
+        "Define and approve pilot scope and success measures",
+        "Assign the technical owner and confirm low-risk pilot targets",
+        "Approve pre-checks, change controls, evidence requirements, and rollback plan"
+      ],
+      "delegated_template": "Build and execute the technical pilot",
+      "conditional_template": "Review pilot evidence and record the go/no-go decision",
+      "future_template": "Expand beyond the pilot only after an affirmative decision and separately approved rollout scope",
+      "required_dependency_categories": ["technical_ownership", "pilot_targets", "success_measures", "change_management", "monitoring", "rollback"]
+    },
+    {
+      "archetype_id": "infrastructure-modernization",
+      "version": "1.0.0",
+      "title": "Infrastructure modernization",
+      "description": "Modernize infrastructure through assessment, target design, controlled transition, validation, and retirement of legacy components.",
+      "trigger_terms": ["modernize", "modernization", "refresh", "upgrade infrastructure"],
+      "current_checkpoint_templates": ["Assess the current state and modernization drivers", "Approve the target architecture and transition scope", "Plan the controlled implementation and validation sequence"],
+      "delegated_template": "Implement the approved modernization work",
+      "conditional_template": "Review implementation evidence and approve legacy retirement",
+      "future_template": "Optimize the modernized platform after stabilization",
+      "required_dependency_categories": ["existing_documentation", "technical_ownership", "platform", "change_management", "rollback"]
+    },
+    {
+      "archetype_id": "operational-remediation",
+      "version": "1.0.0",
+      "title": "Operational remediation",
+      "description": "Contain and correct an operational weakness with verified cause, corrective controls, validation, and recurrence prevention.",
+      "trigger_terms": ["remediate", "fix recurring", "corrective action", "operational issue"],
+      "current_checkpoint_templates": ["Confirm the operational problem and impact", "Approve the remediation scope and accountable owner", "Validate corrective controls and recurrence-prevention evidence"],
+      "delegated_template": "Execute the approved remediation",
+      "conditional_template": "Close the remediation after sustained validation",
+      "future_template": "Expand preventive controls where evidence supports it",
+      "required_dependency_categories": ["required_information", "technical_ownership", "monitoring", "success_measures"]
+    },
+    {
+      "archetype_id": "migration",
+      "version": "1.0.0",
+      "title": "Migration",
+      "description": "Move services, systems, or data to a target state with dependency mapping, cutover controls, validation, and rollback.",
+      "trigger_terms": ["migrate", "migration", "move to", "transition to"],
+      "current_checkpoint_templates": ["Confirm migration scope, inventory, and success measures", "Approve target-state design, dependencies, and cutover controls", "Plan validation, rollback, and post-migration stabilization"],
+      "delegated_template": "Execute the approved migration plan",
+      "conditional_template": "Approve source retirement after migration evidence is complete",
+      "future_template": "Optimize the target environment after stabilization",
+      "required_dependency_categories": ["existing_documentation", "platform", "technical_ownership", "change_management", "rollback"]
+    },
+    {
+      "archetype_id": "decommission",
+      "version": "1.0.0",
+      "title": "Decommission",
+      "description": "Retire a system safely after dependency clearance, data and service disposition, change approval, and recovery validation.",
+      "trigger_terms": ["decommission", "retire", "shut down", "remove legacy"],
+      "current_checkpoint_templates": ["Confirm decommission scope and dependency clearance", "Approve data, service, asset, and access disposition", "Validate shutdown controls, recovery evidence, and closure criteria"],
+      "delegated_template": "Execute the approved decommission activities",
+      "conditional_template": "Close the record after dependent services and evidence are verified",
+      "future_template": "Remove residual cost and technical debt after closure",
+      "required_dependency_categories": ["existing_documentation", "stakeholder_approval", "backup_restoration", "change_management"]
+    },
+    {
+      "archetype_id": "automation-proof-of-concept",
+      "version": "1.0.0",
+      "title": "Automation proof of concept",
+      "description": "Validate an automation concept in a bounded environment before authorizing operational use.",
+      "trigger_terms": ["proof of concept", "poc", "automation test"],
+      "current_checkpoint_templates": ["Define the automation hypothesis and measurable success criteria", "Confirm the bounded test environment, owner, and safety controls", "Approve evidence, rollback, and operational-adoption criteria"],
+      "delegated_template": "Build and run the bounded automation proof of concept",
+      "conditional_template": "Review evidence and decide whether to proceed to a pilot",
+      "future_template": "Operationalize only under separately approved scope",
+      "required_dependency_categories": ["technical_ownership", "lab_test_environment", "success_measures", "rollback"]
+    },
+    {
+      "archetype_id": "compliance-readiness",
+      "version": "1.0.0",
+      "title": "Compliance readiness",
+      "description": "Prepare for a compliance obligation through scope definition, control mapping, evidence readiness, gap remediation, and review.",
+      "trigger_terms": ["compliance", "audit readiness", "certification readiness"],
+      "current_checkpoint_templates": ["Confirm the applicable obligation, scope, and accountable owners", "Map required controls and evidence to the current state", "Approve gap remediation and readiness-review criteria"],
+      "delegated_template": "Complete assigned control and evidence remediation",
+      "conditional_template": "Conduct readiness review after evidence is complete",
+      "future_template": "Sustain controls through the approved review cadence",
+      "required_dependency_categories": ["security_compliance", "stakeholder_approval", "existing_documentation", "evidence_requirements"]
+    },
+    {
+      "archetype_id": "vendor-evaluation",
+      "version": "1.0.0",
+      "title": "Vendor evaluation",
+      "description": "Evaluate a vendor against requirements, risk, cost, evidence, and an explicit decision framework.",
+      "trigger_terms": ["vendor evaluation", "evaluate vendor", "select vendor", "compare vendors"],
+      "current_checkpoint_templates": ["Approve evaluation requirements and decision criteria", "Confirm candidate vendors, evidence sources, and stakeholders", "Complete comparative risk, cost, capability, and support assessment"],
+      "delegated_template": "Collect vendor evidence and conduct assigned evaluations",
+      "conditional_template": "Record the selection decision after comparative evidence is complete",
+      "future_template": "Begin contracting or implementation only after separate approval",
+      "required_dependency_categories": ["vendor_dependency", "budget_procurement", "stakeholder_approval", "success_measures"]
+    },
+    {
+      "archetype_id": "process-improvement",
+      "version": "1.0.0",
+      "title": "Process improvement",
+      "description": "Improve a recurring process through baseline measurement, target design, controlled adoption, and outcome review.",
+      "trigger_terms": ["improve process", "process improvement", "streamline", "reduce cycle time"],
+      "current_checkpoint_templates": ["Measure the current process and confirm the improvement outcome", "Approve the target process, ownership, and adoption scope", "Define implementation, measurement, and sustainment controls"],
+      "delegated_template": "Implement assigned process changes",
+      "conditional_template": "Review measured outcomes and decide whether to standardize",
+      "future_template": "Extend the improved process where evidence supports it",
+      "required_dependency_categories": ["required_information", "technical_ownership", "success_measures", "stakeholder_approval"]
+    },
+    {
+      "archetype_id": "incident-follow-up",
+      "version": "1.0.0",
+      "title": "Incident follow-up",
+      "description": "Convert incident evidence into owned corrective actions, risk reduction, validation, and closure.",
+      "trigger_terms": ["incident follow-up", "post incident", "postmortem action", "root cause follow-up"],
+      "current_checkpoint_templates": ["Confirm incident impact, causal evidence, and open risks", "Approve corrective actions, owners, and completion evidence", "Validate risk reduction and recurrence-prevention controls"],
+      "delegated_template": "Complete assigned corrective actions",
+      "conditional_template": "Close the incident follow-up after evidence is verified",
+      "future_template": "Apply validated preventive patterns to similar services",
+      "required_dependency_categories": ["required_information", "technical_ownership", "monitoring", "evidence_requirements"]
+    }
+  ]
+}
