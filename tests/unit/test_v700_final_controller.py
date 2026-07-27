@@ -31,6 +31,8 @@ def final_evidence() -> FinalPackageEvidence:
         live_authority_readback_complete=True,
         required_integrations_ready=True,
         v650_rollback_restored=True,
+        v650_rollback_evidence_reconciled=True,
+        v650_rollback_evidence_sha256="1" * 64,
         review_record_url="https://app.notion.com/review",
         decision_record_url="https://app.notion.com/decision",
         exact_package_authorization_id="authorization-v700",
@@ -94,6 +96,8 @@ def test_final_controller_fails_closed_on_live_governance_gaps() -> None:
         drive_migration_ledger_complete=False,
         drive_migration_ledger_sha256=None,
         live_authority_readback_complete=False,
+        v650_rollback_evidence_reconciled=False,
+        v650_rollback_evidence_sha256=None,
         exact_package_authorization_id=None,
     )
 
@@ -105,8 +109,23 @@ def test_final_controller_fails_closed_on_live_governance_gaps() -> None:
     assert receipt.status == "blocked"
     assert "Drive migration ledger has not passed" in receipt.blockers
     assert "live authority readback has not passed" in receipt.blockers
+    assert "v6.5 rollback evidence reconciliation has not passed" in receipt.blockers
     assert "exact-package Ryan authorization is required" in receipt.blockers
     assert receipt.provider_writes == 0
+
+
+def test_rollback_digest_cannot_replace_reconciliation() -> None:
+    receipt = compile_final_controller(
+        replace(
+            final_evidence(),
+            v650_rollback_evidence_reconciled=False,
+        ),
+        transaction_id="final-controller-v700",
+    )
+
+    assert receipt.status == "blocked"
+    assert "v6.5 rollback evidence reconciliation has not passed" in receipt.blockers
+    assert "v6.5 rollback evidence digest cannot replace reconciliation" in receipt.blockers
 
 
 def test_post_publication_verification_is_independent_and_provider_free() -> None:
