@@ -13,6 +13,14 @@ _LAYER_RULES: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("contracts/execution/", ("atlas_ros.contracts",)),
     ("policy/", ("atlas_ros.contracts", "atlas_ros.policy")),
     (
+        "capabilities/",
+        (
+            "atlas_ros.capabilities",
+            "atlas_ros.contracts",
+            "atlas_ros.policy",
+        ),
+    ),
+    (
         "application/",
         (
             "atlas_ros.application",
@@ -27,6 +35,7 @@ _LAYER_RULES: tuple[tuple[str, tuple[str, ...]], ...] = (
         "kernel/",
         (
             "atlas_ros.application",
+            "atlas_ros.capabilities",
             "atlas_ros.contracts",
             "atlas_ros.kernel",
             "atlas_ros.policy",
@@ -41,6 +50,16 @@ _FORBIDDEN_RUNTIME_IMPORTS = (
     "atlas_ros.adapters",
     "atlas_ros.intelligence",
     "atlas_ros.release",
+)
+
+_CAPABILITY_COMPATIBILITY_IMPORTS = (
+    "atlas_ros.capture",
+    "atlas_ros.engines",
+    "atlas_ros.models",
+    "atlas_ros.orchestration",
+    "atlas_ros.planning",
+    "atlas_ros.reconciliation",
+    "atlas_ros.services",
 )
 
 
@@ -67,6 +86,10 @@ def validate_v7(root: Path = PACKAGE_ROOT) -> list[dict[str, str]]:
         modules = imported_modules(path)
         for module in sorted(module for module in modules if module.startswith("atlas_ros")):
             if relative == "entry_points/_legacy.py" and module == "atlas_ros.cli":
+                continue
+            if relative == "capabilities/__init__.py" and module.startswith(
+                _CAPABILITY_COMPATIBILITY_IMPORTS
+            ):
                 continue
             if not module.startswith(allowed):
                 violations.append(
