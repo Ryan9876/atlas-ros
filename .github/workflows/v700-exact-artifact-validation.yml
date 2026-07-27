@@ -118,7 +118,7 @@ jobs:
           set -euo pipefail
           mkdir -p v700-exact-evidence
           clean_version="$(exact-v650/bin/python -c 'import atlas_ros; print(atlas_ros.__version__)')"
-          python scripts/validate_v650_rollback_evidence.py \
+          python -m scripts.validate_v650_rollback_evidence \
             --repository-root . \
             --source-commit bb6d6fea70d6824c9bc6a42e63ba36cc88029260 \
             --release-assets-dir v650-assets \
@@ -162,7 +162,7 @@ jobs:
           if [[ -f release/v700-drive-migration-inventory.json ]]; then
             args+=(--drive-inventory release/v700-drive-migration-inventory.json)
           fi
-          python scripts/validate_v700_exact_artifact.py "${args[@]}"
+          python -m scripts.validate_v700_exact_artifact "${args[@]}"
           (
             cd v700-exact-evidence
             find . -type f ! -name EXACT_ARTIFACT_CHECKSUMS.sha256 -print0 | sort -z |
