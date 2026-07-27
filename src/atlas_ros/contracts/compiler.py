@@ -34,7 +34,11 @@ class ContractCompilationError(ValueError):
     """Raised when the canonical contract catalog is invalid or ambiguous."""
 
 
-def compile_contract_registry(path: Path) -> ContractRegistry:
+def compile_contract_registry(
+    path: Path,
+    *,
+    repository_root: Path | None = None,
+) -> ContractRegistry:
     """Compile one canonical YAML contract catalog into an immutable registry."""
     try:
         loaded = yaml.safe_load(path.read_text(encoding="utf-8"))
@@ -67,6 +71,8 @@ def compile_contract_registry(path: Path) -> ContractRegistry:
         compiled[descriptor.contract_id] = descriptor
         canonical_entries.append(canonical)
 
+    root = _resolve_repository_root(path, repository_root)
+    _validate_catalog_assets(compiled, root)
     lifecycle, canonical_lifecycle = _compile_lifecycle(payload["lifecycle"])
     canonical_catalog = {
         "schema_version": "1.0",
@@ -176,8 +182,7 @@ def _compile_lifecycle(raw: Any) -> tuple[LegacyContractBoundary, dict[str, Any]
     if not _REQUIRED_LEGACY_PROHIBITIONS.issubset(forbidden):
         missing = sorted(_REQUIRED_LEGACY_PROHIBITIONS - set(forbidden))
         raise ContractCompilationError(
-            "legacy contracts are not forbidden from runtime paths: "
-            + ", ".join(missing)
+            "legacy contracts are not forbidden from runtime paths: " + ", ".join(missing)
         )
     boundary = LegacyContractBoundary(allowed_only_in=allowed, forbidden_from=forbidden)
     return boundary, {
@@ -224,3 +229,36 @@ def _validate_migration_path(path_value: str, contract_id: str) -> None:
         raise ContractCompilationError(
             f"invalid migration path for {contract_id}: {path_value}"
         )
+
+
+def _resolve_repository_root(path: Path, repository_root: Path | None) -> Path:
+    if repository_root is not None:
+        root = repository_root.resolve()
+        if not root.is_dir():
+            raise ContractCompilationError(f"repository root is not a directory: {root}")
+        return root
+    resolved = path.resolve()
+    for candidate in (resolved.parent, *resolved.parents):
+        if (candidate / "pyproject.toml").is_file():
+            return candidate
+    raise ContractCompilationError(
+        "repository root could not be resolved; pass repository_root explicitly"
+    )
+
+
+def _validate_catalog_assets(
+    contracts: Mapping[str, ContractDescriptor],
+    repository_root: Path,
+) -> None:
+    for descriptor in contracts.values():
+        schema = repository_root / descriptor.schema_path
+        if not schema.is_file():
+            raise ContractCompilationError(
+                f"contract schema asset does not exist: {descriptor.schema_path}"
+            )
+        for migration_path in descriptor.migrations:
+            migration = repository_root / migration_path
+            if not migration.is_file():
+                raise ContractCompilationError(
+                    f"contract migration asset does not exist: {migration_path}"
+                )
