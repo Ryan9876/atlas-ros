@@ -1,0 +1,44 @@
+{
+  "captured_on": "2026-07-27",
+  "evidence_basis": "Live Google Drive direct-child listings for the three folders currently represented in v700-drive-file-inventory.json. Each receipt binds the exact file-ID set returned for one folder. No provider writes or retirement actions occurred.",
+  "folder_tree_sha256": "5138b252aa82524cf84971b7b501dee23586a20e91103a27420c4866dd9084c6",
+  "inventory_sha256": "060f2bff64ace350d95199f9ac51070ff09a96e744b019574673e78fb2a0bad3",
+  "listing_set_sha256": "f2249dc46c1396f6717155a2cd1e9fe93da45b9aeeee80e0c2b0d8eccbefbe7c",
+  "listings": [
+    {
+      "file_ids": [
+        "1F8fXT9oLtXnorbyL--5Vw0Ajo6MyW0Xk"
+      ],
+      "folder_id": "1TG_2OP6iZpCmih734SumSsi62gOQ1zH4",
+      "inaccessible_file_ids": [],
+      "listing_complete": true,
+      "listing_sha256": "a6926e9df59eb0e711cf57792aecfba1f7d03794f69b05d650bd2c14f8f041e4",
+      "unconsumed_page_tokens": 0
+    },
+    {
+      "file_ids": [
+        "10W1mdUYYpy7GFH-lRdt4JcAZ_J9_VZSj",
+        "14xnsBqICwkYd8f824vrB6Q_K_yWzZK0fGpS9aK8Et4U"
+      ],
+      "folder_id": "1kkJBRR1cdIOolURmxnxM2SP_U611vlyf",
+      "inaccessible_file_ids": [],
+      "listing_complete": true,
+      "listing_sha256": "cc9940310f5e8904f11ad5a6e77514b5f013e7ffb0cc242e394a04c11339307c",
+      "unconsumed_page_tokens": 0
+    },
+    {
+      "file_ids": [
+        "1TTdwzFThu1tPaU8HsYQbNzbTIHsSYMja",
+        "1kRsb9m0EC1IsavXa-CAUkllgWNgdWmIJ5ZOz1dnrgPA",
+        "1zAX9Xl36Kdr_wOQmiaZ7x9mG8yWH_c8uS5CIlvHmEf4"
+      ],
+      "folder_id": "1sapLmUvpgFT2vSApvTARg2uRis_RcTfO",
+      "inaccessible_file_ids": [],
+      "listing_complete": true,
+      "listing_sha256": "2e94122f854b9313824f9a9a2c6e8e2ee5b746be3c9f576072207d2bef5110b0",
+      "unconsumed_page_tokens": 0
+    }
+  ],
+  "schema_version": "1.0",
+  "source_root_id": "1TG_2OP6iZpCmih734SumSsi62gOQ1zH4"
+}
