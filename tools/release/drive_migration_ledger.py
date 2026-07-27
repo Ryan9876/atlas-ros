@@ -235,14 +235,17 @@ def _validate_state(item: DriveMigrationItem) -> None:
             raise DriveMigrationLedgerError(
                 "current bootstrap must retire only after v7 activation"
             )
-    if item.classification == "historical_authority":
-        if (
+    invalid_historical_authority = (
+        item.classification == "historical_authority"
+        and (
             item.migration_status != "verified"
             or item.disposition != "retain_immutable_github"
-        ):
-            raise DriveMigrationLedgerError(
-                f"historical authority is not immutably represented: {item.drive_id}"
-            )
+        )
+    )
+    if invalid_historical_authority:
+        raise DriveMigrationLedgerError(
+            f"historical authority is not immutably represented: {item.drive_id}"
+        )
     invalid_non_authoritative_disposition = (
         item.classification in {"duplicate", "obsolete"}
         and item.disposition
