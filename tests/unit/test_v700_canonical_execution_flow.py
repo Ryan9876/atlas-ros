@@ -79,6 +79,7 @@ def test_capture_to_reconciliation_uses_exact_attended_boundaries() -> None:
     )
     reconciliation = CanonicalReconciliationService().reconcile(proposed, receipt)
 
+    assert proposed.contract_id == "atlas.proposed-execution-plan"
     assert authorized.plan_digest == proposed.plan_digest
     assert receipt.provider_writes == 1
     assert reconciliation.complete is True
@@ -103,3 +104,14 @@ def test_blocked_plan_cannot_be_authorized() -> None:
             proposed,
             authorization_id="attended-authorization-1",
         )
+
+
+def test_graph_without_actions_returns_explicit_planning_blocker() -> None:
+    graph = DeterministicInputProcessor().process(
+        CaptureEnvelope(source="test", content="Review the current implementation status.")
+    )
+
+    proposed = ExecutionPlanningService().plan(graph, ())
+
+    assert proposed.operations == ()
+    assert proposed.blockers == ("no_execution_candidate_actions",)
