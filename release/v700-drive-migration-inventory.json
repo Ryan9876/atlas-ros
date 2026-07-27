@@ -44,7 +44,7 @@
       "content_equivalent": false,
       "migration_status": "unresolved",
       "disposition": "retain_legacy_read_only",
-      "notes": "SHA-256 is a canonical metadata-identity digest, not a false byte-equivalence claim for a folder. Direct listing returned 41 children, below the connector's 100-item limit. Recursive child traversal remains incomplete; no deletion or retirement is authorized."
+      "notes": "SHA-256 is a canonical metadata-identity digest over drive_id, title, MIME type, size, modified time, parent IDs, and shared state—not a false byte-equivalence claim for a folder. Direct listing returned 41 children, below the connector's 100-item limit. Recursive child traversal remains incomplete; no deletion or retirement is authorized."
     },
     {
       "drive_id": "1N7M44Rw8tP-QKXGEdoPhc7IlOQWNPyS7",
@@ -54,14 +54,14 @@
       "modified_time": "2026-07-27T14:15:04.153Z",
       "owned_by_me": false,
       "shared": true,
-      "drive_content_sha256": "29bca657fd79ab57bb57e18a4be2b97e9e8aa23b4864435390f862bc85f7f89c",
+      "drive_content_sha256": "ddb855818a20e9220b6ed42d34e863250453062b7acac4392e233a614d50266b",
       "classification": "obsolete",
       "github_target": null,
       "github_content_sha256": null,
       "content_equivalent": false,
       "migration_status": "unresolved",
       "disposition": "retain_legacy_read_only",
-      "notes": "Historical release folder retained under the governed legacy-read-only allowlist. Direct children were listed and a nested audit folder was discovered; that audit folder has not yet been traversed. Digest is metadata identity only."
+      "notes": "Historical release folder retained under the governed legacy-read-only allowlist. Direct children were listed and a nested audit folder was discovered; that audit folder has not yet been traversed. SHA-256 is the canonical metadata-identity digest defined for this partial inventory."
     },
     {
       "drive_id": "1sapLmUvpgFT2vSApvTARg2uRis_RcTfO",
@@ -71,14 +71,14 @@
       "modified_time": "2026-07-27T14:14:41.748Z",
       "owned_by_me": false,
       "shared": true,
-      "drive_content_sha256": "f663c3c9177de4bdeeb790f562a3c71957bc0e6c10584acf50fd4d4f7715fb5c",
+      "drive_content_sha256": "fe827897c3851e457d8316d368459a5c41cffb1bda467d74bf888d616119bfa1",
       "classification": "obsolete",
       "github_target": null,
       "github_content_sha256": null,
       "content_equivalent": false,
       "migration_status": "unresolved",
       "disposition": "retain_legacy_read_only",
-      "notes": "Historical release folder retained under the governed legacy-read-only allowlist. Direct listing contained three files and no nested folders. Digest is metadata identity only; no GitHub equivalence is claimed."
+      "notes": "Historical release folder retained under the governed legacy-read-only allowlist. Direct listing contained three files and no nested folders. SHA-256 is the canonical metadata-identity digest; no GitHub equivalence is claimed."
     }
   ]
 }
