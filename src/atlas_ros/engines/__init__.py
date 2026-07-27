@@ -18,6 +18,12 @@ from .intent_graph_v62 import (
     DependencyDiscoveryEngineV62,
     IntentGraphEngineV62,
 )
+from .governed_execution_v65 import (
+    ExecutionPresenterV65,
+    GovernedFrameworkComposerV65,
+    MinimumEffectivePathPlannerV65,
+    ScenarioIntelligenceV65,
+)
 from .intent_partitioning import IntentPartitioner
 from .knowledge_composition import KnowledgeCompositionEngine
 from .management_reasoning import ManagementReasoningEngine
@@ -44,6 +50,10 @@ __all__ = [
     "ReflectionGateV62",
     "RiskProfileEngineV62",
     "ClassificationExplainability",
+    "ExecutionPresenterV65",
+    "GovernedFrameworkComposerV65",
+    "MinimumEffectivePathPlannerV65",
+    "ScenarioIntelligenceV65",
     "IntentAssessment",
     "IntentPartitioner",
     "KnowledgeCompositionEngine",
