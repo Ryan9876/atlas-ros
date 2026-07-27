@@ -243,10 +243,15 @@ def _validate_state(item: DriveMigrationItem) -> None:
             raise DriveMigrationLedgerError(
                 f"historical authority is not immutably represented: {item.drive_id}"
             )
-    if item.classification in {"duplicate", "obsolete"} and item.disposition not in {
-        "eligible_for_retirement",
-        "retain_legacy_read_only",
-    }:
+    invalid_non_authoritative_disposition = (
+        item.classification in {"duplicate", "obsolete"}
+        and item.disposition
+        not in {
+            "eligible_for_retirement",
+            "retain_legacy_read_only",
+        }
+    )
+    if invalid_non_authoritative_disposition:
         raise DriveMigrationLedgerError(
             f"invalid non-authoritative disposition: {item.drive_id}"
         )
