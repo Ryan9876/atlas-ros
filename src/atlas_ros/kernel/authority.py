@@ -60,7 +60,7 @@ class AuthorityRecord(BaseModel):
     integrity: IntegrityMetadata
 
     @model_validator(mode="after")
-    def verify_integrity(self) -> "AuthorityRecord":
+    def verify_integrity(self) -> AuthorityRecord:
         payload = self.model_dump(mode="json", exclude={"integrity"})
         if sha256_digest(payload) != self.integrity.content_sha256:
             raise ValueError("authority integrity digest does not match")
