@@ -6,13 +6,18 @@ import json
 from pathlib import PurePosixPath
 from typing import Any
 
+from atlas_ros.contracts.authority import (
+    IntegrationInventorySnapshot,
+    SystemStateSnapshot,
+)
 from atlas_ros.kernel.authority import AuthorityRecord
 from atlas_ros.kernel.context import InitializationContext
 from atlas_ros.kernel.digests import sha256_digest
-from atlas_ros.ports.authority import AuthorityReader
+from atlas_ros.ports.authority import AuthorityReader, DynamicAuthorityReader
 
 _AUTHORITY_PATH = PurePosixPath("governance/AUTHORITY.json")
 _RELEASE_INDEX_PATH = PurePosixPath("governance/RELEASE_INDEX.md")
+_REQUIRED_V7_INTEGRATIONS = frozenset({"GitHub", "Notion", "Todoist"})
 
 
 class InitializationError(ValueError):
@@ -83,6 +88,59 @@ def initialize(reader: AuthorityReader) -> InitializationContext:
         system_state_url=str(authority.notion_system_state_url),
         integration_inventory_url=_integration_inventory_url(manifest),
     )
+
+
+def initialize_full(
+    authority_reader: AuthorityReader,
+    dynamic_reader: DynamicAuthorityReader,
+) -> InitializationContext:
+    """Verify GitHub authority, System State, and Integration Inventory together."""
+    context = initialize(authority_reader)
+    system_state = dynamic_reader.read_system_state(context.system_state_url)
+    inventory = dynamic_reader.read_integration_inventory(
+        context.integration_inventory_url
+    )
+    _verify_system_state(context, system_state)
+    _verify_integration_inventory(inventory)
+    return context
+
+
+def _verify_system_state(
+    context: InitializationContext,
+    snapshot: SystemStateSnapshot,
+) -> None:
+    authority = context.authority
+    if snapshot.active_version != authority.active_release.version:
+        raise InitializationError("System State active release disagrees with GitHub authority")
+    if snapshot.immediate_rollback_version != authority.immediate_rollback.version:
+        raise InitializationError("System State rollback disagrees with GitHub authority")
+    if snapshot.authority_model_version != authority.authority_model_version:
+        raise InitializationError("System State authority-model version is incompatible")
+    if not snapshot.published_workspace_valid:
+        raise InitializationError("System State does not confirm a valid published workspace")
+
+
+def _verify_integration_inventory(snapshot: IntegrationInventorySnapshot) -> None:
+    required = {item.name for item in snapshot.integrations if item.required}
+    if required != _REQUIRED_V7_INTEGRATIONS:
+        raise InitializationError(
+            "Integration Inventory required set must be GitHub, Notion, and Todoist"
+        )
+    for item in snapshot.integrations:
+        if not item.required:
+            continue
+        if item.connection_status != "connected":
+            raise InitializationError(f"required integration is not connected: {item.name}")
+        if item.approval_status != "approved":
+            raise InitializationError(f"required integration is not approved: {item.name}")
+        if item.acceptance_status != "passed":
+            raise InitializationError(f"required integration has not passed: {item.name}")
+        if not item.current:
+            raise InitializationError(f"required integration is not current: {item.name}")
+        if not item.least_privilege_verified:
+            raise InitializationError(
+                f"required integration lacks least-privilege verification: {item.name}"
+            )
 
 
 def _integration_inventory_url(manifest: str) -> str:
