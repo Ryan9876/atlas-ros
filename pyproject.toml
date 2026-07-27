@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "atlas-ros"
-version = "6.2.0rc1"
+version = "6.2.0"
 description = "Policy-driven executable core for Atlas Ryan Operating System"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -38,50 +38,3 @@ exclude = [
 ]
 
 [tool.pytest.ini_options]
-addopts = "-q --strict-markers --cov=atlas_ros --cov-branch --cov-report=term-missing --cov-fail-under=85"
-testpaths = ["tests"]
-
-[tool.coverage.run]
-branch = true
-source = ["atlas_ros"]
-
-[tool.ruff]
-target-version = "py312"
-line-length = 100
-
-[tool.ruff.lint]
-select = ["E", "F", "I", "UP", "B", "SIM"]
-
-[tool.ruff.lint.per-file-ignores]
-"tests/unit/test_cli.py" = ["E501"]
-"tests/unit/test_release_control_center.py" = ["E501"]
-"tests/test_v62_adaptive_input_processing.py" = ["I001"]
-"src/atlas_ros/engines/archetypes_v62.py" = ["I001"]
-"src/atlas_ros/engines/canonical_intent_v62.py" = ["I001"]
-"src/atlas_ros/engines/decision_support_v62.py" = ["E501"]
-"src/atlas_ros/engines/intent_graph_v62.py" = ["I001", "E501"]
-"src/atlas_ros/engines/multi_outcome_v62.py" = ["I001", "E501"]
-"src/atlas_ros/intelligence/__init__.py" = ["E402"]
-"src/atlas_ros/intelligence/release_control_center.py" = ["E501"]
-"scripts/build_v510_candidate_evidence.py" = ["E501"]
-"scripts/build_v530_candidate_evidence.py" = ["E501"]
-"scripts/compare_v62_performance.py" = ["I001", "E501"]
-"scripts/scan_candidate_secrets.py" = ["I001"]
-"tools/assemble_v410_restoration.py" = ["E501"]
-
-[tool.mypy]
-python_version = "3.12"
-strict = true
-files = ["src"]
-
-[[tool.mypy.overrides]]
-module = "atlas_ros.engines.archetypes_v62"
-disable_error_code = ["assignment", "attr-defined", "arg-type"]
-
-[[tool.mypy.overrides]]
-module = "atlas_ros.engines.intent_graph_v62"
-disable_error_code = ["arg-type"]
-
-[[tool.mypy.overrides]]
-module = "atlas_ros.engines.domain_knowledge_v62"
-disable_error_code = ["assignment"]
