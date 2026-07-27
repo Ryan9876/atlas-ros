@@ -9,7 +9,10 @@ from atlas_ros.policy.compiler import PolicyCompilationError, compile_policy_reg
 
 def write_policy(path: Path, policy_id: str = "atlas.test") -> Path:
     path.write_text(
-        "schema_version: '1.0'\npolicy_id: " + policy_id + "\nlifecycle: active\nrules:\n  - do_the_thing\n",
+        "schema_version: '1.0'\n"
+        + "policy_id: "
+        + policy_id
+        + "\nlifecycle: active\nrules:\n  - do_the_thing\n",
         encoding="utf-8",
     )
     return path
@@ -27,4 +30,6 @@ def test_compiler_is_deterministic_and_immutable(tmp_path: Path) -> None:
 
 def test_compiler_fails_closed_for_duplicate_policy_ids(tmp_path: Path) -> None:
     with pytest.raises(PolicyCompilationError, match="duplicate"):
-        compile_policy_registry([write_policy(tmp_path / "one.yaml"), write_policy(tmp_path / "two.yaml")])
+        compile_policy_registry(
+            [write_policy(tmp_path / "one.yaml"), write_policy(tmp_path / "two.yaml")]
+        )
