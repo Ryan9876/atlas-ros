@@ -12,9 +12,9 @@ from atlas_ros.kernel.digests import sha256_digest
 class ImmutableRelease(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    version: str = Field(pattern=r"^v?\\d+\\.\\d+\\.\\d+$")
+    version: str = Field(pattern=r"^v?\d+\.\d+\.\d+$")
     immutable_commit: str = Field(pattern=r"^[0-9a-f]{40}$")
-    tag: str = Field(pattern=r"^v\\d+\\.\\d+\\.\\d+$")
+    tag: str = Field(pattern=r"^v\d+\.\d+\.\d+$")
     release_url: AnyHttpUrl
 
 
