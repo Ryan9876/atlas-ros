@@ -20,7 +20,10 @@ dependencies = [
 dev = ["pytest==9.0.2", "pytest-cov==6.3.0", "hypothesis==6.148.7", "ruff==0.12.12", "mypy==1.18.2", "build==1.3.0", "pip-audit==2.9.0", "types-PyYAML==6.0.12.20250915"]
 
 [project.scripts]
-atlas = "atlas_ros.cli:main"
+atlas = "atlas_ros.entry_points.main:main"
+atlas-evaluate = "atlas_ros.entry_points.evaluate:main"
+atlas-release = "atlas_ros.entry_points.release:main"
+atlas-migrate = "atlas_ros.entry_points.migrate:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/atlas_ros"]
