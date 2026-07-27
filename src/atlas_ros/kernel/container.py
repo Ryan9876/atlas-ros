@@ -72,11 +72,31 @@ class RuntimeKernel:
         cls,
         config: KernelConfig,
         policy_paths: Iterable[Path],
+        capability_catalog_path: Path,
+        stages: tuple[ProcessingStage, ...],
+    ) -> RuntimeKernel:
+        """Compile the capability catalog while contract migration remains external."""
+        policy_registry = compile_policy_registry(policy_paths)
+        capability_registry = compile_capability_registry(capability_catalog_path)
+        _verify_capability_digest(config, capability_registry)
+        coordinator = _coordinator(config, policy_registry, stages)
+        return cls(
+            config=config,
+            policy_registry=policy_registry,
+            coordinator=coordinator,
+            capability_registry=capability_registry,
+        )
+
+    @classmethod
+    def compose_fully_governed(
+        cls,
+        config: KernelConfig,
+        policy_paths: Iterable[Path],
         contract_catalog_path: Path,
         capability_catalog_path: Path,
         stages: tuple[ProcessingStage, ...],
     ) -> RuntimeKernel:
-        """Compile and bind canonical governance at composition time."""
+        """Compile and bind both canonical catalogs at composition time."""
         policy_registry = compile_policy_registry(policy_paths)
         contract_registry = compile_contract_registry(contract_catalog_path)
         capability_registry = compile_capability_registry(capability_catalog_path)
@@ -84,10 +104,7 @@ class RuntimeKernel:
             raise KernelConfigurationError(
                 "compiled contract catalog digest does not match kernel configuration"
             )
-        if capability_registry.digest != config.capability_catalog_digest:
-            raise KernelConfigurationError(
-                "compiled capability catalog digest does not match kernel configuration"
-            )
+        _verify_capability_digest(config, capability_registry)
         coordinator = _coordinator(config, policy_registry, stages)
         return cls(
             config=config,
@@ -105,6 +122,16 @@ class RuntimeKernel:
             )
         if not authorization_id:
             raise KernelPermissionError("provider writes require an authorization ID")
+
+
+def _verify_capability_digest(
+    config: KernelConfig,
+    capability_registry: CapabilityRegistry,
+) -> None:
+    if capability_registry.digest != config.capability_catalog_digest:
+        raise KernelConfigurationError(
+            "compiled capability catalog digest does not match kernel configuration"
+        )
 
 
 def _coordinator(
