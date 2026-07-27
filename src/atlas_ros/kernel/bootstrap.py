@@ -62,12 +62,12 @@ def initialize(reader: AuthorityReader) -> InitializationContext:
     active = authority.active_release
     if active.tag != f"v{active.version.removeprefix('v')}":
         raise InitializationError("active release version and tag disagree")
-    if not str(active.manifest_url).endswith(active.manifest_path):
+    if not str(active.manifest_url).endswith(\n        active.manifest_path\n    ):
         raise InitializationError("active manifest URL does not resolve to the declared manifest path")
 
     release_index = reader.read_text(_RELEASE_INDEX_PATH, ref=active.immutable_commit)
     if sha256_digest(release_index) != authority.release_index.sha256:
-        raise InitializationError("generated RELEASE_INDEX.md digest does not match AUTHORITY.json")
+        raise InitializationError(\n            "generated RELEASE_INDEX.md digest does not match AUTHORITY.json"\n        )
     expected_index = render_release_index(authority)
     if release_index != expected_index:
         raise InitializationError("RELEASE_INDEX.md is not the generated authority projection")
