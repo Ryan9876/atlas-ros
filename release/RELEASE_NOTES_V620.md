@@ -2,7 +2,7 @@
 
 ## Summary
 
-Atlas ROS v6.2 adds a provider-free adaptive input-processing architecture. It preserves the v6.1.1 business-centered CloudVision plan while expanding internal reasoning into typed outcomes, graphs, dependencies, constraints, domain context, confidence, risk, clarification, reflection, memory, and adaptive projection.
+Atlas ROS v6.2 adds a provider-free adaptive input-processing architecture. It preserves the v6.1.1 business-centered CloudVision plan while expanding internal reasoning into typed outcomes, graphs, dependencies, constraints, domain context, confidence, risk, clarification, reflection, governed memory, and adaptive projection.
 
 ## What changed
 
@@ -20,7 +20,7 @@ The complete reasoning structure is represented as typed nodes and edges. Curren
 
 ### Dependencies and constraints
 
-Dependencies have confirmed, inferred, optional, or unresolved states. Constraints preserve source, strength, affected nodes, derived effects, and conflicts. Material unresolved dependencies and hard constraint conflicts block execution eligibility.
+Dependencies have confirmed, inferred, optional, or unresolved states. Constraints preserve source, strength, affected nodes, derived effects, and conflicts. Material unresolved dependencies and hard-constraint conflicts block execution eligibility.
 
 ### Governed archetypes and domain packs
 
@@ -48,7 +48,7 @@ Projection depth uses small, medium, large, and program complexity bands. Only c
 - execution authorization remains false;
 - adapters gain no planning or authorization authority;
 - historical records remain immutable;
-- no Todoist, calendar, email, messaging, deletion, or live network capability was added;
+- no Todoist, calendar, email, messaging, deletion, or live-network capability was added;
 - no hidden online learning or unrestricted profiling was added;
 - all material outputs are versioned and digest-bound.
 
@@ -68,6 +68,14 @@ Technical execution remains delegated, go/no-go review remains conditional, and 
 
 V6.2 introduces Reasoning Package V5. Existing V1-V4 reasoning packages and downstream execution, orchestration, and reconciliation contracts remain unchanged.
 
-## Candidate limitation
+## Validation
 
-These notes describe candidate scope. They do not indicate production promotion. Final release identity, checksums, performance results, Full Validation evidence, and rollback verification must be added to the exact candidate manifest before Ryan is asked for promotion authorization.
+The exact v6.2.0rc1 candidate completed governed Exact-Artifact Full Validation under Review V4V-44 with no blocking findings. The validated candidate passed 480 tests with 88.7854% branch-aware coverage, all legacy benchmark suites, 24/24 Adaptive Input Processing cases, CloudVision invariance, dependency and secret scanning, source and wheel construction, clean installation, source restoration, and rollback restoration with zero provider writes.
+
+Candidate p95 processing time was 3.2818 ms compared with 4.3397 ms for v6.1.1, a 24.38% improvement.
+
+The immutable v6.1.0 historical package retains a pre-existing internal-version mismatch: distribution metadata reports 6.1.0 while `atlas_ros.__version__` reports 5.0.0rc1. The package remains installable; historical assets were not modified.
+
+## Release authority
+
+Final production publication was authorized by Ryan under Decision V4D-35. The governed final-publication controller must bind the released source, wheel, checksums, SBOM, benchmarks, restoration evidence, immutable tag, and published-asset readback to the exact production source before live authorities are updated.

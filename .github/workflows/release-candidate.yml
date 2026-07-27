@@ -17,7 +17,7 @@ jobs:
     if: >-
       github.event_name == 'workflow_dispatch' ||
       github.head_ref == 'agent/v620-adaptive-input-processing' ||
-      startsWith(github.head_ref, 'release/v620')
+      startsWith(github.head_ref, 'release/v620-candidate')
     runs-on: ubuntu-24.04
     timeout-minutes: 60
 

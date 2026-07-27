@@ -1,0 +1,95 @@
+name: v620-final-publication
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/v620-final-publication.yml'
+      - '.github/workflows/release-candidate.yml'
+      - 'scripts/publish_v620_final.sh'
+      - 'pyproject.toml'
+      - 'src/atlas_ros/__init__.py'
+      - 'release/RELEASE_NOTES_V620.md'
+      - 'release/RELEASE_SCOPE_V620.md'
+      - 'release/SBOM_V620_CURRENT.cdx.json'
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/v620-final-publication.yml'
+      - 'scripts/publish_v620_final.sh'
+      - 'pyproject.toml'
+      - 'src/atlas_ros/__init__.py'
+      - 'release/RELEASE_NOTES_V620.md'
+      - 'release/RELEASE_SCOPE_V620.md'
+      - 'release/SBOM_V620_CURRENT.cdx.json'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: v620-final-publication
+  cancel-in-progress: false
+
+env:
+  CANDIDATE_COMMIT: 6e18b270d125c297309915fb8cde545bc65ee5e1
+  CANDIDATE_MERGE_COMMIT: bc927a7d8c149d81e3372a3e6abfc220f557de6d
+  CANDIDATE_ARTIFACT_ID: '8639092941'
+  CANDIDATE_ARTIFACT_DIGEST: 3fce62663cf2897ed9149d3c3dca07d698f6324ba0b25a25f12388e3ce8f2f60
+  CANDIDATE_WHEEL_SHA256: c0d578e4abbc461c58250cf0eb8a611be2b6c6ac9679443fae2e1e47a104c24a
+  FULL_VALIDATION_RECORD: V4V-44
+  PROMOTION_DECISION: V4D-35
+  RELEASE_TAG: v6.2.0
+  ROLLBACK_TAG: v6.1.1
+  HISTORICAL_ROLLBACK_TAG: v6.1.0
+  SOURCE_COMMIT: ${{ github.event.pull_request.head.sha || github.sha }}
+
+jobs:
+  validate-and-publish:
+    if: >-
+      github.event_name == 'pull_request' ||
+      (github.event_name == 'push' &&
+       github.ref_name == 'main' &&
+       startsWith(github.event.head_commit.message, 'Atlas ROS v6.2.0 governed final publication controller'))
+    runs-on: ubuntu-24.04
+    timeout-minutes: 75
+
+    steps:
+      - name: Check out exact controller source
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.12.10'
+          cache: pip
+
+      - name: Install locked publication toolchain
+        run: |
+          set -euo pipefail
+          python -m pip install --disable-pip-version-check --upgrade pip
+          python -m pip install --disable-pip-version-check -e '.[dev]'
+
+      - name: Validate exact final source and publish when authorized
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PUBLISH: ${{ github.event_name == 'push' }}
+          PUBLICATION_LOG: ${{ runner.temp }}/v620-final-publication.log
+        run: |
+          set -euo pipefail
+          bash scripts/publish_v620_final.sh 2>&1 | tee "$PUBLICATION_LOG"
+
+      - name: Upload final publication evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: atlas-ros-v6.2.0-final-publication-${{ github.run_attempt }}
+          path: |
+            final-publication/
+            release-readback/
+            ${{ runner.temp }}/v620-final-publication.log
+          if-no-files-found: warn
+          retention-days: 90
