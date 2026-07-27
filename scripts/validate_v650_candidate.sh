@@ -11,7 +11,7 @@ from pathlib import Path
 print(tomllib.loads(Path("pyproject.toml").read_text(encoding="utf-8"))["project"]["version"])
 PY
 )"
-test "$ATLAS_VERSION" = "6.5.0rc1"
+test "$ATLAS_VERSION" = "6.5.0"
 test "$(python -c 'import atlas_ros; print(atlas_ros.__version__)')" = "$ATLAS_VERSION"
 
 rm -rf candidate-evidence publication dist build clean-candidate active-assets rollback-assets
@@ -48,7 +48,7 @@ from atlas_ros.engines import (
     MinimumEffectivePathPlannerV65,
     ScenarioIntelligenceV65,
 )
-assert atlas_ros.__version__ == "6.5.0rc1"
+assert atlas_ros.__version__ == "6.5.0"
 assert all((AdvisoryRecommendation, ExecutionPresenterV65, GovernedFrameworkComposerV65,
             MinimumEffectivePathPlannerV65, ScenarioIntelligenceV65))
 PY
@@ -81,7 +81,7 @@ from pathlib import Path
 
 evidence = Path("candidate-evidence")
 status = {
-    "release": "Atlas ROS v6.5.0rc1",
+    "release": "Atlas ROS v6.5.0",
     "status": "candidate_validated_not_promoted",
     "candidate_sha": os.environ["CANDIDATE_SHA"],
     "workflow_run_id": os.environ["GITHUB_RUN_ID"],
@@ -99,7 +99,7 @@ digest = hashlib.sha256(path.read_bytes()).hexdigest()
     f"{digest}  {path.name}\n", encoding="utf-8"
 )
 (evidence / "RELEASE_MANIFEST_V650_CANDIDATE.md").write_text(
-    f"""# Atlas ROS v6.5.0rc1 Candidate Manifest
+    f"""# Atlas ROS v6.5.0 Candidate Manifest
 
 Status: Validated release candidate; not promoted.
 
@@ -124,7 +124,7 @@ PY
 )
 cp "dist/$SDIST" "dist/$WHEEL" publication/
 cp -R candidate-evidence publication/evidence
-tar -czf publication/Atlas_ROS_v6.5.0rc1_candidate_evidence.tar.gz -C publication evidence
+tar -czf publication/Atlas_ROS_v6.5.0_candidate_evidence.tar.gz -C publication evidence
 (
   cd publication
   find . -maxdepth 1 -type f ! -name PUBLICATION_CHECKSUMS.sha256 -print0 | sort -z |
