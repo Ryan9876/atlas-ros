@@ -6,6 +6,13 @@ from atlas_ros.application.execution import (
     AttendedExecutionService,
     ExecutionBoundaryError,
 )
+from atlas_ros.application.pipeline import (
+    CanonicalPipelineError,
+    CanonicalPipelineState,
+    CanonicalPreAuthorizationPipeline,
+    CanonicalPreAuthorizationResult,
+    canonical_pre_authorization_stages,
+)
 from atlas_ros.application.transaction import (
     GovernedExecutionTransactionService,
     GovernedTransactionResult,
@@ -14,8 +21,13 @@ from atlas_ros.application.transaction import (
 __all__ = [
     "AttendedAuthorizationService",
     "AttendedExecutionService",
+    "CanonicalPipelineError",
+    "CanonicalPipelineState",
+    "CanonicalPreAuthorizationPipeline",
+    "CanonicalPreAuthorizationResult",
     "CanonicalProcessingCoordinator",
     "ExecutionBoundaryError",
     "GovernedExecutionTransactionService",
     "GovernedTransactionResult",
+    "canonical_pre_authorization_stages",
 ]
