@@ -70,60 +70,28 @@ jobs:
           unzip -q exact-artifact.zip -d exact-artifact
           checksum_file="$(find exact-artifact -name EXACT_ARTIFACT_CHECKSUMS.sha256 -print -quit)"
           validation_file="$(find exact-artifact -name EXACT_ARTIFACT_VALIDATION.json -print -quit)"
-          [[ -n "$checksum_file" && -n "$validation_file" ]]
+          rollback_evidence_file="$(find exact-artifact -name V650_ROLLBACK_EVIDENCE.json -print -quit)"
+          [[ -n "$checksum_file" && -n "$validation_file" && -n "$rollback_evidence_file" ]]
           evidence_root="$(dirname "$checksum_file")"
           (cd "$evidence_root" && sha256sum -c EXACT_ARTIFACT_CHECKSUMS.sha256)
           echo "validation_file=$validation_file" >> "$GITHUB_OUTPUT"
+          echo "rollback_evidence_file=$rollback_evidence_file" >> "$GITHUB_OUTPUT"
           echo "artifact_id=$artifact_id" >> "$GITHUB_OUTPUT"
           echo "artifact_digest=$normalized_digest" >> "$GITHUB_OUTPUT"
-      - name: Generate and verify immutable v6.5 rollback evidence
-        env:
-          GH_TOKEN: ${{ github.token }}
-          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
-        run: |
-          set -euo pipefail
-          rm -rf v650-assets exact-v650 v700-final-controller-evidence
-          mkdir -p v650-assets v700-final-controller-evidence
-          gh release download v6.5.0 --repo "$GITHUB_REPOSITORY" --dir v650-assets
-          (cd v650-assets && sha256sum -c CHECKSUMS.sha256)
-          v650_wheel="$(find v650-assets -name 'atlas_ros-6.5.0*.whl' -print -quit)"
-          [[ -n "$v650_wheel" ]]
-          python -m venv exact-v650
-          exact-v650/bin/python -m pip install --disable-pip-version-check "$v650_wheel"
-          clean_version="$(exact-v650/bin/python -c 'import atlas_ros; print(atlas_ros.__version__)')"
-          [[ "$clean_version" == "6.5.0" ]]
-          python scripts/validate_v650_rollback_evidence.py \
-            --source-commit bb6d6fea70d6824c9bc6a42e63ba36cc88029260 \
-            --release-assets-dir v650-assets \
-            --clean-install-version "$clean_version" \
-            --restoration-passed \
-            --metadata-exception-record-url "https://github.com/${GITHUB_REPOSITORY}/blob/${HEAD_SHA}/docs/validation/V650_IMMUTABLE_SOURCE_RECONCILIATION.md" \
-            --output v700-final-controller-evidence/V650_ROLLBACK_EVIDENCE.json
-          python - <<'PY'
-          from pathlib import Path
-          from tools.release.rollback_evidence import load_receipt
-
-          receipt = load_receipt(
-              Path("v700-final-controller-evidence/V650_ROLLBACK_EVIDENCE.json")
-          )
-          assert receipt.status == "ready"
-          assert receipt.verified_version == "6.5.0"
-          assert receipt.provider_writes == 0
-          assert receipt.immutable_history_rewritten is False
-          assert receipt.authority_changed is False
-          PY
       - name: Validate the non-publishing final controller
         env:
           HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
           VALIDATION_FILE: ${{ steps.exact.outputs.validation_file }}
+          ROLLBACK_EVIDENCE_FILE: ${{ steps.exact.outputs.rollback_evidence_file }}
         run: |
           set -euo pipefail
+          rm -rf v700-final-controller-evidence
           python scripts/validate_v700_final_controller.py \
             --exact-artifact-validation "$VALIDATION_FILE" \
             --final-source-commit "$HEAD_SHA" \
             --decision-record-url https://app.notion.com/p/3aab8344ad2c81399ff7e6f5c5ce644d \
             --review-record-url https://app.notion.com/p/3aab8344ad2c819e93bce697d6ee8ae1 \
-            --v650-rollback-evidence v700-final-controller-evidence/V650_ROLLBACK_EVIDENCE.json \
+            --v650-rollback-evidence "$ROLLBACK_EVIDENCE_FILE" \
             --output-dir v700-final-controller-evidence
       - name: Enforce fail-closed controller result
         run: |
