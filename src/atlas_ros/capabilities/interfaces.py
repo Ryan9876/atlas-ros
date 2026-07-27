@@ -9,6 +9,7 @@ from atlas_ros.contracts.execution.pipeline import CaptureEnvelope
 from atlas_ros.contracts.execution.transaction import (
     ExecutionTransactionReceipt,
     PlannedProviderOperation,
+    ProposedExecutionPlan,
 )
 from atlas_ros.contracts.reasoning import IntentGraph
 
@@ -52,15 +53,6 @@ class RoutingDecision:
     destination: str
     rationale: str
     review_required: bool
-
-
-@dataclass(frozen=True, slots=True)
-class ProposedExecutionPlan:
-    plan_id: str
-    source_graph_digest: str
-    operations: tuple[PlannedProviderOperation, ...]
-    blockers: tuple[str, ...]
-    plan_digest: str
 
 
 @dataclass(frozen=True, slots=True)
