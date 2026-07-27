@@ -30,7 +30,7 @@ def compile_inventory(input_path: Path, output_path: Path) -> DriveMigrationLedg
 
 
 def verify_ledger(path: Path) -> DriveMigrationLedger:
-    """Verify all item evidence, derived totals, and the ledger digest."""
+    """Verify all item evidence, coverage evidence, derived totals, and digest."""
     return load_ledger(path)
 
 
@@ -38,7 +38,13 @@ def summary(ledger: DriveMigrationLedger) -> dict[str, object]:
     return {
         "schema_version": ledger.schema_version,
         "generated_for_release": ledger.generated_for_release,
+        "source_root_id": ledger.source_root_id,
         "item_count": len(ledger.items),
+        "visited_folder_count": len(ledger.visited_folder_ids),
+        "inaccessible_item_count": len(ledger.inaccessible_item_ids),
+        "unconsumed_page_tokens": ledger.unconsumed_page_tokens,
+        "inventory_complete": ledger.inventory_complete,
+        "inventory_sha256": ledger.inventory_sha256,
         "unresolved_authoritative_items": ledger.unresolved_authoritative_items,
         "staged_current_dependencies": ledger.staged_current_dependencies,
         "verified_github_representations": ledger.verified_github_representations,
