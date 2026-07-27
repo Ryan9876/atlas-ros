@@ -1,14 +1,14 @@
 {
   "bomFormat": "CycloneDX",
   "specVersion": "1.5",
-  "serialNumber": "urn:uuid:57ed197c-8c72-5a4d-8ac2-650000000001",
+  "serialNumber": "urn:uuid:57ed197c-8c72-5a4d-8ac2-650000000002",
   "version": 1,
   "metadata": {
     "component": {
       "type": "application",
       "name": "atlas-ros",
-      "version": "6.5.0rc1",
-      "bom-ref": "pkg:pypi/atlas-ros@6.5.0rc1"
+      "version": "6.5.0",
+      "bom-ref": "pkg:pypi/atlas-ros@6.5.0"
     },
     "properties": [
       {"name": "atlas:provider-free-core", "value": "true"},
