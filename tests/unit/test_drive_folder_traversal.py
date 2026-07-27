@@ -11,6 +11,7 @@ from scripts.validate_v700_drive_folder_traversal import (
     load_and_validate,
     validate_folder_traversal,
 )
+from scripts.validate_v700_drive_folder_tree import load_expand_and_validate
 
 
 def evidence() -> dict[str, object]:
@@ -110,3 +111,23 @@ def test_digest_tampering_is_rejected(tmp_path: Path) -> None:
 
     with pytest.raises(DriveFolderTraversalError, match="digest mismatch"):
         load_and_validate(path)
+
+
+def test_live_folder_tree_is_complete_but_not_promotion_ready() -> None:
+    result = load_expand_and_validate(Path("release/v700-drive-folder-tree.json"))
+
+    assert result["status"] == "folder_traversal_complete_item_inventory_incomplete"
+    assert result["folder_count"] == 93
+    assert result["leaf_folder_count"] == 78
+    assert result["max_depth"] == 6
+    assert result["folder_traversal_complete"] is True
+    assert result["item_inventory_complete"] is False
+    assert result["file_content_checksums_complete"] is False
+    assert result["unconsumed_page_tokens"] == 0
+    assert result["inaccessible_child_ids"] == []
+    assert result["promotion_ready"] is False
+    assert result["provider_writes"] == 0
+    assert result["drive_retirement_authorized"] is False
+    assert result["source_evidence_sha256"] == (
+        "574cac3a8e1a4f00710f593cf14ae0534c46a31ffce847aff474414ae8886cf8"
+    )
