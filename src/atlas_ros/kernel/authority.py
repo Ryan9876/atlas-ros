@@ -62,11 +62,16 @@ class AuthorityRecord(BaseModel):
     @model_validator(mode="after")
     def verify_integrity(self) -> AuthorityRecord:
         payload = self.model_dump(mode="json", exclude={"integrity"})
-        if sha256_digest(_canonicalize_urls(payload)) != self.integrity.content_sha256:
+        if sha256_digest(canonical_authority_payload(payload)) != self.integrity.content_sha256:
             raise ValueError("authority integrity digest does not match")
         if self.active_release.version == self.immediate_rollback.version:
             raise ValueError("active release cannot also be immediate rollback")
         return self
+
+
+def canonical_authority_payload(value: Any) -> Any:
+    """Return the canonical representation used for authority integrity digests."""
+    return _canonicalize_urls(value)
 
 
 def _canonicalize_urls(value: Any, *, key: str = "") -> Any:
