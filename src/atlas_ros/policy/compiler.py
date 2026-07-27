@@ -52,13 +52,24 @@ def _compile_one(path: Path) -> tuple[CompiledPolicy, dict[str, Any]]:
     if lifecycle != "active":
         raise PolicyCompilationError(f"current registry cannot load non-active policy: {policy_id}")
     raw_rules = payload["rules"]
-    if not isinstance(raw_rules, list) or not raw_rules or not all(isinstance(rule, str) and rule for rule in raw_rules):
+    has_valid_rules = isinstance(raw_rules, list) and bool(raw_rules) and all(
+        isinstance(rule, str) and rule for rule in raw_rules
+    )
+    if not has_valid_rules:
         raise PolicyCompilationError(f"policy rules must be a non-empty list of strings: {path}")
     rules = tuple(cast(list[str], raw_rules))
     if len(set(rules)) != len(rules):
         raise PolicyCompilationError(f"policy contains duplicate rules: {policy_id}")
-    canonical = {"schema_version": schema_version, "policy_id": policy_id, "lifecycle": lifecycle, "rules": list(rules)}
-    return CompiledPolicy(policy_id, schema_version, lifecycle, rules, sha256_digest(canonical)), canonical
+    canonical = {
+        "schema_version": schema_version,
+        "policy_id": policy_id,
+        "lifecycle": lifecycle,
+        "rules": list(rules),
+    }
+    return (
+        CompiledPolicy(policy_id, schema_version, lifecycle, rules, sha256_digest(canonical)),
+        canonical,
+    )
 
 
 def _required_string(payload: Mapping[str, Any], field: str, path: Path) -> str:
