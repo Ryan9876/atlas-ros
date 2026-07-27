@@ -113,10 +113,10 @@ jobs:
       - env:
           GH_TOKEN: ${{ github.token }}
           SOURCE_COMMIT: ${{ github.event.pull_request.head.sha || github.sha }}
-          CANDIDATE_COMMIT: 2e6d9e64e4ec5f362fe807c3f937f8e33a30d004
-          CANDIDATE_MERGE_COMMIT: 7ba23ecce106a911feaa1240e219500fb3a78a79
-          CANDIDATE_ARTIFACT_ID: '8651579862'
-          CANDIDATE_ARTIFACT_DIGEST: fec2ba0601f4cbdac9c4e5e447559a61e0e6cf0b296f4e24f6402ccf9c1ab084
+          CANDIDATE_COMMIT: 1412e615726e27fd1880222598c1271d4e466058
+          CANDIDATE_MERGE_COMMIT: 4247baf812eae3635408af2fb61761685ea1115f
+          CANDIDATE_ARTIFACT_ID: '8654164435'
+          CANDIDATE_ARTIFACT_DIGEST: cc46bd3725717a620c9872ac0da81667e31298b444bab8a125ae94506c9ac040
           RELEASE_TAG: v6.5.0
           ROLLBACK_TAG: v6.2.0
           PUBLISH: ${{ github.event_name == 'push' }}
