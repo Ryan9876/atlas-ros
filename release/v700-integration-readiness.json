@@ -1,0 +1,46 @@
+{
+  "schema_version": "1.0",
+  "snapshot_date": "2026-07-27",
+  "authoritative_live_readback_required_before_promotion": true,
+  "required_v7_integrations": [
+    {
+      "name": "GitHub",
+      "record_url": "https://app.notion.com/p/3aab8344ad2c8138abddc85fc136357a",
+      "connection_status": "connected",
+      "approval_status": "approved",
+      "acceptance_status": "passed",
+      "current": true,
+      "least_privilege_verified": true,
+      "lifecycle_status": "validated_not_active"
+    },
+    {
+      "name": "Notion",
+      "record_url": "https://app.notion.com/p/3a3b8344ad2c81ed95dae3cfac8a4368",
+      "connection_status": "connected",
+      "approval_status": "approved",
+      "acceptance_status": "passed",
+      "current": true,
+      "least_privilege_verified": true,
+      "lifecycle_status": "production"
+    },
+    {
+      "name": "Todoist",
+      "record_url": "https://app.notion.com/p/3a3b8344ad2c8125b3edd68feb5bdf2f",
+      "connection_status": "connected",
+      "approval_status": "approved",
+      "acceptance_status": "passed",
+      "current": true,
+      "least_privilege_verified": true,
+      "lifecycle_status": "production"
+    }
+  ],
+  "transitional_integrations": [
+    {
+      "name": "Google Drive",
+      "record_url": "https://app.notion.com/p/3a3b8344ad2c81db8c63dc26d481497c",
+      "current_v650_bootstrap": true,
+      "required_v7_integration": false,
+      "retirement_authorized": false
+    }
+  ]
+}
