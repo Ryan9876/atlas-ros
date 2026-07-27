@@ -70,7 +70,8 @@ def test_presentation_separates_claim_types_and_sanitizes_markup() -> None:
     )
     assert "## Verified facts" in view.executive
     assert "<unsafe>" not in view.executive
-    assert "&lt;" in view.technical
+    assert "<unsafe>" not in view.technical
+    assert "unsafe" in view.technical
 
 
 def test_scenario_is_deterministic_and_has_no_provider_writes() -> None:
