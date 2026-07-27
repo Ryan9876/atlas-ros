@@ -141,7 +141,9 @@ def validate_exact_artifact(
     )
 
     findings = list(promotion.blockers)
-    findings.append("live Notion integration and System State readback is required before promotion")
+    findings.append(
+        "live Notion integration and System State readback is required before promotion"
+    )
     result = {
         "schema_version": "1.0",
         "review": "Atlas ROS v7.0.0rc1 Exact-Artifact Full Validation",
