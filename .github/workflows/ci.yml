@@ -200,7 +200,10 @@ jobs:
 
 
   publish-v650-final:
-    if: github.event_name == 'push' && github.ref_name == 'main' && startsWith(github.event.head_commit.message, 'release: execute exact Atlas ROS v6.5 publication')
+    if: >-
+      github.event_name == 'push' &&
+      github.ref_name == 'main' &&
+      startsWith(github.event.head_commit.message, 'release: execute exact Atlas ROS v6.5 publication')
     permissions:
       contents: write
     runs-on: ubuntu-24.04
