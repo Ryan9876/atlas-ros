@@ -1,6 +1,6 @@
-# W-Workflow Archival Mapping
+# HISTORICAL — NOT CURRENT AUTHORITY — W-Workflow Archival Mapping
 
-Status: Development cutover record. Production remains Atlas ROS v5.1.1 until separately promoted.
+Status: Historical migration record preserved for numbered-workflow retirement context. Current operating authority is Atlas ROS v6.2.0 and the capability-based architecture. This document must not be used as a current runtime or production-status source.
 
 | Legacy entrypoint | Canonical capability | Compatibility status |
 |---|---|---|
@@ -10,10 +10,10 @@ Status: Development cutover record. Production remains Atlas ROS v5.1.1 until se
 | W03 Todoist | Execution Orchestrator + Todoist Execution Adapter | Retired in v6.0.0 |
 | W04 reconciliation | Execution Reconciliation Service | Retired in v6.0.0 |
 
-## Cutover rules
+## Historical cutover rules
 
-1. New internal development code imports from `atlas_ros.capabilities` or the named semantic packages.
-2. Direct W-module imports are limited to compatibility adapters, archival tests, and the semantic export boundary.
-3. W aliases remain behavior-preserving and receive regression coverage until a separately authorized major removal release.
-4. Production activation, alias deletion, and authority migration are not implied by this development cutover.
-5. Rollback remains the current immutable Atlas ROS v5.1 package until a later promotion changes release authority.
+1. New internal development code imports from semantic capability packages.
+2. Direct W-module imports are limited to compatibility adapters, archival tests, and historical evidence.
+3. Current production documentation must use capability names rather than numbered workflow aliases.
+4. Historical source, release artifacts, archival mapping, and rollback instructions remain preserved.
+5. Current production authority is determined only by the fixed Release Index, Notion System State, and active release manifest.
