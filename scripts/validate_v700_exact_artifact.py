@@ -15,6 +15,11 @@ from tools.release.drive_migration_ledger import (
     DriveMigrationLedgerError,
     load_and_compile,
 )
+from tools.release.rollback_evidence import (
+    RollbackEvidenceError,
+    RollbackEvidenceReceipt,
+    load_receipt,
+)
 from tools.release.transaction_simulation import (
     PromotionSimulationEvidence,
     RollbackSimulationEvidence,
@@ -53,6 +58,7 @@ def validate_exact_artifact(
     integration_snapshot_path: Path,
     drive_inventory_path: Path | None,
     output_dir: Path,
+    rollback_evidence_path: Path | None = None,
 ) -> dict[str, Any]:
     """Validate immutable candidate evidence and generate release-readiness receipts."""
     if len(candidate_sha) != 40:
@@ -98,6 +104,7 @@ def validate_exact_artifact(
         raise ExactArtifactValidationError("equivalent v7 versus v6.5 performance gate failed")
     integrations = _integration_readiness(integration_snapshot_path)
     drive_ledger = _drive_ledger(drive_inventory_path)
+    rollback_evidence = _rollback_evidence(rollback_evidence_path)
 
     rollback = simulate_rollback(
         RollbackSimulationEvidence(
@@ -141,6 +148,10 @@ def validate_exact_artifact(
     )
 
     findings = list(promotion.blockers)
+    if rollback_evidence is None:
+        findings.append(
+            "v6.5 rollback evidence reconciliation is required before promotion"
+        )
     findings.append(
         "live Notion integration and System State readback is required before promotion"
     )
@@ -163,6 +174,9 @@ def validate_exact_artifact(
         "rollback_v620_restoration_passed": bool(status["immediate_rollback_restored"]),
         "performance_gate": performance,
         "drive_migration_ledger": asdict(drive_ledger) if drive_ledger else None,
+        "v650_rollback_evidence": (
+            asdict(rollback_evidence) if rollback_evidence else None
+        ),
         "integration_snapshot_ready": integrations,
         "rollback_simulation": asdict(rollback),
         "promotion_simulation": asdict(promotion),
@@ -216,6 +230,20 @@ def _drive_ledger(path: Path | None) -> DriveMigrationLedger | None:
         raise ExactArtifactValidationError(str(error)) from error
 
 
+def _rollback_evidence(path: Path | None) -> RollbackEvidenceReceipt | None:
+    if path is None or not path.is_file():
+        return None
+    try:
+        receipt = load_receipt(path)
+    except RollbackEvidenceError as error:
+        raise ExactArtifactValidationError(str(error)) from error
+    if receipt.status != "ready":
+        raise ExactArtifactValidationError(
+            "v6.5 rollback evidence reconciliation is blocked"
+        )
+    return receipt
+
+
 def _read_json(path: Path) -> dict[str, Any]:
     try:
         value = json.loads(path.read_text(encoding="utf-8"))
@@ -236,6 +264,8 @@ def _sha256(path: Path) -> str:
 
 def _write_summary(result: dict[str, Any], path: Path) -> None:
     findings = "\n".join(f"- {finding}" for finding in result["findings"]) or "- None"
+    rollback_evidence = result["v650_rollback_evidence"]
+    rollback_status = rollback_evidence["status"] if rollback_evidence else "not supplied"
     path.write_text(
         f"""# Atlas ROS v7.0.0rc1 Exact-Artifact Full Validation
 
@@ -248,6 +278,7 @@ def _write_summary(result: dict[str, Any], path: Path) -> None:
 - Nested evidence checksums: passed
 - Exact wheel clean installation: passed
 - v6.5 restoration: passed
+- v6.5 rollback reconciliation: `{rollback_status}`
 - v6.2 restoration: passed
 - Performance gate: `{result['performance_gate']['status']}`
 - Rollback simulation: `{result['rollback_simulation']['status']}`
@@ -277,6 +308,7 @@ def main() -> None:
     parser.add_argument("--performance", type=Path, required=True)
     parser.add_argument("--integration-snapshot", type=Path, required=True)
     parser.add_argument("--drive-inventory", type=Path)
+    parser.add_argument("--rollback-evidence", type=Path)
     parser.add_argument("--output-dir", type=Path, required=True)
     args = parser.parse_args()
     validate_exact_artifact(
@@ -291,6 +323,7 @@ def main() -> None:
         integration_snapshot_path=args.integration_snapshot,
         drive_inventory_path=args.drive_inventory,
         output_dir=args.output_dir,
+        rollback_evidence_path=args.rollback_evidence,
     )
 
 
