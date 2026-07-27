@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import Protocol
 
+from atlas_ros.contracts.execution.payload import ProviderOperationPayload
 from atlas_ros.contracts.execution.transaction import (
     AuthorizedExecutionPlan,
     ExecutionTransactionReceipt,
@@ -18,6 +19,13 @@ class ProviderWriteGuard(Protocol):
 
     def require_provider_write_permission(self, authorization_id: str | None) -> None:
         """Fail closed unless the current runtime may execute an attended write."""
+
+
+class ExecutionPayloadPort(Protocol):
+    """Resolve exact operation content without changing the authorized plan."""
+
+    def resolve(self, operation: PlannedProviderOperation) -> ProviderOperationPayload:
+        """Return checksum-bound payload content for one planned operation."""
 
 
 class ProviderExecutionPort(Protocol):
