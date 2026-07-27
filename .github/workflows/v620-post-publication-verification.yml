@@ -1,0 +1,53 @@
+name: v620-post-publication-verification
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/v620-post-publication-verification.yml'
+      - 'scripts/verify_v620_publication.sh'
+      - 'release/RELEASE_MANIFEST.md'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: v620-post-publication-verification-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify-publication:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Check out exact verification source
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.12.10'
+          cache: pip
+
+      - name: Verify final GitHub publication and restoration
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERIFICATION_LOG: ${{ runner.temp }}/v620-post-publication-verification.log
+        run: |
+          set -euo pipefail
+          bash scripts/verify_v620_publication.sh 2>&1 | tee "$VERIFICATION_LOG"
+
+      - name: Upload publication verification evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: atlas-ros-v6.2.0-post-publication-verification-${{ github.event.pull_request.head.sha }}
+          path: |
+            publication-verification/
+            ${{ runner.temp }}/v620-post-publication-verification.log
+          if-no-files-found: error
+          retention-days: 90
