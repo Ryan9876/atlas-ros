@@ -36,6 +36,11 @@ class CanonicalIntentEngineV62(_BaseCanonicalIntentEngineV62):
             for qualifier in qualifiers
             if qualifier not in _CONTROL_PLANE_QUALIFIERS
         )
+        control_qualifiers = tuple(
+            qualifier
+            for qualifier in qualifiers
+            if qualifier in _CONTROL_PLANE_QUALIFIERS
+        )
         fingerprint = stable_fingerprint(
             {
                 "canonical_text": _CLOUDVISION_OUTCOME,
@@ -54,7 +59,8 @@ class CanonicalIntentEngineV62(_BaseCanonicalIntentEngineV62):
                 "normalized_case",
                 "normalized_aliases",
                 "mapped_cloudvision_pilot_contract",
+                *(f"recorded_control_qualifier:{item}" for item in control_qualifiers),
             ),
-            material_qualifiers=qualifiers,
+            material_qualifiers=semantic_qualifiers,
             semantic_fingerprint=fingerprint,
         )
