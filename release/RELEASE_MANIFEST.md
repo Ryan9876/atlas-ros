@@ -1,34 +1,32 @@
-# Atlas ROS v6.2.0 Release Manifest
+# Atlas ROS v6.5.0 Release Manifest
 
-Status: Active production release after exact-candidate validation, Exact-Artifact Full Validation V4V-44, Ryan's explicit promotion authorization V4D-35, governed final-publication controller validation V4V-45, final GitHub publication, immutable tag verification, published-asset restoration, post-publication readback, and final production-promotion verification V4V-46 on 2026-07-27.
+Status: Active production release after exact-candidate validation, final-package Full Validation V4V-48, Ryan's explicit production authorization, governed single-controller validation, immutable GitHub publication, published-asset checksum verification, clean-install verification, rollback restoration, post-publication readback V4V-49, and live-authority activation on 2026-07-27.
 
-- Package version: `6.2.0`
-- Validated candidate head: `6e18b270d125c297309915fb8cde545bc65ee5e1`
-- Candidate merge commit: `bc927a7d8c149d81e3372a3e6abfc220f557de6d`
-- Publication-controller validated head: `d70121592a77f6d8c828d325319f486cd7e3b5cc`
-- Publication-controller merge commit, production source, and final tag target: `863d5ddf9ebd4723200166cf31c7acd93ebec54f`
-- Candidate standard CI run: `30227841581` — passed
-- Candidate release-validation run: `30227841583` — passed
-- Validated candidate artifact ID: `8639092941`
-- Validated candidate artifact digest: `3fce62663cf2897ed9149d3c3dca07d698f6324ba0b25a25f12388e3ce8f2f60`
-- Validated candidate wheel SHA-256: `c0d578e4abbc461c58250cf0eb8a611be2b6c6ac9679443fae2e1e47a104c24a`
-- Final-controller standard CI run: `30228860476` — passed
-- Final-publication controller validation run: `30228860474` — passed
-- Final-publication validation artifact ID: `8639427126`
-- Final-publication validation artifact digest: `eca56eec92efa9b05136ddb137fdbfcc7488d866318ed2b588b8974e42219ef1`
-- Final wheel SHA-256: `83b8f468a05dbbbf1405e438a1b7bf02e202e6da2c369b6ca389175c7f4cb381`
-- Final source SHA-256: `09ca00420e6c82982aff7b2964dabc97808e8afd9a58c297c3bddc6809952122`
-- Post-publication verification head: `1d65ea53bbb88bb1fa5a072d222bc71eb2b580b2`
-- Post-publication verification run: `30229506831` — passed
-- Post-publication verification artifact ID: `8639608992`
-- Post-publication verification artifact digest: `46bd8ddeebe019d43c9d1127d80c8f16eaa58e3bd754753e89a9678377461a58`
-- Published at: `2026-07-27T01:08:43Z`
-- Governed reviews: `V4V-44 — Atlas ROS v6.2.0rc1 Exact-Artifact Full Validation`, `V4V-45 — Atlas ROS v6.2.0 Final Publication Controller Validation`, and `V4V-46 — Atlas ROS v6.2.0 Final Production-Promotion Verification` — Passed with Findings; no blocking findings
-- Promotion decision: `V4D-35 — Promote exact Atlas ROS v6.2.0 candidate to Active production`
-- Final release: `https://github.com/Ryan9876/atlas-ros/releases/tag/v6.2.0`
-- Immediate immutable rollback: Atlas ROS v6.1.1 at production source `e1b842765376c9e36bbdee981cddead3feb97173`
-- Historical rollback retained: Atlas ROS v6.1.0 at production source `15a62f670d250ec3728242f776d08449a9a95d1c`
-- Provider writes during validation and publication verification: `0`
+- Package version: `6.5.0`
+- Validated candidate head: `1412e615726e27fd1880222598c1271d4e466058`
+- Candidate merge commit: `4247baf812eae3635408af2fb61761685ea1115f`
+- Candidate CI run: `30265942941` — passed
+- Candidate release-validation run: `30265942909` — passed
+- Validated candidate artifact ID: `8654164435`
+- Validated candidate artifact digest: `cc46bd3725717a620c9872ac0da81667e31298b444bab8a125ae94506c9ac040`
+- Final-controller validated head: `1d80e42a3737c6c806dd53b0e50426c92d66d490`
+- Final-controller validation run: `30270719879` — passed
+- Final-controller validation artifact ID: `8654714988`
+- Final-controller validation artifact digest: `e4ea3a4de78570972ee9440d0095d7d40438425f1add5cc7ef4108bc273c0b0b`
+- Publication-controller merge commit, production source, and final tag target: `bb6d6fea70d6824c9bc6a42e63ba36cc88029260`
+- Final wheel SHA-256: `dab11bd9957b175d6ac7de9058318437d6b10a8a68a477031d2e00010ecfae44`
+- Final source SHA-256: `740ebe9d468030d97c47aac7009c0df4095fbec757af1d7c55ba2a42e654453d`
+- Published at: `2026-07-27T13:35:16Z`
+- Post-publication verification head: `bbe463b63298dc31e4f47999fdaaa7e47650cdbf`
+- Post-publication verification run: `30271310940` — passed
+- Post-publication verification artifact ID: `8654931210`
+- Post-publication verification artifact digest: `046e142bff8d77b9c547130f83ea0202a9415c164133123442aec7fcf6485308`
+- Governed reviews: `V4V-48 — Atlas ROS v6.5.0 Final Promotion Package Validation` and `V4V-49 — Atlas ROS v6.5.0 Production Publication and Readback Verification` — passed; no blocking findings
+- Promotion decision: `V4D-36 — Promote exact Atlas ROS v6.5.0 release to Active production`
+- Final release: https://github.com/Ryan9876/atlas-ros/releases/tag/v6.5.0
+- Immediate immutable rollback: Atlas ROS v6.2.0 at production source `863d5ddf9ebd4723200166cf31c7acd93ebec54f`
+- Historical rollback retained: Atlas ROS v6.1.1 at production source `e1b842765376c9e36bbdee981cddead3feb97173`
+- Provider writes during validation, publication, and verification: `0`
 
 ## Authority model
 
@@ -38,39 +36,26 @@ Required production integrations remain Google Drive, Notion, and Todoist. Integ
 
 ## Release scope
 
-Atlas ROS v6.2.0 implements the governed fourteen-capability adaptive input-processing architecture:
+Atlas ROS v6.5.0 adds five separated, deterministic, provider-free execution-intelligence capabilities:
 
-1. multidimensional intent confidence;
-2. typed intent graphs;
-3. explicit dependency discovery;
-4. governed planning archetypes;
-5. business-intent and domain-knowledge separation;
-6. typed constraint propagation;
-7. canonical intent compression;
-8. high-value clarification selection;
-9. presentation-only planning-style recognition;
-10. structured reflection and quality gating;
-11. dynamic inherent and residual risk;
-12. multi-outcome recognition;
-13. governed planning-memory consultation; and
-14. adaptive minimum-path projection.
+1. governed framework composition with explicit precedence, provenance, policy-conflict detection, and fail-closed dependency checks;
+2. minimum-effective-path planning that preserves mandatory controls, ordered prerequisites, rollback, and escalation information;
+3. execution intelligence for evidence, idempotency, retry, partial failure, readback completion, and next valid actions without provider writes;
+4. human-readable presentation that separates facts, assumptions, warnings, blockers, decisions, and next steps while redacting sensitive values; and
+5. advisory scenario intelligence for immutable provider-neutral snapshots with explicit uncertainty, trade-offs, reversibility, and decision triggers.
 
-The release preserves the exact v6.1.1 CloudVision parent and three management checkpoints, provider-free reasoning, attended execution, authorization boundaries, provider separation, canonical reconciliation, rollback, historical immutability, and fail-closed behavior.
-
-No Todoist, calendar, email, messaging, deletion, live network execution, autonomous scheduling, provider-write, or integration-scope authority was added.
+The release is additive and preserves v6.2 behavior unless a caller explicitly uses the new public contracts and engines. No integration scope, Todoist behavior, scheduling, messaging, email, deletion, live network execution, autonomous action, or provider-write capability is added.
 
 ## Validation
 
-Ruff, architecture validation, strict MyPy, dependency and secret security, 480 tests with 88.7854% branch-aware coverage, Classification Intelligence, Knowledge Management, Semantic Fidelity, Reasoning Coherence, Execution Planning, Execution Orchestration, Canonical Reconciliation, Adaptive Input Processing, CloudVision control-variant invariance, source and wheel construction, clean installation, exact source restoration, v6.1.1 immediate rollback restoration, v6.1.0 historical rollback restoration, SBOM identity, source and publication checksums, and zero-provider-write controls passed.
+Ruff, architecture validation, strict MyPy, dependency and secret security, 495 tests with 88.76% branch-aware coverage, execution-planning benchmark 52/52, package construction, source checksums, SBOM identity, clean v6.5.0 installation, exact candidate restoration, v6.2.0 immediate rollback restoration, v6.1.1 historical rollback restoration, six restoration authorities, all nested evidence and publication checksums, and zero-provider-write controls passed.
 
-The published release was independently read back after publication. All ten required release assets were present; published checksums passed; final source and wheel hashes matched `FINAL_IDENTITY.json`; the immutable `v6.2.0` tag pointed exactly to `863d5ddf9ebd4723200166cf31c7acd93ebec54f`; the published wheel installed cleanly; the CloudVision regression contract passed; and the readable published workspace was valid.
-
-Final publication performance measured v6.2 p95 at `2.384021 ms` versus v6.1.1 p95 at `3.160364 ms`, a `24.56%` improvement.
+The immutable `v6.5.0` tag points exactly to `bb6d6fea70d6824c9bc6a42e63ba36cc88029260`. The published release is neither draft nor prerelease. All published assets were downloaded independently; `CHECKSUMS.sha256` passed; final source and wheel hashes matched `FINAL_IDENTITY.json`; the published wheel installed cleanly; v6.2.0 and v6.1.1 restored successfully; and provider writes remained zero.
 
 ## Non-blocking historical finding
 
-The immutable v6.1.0 distribution metadata reports `6.1.0`, while its internal `atlas_ros.__version__` reports `5.0.0rc1`. The package remains installable and was restored successfully. Historical assets remain unchanged.
+The immutable v6.1.0 distribution metadata reports `6.1.0`, while its internal `atlas_ros.__version__` reports `5.0.0rc1`. The package remains installable and historical assets remain unchanged.
 
 ## Published workspace validity
 
-The readable published workspace is valid: the active manifest, release notes, scope, final identity, benchmark evidence, rollback evidence, SBOM, checksums, source distribution, wheel, final GitHub Release, production source, immutable final tag, and v6.1.1 immediate rollback record are readable and internally consistent. Secrets and private signing material are excluded.
+The readable published workspace is valid: the active manifest, release notes, scope, final identity, validation evidence, rollback evidence, SBOM, checksums, source distribution, wheel, final GitHub Release, production source, immutable final tag, v6.2.0 immediate rollback record, and v6.1.1 historical rollback record are readable and internally consistent. Secrets and private signing material are excluded.
