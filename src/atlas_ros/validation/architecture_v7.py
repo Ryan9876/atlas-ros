@@ -56,6 +56,17 @@ _LAYER_RULES: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("entry_points/", ("atlas_ros",)),
 )
 
+# These inherited v6 adapters remain only for migration and regression coverage.
+# They are not v7-owned modules and the canonical v7 entry points must not import
+# them directly. Removal is governed by the later runtime cutover tranche.
+_HISTORICAL_ADAPTERS = frozenset(
+    {
+        "adapters/llm.py",
+        "adapters/notion_execution.py",
+        "adapters/todoist_execution.py",
+    }
+)
+
 _FORBIDDEN_RUNTIME_IMPORTS = (
     "tools.release",
     "atlas_ros.adapters",
@@ -109,6 +120,8 @@ def validate_v7(root: Path = PACKAGE_ROOT) -> list[dict[str, str]]:
     violations: list[dict[str, str]] = []
     for path in sorted(root.rglob("*.py")):
         relative = path.relative_to(root).as_posix()
+        if root == PACKAGE_ROOT and relative in _HISTORICAL_ADAPTERS:
+            continue
         allowed = _allowed_prefixes(relative)
         if allowed is None:
             continue
