@@ -18,8 +18,7 @@ from .intent_graph_v62 import (
     DependencyDiscoveryEngineV62,
     IntentGraphEngineV62,
 )
-from .intent_partitioning import IntentPartitioner
-from .knowledge_composition import KnowledgeCompositionEngine
+from .governed_execution_v65 import (\n    ExecutionPresenterV65,\n    GovernedFrameworkComposerV65,\n    MinimumEffectivePathPlannerV65,\n    ScenarioIntelligenceV65,\n)\nfrom .intent_partitioning import IntentPartitioner\nfrom .knowledge_composition import KnowledgeCompositionEngine
 from .management_reasoning import ManagementReasoningEngine
 from .manager_intent import IntentAssessment, ManagerIntentInferer
 from .multi_outcome_v62 import MultiOutcomeEngineV62
@@ -44,8 +43,7 @@ __all__ = [
     "ReflectionGateV62",
     "RiskProfileEngineV62",
     "ClassificationExplainability",
-    "IntentAssessment",
-    "IntentPartitioner",
+    "ExecutionPresenterV65",\n    "GovernedFrameworkComposerV65",\n    "MinimumEffectivePathPlannerV65",\n    "ScenarioIntelligenceV65",\n    "IntentAssessment",\n    "IntentPartitioner",
     "KnowledgeCompositionEngine",
     "ManagementReasoningEngine",
     "ManagementStructureEngine",
