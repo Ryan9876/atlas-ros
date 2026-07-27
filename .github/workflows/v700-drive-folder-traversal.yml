@@ -36,39 +36,64 @@ jobs:
           python -m scripts.validate_v700_drive_folder_tree \
             --input release/v700-drive-folder-traversal.json \
             --output v700-drive-folder-evidence/V700_DRIVE_FOLDER_TRAVERSAL_VALIDATION.json
-      - name: Enforce fail-closed traversal result
+      - name: Validate partial Drive file inventory
+        run: |
+          python -m scripts.validate_v700_drive_file_inventory \
+            --inventory release/v700-drive-file-inventory.json \
+            --folder-tree release/v700-drive-folder-traversal.json \
+            --output v700-drive-folder-evidence/V700_DRIVE_FILE_INVENTORY_VALIDATION.json
+      - name: Enforce fail-closed traversal and file-inventory results
         run: |
           python - <<'PY'
           import json
           from pathlib import Path
 
-          result = json.loads(
-              Path(
-                  'v700-drive-folder-evidence/'
-                  'V700_DRIVE_FOLDER_TRAVERSAL_VALIDATION.json'
-              ).read_text(encoding='utf-8')
+          root = Path('v700-drive-folder-evidence')
+          folders = json.loads(
+              (root / 'V700_DRIVE_FOLDER_TRAVERSAL_VALIDATION.json')
+              .read_text(encoding='utf-8')
           )
-          assert result['status'] == (
+          files = json.loads(
+              (root / 'V700_DRIVE_FILE_INVENTORY_VALIDATION.json')
+              .read_text(encoding='utf-8')
+          )
+          assert folders['status'] == (
               'folder_traversal_complete_item_inventory_incomplete'
           )
-          assert result['folder_count'] == 93
-          assert result['leaf_folder_count'] == 78
-          assert result['max_depth'] == 6
-          assert result['folder_traversal_complete'] is True
-          assert result['item_inventory_complete'] is False
-          assert result['file_content_checksums_complete'] is False
-          assert result['unconsumed_page_tokens'] == 0
-          assert result['inaccessible_child_ids'] == []
-          assert result['incomplete_listing_folder_ids'] == []
-          assert result['promotion_ready'] is False
-          assert result['provider_writes'] == 0
-          assert result['drive_retirement_authorized'] is False
+          assert folders['folder_count'] == 93
+          assert folders['leaf_folder_count'] == 78
+          assert folders['max_depth'] == 6
+          assert folders['folder_traversal_complete'] is True
+          assert folders['item_inventory_complete'] is False
+          assert folders['file_content_checksums_complete'] is False
+          assert folders['unconsumed_page_tokens'] == 0
+          assert folders['inaccessible_child_ids'] == []
+          assert folders['incomplete_listing_folder_ids'] == []
+          assert folders['promotion_ready'] is False
+          assert folders['provider_writes'] == 0
+          assert folders['drive_retirement_authorized'] is False
+
+          assert files['status'] == 'partial_file_inventory'
+          assert files['known_folder_count'] == 93
+          assert files['scanned_folder_count'] == 3
+          assert files['unscanned_folder_count'] == 90
+          assert files['file_count'] == 6
+          assert files['content_hashed_count'] == 5
+          assert files['sensitive_item_count'] == 1
+          assert files['verified_github_equivalence_count'] == 1
+          assert files['governed_legacy_exception_count'] == 4
+          assert files['enumeration_complete'] is False
+          assert files['content_checksums_complete'] is False
+          assert files['promotion_ready'] is False
+          assert files['provider_writes'] == 0
+          assert files['drive_retirement_authorized'] is False
+          assert files['credential_action_authorized'] is False
           PY
-      - name: Retain Drive folder traversal evidence
+      - name: Retain Drive traversal and file-inventory evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: atlas-ros-v700-drive-folder-traversal-${{ github.event.pull_request.head.sha || github.sha }}
+          name: atlas-ros-v700-drive-inventory-${{ github.event.pull_request.head.sha || github.sha }}
           path: v700-drive-folder-evidence/
           if-no-files-found: warn
           retention-days: 90
