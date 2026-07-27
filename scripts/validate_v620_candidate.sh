@@ -242,11 +242,20 @@ The candidate must not update the fixed Drive Release Index, Notion System State
 )
 PY
 
-find candidate-evidence -type f -print0 | sort -z | xargs -0 sha256sum \
-  > candidate-evidence/EVIDENCE_CHECKSUMS.sha256
+(
+  cd candidate-evidence
+  find . -type f ! -name EVIDENCE_CHECKSUMS.sha256 -print0 | sort -z | \
+    xargs -0 sha256sum > EVIDENCE_CHECKSUMS.sha256
+  sha256sum -c EVIDENCE_CHECKSUMS.sha256
+)
 cp "dist/$ATLAS_SDIST" publication/
 cp "dist/$ATLAS_WHEEL" publication/
 cp -R candidate-evidence publication/evidence
 tar -czf publication/Atlas_ROS_v6.2.0rc1_candidate_evidence.tar.gz \
   -C publication evidence
-sha256sum publication/* > publication/PUBLICATION_CHECKSUMS.sha256
+(
+  cd publication
+  find . -maxdepth 1 -type f ! -name PUBLICATION_CHECKSUMS.sha256 -print0 | sort -z | \
+    xargs -0 sha256sum > PUBLICATION_CHECKSUMS.sha256
+  sha256sum -c PUBLICATION_CHECKSUMS.sha256
+)
