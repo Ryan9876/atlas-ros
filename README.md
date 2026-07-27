@@ -59,10 +59,11 @@ Atlas ROS v6.2.0 passed Exact-Artifact Full Validation V4V-44, governed final-pu
 
 ## Current documentation
 
+- `docs/CURRENT_DOCUMENTATION.md`
 - `release/RELEASE_MANIFEST.md`
 - `release/RELEASE_SCOPE_V620.md`
 - `release/RELEASE_NOTES_V620.md`
-- `docs/runbooks/V620_OPERATOR_AND_RECOVERY.md`
+- `docs/runbooks/V620_PRODUCTION_OPERATOR_AND_RECOVERY.md`
 - `docs/migration/V6_CANONICAL_CUTOVER_AND_W_RETIREMENT.md`
 - `docs/architecture/TARGET_ARCHITECTURE.md`
 
