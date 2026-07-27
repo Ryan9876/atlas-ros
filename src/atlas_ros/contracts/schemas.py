@@ -14,6 +14,7 @@ from atlas_ros.contracts.execution.pipeline import CaptureEnvelope, PipelineRunE
 from atlas_ros.contracts.execution.transaction import (
     AuthorizedExecutionPlan,
     ExecutionTransactionReceipt,
+    ProposedExecutionPlan,
 )
 from atlas_ros.contracts.reasoning import IntentGraph
 from atlas_ros.contracts.registry import ContractDescriptor
@@ -23,6 +24,7 @@ _SCHEMA_ID_BASE = "https://github.com/Ryan9876/atlas-ros/"
 _MODELS: Mapping[str, type[BaseModel]] = {
     "atlas.capture-envelope": CaptureEnvelope,
     "atlas.intent-graph": IntentGraph,
+    "atlas.proposed-execution-plan": ProposedExecutionPlan,
     "atlas.authorized-execution-plan": AuthorizedExecutionPlan,
     "atlas.execution-transaction-receipt": ExecutionTransactionReceipt,
     "atlas.pipeline-run-envelope": PipelineRunEnvelope,
