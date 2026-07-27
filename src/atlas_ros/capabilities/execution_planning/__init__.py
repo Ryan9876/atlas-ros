@@ -28,6 +28,8 @@ class ExecutionPlanningService:
             for node in graph.nodes
             if node.node_type == "action" and node.execution_candidate
         }
+        operation_payload = [item.model_dump(mode="json") for item in requests]
+        operation_digest = sha256_digest(operation_payload)
         if not requests:
             blockers = tuple(
                 f"explicit_provider_operation_required:{node_id}"
@@ -38,13 +40,7 @@ class ExecutionPlanningService:
                 source_graph_digest=graph.graph_digest,
                 operations=(),
                 blockers=blockers,
-                plan_digest=sha256_digest(
-                    {
-                        "source_graph_digest": graph.graph_digest,
-                        "operations": [],
-                        "blockers": blockers,
-                    }
-                ),
+                plan_digest=operation_digest,
             )
         sequences = tuple(item.sequence for item in requests)
         if sequences != tuple(range(len(requests))):
@@ -61,17 +57,16 @@ class ExecutionPlanningService:
                 "provider operations must reference execution-candidate action nodes: "
                 + ", ".join(unknown)
             )
-        payload = {
+        identity_payload = {
             "source_graph_digest": graph.graph_digest,
-            "operations": [item.model_dump(mode="json") for item in requests],
-            "blockers": [],
+            "operation_digest": operation_digest,
         }
         return ProposedExecutionPlan(
-            plan_id=f"plan-{sha256_digest(payload)[:20]}",
+            plan_id=f"plan-{sha256_digest(identity_payload)[:20]}",
             source_graph_digest=graph.graph_digest,
             operations=requests,
             blockers=(),
-            plan_digest=sha256_digest(payload),
+            plan_digest=operation_digest,
         )
 
 
