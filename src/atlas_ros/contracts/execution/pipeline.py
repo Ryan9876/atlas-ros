@@ -8,7 +8,7 @@ from uuid import UUID, uuid4
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from atlas_ros.kernel.digests import sha256_digest
+from atlas_ros.contracts.digests import sha256_digest
 
 
 class CaptureEnvelope(BaseModel):
