@@ -42,7 +42,7 @@ Only the documents listed here, the active Release Index, the Notion System Stat
 
 Prior-version manifests, release notes, checksums, SBOMs, ADRs, restoration companions, promotion decisions, Review Records, candidate evidence, migration records, and acceptance-test artifacts are preserved for history, audit, and rollback. They do not define current operations unless this index or the active manifest explicitly incorporates them.
 
-Mutable superseded guidance must be marked `HISTORICAL — NOT CURRENT AUTHORITY` or placed under a historical container. Numbered workflow terms such as W01, W02, W03A, W03, and W04 may appear only in historical, migration, compatibility-test, or immutable release-evidence contexts.
+Mutable superseded guidance must be marked `HISTORICAL — NOT CURRENT AUTHORITY` or placed under a historical container. Retired numbered-workflow labels may appear only in historical, migration, compatibility-test, or immutable release-evidence contexts.
 
 ## Current runtime terminology
 
