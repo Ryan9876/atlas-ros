@@ -8,7 +8,8 @@ from __future__ import annotations
 
 import json
 import sqlite3
-from contextlib import closing
+from collections.abc import Iterator
+from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
@@ -57,7 +58,7 @@ class SQLiteExecutionJournal:
                 (transaction_id,),
             ).fetchone()
             if existing is not None:
-                if existing[0] != plan.authorization_id or existing[1] != plan.plan_digest:
+                if existing[:2] != (plan.authorization_id, plan.plan_digest):
                     raise ExecutionJournalError(
                         "existing transaction identity disagrees with authorized plan"
                     )
@@ -122,7 +123,7 @@ class SQLiteExecutionJournal:
                 operation.payload_digest,
                 operation.idempotency_key,
             )
-            if tuple(row[:6]) != expected:
+            if row != expected:
                 raise ExecutionJournalError(
                     "journaled operation metadata disagrees with authorized operation"
                 )
@@ -200,7 +201,7 @@ class SQLiteExecutionJournal:
             ).fetchone()
             if transaction is None:
                 raise ExecutionJournalError("completion references an unknown transaction")
-            if transaction[0] != receipt.authorization_id or transaction[1] != receipt.plan_digest:
+            if transaction != (receipt.authorization_id, receipt.plan_digest):
                 raise ExecutionJournalError("completion receipt identity mismatch")
             states = connection.execute(
                 "SELECT operation_id, state FROM execution_operations "
@@ -255,7 +256,6 @@ class SQLiteExecutionJournal:
             connection.executescript(
                 """
                 PRAGMA journal_mode = WAL;
-                PRAGMA foreign_keys = ON;
                 CREATE TABLE IF NOT EXISTS execution_transactions (
                     transaction_id TEXT PRIMARY KEY,
                     authorization_id TEXT NOT NULL,
@@ -334,10 +334,18 @@ class SQLiteExecutionJournal:
             raise ExecutionJournalError("write references an unknown operation")
         return tuple(row)
 
-    def _connection(self) -> sqlite3.Connection:
+    @contextmanager
+    def _connection(self) -> Iterator[sqlite3.Connection]:
         connection = sqlite3.connect(self.path)
         connection.execute("PRAGMA foreign_keys = ON")
-        return connection
+        try:
+            yield connection
+            connection.commit()
+        except Exception:
+            connection.rollback()
+            raise
+        finally:
+            connection.close()
 
 
 def _now() -> str:
