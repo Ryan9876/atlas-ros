@@ -8,7 +8,6 @@ from atlas_ros.contracts.execution_v2 import (
     DuplicateFinding,
     ExecutionPlanV2,
     ExecutionStepV2,
-    ExistingRepresentationIndex,
     HorizonState,
     ProjectedObjectType,
     ProjectionDecision,
