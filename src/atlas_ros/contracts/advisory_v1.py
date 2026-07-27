@@ -43,7 +43,10 @@ def _canonical(value: object) -> object:
     if isinstance(value, (tuple, list)):
         return [_canonical(item) for item in value]
     if isinstance(value, set | frozenset):
-        return sorted((_canonical(item) for item in value), key=lambda item: dumps(item, sort_keys=True))
+        return sorted(
+            (_canonical(item) for item in value),
+            key=lambda item: dumps(item, sort_keys=True),
+        )
     if isinstance(value, float):
         if not isfinite(value):
             raise ValueError("non-finite values cannot be represented in an advisory digest")
@@ -127,7 +130,9 @@ class ConfidenceAssessment:
     def __post_init__(self) -> None:
         if not self.rationale.strip():
             raise ValueError("confidence requires rationale")
-        if self.score is not None and (not isfinite(self.score) or not 0.0 <= self.score <= 1.0):
+        if self.score is not None and (
+            not isfinite(self.score) or not 0.0 <= self.score <= 1.0
+        ):
             raise ValueError("confidence score must be between 0 and 1")
 
 
