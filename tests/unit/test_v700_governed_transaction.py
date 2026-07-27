@@ -95,19 +95,19 @@ def operation() -> PlannedProviderOperation:
 
 def proposed(*, blockers: tuple[str, ...] = (), digest: str | None = None) -> ProposedExecutionPlan:
     operations = (operation(),)
-    return ProposedExecutionPlan(
+    plan = ProposedExecutionPlan(
         plan_id="plan-1",
         source_graph_digest="d" * 64,
         operations=operations,
         blockers=blockers,
-        plan_digest=(
-            digest
-            or AuthorizedExecutionPlan.create(
-                authorization_id="authorization-1",
-                operations=operations,
-            ).plan_digest
-        ),
+        plan_digest=AuthorizedExecutionPlan.create(
+            authorization_id="authorization-1",
+            operations=operations,
+        ).plan_digest,
     )
+    if digest is not None:
+        return plan.model_copy(update={"plan_digest": digest})
+    return plan
 
 
 def test_governed_transaction_completes_readback_and_reconciliation(
