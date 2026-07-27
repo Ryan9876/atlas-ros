@@ -41,7 +41,7 @@ python -m venv clean-candidate
 clean-candidate/bin/python -m pip install --disable-pip-version-check "dist/$WHEEL"
 clean-candidate/bin/python - <<'PY'
 import atlas_ros
-from atlas_ros.contracts import AdvisoryEnvelope
+from atlas_ros.contracts import AdvisoryRecommendation
 from atlas_ros.engines import (
     ExecutionPresenterV65,
     GovernedFrameworkComposerV65,
@@ -49,7 +49,7 @@ from atlas_ros.engines import (
     ScenarioIntelligenceV65,
 )
 assert atlas_ros.__version__ == "6.5.0rc1"
-assert all((AdvisoryEnvelope, ExecutionPresenterV65, GovernedFrameworkComposerV65,
+assert all((AdvisoryRecommendation, ExecutionPresenterV65, GovernedFrameworkComposerV65,
             MinimumEffectivePathPlannerV65, ScenarioIntelligenceV65))
 PY
 
