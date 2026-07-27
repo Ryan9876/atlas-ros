@@ -29,6 +29,9 @@ def write_policy(path: Path) -> Path:
 
 
 def write_contract_catalog(path: Path, body: str | None = None) -> Path:
+    schema = path.parent / "schemas/capture/capture-envelope.schema.json"
+    schema.parent.mkdir(parents=True, exist_ok=True)
+    schema.write_text("{}\n", encoding="utf-8")
     path.write_text(
         body
         or (
@@ -61,6 +64,10 @@ def write_contract_catalog(path: Path, body: str | None = None) -> Path:
     return path
 
 
+def compile_temp_catalog(path: Path):
+    return compile_contract_registry(path, repository_root=path.parent)
+
+
 def test_repository_contract_catalog_compiles() -> None:
     registry = compile_contract_registry(Path("governance/contract-catalog.yaml"))
 
@@ -80,7 +87,7 @@ def test_contract_catalog_rejects_writer_version_mismatch(tmp_path: Path) -> Non
     body = catalog.read_text(encoding="utf-8").replace("writer: '1.0'", "writer: '2.0'")
 
     with pytest.raises(ContractCompilationError, match="writer"):
-        compile_contract_registry(write_contract_catalog(tmp_path / "invalid.yaml", body))
+        compile_temp_catalog(write_contract_catalog(tmp_path / "invalid.yaml", body))
 
 
 def test_contract_catalog_rejects_unsafe_schema_path(tmp_path: Path) -> None:
@@ -91,7 +98,7 @@ def test_contract_catalog_rejects_unsafe_schema_path(tmp_path: Path) -> None:
     )
 
     with pytest.raises(ContractCompilationError, match="schema path"):
-        compile_contract_registry(write_contract_catalog(tmp_path / "invalid.yaml", body))
+        compile_temp_catalog(write_contract_catalog(tmp_path / "invalid.yaml", body))
 
 
 def test_contract_catalog_requires_complete_runtime_prohibitions(tmp_path: Path) -> None:
@@ -102,7 +109,28 @@ def test_contract_catalog_requires_complete_runtime_prohibitions(tmp_path: Path)
     )
 
     with pytest.raises(ContractCompilationError, match="entry_points"):
-        compile_contract_registry(write_contract_catalog(tmp_path / "invalid.yaml", body))
+        compile_temp_catalog(write_contract_catalog(tmp_path / "invalid.yaml", body))
+
+
+def test_contract_catalog_rejects_missing_schema_asset(tmp_path: Path) -> None:
+    catalog = write_contract_catalog(tmp_path / "catalog.yaml")
+    (tmp_path / "schemas/capture/capture-envelope.schema.json").unlink()
+
+    with pytest.raises(ContractCompilationError, match="schema asset does not exist"):
+        compile_temp_catalog(catalog)
+
+
+def test_contract_catalog_rejects_missing_migration_asset(tmp_path: Path) -> None:
+    catalog = write_contract_catalog(tmp_path / "catalog.yaml")
+    body = catalog.read_text(encoding="utf-8").replace(
+        "    compatibility: additive_only_within_major\n",
+        "    migrations:\n"
+        "      - src/atlas_ros/contracts/migrations/missing.py\n"
+        "    compatibility: explicit_migration\n",
+    )
+
+    with pytest.raises(ContractCompilationError, match="migration asset does not exist"):
+        compile_temp_catalog(write_contract_catalog(tmp_path / "invalid.yaml", body))
 
 
 def test_fully_governed_kernel_binds_both_catalogs(tmp_path: Path) -> None:
