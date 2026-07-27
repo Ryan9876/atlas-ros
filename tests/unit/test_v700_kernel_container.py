@@ -52,7 +52,23 @@ def capability_catalog(path: Path) -> Path:
         "    may_create_execution_intent: false\n",
         encoding="utf-8",
     )
+    _capability_package(
+        path.parent,
+        "execution_planning",
+        "atlas.execution-planning",
+    )
+    _capability_package(
+        path.parent,
+        "reconciliation",
+        "atlas.reconciliation",
+    )
     return path
+
+
+def _capability_package(root: Path, package: str, capability_id: str) -> None:
+    init_path = root / "src" / "atlas_ros" / "capabilities" / package / "__init__.py"
+    init_path.parent.mkdir(parents=True, exist_ok=True)
+    init_path.write_text(f'CAPABILITY_ID = "{capability_id}"\n', encoding="utf-8")
 
 
 def config(
