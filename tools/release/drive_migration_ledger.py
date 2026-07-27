@@ -52,6 +52,13 @@ class DriveMigrationItem:
 class DriveMigrationLedger:
     schema_version: Literal["1.0"]
     generated_for_release: str
+    source_root_id: str
+    traversal_complete: bool
+    visited_folder_ids: tuple[str, ...]
+    inaccessible_item_ids: tuple[str, ...]
+    unconsumed_page_tokens: int
+    inventory_complete: bool
+    inventory_sha256: str
     items: tuple[DriveMigrationItem, ...]
     unresolved_authoritative_items: int
     staged_current_dependencies: int
@@ -65,10 +72,25 @@ def compile_ledger(
     records: list[dict[str, Any]],
     *,
     generated_for_release: str = "7.0.0rc1",
+    source_root_id: str = "trusted-unit-inventory",
+    traversal_complete: bool = True,
+    visited_folder_ids: tuple[str, ...] | None = None,
+    inaccessible_item_ids: tuple[str, ...] = (),
+    unconsumed_page_tokens: int = 0,
 ) -> DriveMigrationLedger:
-    """Validate normalized Drive inventory and compile deterministic migration evidence."""
+    """Validate inventory coverage and compile deterministic migration evidence."""
     if generated_for_release != "7.0.0rc1":
         raise DriveMigrationLedgerError("candidate ledger must target 7.0.0rc1")
+    if not source_root_id.strip():
+        raise DriveMigrationLedgerError("Drive inventory source root ID is required")
+    visited = visited_folder_ids or (source_root_id,)
+    _unique_nonempty(visited, "visited folder IDs")
+    _unique_nonempty(inaccessible_item_ids, "inaccessible item IDs")
+    if source_root_id not in visited:
+        raise DriveMigrationLedgerError("Drive inventory did not visit its source root")
+    if unconsumed_page_tokens < 0:
+        raise DriveMigrationLedgerError("unconsumed page-token count cannot be negative")
+
     items = tuple(_item(record) for record in records)
     if not items:
         raise DriveMigrationLedgerError("Drive migration inventory cannot be empty")
@@ -86,6 +108,23 @@ def compile_ledger(
             "resolved Drive items cannot share one GitHub target"
         )
 
+    inventory_complete = (
+        traversal_complete
+        and not inaccessible_item_ids
+        and unconsumed_page_tokens == 0
+    )
+    inventory_payload = {
+        "schema_version": "1.0",
+        "generated_for_release": generated_for_release,
+        "source_root_id": source_root_id,
+        "traversal_complete": traversal_complete,
+        "visited_folder_ids": list(visited),
+        "inaccessible_item_ids": list(inaccessible_item_ids),
+        "unconsumed_page_tokens": unconsumed_page_tokens,
+        "records": [asdict(item) for item in items],
+    }
+    inventory_sha256 = sha256_digest(inventory_payload)
+
     unresolved = sum(
         item.migration_status == "unresolved"
         and item.classification in {"current_until_v7_activation", "historical_authority"}
@@ -102,7 +141,7 @@ def compile_ledger(
         and item.content_equivalent
         for item in items
     )
-    complete = unresolved == 0 and all(
+    complete = inventory_complete and unresolved == 0 and all(
         _promotion_ready(item)
         for item in items
         if item.classification in {
@@ -117,6 +156,13 @@ def compile_ledger(
     payload = {
         "schema_version": "1.0",
         "generated_for_release": generated_for_release,
+        "source_root_id": source_root_id,
+        "traversal_complete": traversal_complete,
+        "visited_folder_ids": list(visited),
+        "inaccessible_item_ids": list(inaccessible_item_ids),
+        "unconsumed_page_tokens": unconsumed_page_tokens,
+        "inventory_complete": inventory_complete,
+        "inventory_sha256": inventory_sha256,
         "items": [asdict(item) for item in items],
         "unresolved_authoritative_items": unresolved,
         "staged_current_dependencies": staged_dependencies,
@@ -125,21 +171,70 @@ def compile_ledger(
         "ready_for_post_promotion_retirement": retirement_ready,
     }
     return DriveMigrationLedger(
-        **payload,
+        schema_version="1.0",
+        generated_for_release=generated_for_release,
+        source_root_id=source_root_id,
+        traversal_complete=traversal_complete,
+        visited_folder_ids=visited,
+        inaccessible_item_ids=inaccessible_item_ids,
+        unconsumed_page_tokens=unconsumed_page_tokens,
+        inventory_complete=inventory_complete,
+        inventory_sha256=inventory_sha256,
+        items=items,
+        unresolved_authoritative_items=unresolved,
+        staged_current_dependencies=staged_dependencies,
+        verified_github_representations=represented,
+        complete_for_promotion_readiness=complete,
+        ready_for_post_promotion_retirement=retirement_ready,
         ledger_sha256=sha256_digest(payload),
     )
 
 
 def load_and_compile(path: Path) -> DriveMigrationLedger:
+    """Load normalized inventory evidence and compile a fail-closed ledger."""
     try:
         payload = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as error:
         raise DriveMigrationLedgerError(
             f"invalid Drive migration inventory: {path}"
         ) from error
-    if not isinstance(payload, list):
-        raise DriveMigrationLedgerError("Drive migration inventory must be a JSON list")
-    return compile_ledger(payload)
+    if isinstance(payload, list):
+        return compile_ledger(
+            payload,
+            source_root_id="legacy-unverified-inventory",
+            traversal_complete=False,
+            visited_folder_ids=("legacy-unverified-inventory",),
+            unconsumed_page_tokens=1,
+        )
+    if not isinstance(payload, dict):
+        raise DriveMigrationLedgerError(
+            "Drive migration inventory must be a JSON object or legacy list"
+        )
+    records = payload.get("records")
+    if not isinstance(records, list):
+        raise DriveMigrationLedgerError("Drive migration inventory records must be a list")
+    visited = _string_tuple(payload.get("visited_folder_ids"), "visited folder IDs")
+    inaccessible = _string_tuple(
+        payload.get("inaccessible_item_ids"),
+        "inaccessible item IDs",
+    )
+    traversal_complete = payload.get("traversal_complete")
+    if not isinstance(traversal_complete, bool):
+        raise DriveMigrationLedgerError("Drive traversal_complete must be a boolean")
+    unconsumed = payload.get("unconsumed_page_tokens")
+    if not isinstance(unconsumed, int) or isinstance(unconsumed, bool):
+        raise DriveMigrationLedgerError(
+            "Drive unconsumed_page_tokens must be an integer"
+        )
+    return compile_ledger(
+        records,
+        generated_for_release=str(payload.get("generated_for_release", "")),
+        source_root_id=str(payload.get("source_root_id", "")),
+        traversal_complete=traversal_complete,
+        visited_folder_ids=visited,
+        inaccessible_item_ids=inaccessible,
+        unconsumed_page_tokens=unconsumed,
+    )
 
 
 def load_ledger(path: Path) -> DriveMigrationLedger:
@@ -156,6 +251,20 @@ def load_ledger(path: Path) -> DriveMigrationLedger:
     compiled = compile_ledger(
         raw_items,
         generated_for_release=str(payload.get("generated_for_release", "")),
+        source_root_id=str(payload.get("source_root_id", "")),
+        traversal_complete=payload.get("traversal_complete") is True,
+        visited_folder_ids=_string_tuple(
+            payload.get("visited_folder_ids"),
+            "visited folder IDs",
+        ),
+        inaccessible_item_ids=_string_tuple(
+            payload.get("inaccessible_item_ids"),
+            "inaccessible item IDs",
+        ),
+        unconsumed_page_tokens=_required_int(
+            payload.get("unconsumed_page_tokens"),
+            "unconsumed page tokens",
+        ),
     )
     if payload != asdict(compiled):
         raise DriveMigrationLedgerError(
@@ -283,6 +392,25 @@ def _sha(value: str, field: str) -> None:
         character not in "0123456789abcdef" for character in value
     ):
         raise DriveMigrationLedgerError(f"{field} is not a lowercase SHA-256")
+
+
+def _unique_nonempty(values: tuple[str, ...], field: str) -> None:
+    if not values or any(not value.strip() for value in values):
+        raise DriveMigrationLedgerError(f"Drive {field} must contain non-empty IDs")
+    if len(set(values)) != len(values):
+        raise DriveMigrationLedgerError(f"Drive {field} contains duplicates")
+
+
+def _string_tuple(value: Any, field: str) -> tuple[str, ...]:
+    if not isinstance(value, list) or not all(isinstance(item, str) for item in value):
+        raise DriveMigrationLedgerError(f"Drive {field} must be a list of strings")
+    return tuple(value)
+
+
+def _required_int(value: Any, field: str) -> int:
+    if not isinstance(value, int) or isinstance(value, bool):
+        raise DriveMigrationLedgerError(f"Drive {field} must be an integer")
+    return value
 
 
 __all__ = [
