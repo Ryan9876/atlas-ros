@@ -42,7 +42,7 @@ def expected_contract_schema(descriptor: ContractDescriptor) -> dict[str, Any]:
             f"no canonical model is registered for {descriptor.contract_id}"
         ) from error
     _verify_model_identity(model, descriptor)
-    schema = _remove_descriptions(model.model_json_schema(mode="validation"))
+    schema = _remove_schema_descriptions(model.model_json_schema(mode="validation"))
     schema["$schema"] = _SCHEMA_DRAFT
     schema["$id"] = _SCHEMA_ID_BASE + descriptor.schema_path
     return schema
@@ -150,13 +150,20 @@ def _verify_model_identity(
         )
 
 
-def _remove_descriptions(value: Any) -> Any:
+def _remove_schema_descriptions(value: Any) -> Any:
     if isinstance(value, dict):
-        return {
-            key: _remove_descriptions(item)
-            for key, item in value.items()
-            if key != "description"
-        }
+        result: dict[str, Any] = {}
+        for key, item in value.items():
+            if key == "description":
+                continue
+            if key == "properties" and isinstance(item, dict):
+                result[key] = {
+                    property_name: _remove_schema_descriptions(property_schema)
+                    for property_name, property_schema in item.items()
+                }
+            else:
+                result[key] = _remove_schema_descriptions(item)
+        return result
     if isinstance(value, list):
-        return [_remove_descriptions(item) for item in value]
+        return [_remove_schema_descriptions(item) for item in value]
     return value
