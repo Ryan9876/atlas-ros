@@ -199,7 +199,8 @@ def test_ledger_write_contains_no_provider_action_authority(tmp_path: Path) -> N
     compiled = ledger()
     write_ledger(compiled, path)
     payload = json.loads(path.read_text(encoding="utf-8"))
+    normalized = json.loads(json.dumps(asdict(compiled), sort_keys=True))
 
-    assert payload == asdict(compiled)
+    assert payload == normalized
     assert "deletion_authorized" not in path.read_text(encoding="utf-8")
     assert "provider_action" not in path.read_text(encoding="utf-8")
