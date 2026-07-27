@@ -6,10 +6,16 @@ from atlas_ros.application.execution import (
     AttendedExecutionService,
     ExecutionBoundaryError,
 )
+from atlas_ros.application.transaction import (
+    GovernedExecutionTransactionService,
+    GovernedTransactionResult,
+)
 
 __all__ = [
     "AttendedAuthorizationService",
     "AttendedExecutionService",
     "CanonicalProcessingCoordinator",
     "ExecutionBoundaryError",
+    "GovernedExecutionTransactionService",
+    "GovernedTransactionResult",
 ]
