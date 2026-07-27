@@ -34,7 +34,7 @@ class ExecutionPlanningService:
             blockers = tuple(
                 f"explicit_provider_operation_required:{node_id}"
                 for node_id in sorted(action_ids)
-            )
+            ) or ("no_execution_candidate_actions",)
             return ProposedExecutionPlan.create(
                 plan_id=f"plan-{graph.graph_digest[:20]}",
                 source_graph_digest=graph.graph_digest,
