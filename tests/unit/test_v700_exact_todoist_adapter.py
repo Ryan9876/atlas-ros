@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
+
 import pytest
 
 from atlas_ros.adapters.exact_todoist import (
@@ -18,6 +20,13 @@ from atlas_ros.contracts.execution.transaction import (
     AuthorizedExecutionPlan,
     PlannedProviderOperation,
 )
+
+
+@dataclass(frozen=True)
+class AllowWriteGuard:
+    def require_provider_write_permission(self, authorization_id: str | None) -> None:
+        if not authorization_id:
+            raise PermissionError("authorization is required")
 
 
 def payload(
@@ -68,7 +77,11 @@ def test_exact_adapter_executes_only_registered_payload_content() -> None:
 
     receipt = AttendedExecutionService(
         ExactTodoistExecutionAdapter(client, store)
-    ).execute(authorized, transaction_id="transaction-1")
+    ).execute(
+        authorized,
+        transaction_id="transaction-1",
+        write_guard=AllowWriteGuard(),
+    )
 
     task = client.get_task(receipt.operation_receipts[0].provider_record_id)
     assert task.content == "Implement the exact adapter"
