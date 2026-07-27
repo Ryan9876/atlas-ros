@@ -45,11 +45,7 @@ env:
 
 jobs:
   validate-and-publish:
-    if: >-
-      github.event_name == 'pull_request' ||
-      (github.event_name == 'push' &&
-       github.ref_name == 'main' &&
-       startsWith(github.event.head_commit.message, 'Atlas ROS v6.2.0 governed final publication controller'))
+    if: ${{ false }}  # Historical v6.2 publisher; retired after v6.2 activation.
     runs-on: ubuntu-24.04
     timeout-minutes: 75
 
