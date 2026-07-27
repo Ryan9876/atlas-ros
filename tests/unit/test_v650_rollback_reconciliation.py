@@ -5,8 +5,8 @@ from pathlib import Path
 
 import pytest
 from tools.release.rollback_reconciliation import (
-    RollbackReconciliationError,
     load_v650_reconciliation,
+    RollbackReconciliationError,
 )
 
 
