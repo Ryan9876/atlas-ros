@@ -29,7 +29,7 @@ def authority_payload() -> dict[str, object]:
             "immutable_commit": "a" * 40,
             "tag": "v7.0.0",
             "manifest_path": "release/RELEASE_MANIFEST.md",
-            "manifest_url": "https://github.com/Ryan9876/atlas-ros/blob/" + "a" * 40 + "/release/RELEASE_MANIFEST.md",
+            "manifest_url": (\n                "https://github.com/Ryan9876/atlas-ros/blob/"\n                + "a" * 40\n                + "/release/RELEASE_MANIFEST.md"\n            ),
             "release_url": "https://github.com/Ryan9876/atlas-ros/releases/tag/v7.0.0",
             "source_sha256": "b" * 64,
             "wheel_sha256": "c" * 64,
@@ -55,7 +55,7 @@ def reader_for(payload: dict[str, object]) -> FakeAuthorityReader:
     authority = AuthorityRecord.model_validate(payload)
     index = render_release_index(authority)
     payload["release_index"] = {"path": "governance/RELEASE_INDEX.md", "sha256": sha256_digest(index)}
-    payload["integrity"] = {"algorithm": "sha256", "content_sha256": sha256_digest({key: value for key, value in payload.items() if key != "integrity"})}
+    without_integrity = {key: value for key, value in payload.items() if key != "integrity"}\n    payload["integrity"] = {\n        "algorithm": "sha256",\n        "content_sha256": sha256_digest(without_integrity),\n    }
     authority_text = json.dumps(payload)
     return FakeAuthorityReader(
         {
