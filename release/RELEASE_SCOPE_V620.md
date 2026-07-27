@@ -1,8 +1,8 @@
 # Atlas ROS v6.2.0 Release Scope
 
-## Candidate status
+## Release status
 
-Implementation candidate only. Final merge, immutable tag creation, GitHub Release publication, Release Index and System State changes, and production promotion are not authorized by this document.
+Final production publication is authorized under Decision V4D-35 after Exact-Artifact Full Validation V4V-44 passed with no blocking findings. The governed final-publication controller must still pass, publish, restore, and read back the exact final artifacts before live authorities are updated.
 
 ## Primary outcome
 
@@ -38,8 +38,8 @@ Evolve Atlas ROS input processing from a linear deterministic semantic planner i
 - migration guide
 - threat model
 - operator and recovery runbook
-- candidate validation workflow
-- candidate SBOM and checksum evidence
+- candidate and final-publication validation workflows
+- final SBOM, checksums, benchmark evidence, package identity, and restoration evidence
 
 ## Critical compatibility contract
 
@@ -53,34 +53,46 @@ The v6.1.1 CloudVision parent, three current checkpoints, delegated/conditional/
 - calendar, email, or messaging;
 - autonomous scheduling;
 - deletion;
-- final production publication;
 - historical record modification;
-- replacement of the current rollback;
 - hidden online learning or unrestricted user profiling.
 
 ## Backward compatibility
 
 Existing reasoning, management, execution, orchestration, adapter, and reconciliation contracts remain available. V6.2 is additive and creates contract version 5. Existing v5.2-v6.1.1 release and benchmark records remain unchanged.
 
-## Candidate gates
+## Completed candidate gates
 
-- Ruff pass
-- architecture validation pass
-- strict MyPy pass
-- complete pytest pass with required coverage
-- all legacy benchmarks pass
-- v6.2 adaptive benchmark pass
-- seven CloudVision variants invariant
+- Ruff passed
+- architecture validation passed
+- strict MyPy passed
+- 480 tests passed with required coverage
+- all legacy benchmarks passed
+- v6.2 adaptive benchmark passed 24/24
+- seven CloudVision variants remained invariant
 - zero provider writes
-- clean source and wheel build
-- clean wheel installation
-- source restoration
-- rollback restoration
-- dependency and secret scans
-- SBOM and checksums
-- Exact-Artifact Full Validation
-- governed acceptance Review Record
+- clean source and wheel build passed
+- clean wheel installation passed
+- source restoration passed
+- v6.1.1 baseline restoration passed
+- v6.1.0 historical rollback restoration passed with one inherited non-blocking identity warning
+- dependency and secret scans passed
+- SBOM and checksums passed
+- Exact-Artifact Full Validation V4V-44 passed with no blocking findings
+- governed acceptance Review Record completed
 
-## Promotion gate
+## Final publication gates
 
-Promotion requires a separate explicit Ryan decision after the exact candidate identity, checksums, validation evidence, performance comparison, review findings, and rollback verification are available.
+- exact final version 6.2.0 in package and runtime metadata
+- final CI and publication-controller validation
+- all critical benchmark suites rerun
+- final source and wheel construction
+- final source and wheel restoration
+- v6.1.1 immediate rollback restoration
+- immutable `v6.2.0` tag bound to the exact production source
+- GitHub Release publication and asset readback
+- final checksums, SBOM, release identity, and publication evidence
+- GitHub manifest, Drive Release Index, and Notion System State agreement
+
+## Promotion decision
+
+Ryan authorized production promotion under Decision V4D-35. Atlas ROS v6.1.1 becomes the immediate immutable rollback only after all final publication gates pass and the live authorities are updated by verified readback.
