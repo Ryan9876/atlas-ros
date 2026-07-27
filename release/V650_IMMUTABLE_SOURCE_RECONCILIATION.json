@@ -1,0 +1,20 @@
+{
+  "schema_version": "1.0",
+  "reconciliation_status": "accepted_historical_metadata_defect",
+  "production_version": "6.5.0",
+  "production_source_commit": "bb6d6fea70d6824c9bc6a42e63ba36cc88029260",
+  "immutable_tag": "v6.5.0",
+  "immutable_source_pyproject_version": "6.5.0",
+  "immutable_source_manifest_declared_version": "6.2.0",
+  "immutable_source_manifest_blob_sha": "afba3c620ccc6e074fb44a89bcab720988228b3c",
+  "canonical_active_manifest_declared_version": "6.5.0",
+  "canonical_active_manifest_blob_sha": "b9eb2b180d1b2d3678d84e3c3062ffc22c7c2477",
+  "published_final_source_sha256": "740ebe9d468030d97c47aac7009c0df4095fbec757af1d7c55ba2a42e654453d",
+  "published_final_wheel_sha256": "dab11bd9957b175d6ac7de9058318437d6b10a8a68a477031d2e00010ecfae44",
+  "restoration_authority": "published_v6.5.0_release_assets_and_checksums",
+  "immediate_rollback_version": "6.2.0",
+  "immediate_rollback_commit": "863d5ddf9ebd4723200166cf31c7acd93ebec54f",
+  "immutable_history_rewrite_authorized": false,
+  "provider_writes": 0,
+  "notes": "The immutable v6.5.0 tag and production source contain correct 6.5.0 package identity but retain a stale in-tree v6.2.0 release manifest. Restoration uses the independently verified published v6.5.0 source and wheel assets, FINAL_IDENTITY and CHECKSUMS evidence, while the historical tag remains unchanged."
+}
