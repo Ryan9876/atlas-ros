@@ -6,7 +6,7 @@ import pytest
 
 from atlas_ros.application.canonical_processing import CanonicalProcessingCoordinator
 from atlas_ros.contracts.execution.pipeline import CaptureEnvelope
-from atlas_ros.kernel.authority import AuthorityRecord
+from atlas_ros.kernel.authority import AuthorityRecord, canonical_authority_payload
 from atlas_ros.kernel.digests import sha256_digest
 
 
@@ -64,7 +64,10 @@ def test_authority_record_rejects_tampered_integrity() -> None:
         "last_promotion_transaction_id": "candidate",
         "last_verified_at": "2026-07-27T00:00:00Z",
     }
-    payload["integrity"] = {"algorithm": "sha256", "content_sha256": sha256_digest(payload)}
+    payload["integrity"] = {
+        "algorithm": "sha256",
+        "content_sha256": sha256_digest(canonical_authority_payload(payload)),
+    }
 
     assert AuthorityRecord.model_validate(payload).active_release.version == "7.0.0"
     payload["active_release"]["tag"] = "v7.0.1"
