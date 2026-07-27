@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -7,6 +9,11 @@ import pytest
 from atlas_ros.capabilities.compiler import (
     CapabilityCompilationError,
     compile_capability_registry,
+)
+from atlas_ros.kernel.container import (
+    KernelConfig,
+    KernelConfigurationError,
+    RuntimeKernel,
 )
 
 
@@ -38,6 +45,28 @@ def write_catalog(path: Path, body: str | None = None) -> Path:
     return path
 
 
+def write_policy(path: Path) -> Path:
+    path.write_text(
+        "schema_version: '1.0'\n"
+        "policy_id: atlas.test\n"
+        "lifecycle: active\n"
+        "rules:\n"
+        "  - test_rule\n",
+        encoding="utf-8",
+    )
+    return path
+
+
+def kernel_config(capability_digest: str) -> KernelConfig:
+    return KernelConfig(
+        release_version="7.0.0rc1",
+        source_commit="a" * 40,
+        initializer_version="7.0",
+        contract_catalog_digest="b" * 64,
+        capability_catalog_digest=capability_digest,
+    )
+
+
 def test_compiler_builds_digest_bound_immutable_registry(tmp_path: Path) -> None:
     registry = compile_capability_registry(write_catalog(tmp_path / "catalog.yaml"))
 
@@ -49,6 +78,15 @@ def test_compiler_builds_digest_bound_immutable_registry(tmp_path: Path) -> None
     assert registry.require("atlas.input-processing").inputs == ("CaptureEnvelope",)
     with pytest.raises(TypeError):
         registry.capabilities["atlas.other"] = registry.planning_authority  # type: ignore[index]
+
+
+def test_repository_catalog_compiles_with_exact_invariants() -> None:
+    registry = compile_capability_registry(Path("governance/capability-catalog.yaml"))
+
+    assert len(registry.capabilities) == 14
+    assert registry.planning_authority_id == "atlas.execution-planning"
+    assert registry.require("atlas.reconciliation").may_create_execution_intent is False
+    assert all(not item.writes_providers for item in registry.capabilities.values())
 
 
 def test_compiler_rejects_provider_writing_capability(tmp_path: Path) -> None:
@@ -98,3 +136,54 @@ def test_compiler_rejects_advisory_planning_authority(tmp_path: Path) -> None:
 
     with pytest.raises(CapabilityCompilationError, match="advisory-only"):
         compile_capability_registry(write_catalog(tmp_path / "invalid.yaml", body))
+
+
+def test_governed_kernel_binds_compiled_capability_digest(tmp_path: Path) -> None:
+    catalog = write_catalog(tmp_path / "catalog.yaml")
+    registry = compile_capability_registry(catalog)
+
+    kernel = RuntimeKernel.compose_governed(
+        kernel_config(registry.digest),
+        [write_policy(tmp_path / "policy.yaml")],
+        catalog,
+        (),
+    )
+
+    assert kernel.capability_registry is not None
+    assert kernel.capability_registry.digest == registry.digest
+    assert kernel.coordinator.capability_catalog_digest == registry.digest
+
+
+def test_governed_kernel_rejects_catalog_digest_mismatch(tmp_path: Path) -> None:
+    catalog = write_catalog(tmp_path / "catalog.yaml")
+
+    with pytest.raises(KernelConfigurationError, match="digest"):
+        RuntimeKernel.compose_governed(
+            kernel_config("f" * 64),
+            [write_policy(tmp_path / "policy.yaml")],
+            catalog,
+            (),
+        )
+
+
+def test_capability_package_import_is_lazy() -> None:
+    program = """
+import sys
+import atlas_ros.capabilities
+for prefix in (
+    'atlas_ros.engines',
+    'atlas_ros.orchestration',
+    'atlas_ros.planning',
+    'atlas_ros.reconciliation',
+    'atlas_ros.services',
+):
+    assert not any(name == prefix or name.startswith(prefix + '.') for name in sys.modules), prefix
+"""
+    result = subprocess.run(
+        [sys.executable, "-c", program],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 0, result.stderr
