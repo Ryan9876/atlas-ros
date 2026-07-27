@@ -136,6 +136,11 @@ jobs:
             --iterations 7 \
             --max-regression 0.10 \
             --output v700-exact-evidence/V700_V650_PERFORMANCE.json
+      - name: Validate recursive Drive folder evidence
+        run: |
+          python -m scripts.validate_v700_drive_folder_tree \
+            --input release/v700-drive-folder-traversal.json \
+            --output v700-exact-evidence/V700_DRIVE_FOLDER_TRAVERSAL_VALIDATION.json
       - name: Validate exact artifact and simulate release transactions
         env:
           HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
