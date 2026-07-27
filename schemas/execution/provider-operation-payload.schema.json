@@ -1,0 +1,43 @@
+{
+  "$id": "https://github.com/Ryan9876/atlas-ros/schemas/execution/provider-operation-payload.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "contract_id": {
+      "const": "atlas.provider-operation-payload",
+      "default": "atlas.provider-operation-payload",
+      "title": "Contract Id",
+      "type": "string"
+    },
+    "operation_id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "title": "Operation Id",
+      "type": "string"
+    },
+    "payload_digest": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Payload Digest",
+      "type": "string"
+    },
+    "payload_json": {
+      "maxLength": 100000,
+      "minLength": 2,
+      "title": "Payload Json",
+      "type": "string"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    }
+  },
+  "required": [
+    "operation_id",
+    "payload_json",
+    "payload_digest"
+  ],
+  "title": "ProviderOperationPayload",
+  "type": "object"
+}
