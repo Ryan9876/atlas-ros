@@ -1,3 +1,15 @@
+from .advisory_v1 import (
+    AdvisoryAlternative,
+    AdvisoryRecommendation,
+    AdvisoryReceipt,
+    Assumption,
+    ConfidenceAssessment,
+    MissingDataIndicator,
+    ProvenanceRecord,
+    UncertaintyRange,
+    ValueOrigin,
+    stable_advisory_digest,
+)
 from .coherence_v1 import (
     BenchmarkExecutionPolicyV1,
     BenchmarkMode,
@@ -143,6 +155,16 @@ from .v62 import (
 )
 
 __all__ = [
+    "AdvisoryAlternative",
+    "AdvisoryRecommendation",
+    "AdvisoryReceipt",
+    "Assumption",
+    "ConfidenceAssessment",
+    "MissingDataIndicator",
+    "ProvenanceRecord",
+    "UncertaintyRange",
+    "ValueOrigin",
+    "stable_advisory_digest",
     "ArchetypeSelection",
     "AuthoritySource",
     "BenchmarkExecutionPolicyV1",
