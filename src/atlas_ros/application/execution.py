@@ -13,7 +13,7 @@ from atlas_ros.contracts.execution.transaction import (
     ProviderReadbackReceipt,
     ProviderWriteReceipt,
 )
-from atlas_ros.ports.execution import ProviderExecutionPort
+from atlas_ros.ports.execution import ExecutionJournalPort, ProviderExecutionPort
 
 
 class ExecutionBoundaryError(RuntimeError):
@@ -54,6 +54,7 @@ class AttendedExecutionService:
     """Execute exactly one immutable authorized plan and verify every provider write."""
 
     port: ProviderExecutionPort
+    journal: ExecutionJournalPort | None = None
 
     def execute(
         self,
@@ -63,41 +64,68 @@ class AttendedExecutionService:
     ) -> ExecutionTransactionReceipt:
         if not transaction_id.strip():
             raise ExecutionBoundaryError("an exact execution transaction ID is required")
+        if self.journal is not None:
+            self.journal.begin(plan, transaction_id=transaction_id)
 
         receipts: list[ExecutedOperationReceipt] = []
-        for operation in plan.operations:
-            write = self.port.write(
-                operation,
-                authorization_id=plan.authorization_id,
-                transaction_id=transaction_id,
-            )
-            self._validate_write(
-                operation.operation_id,
-                operation.provider,
-                operation.idempotency_key,
-                write,
-            )
-            readback = self.port.readback(write)
-            self._validate_readback(write, readback)
-            receipts.append(
-                ExecutedOperationReceipt(
-                    operation_id=operation.operation_id,
-                    provider=operation.provider,
-                    provider_record_id=write.provider_record_id,
-                    idempotency_key=operation.idempotency_key,
-                    write_digest=write.write_digest,
-                    readback_digest=readback.readback_digest,
-                    changed=write.changed,
+        current_operation_id: str | None = None
+        try:
+            for operation in plan.operations:
+                current_operation_id = operation.operation_id
+                write = self.port.write(
+                    operation,
+                    authorization_id=plan.authorization_id,
+                    transaction_id=transaction_id,
                 )
-            )
+                self._validate_write(
+                    operation.operation_id,
+                    operation.provider,
+                    operation.idempotency_key,
+                    write,
+                )
+                if self.journal is not None:
+                    self.journal.record_write(
+                        operation,
+                        write,
+                        transaction_id=transaction_id,
+                    )
+                readback = self.port.readback(write)
+                self._validate_readback(write, readback)
+                if self.journal is not None:
+                    self.journal.record_readback(
+                        readback,
+                        transaction_id=transaction_id,
+                    )
+                receipts.append(
+                    ExecutedOperationReceipt(
+                        operation_id=operation.operation_id,
+                        provider=operation.provider,
+                        provider_record_id=write.provider_record_id,
+                        idempotency_key=operation.idempotency_key,
+                        write_digest=write.write_digest,
+                        readback_digest=readback.readback_digest,
+                        changed=write.changed,
+                    )
+                )
+        except Exception as error:
+            if self.journal is not None:
+                self.journal.fail(
+                    transaction_id=transaction_id,
+                    operation_id=current_operation_id,
+                    reason=str(error),
+                )
+            raise
 
-        return ExecutionTransactionReceipt(
+        receipt = ExecutionTransactionReceipt(
             transaction_id=transaction_id,
             authorization_id=plan.authorization_id,
             plan_digest=plan.plan_digest,
             operation_receipts=tuple(receipts),
             provider_writes=sum(receipt.changed for receipt in receipts),
         )
+        if self.journal is not None:
+            self.journal.complete(receipt)
+        return receipt
 
     @staticmethod
     def _validate_write(
