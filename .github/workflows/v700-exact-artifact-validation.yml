@@ -139,8 +139,27 @@ jobs:
       - name: Validate recursive Drive folder evidence
         run: |
           python -m scripts.validate_v700_drive_folder_tree \
-            --input release/v700-drive-folder-traversal.json \
+            --input release/v700-drive-folder-tree.json \
             --output v700-exact-evidence/V700_DRIVE_FOLDER_TRAVERSAL_VALIDATION.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          result = json.loads(
+              Path("v700-exact-evidence/V700_DRIVE_FOLDER_TRAVERSAL_VALIDATION.json")
+              .read_text(encoding="utf-8")
+          )
+          assert result["status"] == "folder_traversal_complete_item_inventory_incomplete"
+          assert result["folder_count"] == 93
+          assert result["leaf_folder_count"] == 78
+          assert result["max_depth"] == 6
+          assert result["folder_traversal_complete"] is True
+          assert result["item_inventory_complete"] is False
+          assert result["file_content_checksums_complete"] is False
+          assert result["promotion_ready"] is False
+          assert result["provider_writes"] == 0
+          assert result["drive_retirement_authorized"] is False
+          PY
       - name: Validate exact artifact and simulate release transactions
         env:
           HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
