@@ -88,7 +88,11 @@ def scan(root: Path) -> dict[str, Any]:
             for name, pattern in PATTERNS.items():
                 for match in pattern.finditer(line):
                     candidate = match.group(1) if match.lastindex else match.group(0)
-                    normalized = candidate.casefold().strip("'\";,.\")")
+                    normalized = re.sub(
+                        r"['\";,.)]+$",
+                        "",
+                        candidate.casefold().strip(),
+                    )
                     if _is_python_expression(path, name, candidate):
                         continue
                     if normalized in PLACEHOLDERS or any(
