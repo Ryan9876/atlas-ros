@@ -1,9 +1,11 @@
-"""Attended exact-plan execution with mandatory provider readback."""
+"""Attended authorization and exact-plan execution with mandatory readback."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import datetime
 
+from atlas_ros.capabilities.interfaces import ProposedExecutionPlan
 from atlas_ros.contracts.execution.transaction import (
     AuthorizedExecutionPlan,
     ExecutedOperationReceipt,
@@ -15,10 +17,39 @@ from atlas_ros.ports.execution import ProviderExecutionPort
 
 
 class ExecutionBoundaryError(RuntimeError):
-    """Raised when an adapter result violates the authorized execution boundary."""
+    """Raised when authorization or adapter behavior violates an exact boundary."""
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
+class AttendedAuthorizationService:
+    """Convert one unblocked proposed plan into an immutable authorized plan."""
+
+    def authorize(
+        self,
+        plan: ProposedExecutionPlan,
+        *,
+        authorization_id: str,
+        authorized_at: datetime | None = None,
+    ) -> AuthorizedExecutionPlan:
+        if not authorization_id.strip():
+            raise ExecutionBoundaryError("an explicit attended authorization ID is required")
+        if plan.blockers:
+            raise ExecutionBoundaryError("a blocked execution plan cannot be authorized")
+        if not plan.operations:
+            raise ExecutionBoundaryError("an empty execution plan cannot be authorized")
+        authorized = AuthorizedExecutionPlan.create(
+            authorization_id=authorization_id,
+            operations=plan.operations,
+            authorized_at=authorized_at,
+        )
+        if authorized.plan_digest != plan.plan_digest:
+            raise ExecutionBoundaryError(
+                "authorized plan digest does not match the proposed execution plan"
+            )
+        return authorized
+
+
+@dataclass(frozen=True, slots=True)
 class AttendedExecutionService:
     """Execute exactly one immutable authorized plan and verify every provider write."""
 
