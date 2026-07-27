@@ -42,7 +42,7 @@ def expected_contract_schema(descriptor: ContractDescriptor) -> dict[str, Any]:
             f"no canonical model is registered for {descriptor.contract_id}"
         ) from error
     _verify_model_identity(model, descriptor)
-    schema = model.model_json_schema()
+    schema = _remove_descriptions(model.model_json_schema(mode="validation"))
     schema["$schema"] = _SCHEMA_DRAFT
     schema["$id"] = _SCHEMA_ID_BASE + descriptor.schema_path
     return schema
@@ -51,7 +51,10 @@ def expected_contract_schema(descriptor: ContractDescriptor) -> dict[str, Any]:
 def validate_contract_schemas(repository_root: Path = Path(".")) -> list[dict[str, str]]:
     """Return all catalog/model/schema discrepancies without mutating files."""
     catalog_path = repository_root / "governance" / "contract-catalog.yaml"
-    registry = compile_contract_registry(catalog_path)
+    registry = compile_contract_registry(
+        catalog_path,
+        repository_root=repository_root,
+    )
     findings: list[dict[str, str]] = []
     for descriptor in registry.contracts.values():
         schema_path = repository_root / descriptor.schema_path
@@ -116,6 +119,21 @@ def require_valid_contract_schemas(repository_root: Path = Path(".")) -> None:
         raise ContractSchemaError(summary)
 
 
+def write_contract_schemas(repository_root: Path = Path(".")) -> None:
+    """Write all catalog schemas using stable canonical formatting."""
+    registry = compile_contract_registry(
+        repository_root / "governance" / "contract-catalog.yaml",
+        repository_root=repository_root,
+    )
+    for descriptor in registry.contracts.values():
+        schema_path = repository_root / descriptor.schema_path
+        schema_path.parent.mkdir(parents=True, exist_ok=True)
+        schema_path.write_text(
+            json.dumps(expected_contract_schema(descriptor), indent=2, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
+
+
 def _verify_model_identity(
     model: type[BaseModel],
     descriptor: ContractDescriptor,
@@ -130,3 +148,15 @@ def _verify_model_identity(
         raise ContractSchemaError(
             f"model schema version disagrees with catalog: {descriptor.contract_id}"
         )
+
+
+def _remove_descriptions(value: Any) -> Any:
+    if isinstance(value, dict):
+        return {
+            key: _remove_descriptions(item)
+            for key, item in value.items()
+            if key != "description"
+        }
+    if isinstance(value, list):
+        return [_remove_descriptions(item) for item in value]
+    return value
