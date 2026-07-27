@@ -11,7 +11,7 @@ from hashlib import sha256
 from json import dumps
 from math import isfinite
 from types import MappingProxyType
-from typing import Mapping, Sequence
+from typing import Any, Mapping, Sequence, cast
 
 
 class ValueOrigin(StrEnum):
@@ -32,7 +32,7 @@ class AdvisoryValueState(StrEnum):
 
 def _canonical(value: object) -> object:
     if is_dataclass(value):
-        return _canonical(asdict(value))
+        return _canonical(asdict(cast(Any, value)))
     if isinstance(value, StrEnum):
         return value.value
     if isinstance(value, Mapping):
