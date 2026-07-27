@@ -100,23 +100,29 @@ def compile_authority(spec: AuthorityCompilationSpec) -> CompiledAuthority:
     release_index = render_release_index(provisional)
     release_index_sha256 = sha256_digest(release_index)
 
-    payload = {
-        "schema_version": "1.0",
-        "repository": "Ryan9876/atlas-ros",
-        "authority_model_version": "7.0",
-        "minimum_compatible_initializer_version": "7.0",
-        "active_release": active.model_dump(mode="json"),
-        "immediate_rollback": rollback.model_dump(mode="json"),
-        "historical_rollbacks": [item.model_dump(mode="json") for item in historical],
-        "notion_system_state_url": spec.notion_system_state_url,
-        "integration_inventory_resolution": "active-release-manifest",
-        "release_index": {
-            "path": "governance/RELEASE_INDEX.md",
-            "sha256": release_index_sha256,
-        },
-        "last_promotion_transaction_id": spec.last_promotion_transaction_id,
-        "last_verified_at": spec.last_verified_at,
-    }
+    unsigned = AuthorityRecord.model_construct(
+        schema_version="1.0",
+        repository="Ryan9876/atlas-ros",
+        authority_model_version="7.0",
+        minimum_compatible_initializer_version="7.0",
+        active_release=active,
+        immediate_rollback=rollback,
+        historical_rollbacks=historical,
+        notion_system_state_url=spec.notion_system_state_url,
+        integration_inventory_resolution="active-release-manifest",
+        release_index=ReleaseIndexReference(
+            path="governance/RELEASE_INDEX.md",
+            sha256=release_index_sha256,
+        ),
+        last_promotion_transaction_id=spec.last_promotion_transaction_id,
+        last_verified_at=spec.last_verified_at,
+        integrity=IntegrityMetadata(algorithm="sha256", content_sha256="0" * 64),
+    )
+    payload = unsigned.model_dump(
+        mode="json",
+        exclude={"integrity"},
+        exclude_defaults=True,
+    )
     content_sha256 = sha256_digest(canonical_authority_payload(payload))
     payload["integrity"] = {"algorithm": "sha256", "content_sha256": content_sha256}
     record = AuthorityRecord.model_validate(payload)
