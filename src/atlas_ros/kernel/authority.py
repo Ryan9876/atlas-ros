@@ -61,7 +61,11 @@ class AuthorityRecord(BaseModel):
 
     @model_validator(mode="after")
     def verify_integrity(self) -> AuthorityRecord:
-        payload = self.model_dump(mode="json", exclude={"integrity"})
+        payload = self.model_dump(
+            mode="json",
+            exclude={"integrity"},
+            exclude_defaults=True,
+        )
         if sha256_digest(canonical_authority_payload(payload)) != self.integrity.content_sha256:
             raise ValueError("authority integrity digest does not match")
         if self.active_release.version == self.immediate_rollback.version:
