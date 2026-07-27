@@ -5,8 +5,7 @@ from pathlib import PurePosixPath
 
 import pytest
 
-from atlas_ros.kernel.authority import AuthorityRecord
-from atlas_ros.kernel.bootstrap import InitializationError, initialize, render_release_index
+from atlas_ros.kernel.bootstrap import InitializationError, initialize
 from atlas_ros.kernel.digests import sha256_digest
 
 
@@ -53,10 +52,29 @@ def authority_payload() -> dict[str, object]:
     }
 
 
+def expected_index() -> str:
+    return (
+        "# Atlas ROS Release Index\n\n"
+        "This file is generated from governance/AUTHORITY.json; do not edit it directly.\n\n"
+        "## Active Release\n\n"
+        "- Version: 7.0.0\n"
+        "- Status: Active\n"
+        + "- Immutable commit: "
+        + "a" * 40
+        + "\n- Tag: v7.0.0\n"
+        "- Manifest: release/RELEASE_MANIFEST.md\n"
+        "- Release: https://github.com/Ryan9876/atlas-ros/releases/tag/v7.0.0\n\n"
+        "## Immediate Rollback\n\n"
+        "- Version: 6.5.0\n"
+        + "- Immutable commit: "
+        + "d" * 40
+        + "\n- Tag: v6.5.0\n"
+        "- Release: https://github.com/Ryan9876/atlas-ros/releases/tag/v6.5.0\n"
+    )
+
+
 def reader_for(payload: dict[str, object]) -> FakeAuthorityReader:
-    temporary = dict(payload)
-    temporary["integrity"] = {"algorithm": "sha256", "content_sha256": "f" * 64}
-    index = render_release_index(AuthorityRecord.model_validate(temporary))
+    index = expected_index()
     payload["release_index"] = {
         "path": "governance/RELEASE_INDEX.md",
         "sha256": sha256_digest(index),
