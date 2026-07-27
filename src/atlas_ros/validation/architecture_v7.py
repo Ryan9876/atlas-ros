@@ -9,7 +9,9 @@ PACKAGE_ROOT = Path(__file__).resolve().parents[1]
 
 _LAYER_RULES: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("contracts/authority.py", ("atlas_ros.contracts",)),
+    ("contracts/compiler.py", ("atlas_ros.contracts",)),
     ("contracts/digests.py", ("atlas_ros.contracts",)),
+    ("contracts/registry.py", ("atlas_ros.contracts",)),
     ("contracts/execution/", ("atlas_ros.contracts",)),
     ("contracts/migrations/", ("atlas_ros",)),
     ("policy/", ("atlas_ros.contracts", "atlas_ros.policy")),
@@ -64,16 +66,33 @@ _MIGRATION_FORBIDDEN_PREFIXES = (
 )
 
 
+class _RuntimeImportVisitor(ast.NodeVisitor):
+    """Collect imports while excluding branches guarded only by TYPE_CHECKING."""
+
+    def __init__(self) -> None:
+        self.modules: set[str] = set()
+
+    def visit_Import(self, node: ast.Import) -> None:
+        self.modules.update(alias.name for alias in node.names)
+
+    def visit_ImportFrom(self, node: ast.ImportFrom) -> None:
+        if node.module:
+            self.modules.add(node.module)
+
+    def visit_If(self, node: ast.If) -> None:
+        if _is_type_checking_guard(node.test):
+            for item in node.orelse:
+                self.visit(item)
+            return
+        self.generic_visit(node)
+
+
 def imported_modules(path: Path) -> set[str]:
-    """Return the absolute import modules found anywhere in one Python file."""
+    """Return runtime import modules found in one Python file."""
     tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
-    modules: set[str] = set()
-    for node in ast.walk(tree):
-        if isinstance(node, ast.Import):
-            modules.update(alias.name for alias in node.names)
-        elif isinstance(node, ast.ImportFrom) and node.module:
-            modules.add(node.module)
-    return modules
+    visitor = _RuntimeImportVisitor()
+    visitor.visit(tree)
+    return visitor.modules
 
 
 def validate_v7(root: Path = PACKAGE_ROOT) -> list[dict[str, str]]:
@@ -127,6 +146,17 @@ def validate_v7(root: Path = PACKAGE_ROOT) -> list[dict[str, str]]:
                 }
             )
     return violations
+
+
+def _is_type_checking_guard(node: ast.expr) -> bool:
+    if isinstance(node, ast.Name):
+        return node.id == "TYPE_CHECKING"
+    return (
+        isinstance(node, ast.Attribute)
+        and isinstance(node.value, ast.Name)
+        and node.value.id == "typing"
+        and node.attr == "TYPE_CHECKING"
+    )
 
 
 def _allowed_prefixes(relative: str) -> tuple[str, ...] | None:
