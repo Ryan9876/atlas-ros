@@ -54,7 +54,7 @@ class PipelineRunEnvelope(BaseModel):
     completed_at: datetime | None = None
 
     @model_validator(mode="after")
-    def validate_state(self) -> "PipelineRunEnvelope":
+    def validate_state(self) -> PipelineRunEnvelope:
         if self.completion_state == "completed" and self.blockers:
             raise ValueError("completed pipeline cannot retain blockers")
         if self.execution_transaction_id and not self.authorization_id:
