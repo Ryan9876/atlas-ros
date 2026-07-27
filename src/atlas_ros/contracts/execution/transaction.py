@@ -24,6 +24,50 @@ class PlannedProviderOperation(BaseModel):
     idempotency_key: str = Field(min_length=1, max_length=256)
 
 
+class ProposedExecutionPlan(BaseModel):
+    """A provider-neutral plan produced before attended authorization."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    contract_id: Literal["atlas.proposed-execution-plan"] = (
+        "atlas.proposed-execution-plan"
+    )
+    schema_version: Literal["1.0"] = "1.0"
+    plan_id: str = Field(min_length=1, max_length=128)
+    source_graph_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
+    operations: tuple[PlannedProviderOperation, ...] = ()
+    blockers: tuple[str, ...] = ()
+    plan_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
+
+    @classmethod
+    def create(
+        cls,
+        *,
+        plan_id: str,
+        source_graph_digest: str,
+        operations: tuple[PlannedProviderOperation, ...] = (),
+        blockers: tuple[str, ...] = (),
+    ) -> ProposedExecutionPlan:
+        return cls(
+            plan_id=plan_id,
+            source_graph_digest=source_graph_digest,
+            operations=operations,
+            blockers=blockers,
+            plan_digest=sha256_digest(_operations_payload(operations)),
+        )
+
+    @model_validator(mode="after")
+    def validate_plan(self) -> ProposedExecutionPlan:
+        _validate_operation_set(self.operations, label="proposed")
+        if not self.operations and not self.blockers:
+            raise ValueError("proposed plan requires operations or blockers")
+        if len(set(self.blockers)) != len(self.blockers):
+            raise ValueError("proposed plan contains duplicate blockers")
+        if sha256_digest(_operations_payload(self.operations)) != self.plan_digest:
+            raise ValueError("proposed plan digest does not match operations")
+        return self
+
+
 class AuthorizedExecutionPlan(BaseModel):
     """An immutable execution plan that has received attended authorization."""
 
@@ -58,15 +102,7 @@ class AuthorizedExecutionPlan(BaseModel):
 
     @model_validator(mode="after")
     def validate_plan(self) -> AuthorizedExecutionPlan:
-        sequences = tuple(operation.sequence for operation in self.operations)
-        if sequences != tuple(range(len(self.operations))):
-            raise ValueError("authorized operations must use contiguous canonical sequence")
-        operation_ids = tuple(operation.operation_id for operation in self.operations)
-        if len(set(operation_ids)) != len(operation_ids):
-            raise ValueError("authorized plan contains duplicate operation IDs")
-        idempotency_keys = tuple(operation.idempotency_key for operation in self.operations)
-        if len(set(idempotency_keys)) != len(idempotency_keys):
-            raise ValueError("authorized plan contains duplicate idempotency keys")
+        _validate_operation_set(self.operations, label="authorized")
         if sha256_digest(_operations_payload(self.operations)) != self.plan_digest:
             raise ValueError("authorized plan digest does not match operations")
         return self
@@ -141,6 +177,22 @@ class ExecutionTransactionReceipt(BaseModel):
         if self.provider_writes != changed_count:
             raise ValueError("provider write count does not match operation receipts")
         return self
+
+
+def _validate_operation_set(
+    operations: tuple[PlannedProviderOperation, ...],
+    *,
+    label: str,
+) -> None:
+    sequences = tuple(operation.sequence for operation in operations)
+    if sequences != tuple(range(len(operations))):
+        raise ValueError(f"{label} operations must use contiguous canonical sequence")
+    operation_ids = tuple(operation.operation_id for operation in operations)
+    if len(set(operation_ids)) != len(operation_ids):
+        raise ValueError(f"{label} plan contains duplicate operation IDs")
+    idempotency_keys = tuple(operation.idempotency_key for operation in operations)
+    if len(set(idempotency_keys)) != len(idempotency_keys):
+        raise ValueError(f"{label} plan contains duplicate idempotency keys")
 
 
 def _operations_payload(
