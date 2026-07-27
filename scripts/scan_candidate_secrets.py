@@ -51,6 +51,26 @@ PLACEHOLDERS = {
 }
 
 
+def _is_python_expression(path: Path, finding_type: str, candidate: str) -> bool:
+    """Reject code expressions that are not embedded credential literals."""
+    if path.suffix.casefold() != ".py" or finding_type != "generic-secret-assignment":
+        return False
+    normalized = candidate.strip()
+    return (
+        "(" in normalized
+        or normalized.startswith(
+            (
+                "self.",
+                "cls.",
+                "os.",
+                "env.",
+                "keyring.",
+                "subprocess.",
+            )
+        )
+    )
+
+
 def scan(root: Path) -> dict[str, Any]:
     findings: list[dict[str, Any]] = []
     files_scanned = 0
@@ -68,7 +88,9 @@ def scan(root: Path) -> dict[str, Any]:
             for name, pattern in PATTERNS.items():
                 for match in pattern.finditer(line):
                     candidate = match.group(1) if match.lastindex else match.group(0)
-                    normalized = candidate.casefold().strip("'\";,.")
+                    normalized = candidate.casefold().strip("'\";,.\")")
+                    if _is_python_expression(path, name, candidate):
+                        continue
                     if normalized in PLACEHOLDERS or any(
                         marker in normalized
                         for marker in ("${{", "<secret>", "example.com", "dummy")
