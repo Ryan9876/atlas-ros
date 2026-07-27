@@ -4,8 +4,11 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from atlas_ros.capabilities.interfaces import ProposedExecutionPlan, ReconciliationResult
-from atlas_ros.contracts.execution.transaction import ExecutionTransactionReceipt
+from atlas_ros.capabilities.interfaces import ReconciliationResult
+from atlas_ros.contracts.execution.transaction import (
+    ExecutionTransactionReceipt,
+    ProposedExecutionPlan,
+)
 
 CAPABILITY_ID = "atlas.reconciliation"
 
