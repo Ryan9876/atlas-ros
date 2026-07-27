@@ -21,6 +21,13 @@ from atlas_ros.contracts.execution.transaction import (
 )
 
 
+@dataclass(frozen=True)
+class AllowWriteGuard:
+    def require_provider_write_permission(self, authorization_id: str | None) -> None:
+        if not authorization_id:
+            raise PermissionError("authorization is required")
+
+
 @dataclass
 class FakeProviderPort:
     calls: list[str] = field(default_factory=list)
@@ -76,6 +83,7 @@ def test_capture_to_reconciliation_uses_exact_attended_boundaries() -> None:
     receipt = AttendedExecutionService(port).execute(
         authorized,
         transaction_id="transaction-1",
+        write_guard=AllowWriteGuard(),
     )
     reconciliation = CanonicalReconciliationService().reconcile(proposed, receipt)
 
