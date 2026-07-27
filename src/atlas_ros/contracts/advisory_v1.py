@@ -40,7 +40,7 @@ def _canonical(value: object) -> object:
             str(key): _canonical(item)
             for key, item in sorted(value.items(), key=lambda item: str(item[0]))
         }
-    if isinstance(value, (tuple, list)):
+    if isinstance(value, tuple | list):
         return [_canonical(item) for item in value]
     if isinstance(value, set | frozenset):
         return sorted(
