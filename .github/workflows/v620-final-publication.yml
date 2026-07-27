@@ -1,0 +1,338 @@
+name: v620-final-publication
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/v620-final-publication.yml'
+      - '.github/workflows/release-candidate.yml'
+      - 'pyproject.toml'
+      - 'src/atlas_ros/__init__.py'
+      - 'release/RELEASE_NOTES_V620.md'
+      - 'release/RELEASE_SCOPE_V620.md'
+      - 'release/SBOM_V620_CURRENT.cdx.json'
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/v620-final-publication.yml'
+      - 'pyproject.toml'
+      - 'src/atlas_ros/__init__.py'
+      - 'release/RELEASE_NOTES_V620.md'
+      - 'release/RELEASE_SCOPE_V620.md'
+      - 'release/SBOM_V620_CURRENT.cdx.json'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: v620-final-publication
+  cancel-in-progress: false
+
+env:
+  CANDIDATE_COMMIT: 6e18b270d125c297309915fb8cde545bc65ee5e1
+  CANDIDATE_MERGE_COMMIT: bc927a7d8c149d81e3372a3e6abfc220f557de6d
+  CANDIDATE_ARTIFACT_ID: '8639092941'
+  CANDIDATE_ARTIFACT_DIGEST: 3fce62663cf2897ed9149d3c3dca07d698f6324ba0b25a25f12388e3ce8f2f60
+  CANDIDATE_WHEEL_SHA256: c0d578e4abbc461c58250cf0eb8a611be2b6c6ac9679443fae2e1e47a104c24a
+  FULL_VALIDATION_RECORD: V4V-44
+  PROMOTION_DECISION: V4D-35
+  RELEASE_TAG: v6.2.0
+  ROLLBACK_TAG: v6.1.1
+  HISTORICAL_ROLLBACK_TAG: v6.1.0
+  SOURCE_COMMIT: ${{ github.event.pull_request.head.sha || github.sha }}
+
+jobs:
+  validate-and-publish:
+    if: >-
+      github.event_name == 'pull_request' ||
+      (github.event_name == 'push' &&
+       github.ref_name == 'main' &&
+       startsWith(github.event.head_commit.message, 'Atlas ROS v6.2.0 governed final publication controller'))
+    runs-on: ubuntu-24.04
+    timeout-minutes: 75
+
+    steps:
+      - name: Check out exact controller source
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Enforce authorization, lineage, and final identity
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$SOURCE_COMMIT"
+          git merge-base --is-ancestor "$CANDIDATE_COMMIT" HEAD
+          git merge-base --is-ancestor "$CANDIDATE_MERGE_COMMIT" HEAD
+          test "$(python - <<'PY'
+          import tomllib
+          with open('pyproject.toml', 'rb') as handle:
+              print(tomllib.load(handle)['project']['version'])
+          PY
+          )" = "6.2.0"
+          test "$(python - <<'PY'
+          from pathlib import Path
+          import re
+          text = Path('src/atlas_ros/__init__.py').read_text(encoding='utf-8')
+          print(re.search(r'__version__ = "([^"]+)"', text).group(1))
+          PY
+          )" = "6.2.0"
+          if [[ "${GITHUB_EVENT_NAME}" == "push" ]]; then
+            test "${GITHUB_REF_NAME}" = "main"
+          fi
+
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.12.10'
+          cache: pip
+
+      - name: Install locked validation toolchain
+        run: |
+          set -euo pipefail
+          python -m pip install --disable-pip-version-check --upgrade pip
+          python -m pip install --disable-pip-version-check -e '.[dev]'
+
+      - name: Run final static, test, benchmark, and security gates
+        run: |
+          set -euo pipefail
+          rm -rf final-evidence audit
+          mkdir -p final-evidence/benchmarks final-evidence/test-results audit
+          ruff check .
+          python scripts/validate_architecture.py
+          mypy src
+          pytest --junitxml=final-evidence/test-results/pytest.xml --cov-report=json:final-evidence/test-results/coverage.json
+          python scripts/evaluate_classification_intelligence.py --dataset benchmarks/classification-intelligence-v1.json --output final-evidence/benchmarks/classification-intelligence.json
+          python scripts/evaluate_knowledge_management.py --dataset benchmarks/knowledge-management-v2.json --output final-evidence/benchmarks/knowledge-management.json
+          python scripts/evaluate_semantic_fidelity.py --dataset benchmarks/semantic-fidelity-v1.json --output final-evidence/benchmarks/semantic-fidelity.json
+          python scripts/evaluate_reasoning_coherence.py --dataset benchmarks/reasoning-coherence-v1.json --output final-evidence/benchmarks/reasoning-coherence.json
+          python scripts/evaluate_execution_planning.py --dataset benchmarks/execution-planning-v1.json --output final-evidence/benchmarks/execution-planning.json
+          python scripts/evaluate_execution_orchestration.py --dataset benchmarks/execution-orchestration-v1.json --output final-evidence/benchmarks/execution-orchestration.json
+          python scripts/evaluate_canonical_reconciliation.py --dataset benchmarks/canonical-reconciliation-v1.json --output final-evidence/benchmarks/canonical-reconciliation.json
+          python scripts/evaluate_adaptive_input_processing.py --dataset benchmarks/adaptive-input-processing-v1.json --output final-evidence/benchmarks/adaptive-input-processing.json
+          python scripts/scan_candidate_secrets.py --root . --output final-evidence/secret-scan.json
+          python scripts/validate_dependency_lock.py requirements.runtime.lock
+          python scripts/validate_vulnerability_exceptions.py
+          pip-audit --disable-pip --require-hashes --no-deps --vulnerability-service pypi --requirement requirements.runtime.lock --format json --output audit/pip-audit-pypi.json
+          pip-audit --disable-pip --require-hashes --no-deps --vulnerability-service osv --requirement requirements.runtime.lock --format json --output audit/pip-audit-osv.json
+          python scripts/evaluate_dependency_audit.py audit/pip-audit-pypi.json audit/pip-audit-osv.json
+          cp -R audit final-evidence/
+
+      - name: Retrieve production baseline and historical rollback
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          rm -rf rollback-v611 rollback-v610 baseline-source
+          mkdir -p rollback-v611 rollback-v610 baseline-source
+          gh release download "$ROLLBACK_TAG" --repo "$GITHUB_REPOSITORY" --pattern 'atlas_ros-6.1.1*.tar.gz' --pattern 'atlas_ros-6.1.1*.whl' --dir rollback-v611
+          gh release download "$HISTORICAL_ROLLBACK_TAG" --repo "$GITHUB_REPOSITORY" --pattern 'atlas_ros-6.1.0*.whl' --dir rollback-v610
+          baseline_archive="$(find rollback-v611 -type f -name 'atlas_ros-6.1.1*.tar.gz' -print -quit)"
+          test -n "$baseline_archive"
+          tar -xzf "$baseline_archive" -C baseline-source
+          baseline_root="$(find baseline-source -mindepth 1 -maxdepth 1 -type d -print -quit)"
+          test -n "$baseline_root"
+          python scripts/compare_v62_performance.py --baseline-source "$baseline_root" --output final-evidence/performance-comparison.json --iterations 100 --warmup 20 --max-regression 0.20
+
+      - name: Generate final source manifest and build exact artifacts
+        run: |
+          set -euo pipefail
+          rm -rf dist build final-publication final-source final-wheel restore-v611 restore-v610
+          rm -f release/CHECKSUMS.sha256
+          atlas release checksums --root . --checksum-file release/CHECKSUMS.sha256
+          atlas release verify --root . --checksum-file release/CHECKSUMS.sha256
+          python -m build
+          test -f dist/atlas_ros-6.2.0.tar.gz
+          test -f dist/atlas_ros-6.2.0-py3-none-any.whl
+          mkdir -p final-publication
+          cp dist/atlas_ros-6.2.0.tar.gz final-publication/
+          cp dist/atlas_ros-6.2.0-py3-none-any.whl final-publication/
+          cp release/RELEASE_NOTES_V620.md final-publication/
+          cp release/RELEASE_SCOPE_V620.md final-publication/
+          cp release/SBOM_V620_CURRENT.cdx.json final-publication/SBOM.cdx.json
+          cp release/CHECKSUMS.sha256 final-publication/SOURCE_CHECKSUMS.sha256
+          cp -R final-evidence final-publication/evidence
+
+      - name: Restore final source, final wheel, and rollbacks
+        run: |
+          set -euo pipefail
+          mkdir final-source
+          tar -xzf final-publication/atlas_ros-6.2.0.tar.gz -C final-source
+          source_root="$(find final-source -mindepth 1 -maxdepth 1 -type d -print -quit)"
+          test -n "$source_root"
+          PYTHONPATH="$source_root/src" python - <<'PY'
+          from pathlib import Path
+          import os
+          from atlas_ros.release.tooling import verify
+          root = Path(os.environ['SOURCE_ROOT'])
+          errors = verify(root, root / 'release' / 'CHECKSUMS.sha256')
+          if errors:
+              raise SystemExit(errors)
+          PY
+        env:
+          SOURCE_ROOT: final-source/atlas_ros-6.2.0
+
+      - name: Verify clean final and rollback installations
+        run: |
+          set -euo pipefail
+          python -m venv final-wheel
+          final-wheel/bin/python -m pip install --disable-pip-version-check final-publication/atlas_ros-6.2.0-py3-none-any.whl
+          final-wheel/bin/python - <<'PY'
+          from importlib.metadata import version
+          import atlas_ros
+          from atlas_ros.engines import AdaptiveInputProcessingPipelineV62
+          assert version('atlas-ros') == '6.2.0'
+          assert atlas_ros.__version__ == '6.2.0'
+          result = AdaptiveInputProcessingPipelineV62().process('Task = arista cloud vision code upgrade automation pilot.')
+          assert result.outcomes.primary.text == 'Launch the Arista CloudVision code-upgrade automation pilot'
+          assert result.provider_writes == 0
+          assert result.execution_authorized is False
+          assert result.verify_digest()
+          PY
+          v611_wheel="$(find rollback-v611 -type f -name 'atlas_ros-6.1.1*.whl' -print -quit)"
+          v610_wheel="$(find rollback-v610 -type f -name 'atlas_ros-6.1.0*.whl' -print -quit)"
+          test -n "$v611_wheel"
+          test -n "$v610_wheel"
+          python -m venv restore-v611
+          restore-v611/bin/python -m pip install --disable-pip-version-check "$v611_wheel"
+          restore-v611/bin/python -c "from importlib.metadata import version; import atlas_ros; assert version('atlas-ros') == '6.1.1'; assert atlas_ros.__version__ == '6.1.1'"
+          python -m venv restore-v610
+          restore-v610/bin/python -m pip install --disable-pip-version-check "$v610_wheel"
+          restore-v610/bin/python - <<'PY'
+          import json
+          from importlib.metadata import version
+          from pathlib import Path
+          import atlas_ros
+          distribution_version = version('atlas-ros')
+          module_version = getattr(atlas_ros, '__version__', '')
+          assert distribution_version == '6.1.0'
+          assert module_version
+          Path('final-publication/evidence/rollback-restoration.json').write_text(
+              json.dumps({
+                  'immediate_rollback': 'v6.1.1',
+                  'immediate_rollback_restored': True,
+                  'immediate_rollback_distribution_version': '6.1.1',
+                  'immediate_rollback_module_version': '6.1.1',
+                  'historical_rollback': 'v6.1.0',
+                  'historical_rollback_restored': True,
+                  'historical_rollback_distribution_version': distribution_version,
+                  'historical_rollback_module_version': module_version,
+                  'historical_identity_matches': module_version == distribution_version,
+                  'historical_identity_warning': '' if module_version == distribution_version else 'Immutable v6.1.0 distribution metadata is 6.1.0 while atlas_ros.__version__ differs; historical assets remain unchanged.',
+              }, indent=2, sort_keys=True), encoding='utf-8'
+          )
+          PY
+
+      - name: Bind final identity, manifest, and checksums
+        run: |
+          set -euo pipefail
+          wheel_sha="$(sha256sum final-publication/atlas_ros-6.2.0-py3-none-any.whl | awk '{print $1}')"
+          source_sha="$(sha256sum final-publication/atlas_ros-6.2.0.tar.gz | awk '{print $1}')"
+          export wheel_sha source_sha
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          publication = Path('final-publication')
+          identity = {
+              'release': 'v6.2.0',
+              'source_commit': os.environ['SOURCE_COMMIT'],
+              'candidate_commit': os.environ['CANDIDATE_COMMIT'],
+              'candidate_merge_commit': os.environ['CANDIDATE_MERGE_COMMIT'],
+              'candidate_artifact_id': os.environ['CANDIDATE_ARTIFACT_ID'],
+              'candidate_artifact_digest': os.environ['CANDIDATE_ARTIFACT_DIGEST'],
+              'candidate_wheel_sha256': os.environ['CANDIDATE_WHEEL_SHA256'],
+              'final_wheel_sha256': os.environ['wheel_sha'],
+              'final_source_sha256': os.environ['source_sha'],
+              'full_validation': os.environ['FULL_VALIDATION_RECORD'],
+              'promotion_decision': os.environ['PROMOTION_DECISION'],
+              'immediate_rollback': os.environ['ROLLBACK_TAG'],
+              'historical_rollback': os.environ['HISTORICAL_ROLLBACK_TAG'],
+              'provider_writes': 0,
+          }
+          (publication / 'FINAL_IDENTITY.json').write_text(json.dumps(identity, indent=2, sort_keys=True), encoding='utf-8')
+          (publication / 'RELEASE_MANIFEST.md').write_text(f'''# Atlas ROS v6.2.0 Release Manifest
+
+Status: Final production release authorized by {identity['promotion_decision']} and published only after governed final-controller validation and readback.
+
+- Package version: `6.2.0`
+- Validated candidate head: `{identity['candidate_commit']}`
+- Candidate merge commit: `{identity['candidate_merge_commit']}`
+- Production source and final tag target: `{identity['source_commit']}`
+- Validated candidate artifact ID: `{identity['candidate_artifact_id']}`
+- Validated candidate artifact digest: `{identity['candidate_artifact_digest']}`
+- Validated candidate wheel SHA-256: `{identity['candidate_wheel_sha256']}`
+- Final wheel SHA-256: `{identity['final_wheel_sha256']}`
+- Final source SHA-256: `{identity['final_source_sha256']}`
+- Governed Full Validation: `{identity['full_validation']}`
+- Promotion decision: `{identity['promotion_decision']}`
+- Immediate immutable rollback: Atlas ROS v6.1.1
+- Historical rollback retained: Atlas ROS v6.1.0
+- Provider writes during validation: `0`
+
+## Authority model
+
+GitHub is canonical for source, architecture, policy, schema, runbook, release, validation, restoration, and historical software records. Notion remains the live dynamic management authority. Todoist remains the attended execution authority. The fixed Google Drive Release Index remains the initialization bootstrap.
+
+Required production integrations remain Google Drive, Notion, and Todoist. Integration Inventory authority: https://app.notion.com/p/8ba4fafb5ce244ef9add3013aff3746b
+
+## Release scope
+
+Atlas ROS v6.2.0 implements the fourteen-capability adaptive input-processing and planning architecture while preserving provider-free reasoning, attended execution, the v6.1.1 CloudVision business plan, canonical reconciliation, rollback, historical immutability, and fail-closed behavior.
+
+The readable published workspace is valid only after the release tag, source and wheel assets, checksums, SBOM, benchmark evidence, restoration evidence, final identity, and publication readback are verified. Secrets and private signing material are excluded.
+''', encoding='utf-8')
+          PY
+          (
+            cd final-publication
+            find . -type f ! -name CHECKSUMS.sha256 -print0 | sort -z | xargs -0 sha256sum > CHECKSUMS.sha256
+            sha256sum -c CHECKSUMS.sha256
+          )
+
+      - name: Publish immutable GitHub Release
+        if: ${{ github.event_name == 'push' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$SOURCE_COMMIT" = "$GITHUB_SHA"
+          if gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "Release $RELEASE_TAG already exists; refusing overwrite" >&2
+            exit 1
+          fi
+          gh release create "$RELEASE_TAG" final-publication/* \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$SOURCE_COMMIT" \
+            --title "Atlas ROS v6.2.0" \
+            --notes-file release/RELEASE_NOTES_V620.md \
+            --latest
+
+      - name: Read back release, tag, assets, and restoration
+        if: ${{ github.event_name == 'push' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          git fetch --tags --force
+          test "$(git rev-list -n 1 "$RELEASE_TAG")" = "$SOURCE_COMMIT"
+          rm -rf release-readback
+          mkdir release-readback
+          gh release download "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --dir release-readback
+          (cd release-readback && sha256sum -c CHECKSUMS.sha256)
+          python -m venv release-readback-wheel
+          release-readback-wheel/bin/python -m pip install --disable-pip-version-check release-readback/atlas_ros-6.2.0-py3-none-any.whl
+          release-readback-wheel/bin/python -c "from importlib.metadata import version; import atlas_ros; assert version('atlas-ros') == '6.2.0'; assert atlas_ros.__version__ == '6.2.0'"
+          gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json tagName,targetCommitish,isDraft,isPrerelease,isLatest,url > final-publication/RELEASE_READBACK.json
+          sha256sum final-publication/RELEASE_READBACK.json > final-publication/RELEASE_READBACK.sha256
+
+      - name: Upload final publication evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: atlas-ros-v6.2.0-final-publication-${{ github.run_attempt }}
+          path: |
+            final-publication/
+            release-readback/
+          if-no-files-found: warn
+          retention-days: 90
