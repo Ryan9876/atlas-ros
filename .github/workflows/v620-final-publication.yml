@@ -96,7 +96,7 @@ jobs:
 
 
   validate-v650-controller:
-    if: github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref_name == 'main' && startsWith(github.event.head_commit.message, 'release: activate v6.5 final publication controller'))
+    if: github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref_name == 'main' && startsWith(github.event.head_commit.message, 'release: activate exact Atlas ROS v6.5 final publication controller'))
     runs-on: ubuntu-24.04
     timeout-minutes: 75
     steps:
@@ -113,10 +113,10 @@ jobs:
       - env:
           GH_TOKEN: ${{ github.token }}
           SOURCE_COMMIT: ${{ github.event.pull_request.head.sha || github.sha }}
-          CANDIDATE_COMMIT: 203f080f93321a903cb0a7577838234f3d783500
-          CANDIDATE_MERGE_COMMIT: 9ece6e1f9b2ef8cdbd852f190fbcd6f3ff04287e
-          CANDIDATE_ARTIFACT_ID: '8644606530'
-          CANDIDATE_ARTIFACT_DIGEST: e2704700a47d2b971e6ecfee06f929af1efa437f9724a82a135482af04618487
+          CANDIDATE_COMMIT: 2e6d9e64e4ec5f362fe807c3f937f8e33a30d004
+          CANDIDATE_MERGE_COMMIT: 7ba23ecce106a911feaa1240e219500fb3a78a79
+          CANDIDATE_ARTIFACT_ID: '8651579862'
+          CANDIDATE_ARTIFACT_DIGEST: fec2ba0601f4cbdac9c4e5e447559a61e0e6cf0b296f4e24f6402ccf9c1ab084
           RELEASE_TAG: v6.5.0
           ROLLBACK_TAG: v6.2.0
           PUBLISH: ${{ github.event_name == 'push' }}
