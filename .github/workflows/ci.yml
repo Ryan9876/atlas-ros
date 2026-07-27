@@ -197,3 +197,4 @@ jobs:
             final-evidence/
           if-no-files-found: error
           retention-days: 90
+# workflow event refresh: final-candidate exact-head validation
