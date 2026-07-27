@@ -1,0 +1,9 @@
+schema_version: "1.0"
+policy_id: atlas.authority.bootstrap
+lifecycle: active
+rules:
+  - github_authority_is_required
+  - immutable_manifest_is_required
+  - generated_release_index_is_required
+  - integration_inventory_must_be_manifest_resolved
+  - google_drive_is_forbidden
