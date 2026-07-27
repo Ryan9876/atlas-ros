@@ -5,6 +5,7 @@ import sys
 from pathlib import Path
 
 import pytest
+import yaml
 
 from atlas_ros.capabilities.compiler import (
     CapabilityCompilationError,
@@ -18,30 +19,35 @@ from atlas_ros.kernel.container import (
 
 
 def write_catalog(path: Path, body: str | None = None) -> Path:
-    path.write_text(
-        body
-        or (
-            "schema_version: '1.0'\n"
-            "capabilities:\n"
-            "  - id: atlas.input-processing\n"
-            "    package: capabilities/input_processing\n"
-            "    owner: Atlas ROS Core\n"
-            "    writes_providers: false\n"
-            "    inputs: [CaptureEnvelope]\n"
-            "    outputs: [CanonicalIntent]\n"
-            "  - id: atlas.execution-planning\n"
-            "    package: capabilities/execution_planning\n"
-            "    owner: Atlas ROS Core\n"
-            "    writes_providers: false\n"
-            "    sole_planning_authority: true\n"
-            "  - id: atlas.reconciliation\n"
-            "    package: capabilities/reconciliation\n"
-            "    owner: Atlas ROS Core\n"
-            "    writes_providers: false\n"
-            "    may_create_execution_intent: false\n"
-        ),
-        encoding="utf-8",
+    text = body or (
+        "schema_version: '1.0'\n"
+        "capabilities:\n"
+        "  - id: atlas.input-processing\n"
+        "    package: capabilities/input_processing\n"
+        "    owner: Atlas ROS Core\n"
+        "    writes_providers: false\n"
+        "    inputs: [CaptureEnvelope]\n"
+        "    outputs: [CanonicalIntent]\n"
+        "  - id: atlas.execution-planning\n"
+        "    package: capabilities/execution_planning\n"
+        "    owner: Atlas ROS Core\n"
+        "    writes_providers: false\n"
+        "    sole_planning_authority: true\n"
+        "  - id: atlas.reconciliation\n"
+        "    package: capabilities/reconciliation\n"
+        "    owner: Atlas ROS Core\n"
+        "    writes_providers: false\n"
+        "    may_create_execution_intent: false\n"
     )
+    path.write_text(text, encoding="utf-8")
+    loaded = yaml.safe_load(text)
+    for item in loaded.get("capabilities", []):
+        init_path = path.parent / "src" / "atlas_ros" / item["package"] / "__init__.py"
+        init_path.parent.mkdir(parents=True, exist_ok=True)
+        init_path.write_text(
+            f'CAPABILITY_ID = "{item["id"]}"\n',
+            encoding="utf-8",
+        )
     return path
 
 
@@ -136,6 +142,31 @@ def test_compiler_rejects_advisory_planning_authority(tmp_path: Path) -> None:
 
     with pytest.raises(CapabilityCompilationError, match="advisory-only"):
         compile_capability_registry(write_catalog(tmp_path / "invalid.yaml", body))
+
+
+def test_compiler_rejects_missing_package(tmp_path: Path) -> None:
+    catalog = write_catalog(tmp_path / "catalog.yaml")
+    missing = tmp_path / "src" / "atlas_ros" / "capabilities" / "input_processing"
+    (missing / "__init__.py").unlink()
+
+    with pytest.raises(CapabilityCompilationError, match="package is missing"):
+        compile_capability_registry(catalog)
+
+
+def test_compiler_rejects_package_id_mismatch(tmp_path: Path) -> None:
+    catalog = write_catalog(tmp_path / "catalog.yaml")
+    init_path = (
+        tmp_path
+        / "src"
+        / "atlas_ros"
+        / "capabilities"
+        / "input_processing"
+        / "__init__.py"
+    )
+    init_path.write_text('CAPABILITY_ID = "atlas.wrong"\n', encoding="utf-8")
+
+    with pytest.raises(CapabilityCompilationError, match="ID disagrees"):
+        compile_capability_registry(catalog)
 
 
 def test_governed_kernel_binds_compiled_capability_digest(tmp_path: Path) -> None:
