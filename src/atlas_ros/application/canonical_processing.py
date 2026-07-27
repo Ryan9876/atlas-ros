@@ -53,6 +53,6 @@ class CanonicalProcessingCoordinator:
         model_dump = getattr(value, "model_dump", None)
         if callable(model_dump):
             return model_dump(mode="json")
-        if isinstance(value, (str, int, float, bool, type(None), list, tuple, dict)):
+        if isinstance(value, str | int | float | bool | type(None) | list | tuple | dict):
             return value
         raise TypeError(f"canonical stage returned non-digestable value: {type(value).__name__}")
