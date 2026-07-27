@@ -13,6 +13,12 @@ from pathlib import Path
 from typing import Any
 
 
+def _benchmark_passed(payload: dict[str, Any]) -> bool:
+    result_passed = payload.get("passed") is True or payload.get("status") == "passed"
+    zero_writes = payload.get("zero_provider_writes") is True or payload.get("provider_writes") == 0
+    return result_passed and zero_writes
+
+
 def _run_once(python: Path, dataset: Path, output: Path) -> float:
     started = time.perf_counter_ns()
     completed = subprocess.run(
@@ -34,7 +40,7 @@ def _run_once(python: Path, dataset: Path, output: Path) -> float:
             f"benchmark failed for {python}: {completed.stderr or completed.stdout}"
         )
     payload: dict[str, Any] = json.loads(output.read_text(encoding="utf-8"))
-    if payload.get("status") != "passed":
+    if not _benchmark_passed(payload):
         raise RuntimeError(f"benchmark did not pass for {python}: {payload}")
     return elapsed_ms
 
