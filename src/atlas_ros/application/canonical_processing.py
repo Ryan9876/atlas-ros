@@ -5,8 +5,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Protocol
 
+from atlas_ros.contracts.digests import sha256_digest
 from atlas_ros.contracts.execution.pipeline import CaptureEnvelope, PipelineRunEnvelope
-from atlas_ros.kernel.digests import sha256_digest
 
 
 class ProcessingStage(Protocol):
