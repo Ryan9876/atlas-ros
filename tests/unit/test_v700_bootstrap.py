@@ -5,6 +5,7 @@ from pathlib import PurePosixPath
 
 import pytest
 
+from atlas_ros.kernel.authority import AuthorityRecord
 from atlas_ros.kernel.bootstrap import InitializationError, initialize, render_release_index
 from atlas_ros.kernel.digests import sha256_digest
 
@@ -29,7 +30,11 @@ def authority_payload() -> dict[str, object]:
             "immutable_commit": "a" * 40,
             "tag": "v7.0.0",
             "manifest_path": "release/RELEASE_MANIFEST.md",
-            "manifest_url": (\n                "https://github.com/Ryan9876/atlas-ros/blob/"\n                + "a" * 40\n                + "/release/RELEASE_MANIFEST.md"\n            ),
+            "manifest_url": (
+                "https://github.com/Ryan9876/atlas-ros/blob/"
+                + "a" * 40
+                + "/release/RELEASE_MANIFEST.md"
+            ),
             "release_url": "https://github.com/Ryan9876/atlas-ros/releases/tag/v7.0.0",
             "source_sha256": "b" * 64,
             "wheel_sha256": "c" * 64,
@@ -49,19 +54,30 @@ def authority_payload() -> dict[str, object]:
 
 
 def reader_for(payload: dict[str, object]) -> FakeAuthorityReader:
-    from atlas_ros.kernel.authority import AuthorityRecord
-
-    payload["integrity"] = {"algorithm": "sha256", "content_sha256": sha256_digest(payload)}
-    authority = AuthorityRecord.model_validate(payload)
-    index = render_release_index(authority)
-    payload["release_index"] = {"path": "governance/RELEASE_INDEX.md", "sha256": sha256_digest(index)}
-    without_integrity = {key: value for key, value in payload.items() if key != "integrity"}\n    payload["integrity"] = {\n        "algorithm": "sha256",\n        "content_sha256": sha256_digest(without_integrity),\n    }
+    temporary = dict(payload)
+    temporary["integrity"] = {"algorithm": "sha256", "content_sha256": "f" * 64}
+    index = render_release_index(AuthorityRecord.model_validate(temporary))
+    payload["release_index"] = {
+        "path": "governance/RELEASE_INDEX.md",
+        "sha256": sha256_digest(index),
+    }
+    payload["integrity"] = {
+        "algorithm": "sha256",
+        "content_sha256": sha256_digest(payload),
+    }
     authority_text = json.dumps(payload)
     return FakeAuthorityReader(
         {
             ("governance/AUTHORITY.json", "HEAD"): authority_text,
             ("governance/RELEASE_INDEX.md", "a" * 40): index,
-            ("release/RELEASE_MANIFEST.md", "a" * 40): "# Atlas ROS v7.0.0\ncommit " + "a" * 40 + "\nIntegration Inventory authority: https://app.notion.com/p/inventory",
+            (
+                "release/RELEASE_MANIFEST.md",
+                "a" * 40,
+            ): (
+                "# Atlas ROS v7.0.0\ncommit "
+                + "a" * 40
+                + "\nIntegration Inventory authority: https://app.notion.com/p/inventory"
+            ),
         }
     )
 
