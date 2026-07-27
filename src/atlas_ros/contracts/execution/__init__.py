@@ -1,5 +1,22 @@
 """Execution bounded-context contracts."""
 
 from atlas_ros.contracts.execution.pipeline import CaptureEnvelope, PipelineRunEnvelope
+from atlas_ros.contracts.execution.transaction import (
+    AuthorizedExecutionPlan,
+    ExecutedOperationReceipt,
+    ExecutionTransactionReceipt,
+    PlannedProviderOperation,
+    ProviderReadbackReceipt,
+    ProviderWriteReceipt,
+)
 
-__all__ = ["CaptureEnvelope", "PipelineRunEnvelope"]
+__all__ = [
+    "AuthorizedExecutionPlan",
+    "CaptureEnvelope",
+    "ExecutedOperationReceipt",
+    "ExecutionTransactionReceipt",
+    "PipelineRunEnvelope",
+    "PlannedProviderOperation",
+    "ProviderReadbackReceipt",
+    "ProviderWriteReceipt",
+]
