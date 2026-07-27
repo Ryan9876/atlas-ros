@@ -19,6 +19,15 @@ from atlas_ros.contracts.registry import (
 _VERSION = re.compile(r"^[0-9]+\.[0-9]+$")
 _READER = re.compile(r"^[0-9]+\.x$")
 _COMPATIBILITY = {"additive_only_within_major", "explicit_migration"}
+_REQUIRED_LEGACY_PROHIBITIONS = {
+    "src/atlas_ros/application",
+    "src/atlas_ros/capabilities",
+    "src/atlas_ros/contracts/execution",
+    "src/atlas_ros/entry_points",
+    "src/atlas_ros/kernel",
+    "src/atlas_ros/policy",
+    "src/atlas_ros/ports",
+}
 
 
 class ContractCompilationError(ValueError):
@@ -164,13 +173,12 @@ def _compile_lifecycle(raw: Any) -> tuple[LegacyContractBoundary, dict[str, Any]
     forbidden = _string_tuple(legacy["forbidden_from"], "forbidden_from", "lifecycle")
     if "src/atlas_ros/contracts/migrations" not in allowed:
         raise ContractCompilationError("legacy contracts must be limited to migrations")
-    required_forbidden = {
-        "src/atlas_ros/application",
-        "src/atlas_ros/capabilities",
-        "src/atlas_ros/cli",
-    }
-    if not required_forbidden.issubset(forbidden):
-        raise ContractCompilationError("legacy contracts are not forbidden from runtime paths")
+    if not _REQUIRED_LEGACY_PROHIBITIONS.issubset(forbidden):
+        missing = sorted(_REQUIRED_LEGACY_PROHIBITIONS - set(forbidden))
+        raise ContractCompilationError(
+            "legacy contracts are not forbidden from runtime paths: "
+            + ", ".join(missing)
+        )
     boundary = LegacyContractBoundary(allowed_only_in=allowed, forbidden_from=forbidden)
     return boundary, {
         "legacy_contracts": {
