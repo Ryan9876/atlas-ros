@@ -5,8 +5,11 @@ from pathlib import Path
 
 import pytest
 
-import tools.release.rollback_reconciliation as rollback_reconciliation
 
+rollback_reconciliation = __import__(
+    "tools.release.rollback_reconciliation",
+    fromlist=["*"],
+)
 
 RECONCILIATION = Path("release/V650_IMMUTABLE_SOURCE_RECONCILIATION.json")
 
