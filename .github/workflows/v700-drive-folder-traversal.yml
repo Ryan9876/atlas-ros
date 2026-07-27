@@ -42,6 +42,13 @@ jobs:
             --inventory release/v700-drive-file-inventory.json \
             --folder-tree release/v700-drive-folder-traversal.json \
             --output v700-drive-folder-evidence/V700_DRIVE_FILE_INVENTORY_VALIDATION.json
+      - name: Validate per-folder Drive file listing receipts
+        run: |
+          python -m scripts.validate_v700_drive_file_listing_receipts \
+            --receipts release/v700-drive-file-listing-receipts.json \
+            --inventory release/v700-drive-file-inventory.json \
+            --folder-tree release/v700-drive-folder-traversal.json \
+            --output v700-drive-folder-evidence/V700_DRIVE_FILE_LISTING_RECEIPTS_VALIDATION.json
       - name: Enforce fail-closed traversal and file-inventory results
         run: |
           python - <<'PY'
@@ -55,6 +62,10 @@ jobs:
           )
           files = json.loads(
               (root / 'V700_DRIVE_FILE_INVENTORY_VALIDATION.json')
+              .read_text(encoding='utf-8')
+          )
+          receipts = json.loads(
+              (root / 'V700_DRIVE_FILE_LISTING_RECEIPTS_VALIDATION.json')
               .read_text(encoding='utf-8')
           )
           assert folders['status'] == (
@@ -88,6 +99,16 @@ jobs:
           assert files['provider_writes'] == 0
           assert files['drive_retirement_authorized'] is False
           assert files['credential_action_authorized'] is False
+
+          assert receipts['status'] == 'partial_file_listing_receipts'
+          assert receipts['known_folder_count'] == 93
+          assert receipts['listed_folder_count'] == 3
+          assert receipts['unscanned_folder_count'] == 90
+          assert receipts['file_count'] == 6
+          assert receipts['bound_file_count'] == 6
+          assert receipts['enumeration_complete'] is False
+          assert receipts['provider_writes'] == 0
+          assert receipts['drive_retirement_authorized'] is False
           PY
       - name: Retain Drive traversal and file-inventory evidence
         if: always()
