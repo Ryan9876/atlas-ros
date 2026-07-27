@@ -46,11 +46,12 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           CANDIDATE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
           ATLAS_CANDIDATE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          VALIDATION_LOG: ${{ runner.temp }}/validation-controller.log
         run: |
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "$ATLAS_CANDIDATE_SHA"
           # Legacy evidence-controller contract retained: --head-sha "${ATLAS_CANDIDATE_SHA}"
-          bash -x scripts/validate_v620_candidate.sh 2>&1 | tee validation-controller.log
+          bash scripts/validate_v620_candidate.sh 2>&1 | tee "$VALIDATION_LOG"
 
       - name: Upload v6.2 candidate evidence
         if: always()
@@ -60,6 +61,6 @@ jobs:
           path: |
             publication/
             candidate-evidence/
-            validation-controller.log
+            ${{ runner.temp }}/validation-controller.log
           if-no-files-found: warn
           retention-days: 30
