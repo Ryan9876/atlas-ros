@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, TypedDict
 
 from atlas_ros.adapters.todoist import TodoistAdapter, TodoistTask
 from atlas_ros.contracts.digests import sha256_digest
@@ -17,6 +17,14 @@ from atlas_ros.ports.execution import ExecutionPayloadPort
 
 class ExactTodoistExecutionError(RuntimeError):
     """Raised when an authorized operation cannot be translated exactly."""
+
+
+class TodoistCreatePayload(TypedDict):
+    content: str
+    project_id: str
+    section_id: str | None
+    parent_id: str | None
+    description: str
 
 
 def todoist_target(
@@ -109,41 +117,48 @@ class ExactTodoistExecutionAdapter:
         )
 
 
-def _validate_create_payload(payload: dict[str, Any]) -> dict[str, str | None]:
+def _validate_create_payload(payload: dict[str, Any]) -> TodoistCreatePayload:
     allowed = {"content", "project_id", "section_id", "parent_id", "description"}
     unknown = sorted(set(payload) - allowed)
     if unknown:
         raise ExactTodoistExecutionError(
             "Todoist payload contains unsupported fields: " + ", ".join(unknown)
         )
-    for field in ("content", "project_id"):
-        value = payload.get(field)
-        if not isinstance(value, str) or not value.strip():
-            raise ExactTodoistExecutionError(
-                f"Todoist payload requires non-empty {field}"
-            )
-    for field in ("section_id", "parent_id"):
-        value = payload.get(field)
-        if value is not None and (not isinstance(value, str) or not value.strip()):
-            raise ExactTodoistExecutionError(
-                f"Todoist payload {field} must be a non-empty string or null"
-            )
+    content = _required_string(payload, "content")
+    project_id = _required_string(payload, "project_id")
+    section_id = _optional_string(payload.get("section_id"), "section_id")
+    parent_id = _optional_string(payload.get("parent_id"), "parent_id")
     description = payload.get("description", "")
     if not isinstance(description, str):
         raise ExactTodoistExecutionError(
             "Todoist payload description must be a string"
         )
     return {
-        "content": str(payload["content"]),
-        "project_id": str(payload["project_id"]),
-        "section_id": _optional_string(payload.get("section_id")),
-        "parent_id": _optional_string(payload.get("parent_id")),
+        "content": content,
+        "project_id": project_id,
+        "section_id": section_id,
+        "parent_id": parent_id,
         "description": description,
     }
 
 
-def _optional_string(value: Any) -> str | None:
-    return value if isinstance(value, str) else None
+def _required_string(payload: dict[str, Any], field: str) -> str:
+    value = payload.get(field)
+    if not isinstance(value, str) or not value.strip():
+        raise ExactTodoistExecutionError(
+            f"Todoist payload requires non-empty {field}"
+        )
+    return value
+
+
+def _optional_string(value: Any, field: str) -> str | None:
+    if value is None:
+        return None
+    if not isinstance(value, str) or not value.strip():
+        raise ExactTodoistExecutionError(
+            f"Todoist payload {field} must be a non-empty string or null"
+        )
+    return value
 
 
 def _task_projection(task: TodoistTask) -> dict[str, str | None]:
