@@ -135,7 +135,7 @@ jobs:
           )
       - name: Retain non-publishing final-controller evidence
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b540449e92b4886f43607fa02
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: atlas-ros-v700-final-controller-${{ github.event.pull_request.head.sha || github.sha }}
           path: v700-final-controller-evidence/
