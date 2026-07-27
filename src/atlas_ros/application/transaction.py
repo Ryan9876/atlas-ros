@@ -16,7 +16,7 @@ from atlas_ros.contracts.execution.transaction import (
     AuthorizedExecutionPlan,
     ExecutionTransactionReceipt,
 )
-from atlas_ros.kernel.container import RuntimeKernel
+from atlas_ros.ports.execution import ProviderWriteGuard
 
 
 @dataclass(frozen=True, slots=True)
@@ -32,7 +32,7 @@ class GovernedTransactionResult:
 class GovernedExecutionTransactionService:
     """Run the only supported attended plan-to-readback transaction sequence."""
 
-    kernel: RuntimeKernel
+    write_guard: ProviderWriteGuard
     executor: AttendedExecutionService
     authorizer: AttendedAuthorizationService = AttendedAuthorizationService()
     reconciler: CanonicalReconciliationService = CanonicalReconciliationService()
@@ -45,7 +45,7 @@ class GovernedExecutionTransactionService:
         transaction_id: str,
         authorized_at: datetime | None = None,
     ) -> GovernedTransactionResult:
-        self.kernel.require_provider_write_permission(authorization_id)
+        self.write_guard.require_provider_write_permission(authorization_id)
         authorized = self.authorizer.authorize(
             proposed_plan,
             authorization_id=authorization_id,
