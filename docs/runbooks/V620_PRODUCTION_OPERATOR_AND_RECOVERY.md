@@ -1,18 +1,18 @@
-# Atlas ROS v6.2 Production Operator and Recovery Runbook
+# HISTORICAL — NOT CURRENT AUTHORITY — Atlas ROS v6.2 Production Operator and Recovery Runbook
 
-Status: Current production guidance for Atlas ROS v6.2.0.
+Status: Historical rollback and audit guidance for Atlas ROS v6.2.0. Current production guidance is `docs/runbooks/V650_PRODUCTION_OPERATOR_AND_RECOVERY.md` under Atlas ROS v6.5.0.
 
-Historical candidate, validation, and prior-release runbooks are preserved for evidence and rollback context but are not current operating authority.
+The procedures below preserve the v6.2 production snapshot and remain relevant only for authorized v6.2 rollback, restoration, historical audit, or compatibility analysis. They must not be used to infer current release or rollback state.
 
-## Active authority
+## Active authority at the time of this historical snapshot
 
 - Active release: Atlas ROS v6.2.0
 - Production source and immutable tag target: `863d5ddf9ebd4723200166cf31c7acd93ebec54f`
 - Immediate immutable rollback: Atlas ROS v6.1.1 at `e1b842765376c9e36bbdee981cddead3feb97173`
 - Historical rollback retained: Atlas ROS v6.1.0 at `15a62f670d250ec3728242f776d08449a9a95d1c`
-- Active manifest: `release/RELEASE_MANIFEST.md`
+- Active manifest at the time: `release/RELEASE_MANIFEST.md`
 
-## Normal operation
+## Normal operation at the time
 
 1. Complete Quick Initialization using the fixed Google Drive Release Index, Notion System State, active GitHub manifest, and manifest-selected Integration Inventory.
 2. Confirm the four authorities agree on v6.2.0, v6.1.1, integration state, and readable-workspace validity.
@@ -87,11 +87,11 @@ Stop before execution when any of the following is true:
 6. Run Quick Initialization again.
 7. Use Full Validation for cross-authority, release, recovery, audit, or consequential architecture changes.
 
-### Roll back production
+### Roll back from the historical v6.2 production state
 
 Rollback requires Ryan's explicit authorization.
 
-1. Confirm the fixed Release Index and current System State identify v6.1.1 as the immediate rollback.
+1. Confirm the then-current Release Index and System State identify v6.1.1 as the immediate rollback.
 2. Verify the immutable v6.1.1 source, release assets, checksums, and restoration evidence.
 3. Stop v6.2 consequential execution.
 4. Restore the exact v6.1.1 package and governed registries.
@@ -100,13 +100,13 @@ Rollback requires Ryan's explicit authorization.
 7. Verify required integrations and provider boundaries.
 8. Run rollback validation and record the decision and review evidence.
 
-Do not infer rollback state from a prior runbook, historical title, or candidate document.
+Do not infer current rollback state from this historical runbook, a historical title, or a candidate document.
 
-## Validation references
+## Historical validation references
 
 - Candidate Exact-Artifact Full Validation: V4V-44
 - Final-publication controller validation: V4V-45
 - Production-promotion verification: V4V-46
 - Promotion decision: V4D-35
 - Final GitHub release: `v6.2.0`
-- Active release manifest: `release/RELEASE_MANIFEST.md`
+- Historical active release manifest: `release/RELEASE_MANIFEST.md`
