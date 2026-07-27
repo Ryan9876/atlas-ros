@@ -25,18 +25,18 @@ def render_release_index(authority: AuthorityRecord) -> str:
     rollback = authority.immediate_rollback
     return (
         "# Atlas ROS Release Index\n\n"
-        "This file is generated from `governance/AUTHORITY.json`; do not edit it directly.\n\n"
+        "This file is generated from governance/AUTHORITY.json; do not edit it directly.\n\n"
         "## Active Release\n\n"
-        f"- Version: `{active.version}`\n"
-        f"- Status: `{active.status}`\n"
-        f"- Immutable commit: `{active.immutable_commit}`\n"
-        f"- Tag: `{active.tag}`\n"
-        f"- Manifest: `{active.manifest_path}`\n"
+        f"- Version: {active.version}\n"
+        f"- Status: {active.status}\n"
+        f"- Immutable commit: {active.immutable_commit}\n"
+        f"- Tag: {active.tag}\n"
+        f"- Manifest: {active.manifest_path}\n"
         f"- Release: {active.release_url}\n\n"
         "## Immediate Rollback\n\n"
-        f"- Version: `{rollback.version}`\n"
-        f"- Immutable commit: `{rollback.immutable_commit}`\n"
-        f"- Tag: `{rollback.tag}`\n"
+        f"- Version: {rollback.version}\n"
+        f"- Immutable commit: {rollback.immutable_commit}\n"
+        f"- Tag: {rollback.tag}\n"
         f"- Release: {rollback.release_url}\n"
     )
 
@@ -53,35 +53,35 @@ def _parse_authority(text: str) -> AuthorityRecord:
 
 
 def initialize(reader: AuthorityReader) -> InitializationContext:
-    """Verify the GitHub authority record and all deterministic repository evidence.
-
-    Dynamic Notion reads are deliberately left to the Notion adapter/application layer: this
-    kernel function guarantees that all GitHub-controlled evidence agrees before that read.
-    """
+    """Verify GitHub-controlled authority evidence before dynamic-state reads."""
     authority = _parse_authority(reader.read_text(_AUTHORITY_PATH, ref="HEAD"))
     active = authority.active_release
     if active.tag != f"v{active.version.removeprefix('v')}":
         raise InitializationError("active release version and tag disagree")
-    if not str(active.manifest_url).endswith(\n        active.manifest_path\n    ):
-        raise InitializationError("active manifest URL does not resolve to the declared manifest path")
+    if not str(active.manifest_url).endswith(active.manifest_path):
+        raise InitializationError(
+            "active manifest URL does not resolve to the declared manifest path"
+        )
 
     release_index = reader.read_text(_RELEASE_INDEX_PATH, ref=active.immutable_commit)
     if sha256_digest(release_index) != authority.release_index.sha256:
-        raise InitializationError(\n            "generated RELEASE_INDEX.md digest does not match AUTHORITY.json"\n        )
-    expected_index = render_release_index(authority)
-    if release_index != expected_index:
+        raise InitializationError(
+            "generated RELEASE_INDEX.md digest does not match AUTHORITY.json"
+        )
+    if release_index != render_release_index(authority):
         raise InitializationError("RELEASE_INDEX.md is not the generated authority projection")
 
     manifest = reader.read_text(PurePosixPath(active.manifest_path), ref=active.immutable_commit)
     if active.version not in manifest or active.immutable_commit not in manifest:
-        raise InitializationError("active manifest does not identify the authoritative release and commit")
-    inventory_url = _integration_inventory_url(manifest)
+        raise InitializationError(
+            "active manifest does not identify the authoritative release and commit"
+        )
     return InitializationContext(
         authority=authority,
         release_index_markdown=release_index,
         release_manifest_markdown=manifest,
         system_state_url=str(authority.notion_system_state_url),
-        integration_inventory_url=inventory_url,
+        integration_inventory_url=_integration_inventory_url(manifest),
     )
 
 
