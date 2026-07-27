@@ -8,6 +8,11 @@ from .archetypes_v62 import CanonicalIntentEngineV62 as _BaseCanonicalIntentEngi
 
 
 _CLOUDVISION_OUTCOME = "Launch the Arista CloudVision code-upgrade automation pilot"
+_CONTROL_PLANE_QUALIFIERS = {
+    "compare_versions",
+    "preserve_records",
+    "provider_readback",
+}
 
 
 class CanonicalIntentEngineV62(_BaseCanonicalIntentEngineV62):
@@ -26,12 +31,17 @@ class CanonicalIntentEngineV62(_BaseCanonicalIntentEngineV62):
         if not cloudvision_upgrade:
             return super().canonicalize(raw_input)
         qualifiers = self._material_qualifiers(normalized)
+        semantic_qualifiers = tuple(
+            qualifier
+            for qualifier in qualifiers
+            if qualifier not in _CONTROL_PLANE_QUALIFIERS
+        )
         fingerprint = stable_fingerprint(
             {
                 "canonical_text": _CLOUDVISION_OUTCOME,
                 "intent_type": "controlled-technology-pilot",
                 "domain": "network_automation",
-                "material_qualifiers": qualifiers,
+                "material_qualifiers": semantic_qualifiers,
             }
         )
         return CanonicalIntent(
