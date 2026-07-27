@@ -101,6 +101,16 @@ def load_expand_and_validate(path: Path) -> dict[str, Any]:
     expanded = expand_compact_tree(payload)
     result = validate_folder_traversal(expanded)
     result["source_evidence_sha256"] = expanded["source_evidence_sha256"]
+    inventory_path = path.with_name("v700-drive-file-inventory.json")
+    if inventory_path.is_file():
+        from scripts.validate_v700_drive_file_inventory import (
+            load_and_validate as validate_file_inventory,
+        )
+
+        result["file_inventory"] = validate_file_inventory(
+            inventory_path,
+            folder_path=path,
+        )
     return result
 
 
