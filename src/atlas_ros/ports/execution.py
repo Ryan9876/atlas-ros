@@ -1,4 +1,4 @@
-"""Provider-neutral execution, readback, and durability boundaries."""
+"""Provider-neutral execution, readback, durability, and permission boundaries."""
 
 from __future__ import annotations
 
@@ -11,6 +11,13 @@ from atlas_ros.contracts.execution.transaction import (
     ProviderReadbackReceipt,
     ProviderWriteReceipt,
 )
+
+
+class ProviderWriteGuard(Protocol):
+    """Authorize provider-write eligibility without exposing kernel implementation."""
+
+    def require_provider_write_permission(self, authorization_id: str | None) -> None:
+        """Fail closed unless the current runtime may execute an attended write."""
 
 
 class ProviderExecutionPort(Protocol):
