@@ -122,7 +122,7 @@ jobs:
 
 
   validate-v650-final-controller:
-    if: github.event_name == 'pull_request' && github.head_ref == 'release/v650-final-controller-1412e615'
+    if: github.event_name == 'pull_request' && github.head_ref == 'release/v650-ci-publisher'
     runs-on: ubuntu-24.04
     timeout-minutes: 75
     steps:
@@ -196,4 +196,46 @@ jobs:
             final-publication/
             final-evidence/
           if-no-files-found: error
+          retention-days: 90
+
+
+  publish-v650-final:
+    if: github.event_name == 'push' && github.ref_name == 'main' && startsWith(github.event.head_commit.message, 'release: execute exact Atlas ROS v6.5 publication')
+    permissions:
+      contents: write
+    runs-on: ubuntu-24.04
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.12.10'
+          cache: pip
+      - run: python -m pip install --disable-pip-version-check --upgrade pip && python -m pip install --disable-pip-version-check -e '.[dev]'
+      - name: Publish and read back exact v6.5.0 release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SOURCE_COMMIT: ${{ github.sha }}
+          CANDIDATE_COMMIT: 1412e615726e27fd1880222598c1271d4e466058
+          CANDIDATE_MERGE_COMMIT: 4247baf812eae3635408af2fb61761685ea1115f
+          CANDIDATE_ARTIFACT_ID: '8654164435'
+          CANDIDATE_ARTIFACT_DIGEST: cc46bd3725717a620c9872ac0da81667e31298b444bab8a125ae94506c9ac040
+          RELEASE_TAG: v6.5.0
+          ROLLBACK_TAG: v6.2.0
+          PUBLISH: 'true'
+        run: bash scripts/publish_v650_final.sh
+      - name: Upload v6.5 final-publication evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: atlas-ros-v650-final-publication-${{ github.sha }}
+          path: |
+            final-publication/
+            final-evidence/
+            release-readback/
+          if-no-files-found: warn
           retention-days: 90
