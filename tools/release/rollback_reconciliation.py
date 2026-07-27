@@ -44,7 +44,9 @@ def load_v650_reconciliation(path: Path) -> V650RollbackReconciliation:
     try:
         record = V650RollbackReconciliation(**payload)
     except TypeError as error:
-        raise RollbackReconciliationError("reconciliation evidence fields are incomplete") from error
+        raise RollbackReconciliationError(
+            "reconciliation evidence fields are incomplete"
+        ) from error
     _validate(record)
     return record
 
