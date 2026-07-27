@@ -17,6 +17,13 @@ from atlas_ros.contracts.execution.transaction import (
 )
 
 
+@dataclass(frozen=True)
+class AllowWriteGuard:
+    def require_provider_write_permission(self, authorization_id: str | None) -> None:
+        if not authorization_id:
+            raise PermissionError("authorization is required")
+
+
 @dataclass
 class FakeProvider:
     tamper_readback: bool = False
@@ -72,7 +79,9 @@ def test_journal_completes_only_after_verified_readback(tmp_path: Path) -> None:
     provider = FakeProvider()
 
     receipt = AttendedExecutionService(provider, journal).execute(
-        plan(), transaction_id="transaction-1"
+        plan(),
+        transaction_id="transaction-1",
+        write_guard=AllowWriteGuard(),
     )
     snapshot = journal.snapshot("transaction-1")
 
@@ -90,11 +99,19 @@ def test_journal_prevents_reexecution_of_completed_transaction(tmp_path: Path) -
     provider = FakeProvider()
     service = AttendedExecutionService(provider, journal)
     authorized = plan()
-    service.execute(authorized, transaction_id="transaction-1")
+    service.execute(
+        authorized,
+        transaction_id="transaction-1",
+        write_guard=AllowWriteGuard(),
+    )
     call_count = len(provider.calls)
 
     with pytest.raises(ExecutionJournalError, match="completed"):
-        service.execute(authorized, transaction_id="transaction-1")
+        service.execute(
+            authorized,
+            transaction_id="transaction-1",
+            write_guard=AllowWriteGuard(),
+        )
 
     assert len(provider.calls) == call_count
 
@@ -107,6 +124,7 @@ def test_journal_retains_failure_and_allows_exact_retry(tmp_path: Path) -> None:
         AttendedExecutionService(FakeProvider(tamper_readback=True), journal).execute(
             authorized,
             transaction_id="transaction-1",
+            write_guard=AllowWriteGuard(),
         )
     failed = journal.snapshot("transaction-1")
     assert failed.state == "failed"
@@ -115,6 +133,7 @@ def test_journal_retains_failure_and_allows_exact_retry(tmp_path: Path) -> None:
     receipt = AttendedExecutionService(FakeProvider(), journal).execute(
         authorized,
         transaction_id="transaction-1",
+        write_guard=AllowWriteGuard(),
     )
 
     assert receipt.provider_writes == 1
@@ -151,6 +170,7 @@ def test_journal_stores_digests_not_raw_payload_content(tmp_path: Path) -> None:
     AttendedExecutionService(FakeProvider(), journal).execute(
         plan(operation(0, payload=secret)),
         transaction_id="transaction-1",
+        write_guard=AllowWriteGuard(),
     )
 
     with sqlite3.connect(database) as connection:
