@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import asdict, dataclass
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import Any, Literal
 
 from atlas_ros.contracts.digests import sha256_digest
@@ -75,6 +75,16 @@ def compile_ledger(
     ids = tuple(item.drive_id for item in items)
     if len(set(ids)) != len(ids):
         raise DriveMigrationLedgerError("Drive migration inventory contains duplicate IDs")
+    verified_targets = tuple(
+        item.github_target
+        for item in items
+        if item.migration_status in {"verified", "staged"}
+        and item.github_target is not None
+    )
+    if len(set(verified_targets)) != len(verified_targets):
+        raise DriveMigrationLedgerError(
+            "resolved Drive items cannot share one GitHub target"
+        )
 
     unresolved = sum(
         item.migration_status == "unresolved"
@@ -124,15 +134,42 @@ def load_and_compile(path: Path) -> DriveMigrationLedger:
     try:
         payload = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as error:
-        raise DriveMigrationLedgerError(f"invalid Drive migration inventory: {path}") from error
+        raise DriveMigrationLedgerError(
+            f"invalid Drive migration inventory: {path}"
+        ) from error
     if not isinstance(payload, list):
         raise DriveMigrationLedgerError("Drive migration inventory must be a JSON list")
     return compile_ledger(payload)
 
 
+def load_ledger(path: Path) -> DriveMigrationLedger:
+    """Read a compiled ledger and verify every derived field and its digest."""
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as error:
+        raise DriveMigrationLedgerError(f"invalid Drive migration ledger: {path}") from error
+    if not isinstance(payload, dict):
+        raise DriveMigrationLedgerError("Drive migration ledger must be a JSON object")
+    raw_items = payload.get("items")
+    if not isinstance(raw_items, list):
+        raise DriveMigrationLedgerError("Drive migration ledger items must be a list")
+    compiled = compile_ledger(
+        raw_items,
+        generated_for_release=str(payload.get("generated_for_release", "")),
+    )
+    if payload != asdict(compiled):
+        raise DriveMigrationLedgerError(
+            "Drive migration ledger readback differs from compiled item evidence"
+        )
+    return compiled
+
+
 def write_ledger(ledger: DriveMigrationLedger, path: Path) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(asdict(ledger), indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    path.write_text(
+        json.dumps(asdict(ledger), indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
 
 
 def _item(record: dict[str, Any]) -> DriveMigrationItem:
@@ -153,16 +190,28 @@ def _item(record: dict[str, Any]) -> DriveMigrationItem:
         "disposition",
     }
     if not isinstance(record, dict) or not required.issubset(record):
-        missing = sorted(required - set(record)) if isinstance(record, dict) else sorted(required)
-        raise DriveMigrationLedgerError("Drive migration item missing fields: " + ", ".join(missing))
-    item = DriveMigrationItem(**{key: record.get(key) for key in DriveMigrationItem.__dataclass_fields__})
+        missing = (
+            sorted(required - set(record))
+            if isinstance(record, dict)
+            else sorted(required)
+        )
+        raise DriveMigrationLedgerError(
+            "Drive migration item missing fields: " + ", ".join(missing)
+        )
+    item = DriveMigrationItem(
+        **{key: record.get(key) for key in DriveMigrationItem.__dataclass_fields__}
+    )
     if not item.drive_id or not item.title or not item.mime_type or not item.modified_time:
-        raise DriveMigrationLedgerError("Drive migration item identity fields cannot be empty")
+        raise DriveMigrationLedgerError(
+            "Drive migration item identity fields cannot be empty"
+        )
     if item.size_bytes is not None and item.size_bytes < 0:
         raise DriveMigrationLedgerError(f"invalid Drive size for {item.drive_id}")
     _sha(item.drive_content_sha256, f"Drive content checksum for {item.drive_id}")
     if item.github_content_sha256 is not None:
         _sha(item.github_content_sha256, f"GitHub checksum for {item.drive_id}")
+    if item.github_target is not None:
+        _safe_target(item.github_target, item.drive_id)
     _validate_state(item)
     return item
 
@@ -172,6 +221,10 @@ def _validate_state(item: DriveMigrationItem) -> None:
         if not item.github_target or not item.github_content_sha256 or not item.content_equivalent:
             raise DriveMigrationLedgerError(
                 f"resolved Drive item lacks equivalent GitHub evidence: {item.drive_id}"
+            )
+        if item.drive_content_sha256 != item.github_content_sha256:
+            raise DriveMigrationLedgerError(
+                f"Drive and GitHub checksums differ: {item.drive_id}"
             )
     if item.classification == "current_until_v7_activation":
         if item.migration_status != "staged":
@@ -183,7 +236,10 @@ def _validate_state(item: DriveMigrationItem) -> None:
                 "current bootstrap must retire only after v7 activation"
             )
     if item.classification == "historical_authority":
-        if item.migration_status != "verified" or item.disposition != "retain_immutable_github":
+        if (
+            item.migration_status != "verified"
+            or item.disposition != "retain_immutable_github"
+        ):
             raise DriveMigrationLedgerError(
                 f"historical authority is not immutably represented: {item.drive_id}"
             )
@@ -202,9 +258,31 @@ def _promotion_ready(item: DriveMigrationItem) -> bool:
         and item.github_target is not None
         and item.github_content_sha256 is not None
         and item.content_equivalent
+        and item.drive_content_sha256 == item.github_content_sha256
     )
 
 
+def _safe_target(value: str, drive_id: str) -> None:
+    target = PurePosixPath(value)
+    if target.is_absolute() or ".." in target.parts:
+        raise DriveMigrationLedgerError(
+            f"unsafe GitHub target for {drive_id}: {value}"
+        )
+
+
 def _sha(value: str, field: str) -> None:
-    if len(value) != 64 or any(character not in "0123456789abcdef" for character in value):
+    if len(value) != 64 or any(
+        character not in "0123456789abcdef" for character in value
+    ):
         raise DriveMigrationLedgerError(f"{field} is not a lowercase SHA-256")
+
+
+__all__ = [
+    "DriveMigrationItem",
+    "DriveMigrationLedger",
+    "DriveMigrationLedgerError",
+    "compile_ledger",
+    "load_and_compile",
+    "load_ledger",
+    "write_ledger",
+]
