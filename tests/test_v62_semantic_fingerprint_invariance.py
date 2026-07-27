@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from atlas_ros.engines import AdaptiveInputProcessingPipelineV62
 
 
