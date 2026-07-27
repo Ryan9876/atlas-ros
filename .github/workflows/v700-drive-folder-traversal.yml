@@ -1,0 +1,74 @@
+name: v700-drive-folder-traversal
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-drive-folder-traversal:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'pull_request' &&
+       github.head_ref == 'agent/v700-canonical-architecture')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.12.10'
+          cache: pip
+      - name: Install validation tooling
+        run: |
+          python -m pip install --disable-pip-version-check --upgrade pip
+          python -m pip install --disable-pip-version-check -e '.[dev]'
+      - name: Validate recursive Drive folder evidence
+        run: |
+          set -euo pipefail
+          rm -rf v700-drive-folder-evidence
+          python -m scripts.validate_v700_drive_folder_tree \
+            --input release/v700-drive-folder-traversal.json \
+            --output v700-drive-folder-evidence/V700_DRIVE_FOLDER_TRAVERSAL_VALIDATION.json
+      - name: Enforce fail-closed traversal result
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          result = json.loads(
+              Path(
+                  'v700-drive-folder-evidence/'
+                  'V700_DRIVE_FOLDER_TRAVERSAL_VALIDATION.json'
+              ).read_text(encoding='utf-8')
+          )
+          assert result['status'] == (
+              'folder_traversal_complete_item_inventory_incomplete'
+          )
+          assert result['folder_count'] == 93
+          assert result['leaf_folder_count'] == 78
+          assert result['max_depth'] == 6
+          assert result['folder_traversal_complete'] is True
+          assert result['item_inventory_complete'] is False
+          assert result['file_content_checksums_complete'] is False
+          assert result['unconsumed_page_tokens'] == 0
+          assert result['inaccessible_child_ids'] == []
+          assert result['incomplete_listing_folder_ids'] == []
+          assert result['promotion_ready'] is False
+          assert result['provider_writes'] == 0
+          assert result['drive_retirement_authorized'] is False
+          PY
+      - name: Retain Drive folder traversal evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: atlas-ros-v700-drive-folder-traversal-${{ github.event.pull_request.head.sha || github.sha }}
+          path: v700-drive-folder-evidence/
+          if-no-files-found: warn
+          retention-days: 90
