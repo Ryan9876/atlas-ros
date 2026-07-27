@@ -14,6 +14,19 @@ from atlas_ros.contracts.execution.transaction import (
 from atlas_ros.kernel.digests import sha256_digest
 
 
+@dataclass(frozen=True)
+class AllowWriteGuard:
+    def require_provider_write_permission(self, authorization_id: str | None) -> None:
+        if not authorization_id:
+            raise PermissionError("authorization is required")
+
+
+@dataclass(frozen=True)
+class DenyWriteGuard:
+    def require_provider_write_permission(self, authorization_id: str | None) -> None:
+        raise PermissionError(f"write prohibited: {authorization_id}")
+
+
 @dataclass
 class FakeExecutionPort:
     tamper_write_operation: bool = False
@@ -69,7 +82,11 @@ def plan() -> AuthorizedExecutionPlan:
 
 def test_attended_execution_uses_exact_order_and_mandatory_readback() -> None:
     port = FakeExecutionPort()
-    receipt = AttendedExecutionService(port).execute(plan(), transaction_id="transaction-1")
+    receipt = AttendedExecutionService(port).execute(
+        plan(),
+        transaction_id="transaction-1",
+        write_guard=AllowWriteGuard(),
+    )
 
     assert receipt.provider_writes == 2
     assert [item.operation_id for item in receipt.operation_receipts] == [
@@ -87,15 +104,32 @@ def test_attended_execution_uses_exact_order_and_mandatory_readback() -> None:
 def test_attended_execution_rejects_adapter_operation_substitution() -> None:
     with pytest.raises(ExecutionBoundaryError, match="different operation ID"):
         AttendedExecutionService(FakeExecutionPort(tamper_write_operation=True)).execute(
-            plan(), transaction_id="transaction-1"
+            plan(),
+            transaction_id="transaction-1",
+            write_guard=AllowWriteGuard(),
         )
 
 
 def test_attended_execution_rejects_readback_mismatch() -> None:
     with pytest.raises(ExecutionBoundaryError, match="does not match"):
         AttendedExecutionService(FakeExecutionPort(tamper_readback=True)).execute(
-            plan(), transaction_id="transaction-1"
+            plan(),
+            transaction_id="transaction-1",
+            write_guard=AllowWriteGuard(),
         )
+
+
+def test_write_guard_blocks_before_provider_access() -> None:
+    port = FakeExecutionPort()
+
+    with pytest.raises(PermissionError, match="write prohibited"):
+        AttendedExecutionService(port).execute(
+            plan(),
+            transaction_id="transaction-1",
+            write_guard=DenyWriteGuard(),
+        )
+
+    assert port.calls == []
 
 
 def test_authorized_plan_rejects_noncanonical_sequence() -> None:
