@@ -6,6 +6,7 @@ from atlas_ros.contracts.execution.transaction import (
     ExecutedOperationReceipt,
     ExecutionTransactionReceipt,
     PlannedProviderOperation,
+    ProposedExecutionPlan,
     ProviderReadbackReceipt,
     ProviderWriteReceipt,
 )
@@ -17,6 +18,7 @@ __all__ = [
     "ExecutionTransactionReceipt",
     "PipelineRunEnvelope",
     "PlannedProviderOperation",
+    "ProposedExecutionPlan",
     "ProviderReadbackReceipt",
     "ProviderWriteReceipt",
 ]
