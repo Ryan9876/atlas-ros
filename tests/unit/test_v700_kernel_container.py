@@ -46,8 +46,14 @@ def config(*, mode: RuntimeMode = RuntimeMode.PRODUCTION) -> KernelConfig:
 
 
 def test_kernel_composes_one_registry_and_canonical_coordinator(tmp_path: Path) -> None:
-    kernel = RuntimeKernel.compose(config(), [policy_file(tmp_path / "policy.yaml")], (UppercaseStage(),))
-    value, lineage = kernel.coordinator.process(CaptureEnvelope(source="test", content="hello"))
+    kernel = RuntimeKernel.compose(
+        config(),
+        [policy_file(tmp_path / "policy.yaml")],
+        (UppercaseStage(),),
+    )
+    value, lineage = kernel.coordinator.process(
+        CaptureEnvelope(source="test", content="hello")
+    )
     assert value == "HELLO"
     assert lineage.policy_registry_digest == kernel.policy_registry.digest
 
