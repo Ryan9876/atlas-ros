@@ -395,7 +395,7 @@ def _sha(value: str, field: str) -> None:
 
 
 def _unique_nonempty(values: tuple[str, ...], field: str) -> None:
-    if not values or any(not value.strip() for value in values):
+    if any(not value.strip() for value in values):
         raise DriveMigrationLedgerError(f"Drive {field} must contain non-empty IDs")
     if len(set(values)) != len(values):
         raise DriveMigrationLedgerError(f"Drive {field} contains duplicates")
