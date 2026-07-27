@@ -1,14 +1,14 @@
 """Fail-closed Drive-retirement planning and simulation controller.
 
-This tool never calls Google Drive.  It validates the evidence that a separately
+This tool never calls Google Drive. It validates the evidence that a separately
 authorized adapter must supply, and produces deterministic transaction receipts.
 """
 
 from __future__ import annotations
 
+import json
 from dataclasses import asdict, dataclass
 from hashlib import sha256
-import json
 from typing import Literal
 
 Mode = Literal["inventory", "verify", "prepare-retirement", "retire", "verify-retirement"]
@@ -39,12 +39,7 @@ class RetirementReceipt:
 
 
 def run(mode: Mode, evidence: RetirementEvidence, *, transaction_id: str) -> RetirementReceipt:
-    """Validate a retirement phase without performing provider actions.
-
-    The real provider adapter may execute only after this controller returns a
-    prepared receipt for retire, and must bind its readback to the same evidence
-    digest and transaction identifier.
-    """
+    """Validate a retirement phase without performing provider actions."""
     if not transaction_id:
         raise RetirementPreconditionError("an exact retirement transaction ID is required")
     digest = _digest(evidence)
@@ -52,10 +47,14 @@ def run(mode: Mode, evidence: RetirementEvidence, *, transaction_id: str) -> Ret
         return _receipt(mode, "simulated", transaction_id, digest, "inventory captured")
     if mode == "verify":
         _require_migration_complete(evidence)
-        return _receipt(mode, "verified", transaction_id, digest, "migration evidence verified")
+        return _receipt(
+            mode, "verified", transaction_id, digest, "migration evidence verified"
+        )
     if mode == "prepare-retirement":
         _require_retirement_ready(evidence)
-        return _receipt(mode, "prepared", transaction_id, digest, "retirement is authorized to prepare")
+        return _receipt(
+            mode, "prepared", transaction_id, digest, "retirement is authorized to prepare"
+        )
     if mode == "retire":
         _require_retirement_ready(evidence)
         return _receipt(
@@ -68,25 +67,37 @@ def run(mode: Mode, evidence: RetirementEvidence, *, transaction_id: str) -> Ret
     if mode == "verify-retirement":
         _require_migration_complete(evidence)
         if not evidence.drive_integration_retired:
-            raise RetirementPreconditionError("Drive integration retirement readback has not passed")
-        return _receipt(mode, "verified", transaction_id, digest, "retirement readback verified")
+            raise RetirementPreconditionError(
+                "Drive integration retirement readback has not passed"
+            )
+        return _receipt(
+            mode, "verified", transaction_id, digest, "retirement readback verified"
+        )
     raise RetirementPreconditionError(f"unsupported retirement mode: {mode}")
 
 
 def _require_migration_complete(evidence: RetirementEvidence) -> None:
     if evidence.unresolved_authoritative_items:
-        raise RetirementPreconditionError("Drive migration ledger has unresolved authoritative items")
+        raise RetirementPreconditionError(
+            "Drive migration ledger has unresolved authoritative items"
+        )
     if evidence.current_drive_dependencies:
-        raise RetirementPreconditionError("current source or operating records still depend on Drive")
+        raise RetirementPreconditionError(
+            "current source or operating records still depend on Drive"
+        )
 
 
 def _require_retirement_ready(evidence: RetirementEvidence) -> None:
     if not evidence.v7_active:
         raise RetirementPreconditionError("v7 must be Active before Drive retirement")
     if not evidence.v650_rollback_restored:
-        raise RetirementPreconditionError("v6.5 rollback restoration must pass before retirement")
+        raise RetirementPreconditionError(
+            "v6.5 rollback restoration must pass before retirement"
+        )
     if not evidence.v7_post_promotion_readback:
-        raise RetirementPreconditionError("v7 post-promotion readback must pass before retirement")
+        raise RetirementPreconditionError(
+            "v7 post-promotion readback must pass before retirement"
+        )
     _require_migration_complete(evidence)
 
 
@@ -108,5 +119,7 @@ def _receipt(
 
 
 def _digest(evidence: RetirementEvidence) -> str:
-    encoded = json.dumps(asdict(evidence), sort_keys=True, separators=(",", ":")).encode("utf-8")
+    encoded = json.dumps(
+        asdict(evidence), sort_keys=True, separators=(",", ":")
+    ).encode("utf-8")
     return sha256(encoded).hexdigest()
