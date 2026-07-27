@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import AnyHttpUrl, BaseModel, ConfigDict, Field, model_validator
 
@@ -62,8 +62,19 @@ class AuthorityRecord(BaseModel):
     @model_validator(mode="after")
     def verify_integrity(self) -> AuthorityRecord:
         payload = self.model_dump(mode="json", exclude={"integrity"})
-        if sha256_digest(payload) != self.integrity.content_sha256:
+        if sha256_digest(_canonicalize_urls(payload)) != self.integrity.content_sha256:
             raise ValueError("authority integrity digest does not match")
         if self.active_release.version == self.immediate_rollback.version:
             raise ValueError("active release cannot also be immediate rollback")
         return self
+
+
+def _canonicalize_urls(value: Any, *, key: str = "") -> Any:
+    """Normalize equivalent URL values before deterministic authority hashing."""
+    if isinstance(value, dict):
+        return {item_key: _canonicalize_urls(item, key=item_key) for item_key, item in value.items()}
+    if isinstance(value, list):
+        return [_canonicalize_urls(item, key=key) for item in value]
+    if key.endswith("_url") and isinstance(value, str):
+        return value.rstrip("/")
+    return value
