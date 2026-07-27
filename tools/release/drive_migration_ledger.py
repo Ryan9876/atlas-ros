@@ -266,7 +266,7 @@ def load_ledger(path: Path) -> DriveMigrationLedger:
             "unconsumed page tokens",
         ),
     )
-    if payload != asdict(compiled):
+    if payload != _json_mapping(asdict(compiled)):
         raise DriveMigrationLedgerError(
             "Drive migration ledger readback differs from compiled item evidence"
         )
@@ -276,7 +276,7 @@ def load_ledger(path: Path) -> DriveMigrationLedger:
 def write_ledger(ledger: DriveMigrationLedger, path: Path) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(
-        json.dumps(asdict(ledger), indent=2, sort_keys=True) + "\n",
+        json.dumps(_json_mapping(asdict(ledger)), indent=2, sort_keys=True) + "\n",
         encoding="utf-8",
     )
 
@@ -307,9 +307,13 @@ def _item(record: dict[str, Any]) -> DriveMigrationItem:
         raise DriveMigrationLedgerError(
             "Drive migration item missing fields: " + ", ".join(missing)
         )
-    item = DriveMigrationItem(
-        **{key: record.get(key) for key in DriveMigrationItem.__dataclass_fields__}
-    )
+    values = {
+        key: record.get(key)
+        for key in DriveMigrationItem.__dataclass_fields__
+    }
+    if "notes" not in record:
+        values["notes"] = ""
+    item = DriveMigrationItem(**values)
     if not item.drive_id or not item.title or not item.mime_type or not item.modified_time:
         raise DriveMigrationLedgerError(
             "Drive migration item identity fields cannot be empty"
@@ -411,6 +415,13 @@ def _required_int(value: Any, field: str) -> int:
     if not isinstance(value, int) or isinstance(value, bool):
         raise DriveMigrationLedgerError(f"Drive {field} must be an integer")
     return value
+
+
+def _json_mapping(value: dict[str, Any]) -> dict[str, Any]:
+    normalized = json.loads(json.dumps(value, sort_keys=True))
+    if not isinstance(normalized, dict):
+        raise DriveMigrationLedgerError("Drive ledger serialization must be an object")
+    return normalized
 
 
 __all__ = [
