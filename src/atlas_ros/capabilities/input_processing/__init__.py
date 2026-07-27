@@ -7,7 +7,13 @@ from dataclasses import dataclass
 
 from atlas_ros.contracts.digests import sha256_digest
 from atlas_ros.contracts.execution.pipeline import CaptureEnvelope
-from atlas_ros.contracts.reasoning import IntentEdge, IntentGraph, IntentNode
+from atlas_ros.contracts.reasoning import (
+    IntentEdge,
+    IntentEdgeType,
+    IntentGraph,
+    IntentNode,
+    IntentNodeType,
+)
 
 CAPABILITY_ID = "atlas.input-processing"
 _SPLIT = re.compile(r"(?:\n+|(?<=[.!?;])\s+)")
@@ -58,13 +64,14 @@ class DeterministicInputProcessor:
                 execution_candidate=execution_candidate,
             )
             nodes.append(node)
+            edge_type: IntentEdgeType = (
+                "constrains" if node_type == "constraint" else "depends_on"
+            )
             edges.append(
                 IntentEdge(
                     source_node_id=primary_id,
                     target_node_id=node.node_id,
-                    edge_type=(
-                        "constrains" if node_type == "constraint" else "depends_on"
-                    ),
+                    edge_type=edge_type,
                 )
             )
         return IntentGraph.create(
@@ -88,7 +95,7 @@ def _clauses(content: str, limit: int) -> tuple[str, ...]:
     return clauses[:limit]
 
 
-def _classify_clause(clause: str) -> tuple[str, bool]:
+def _classify_clause(clause: str) -> tuple[IntentNodeType, bool]:
     lowered = clause.casefold()
     words = frozenset(re.findall(r"[a-z]+", lowered))
     if words & _CONSTRAINT_WORDS:
