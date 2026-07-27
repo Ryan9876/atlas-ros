@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import ast
 from collections.abc import Mapping
 from pathlib import Path, PurePosixPath
 from typing import Any, cast
@@ -16,8 +17,12 @@ class CapabilityCompilationError(ValueError):
     """Raised when the canonical capability catalog is invalid or ambiguous."""
 
 
-def compile_capability_registry(path: Path) -> CapabilityRegistry:
-    """Compile one canonical YAML catalog into an immutable runtime registry."""
+def compile_capability_registry(
+    path: Path,
+    *,
+    repository_root: Path | None = None,
+) -> CapabilityRegistry:
+    """Compile YAML and bind every descriptor to a real capability package."""
     try:
         loaded = yaml.safe_load(path.read_text(encoding="utf-8"))
     except OSError as error:
@@ -62,9 +67,14 @@ def compile_capability_registry(path: Path) -> CapabilityRegistry:
         {"schema_version": "1.0", "capabilities": canonical_entries}
     )
     try:
-        return CapabilityRegistry.create(compiled, catalog_digest)
+        registry = CapabilityRegistry.create(compiled, catalog_digest)
     except ValueError as error:
         raise CapabilityCompilationError(str(error)) from error
+
+    root = repository_root or _repository_root(path)
+    for descriptor in registry.capabilities.values():
+        _validate_package_implementation(root, descriptor)
+    return registry
 
 
 def _compile_entry(raw: Any) -> tuple[CapabilityDescriptor, dict[str, Any]]:
@@ -153,6 +163,50 @@ def _validate_package(package: str, capability_id: str) -> None:
     if path.is_absolute() or ".." in path.parts or not package.startswith("capabilities/"):
         raise CapabilityCompilationError(
             f"invalid capability package for {capability_id}: {package}"
+        )
+
+
+def _repository_root(path: Path) -> Path:
+    resolved = path.resolve()
+    if resolved.parent.name == "governance":
+        return resolved.parent.parent
+    return resolved.parent
+
+
+def _validate_package_implementation(
+    repository_root: Path,
+    descriptor: CapabilityDescriptor,
+) -> None:
+    init_path = (
+        repository_root
+        / "src"
+        / "atlas_ros"
+        / descriptor.package
+        / "__init__.py"
+    )
+    if not init_path.is_file():
+        raise CapabilityCompilationError(
+            f"capability package is missing: {descriptor.capability_id} {init_path}"
+        )
+    try:
+        tree = ast.parse(init_path.read_text(encoding="utf-8"), filename=str(init_path))
+    except (OSError, SyntaxError) as error:
+        raise CapabilityCompilationError(
+            f"capability package is unreadable or invalid: {descriptor.capability_id}"
+        ) from error
+    declared_id: str | None = None
+    for node in tree.body:
+        if not isinstance(node, ast.Assign) or not isinstance(node.value, ast.Constant):
+            continue
+        if not isinstance(node.value.value, str):
+            continue
+        if any(isinstance(target, ast.Name) and target.id == "CAPABILITY_ID" for target in node.targets):
+            declared_id = node.value.value
+            break
+    if declared_id != descriptor.capability_id:
+        raise CapabilityCompilationError(
+            "capability package ID disagrees with catalog: "
+            f"{descriptor.capability_id} declared={declared_id!r}"
         )
 
 
