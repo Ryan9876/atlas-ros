@@ -8,7 +8,7 @@ from typing import Any, cast
 
 import yaml
 
-from atlas_ros.kernel.digests import sha256_digest
+from atlas_ros.contracts.digests import sha256_digest
 from atlas_ros.policy.registry import CompiledPolicy, PolicyRegistry
 
 
