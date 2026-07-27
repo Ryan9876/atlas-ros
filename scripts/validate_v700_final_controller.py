@@ -18,7 +18,7 @@ from tools.release.final_controller import (
     compile_final_controller,
     verify_post_publication,
 )
-from tools.release.live_authority_snapshot import load_snapshot
+from tools.release.live_authority_snapshot import LiveAuthoritySnapshot, load_snapshot
 
 
 class FinalControllerValidationError(ValueError):
@@ -183,7 +183,7 @@ def _live_authority_snapshot(
     *,
     candidate_sha: str,
     artifact_digest: str,
-):
+) -> LiveAuthoritySnapshot | None:
     if path is None:
         return None
     snapshot = load_snapshot(path)
