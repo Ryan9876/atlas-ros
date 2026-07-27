@@ -274,18 +274,18 @@ __all__ = [
 
 # v6.5 provider-free advisory contracts
 from .advisory_v1 import (
-    AdvisoryAlternative,
-    AdvisoryReceipt,
-    AdvisoryRecommendation,
-    AdvisoryValueState,
-    Assumption,
-    ConfidenceAssessment,
-    MissingDataIndicator,
-    ProvenanceRecord,
-    AdvisoryEnvelope,
-    UncertaintyRange,
-    ValueOrigin,
-    stable_advisory_digest,
+    AdvisoryAlternative as AdvisoryAlternative,
+    AdvisoryReceipt as AdvisoryReceipt,
+    AdvisoryRecommendation as AdvisoryRecommendation,
+    AdvisoryValueState as AdvisoryValueState,
+    Assumption as Assumption,
+    ConfidenceAssessment as ConfidenceAssessment,
+    MissingDataIndicator as MissingDataIndicator,
+    ProvenanceRecord as ProvenanceRecord,
+    AdvisoryEnvelope as AdvisoryEnvelope,
+    UncertaintyRange as UncertaintyRange,
+    ValueOrigin as ValueOrigin,
+    stable_advisory_digest as stable_advisory_digest,
 )
 
 __all__.extend([
