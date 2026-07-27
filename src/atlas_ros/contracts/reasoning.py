@@ -76,6 +76,13 @@ class IntentGraph(BaseModel):
         values["graph_digest"] = sha256_digest(_graph_payload(values))
         return cls.model_validate(values)
 
+    def require_node(self, node_id: str) -> IntentNode:
+        """Return an exact graph node or fail closed on an unknown reference."""
+        for node in self.nodes:
+            if node.node_id == node_id:
+                return node
+        raise KeyError(f"unknown intent node: {node_id}")
+
     @model_validator(mode="after")
     def validate_graph(self) -> IntentGraph:
         node_ids = tuple(node.node_id for node in self.nodes)
