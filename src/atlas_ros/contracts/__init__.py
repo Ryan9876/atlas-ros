@@ -282,7 +282,7 @@ from .advisory_v1 import (
     ConfidenceAssessment,
     MissingDataIndicator,
     ProvenanceRecord,
-    ReplayEnvelope,
+    AdvisoryEnvelope,
     UncertaintyRange,
     ValueOrigin,
     stable_advisory_digest,
@@ -291,6 +291,6 @@ from .advisory_v1 import (
 __all__.extend([
     "AdvisoryAlternative", "AdvisoryReceipt", "AdvisoryRecommendation",
     "AdvisoryValueState", "Assumption", "ConfidenceAssessment",
-    "MissingDataIndicator", "ProvenanceRecord", "ReplayEnvelope",
+    "MissingDataIndicator", "ProvenanceRecord", "AdvisoryEnvelope",
     "UncertaintyRange", "ValueOrigin", "stable_advisory_digest",
 ])
