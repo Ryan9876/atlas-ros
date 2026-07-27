@@ -1,0 +1,108 @@
+{
+  "$defs": {
+    "PlannedProviderOperation": {
+      "additionalProperties": false,
+      "properties": {
+        "action": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Action",
+          "type": "string"
+        },
+        "idempotency_key": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Idempotency Key",
+          "type": "string"
+        },
+        "operation_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Operation Id",
+          "type": "string"
+        },
+        "payload_digest": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Payload Digest",
+          "type": "string"
+        },
+        "provider": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Provider",
+          "type": "string"
+        },
+        "sequence": {
+          "minimum": 0,
+          "title": "Sequence",
+          "type": "integer"
+        },
+        "target": {
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Target",
+          "type": "string"
+        }
+      },
+      "required": [
+        "operation_id",
+        "sequence",
+        "provider",
+        "action",
+        "target",
+        "payload_digest",
+        "idempotency_key"
+      ],
+      "title": "PlannedProviderOperation",
+      "type": "object"
+    }
+  },
+  "$id": "https://github.com/Ryan9876/atlas-ros/schemas/execution/authorized-execution-plan.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "authorization_id": {
+      "maxLength": 256,
+      "minLength": 1,
+      "title": "Authorization Id",
+      "type": "string"
+    },
+    "authorized_at": {
+      "format": "date-time",
+      "title": "Authorized At",
+      "type": "string"
+    },
+    "contract_id": {
+      "const": "atlas.authorized-execution-plan",
+      "default": "atlas.authorized-execution-plan",
+      "title": "Contract Id",
+      "type": "string"
+    },
+    "operations": {
+      "items": {
+        "$ref": "#/$defs/PlannedProviderOperation"
+      },
+      "minItems": 1,
+      "title": "Operations",
+      "type": "array"
+    },
+    "plan_digest": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Plan Digest",
+      "type": "string"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    }
+  },
+  "required": [
+    "authorization_id",
+    "plan_digest",
+    "operations"
+  ],
+  "title": "AuthorizedExecutionPlan",
+  "type": "object"
+}
