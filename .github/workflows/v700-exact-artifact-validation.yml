@@ -176,18 +176,23 @@ jobs:
           assert folders['drive_retirement_authorized'] is False
           assert files['status'] == 'partial_file_inventory'
           assert files['known_folder_count'] == 93
-          assert files['scanned_folder_count'] == 3
-          assert files['file_count'] == 6
-          assert files['content_hashed_count'] == 5
+          assert files['scanned_folder_count'] == 4
+          assert files['unscanned_folder_count'] == 89
+          assert files['file_count'] == 14
+          assert files['content_hashed_count'] == 13
           assert files['sensitive_item_count'] == 1
+          assert files['verified_github_equivalence_count'] == 1
+          assert files['governed_legacy_exception_count'] == 12
           assert files['promotion_ready'] is False
           assert files['provider_writes'] == 0
           assert files['drive_retirement_authorized'] is False
+          assert files['credential_action_authorized'] is False
           assert receipts['status'] == 'partial_file_listing_receipts'
           assert receipts['known_folder_count'] == 93
-          assert receipts['listed_folder_count'] == 3
-          assert receipts['file_count'] == 6
-          assert receipts['bound_file_count'] == 6
+          assert receipts['listed_folder_count'] == 4
+          assert receipts['unscanned_folder_count'] == 89
+          assert receipts['file_count'] == 14
+          assert receipts['bound_file_count'] == 14
           assert receipts['enumeration_complete'] is False
           assert receipts['provider_writes'] == 0
           assert receipts['drive_retirement_authorized'] is False
