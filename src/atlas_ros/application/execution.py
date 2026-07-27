@@ -40,7 +40,12 @@ class AttendedExecutionService:
                 authorization_id=plan.authorization_id,
                 transaction_id=transaction_id,
             )
-            self._validate_write(operation.operation_id, operation.provider, operation.idempotency_key, write)
+            self._validate_write(
+                operation.operation_id,
+                operation.provider,
+                operation.idempotency_key,
+                write,
+            )
             readback = self.port.readback(write)
             self._validate_readback(write, readback)
             receipts.append(
