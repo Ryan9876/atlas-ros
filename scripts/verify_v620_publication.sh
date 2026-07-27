@@ -67,10 +67,8 @@ assert result.execution_authorized is False
 assert result.verify_digest()
 PY
 
-mkdir -p publication-verification/evidence
-
 tar -xzf publication-readback/Atlas_ROS_v6.2.0_final_evidence.tar.gz \
-  -C publication-verification/evidence
+  -C publication-verification
 
 python - <<'PY'
 import hashlib
