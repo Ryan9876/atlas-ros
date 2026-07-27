@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass
 from types import MappingProxyType
-from typing import Mapping
 
 
 @dataclass(frozen=True)
@@ -26,7 +26,7 @@ class PolicyRegistry:
     digest: str
 
     @classmethod
-    def create(cls, policies: Mapping[str, CompiledPolicy], digest: str) -> "PolicyRegistry":
+    def create(cls, policies: Mapping[str, CompiledPolicy], digest: str) -> PolicyRegistry:
         return cls(policies=MappingProxyType(dict(policies)), digest=digest)
 
     def require(self, policy_id: str) -> CompiledPolicy:
