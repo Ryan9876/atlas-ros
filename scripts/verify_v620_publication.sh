@@ -13,9 +13,18 @@ gh release view "$RELEASE_TAG" \
   --repo "$GITHUB_REPOSITORY" \
   --json tagName,targetCommitish,isDraft,isPrerelease,url,createdAt,publishedAt \
   > publication-verification/RELEASE_METADATA.json
+python - <<'PY'
+import json
+from pathlib import Path
+metadata = json.loads(
+    Path('publication-verification/RELEASE_METADATA.json').read_text(encoding='utf-8')
+)
+assert metadata['tagName'] == 'v6.2.0'
+assert metadata['targetCommitish'] == '863d5ddf9ebd4723200166cf31c7acd93ebec54f'
+assert metadata['isDraft'] is False
+assert metadata['isPrerelease'] is False
+PY
 
-git fetch --tags --force
-test "$(git rev-list -n 1 "$RELEASE_TAG")" = "$EXPECTED_SOURCE"
 gh release download "$RELEASE_TAG" \
   --repo "$GITHUB_REPOSITORY" \
   --dir publication-readback
@@ -83,6 +92,7 @@ assert identity['promotion_decision'] == 'V4D-35'
 assert identity['immediate_rollback'] == 'v6.1.1'
 assert identity['provider_writes'] == 0
 assert metadata['tagName'] == 'v6.2.0'
+assert metadata['targetCommitish'] == expected_source
 assert metadata['isDraft'] is False
 assert metadata['isPrerelease'] is False
 
