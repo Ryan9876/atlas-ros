@@ -178,7 +178,9 @@ class AdvisoryReceipt:
         ):
             raise ValueError("receipt requires identifiers and digests")
 
-    def verify(self, recommendation: AdvisoryRecommendation, input_payload: Mapping[str, object]) -> bool:
+    def verify(
+        self, recommendation: AdvisoryRecommendation, input_payload: Mapping[str, object]
+    ) -> bool:
         return (
             self.recommendation_id == recommendation.identifier
             and self.input_digest == stable_advisory_digest(input_payload)
