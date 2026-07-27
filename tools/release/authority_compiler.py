@@ -146,7 +146,9 @@ def _rollback_model(spec: RollbackReleaseSpec) -> ImmutableRelease:
 
 def _validate_spec(spec: AuthorityCompilationSpec) -> None:
     if spec.active.version != "7.0.0" or spec.active.tag != "v7.0.0":
-        raise AuthorityCompilationError("v7.0 activation must identify version 7.0.0 and tag v7.0.0")
+        raise AuthorityCompilationError(
+            "v7.0 activation must identify version 7.0.0 and tag v7.0.0"
+        )
     if spec.rollback.version != "6.5.0" or spec.rollback.tag != "v6.5.0":
         raise AuthorityCompilationError("the v7.0 immediate rollback must be immutable v6.5.0")
     if spec.active.immutable_commit == spec.rollback.immutable_commit:
