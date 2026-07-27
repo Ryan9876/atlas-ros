@@ -22,6 +22,7 @@ def write_json(path: Path, payload: object) -> None:
 
 
 def build_artifact(root: Path, candidate_sha: str, run_id: str) -> Path:
+    root.mkdir(parents=True, exist_ok=True)
     source = root / "atlas_ros-7.0.0rc1.tar.gz"
     wheel = root / "atlas_ros-7.0.0rc1-py3-none-any.whl"
     source.write_bytes(b"source archive")
