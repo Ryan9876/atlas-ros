@@ -1,0 +1,117 @@
+{
+  "$defs": {
+    "ExecutedOperationReceipt": {
+      "additionalProperties": false,
+      "properties": {
+        "changed": {
+          "title": "Changed",
+          "type": "boolean"
+        },
+        "idempotency_key": {
+          "title": "Idempotency Key",
+          "type": "string"
+        },
+        "operation_id": {
+          "title": "Operation Id",
+          "type": "string"
+        },
+        "provider": {
+          "title": "Provider",
+          "type": "string"
+        },
+        "provider_record_id": {
+          "title": "Provider Record Id",
+          "type": "string"
+        },
+        "readback_digest": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Readback Digest",
+          "type": "string"
+        },
+        "write_digest": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Write Digest",
+          "type": "string"
+        }
+      },
+      "required": [
+        "operation_id",
+        "provider",
+        "provider_record_id",
+        "idempotency_key",
+        "write_digest",
+        "readback_digest",
+        "changed"
+      ],
+      "title": "ExecutedOperationReceipt",
+      "type": "object"
+    }
+  },
+  "$id": "https://github.com/Ryan9876/atlas-ros/schemas/execution/execution-transaction-receipt.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "authorization_id": {
+      "maxLength": 256,
+      "minLength": 1,
+      "title": "Authorization Id",
+      "type": "string"
+    },
+    "completed_at": {
+      "format": "date-time",
+      "title": "Completed At",
+      "type": "string"
+    },
+    "completion_state": {
+      "const": "completed",
+      "default": "completed",
+      "title": "Completion State",
+      "type": "string"
+    },
+    "contract_id": {
+      "const": "atlas.execution-transaction-receipt",
+      "default": "atlas.execution-transaction-receipt",
+      "title": "Contract Id",
+      "type": "string"
+    },
+    "operation_receipts": {
+      "items": {
+        "$ref": "#/$defs/ExecutedOperationReceipt"
+      },
+      "minItems": 1,
+      "title": "Operation Receipts",
+      "type": "array"
+    },
+    "plan_digest": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Plan Digest",
+      "type": "string"
+    },
+    "provider_writes": {
+      "minimum": 0,
+      "title": "Provider Writes",
+      "type": "integer"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "transaction_id": {
+      "maxLength": 256,
+      "minLength": 1,
+      "title": "Transaction Id",
+      "type": "string"
+    }
+  },
+  "required": [
+    "transaction_id",
+    "authorization_id",
+    "plan_digest",
+    "operation_receipts",
+    "provider_writes"
+  ],
+  "title": "ExecutionTransactionReceipt",
+  "type": "object"
+}
