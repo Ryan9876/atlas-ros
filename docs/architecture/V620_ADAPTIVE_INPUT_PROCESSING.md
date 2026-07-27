@@ -44,7 +44,7 @@ V6.2 uses SHA-256 identities for:
 - projection decisions;
 - the final Enhanced Reasoning Package.
 
-Identical inputs, registries, policies, and memory state must produce identical outputs and fingerprints. Presentation style is deliberately excluded from the canonical semantic fingerprint.
+Identical inputs, registries, policies, and memory state must produce identical outputs and fingerprints. Presentation style is deliberately excluded from the canonical semantic fingerprint. Business-semantic qualifiers such as production or lab scope, downtime, budget, and timing remain part of semantic identity. Control-plane comparison, historical-preservation, provider-readback, authorization, and receipt directives are preserved separately as constraints, evidence, or normalization provenance and do not alter the business semantic fingerprint.
 
 ## Intent graph
 
