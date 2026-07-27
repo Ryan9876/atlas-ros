@@ -116,6 +116,7 @@ jobs:
       - name: Reconcile immutable v6.5 rollback evidence
         run: |
           set -euo pipefail
+          mkdir -p v700-exact-evidence
           clean_version="$(exact-v650/bin/python -c 'import atlas_ros; print(atlas_ros.__version__)')"
           python scripts/validate_v650_rollback_evidence.py \
             --repository-root . \
@@ -124,7 +125,8 @@ jobs:
             --clean-install-version "$clean_version" \
             --restoration-passed \
             --metadata-exception-record-url https://app.notion.com/p/3aab8344ad2c81efad29c12b9b132374 \
-            --output v700-exact-evidence/V650_ROLLBACK_EVIDENCE.json
+            --output v700-exact-evidence/V650_ROLLBACK_EVIDENCE.json \
+            2>&1 | tee v700-exact-evidence/V650_ROLLBACK_RECONCILIATION.log
       - name: Compare equivalent v7 and v6.5 performance
         run: |
           python scripts/compare_v700_performance.py \
