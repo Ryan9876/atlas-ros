@@ -5,15 +5,19 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime
 
-from atlas_ros.capabilities.interfaces import ProposedExecutionPlan
 from atlas_ros.contracts.execution.transaction import (
     AuthorizedExecutionPlan,
     ExecutedOperationReceipt,
     ExecutionTransactionReceipt,
+    ProposedExecutionPlan,
     ProviderReadbackReceipt,
     ProviderWriteReceipt,
 )
-from atlas_ros.ports.execution import ExecutionJournalPort, ProviderExecutionPort
+from atlas_ros.ports.execution import (
+    ExecutionJournalPort,
+    ProviderExecutionPort,
+    ProviderWriteGuard,
+)
 
 
 class ExecutionBoundaryError(RuntimeError):
@@ -51,7 +55,7 @@ class AttendedAuthorizationService:
 
 @dataclass(frozen=True, slots=True)
 class AttendedExecutionService:
-    """Execute exactly one immutable authorized plan and verify every provider write."""
+    """Execute exactly one guarded immutable plan and verify every provider write."""
 
     port: ProviderExecutionPort
     journal: ExecutionJournalPort | None = None
@@ -61,9 +65,11 @@ class AttendedExecutionService:
         plan: AuthorizedExecutionPlan,
         *,
         transaction_id: str,
+        write_guard: ProviderWriteGuard,
     ) -> ExecutionTransactionReceipt:
         if not transaction_id.strip():
             raise ExecutionBoundaryError("an exact execution transaction ID is required")
+        write_guard.require_provider_write_permission(plan.authorization_id)
         if self.journal is not None:
             self.journal.begin(plan, transaction_id=transaction_id)
 
