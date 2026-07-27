@@ -50,7 +50,11 @@ def write_contract_catalog(path: Path, body: str | None = None) -> Path:
             "    forbidden_from:\n"
             "      - src/atlas_ros/application\n"
             "      - src/atlas_ros/capabilities\n"
-            "      - src/atlas_ros/cli\n"
+            "      - src/atlas_ros/contracts/execution\n"
+            "      - src/atlas_ros/entry_points\n"
+            "      - src/atlas_ros/kernel\n"
+            "      - src/atlas_ros/policy\n"
+            "      - src/atlas_ros/ports\n"
         ),
         encoding="utf-8",
     )
@@ -60,12 +64,14 @@ def write_contract_catalog(path: Path, body: str | None = None) -> Path:
 def test_repository_contract_catalog_compiles() -> None:
     registry = compile_contract_registry(Path("governance/contract-catalog.yaml"))
 
-    assert len(registry.contracts) == 4
-    assert registry.require("atlas.execution-plan").writer == "3.0"
-    assert registry.require("atlas.execution-plan").migrations == (
-        "src/atlas_ros/contracts/migrations/v6_execution_plan.py",
+    assert len(registry.contracts) == 5
+    assert registry.require("atlas.authorized-execution-plan").writer == "1.0"
+    assert registry.require("atlas.execution-transaction-receipt").migrations == ()
+    assert registry.require("atlas.intent-graph").schema_path == (
+        "schemas/reasoning/intent-graph.schema.json"
     )
     assert "src/atlas_ros/application" in registry.lifecycle.forbidden_from
+    assert "src/atlas_ros/entry_points" in registry.lifecycle.forbidden_from
     assert len(registry.digest) == 64
 
 
@@ -88,14 +94,14 @@ def test_contract_catalog_rejects_unsafe_schema_path(tmp_path: Path) -> None:
         compile_contract_registry(write_contract_catalog(tmp_path / "invalid.yaml", body))
 
 
-def test_contract_catalog_requires_runtime_legacy_prohibitions(tmp_path: Path) -> None:
+def test_contract_catalog_requires_complete_runtime_prohibitions(tmp_path: Path) -> None:
     catalog = write_contract_catalog(tmp_path / "catalog.yaml")
     body = catalog.read_text(encoding="utf-8").replace(
-        "      - src/atlas_ros/application\n",
+        "      - src/atlas_ros/entry_points\n",
         "",
     )
 
-    with pytest.raises(ContractCompilationError, match="not forbidden"):
+    with pytest.raises(ContractCompilationError, match="entry_points"):
         compile_contract_registry(write_contract_catalog(tmp_path / "invalid.yaml", body))
 
 
