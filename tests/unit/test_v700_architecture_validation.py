@@ -25,6 +25,31 @@ def test_contract_layer_rejects_kernel_dependency(tmp_path: Path) -> None:
     ]
 
 
+def test_migration_boundary_may_reference_historical_runtime(tmp_path: Path) -> None:
+    migration = tmp_path / "contracts" / "migrations" / "v6.py"
+    migration.parent.mkdir(parents=True)
+    migration.write_text("from atlas_ros.planning import ExecutionPlanner\n", encoding="utf-8")
+
+    assert validate_v7(tmp_path) == []
+
+
+def test_application_rejects_compatibility_migration_import(tmp_path: Path) -> None:
+    application = tmp_path / "application" / "invalid.py"
+    application.parent.mkdir(parents=True)
+    application.write_text(
+        "from atlas_ros.contracts.migrations.capability_surface_v6 import CaptureService\n",
+        encoding="utf-8",
+    )
+
+    assert validate_v7(tmp_path) == [
+        {
+            "path": "application/invalid.py",
+            "import": "atlas_ros.contracts.migrations.capability_surface_v6",
+            "rule": "production v7 layers cannot import compatibility migrations",
+        }
+    ]
+
+
 def test_lightweight_dispatcher_rejects_direct_provider_import(tmp_path: Path) -> None:
     entry_point = tmp_path / "entry_points" / "main.py"
     entry_point.parent.mkdir(parents=True)
