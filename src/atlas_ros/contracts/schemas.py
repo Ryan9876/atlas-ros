@@ -10,6 +10,7 @@ from typing import Any
 from pydantic import BaseModel
 
 from atlas_ros.contracts.compiler import compile_contract_registry
+from atlas_ros.contracts.execution.payload import ProviderOperationPayload
 from atlas_ros.contracts.execution.pipeline import CaptureEnvelope, PipelineRunEnvelope
 from atlas_ros.contracts.execution.transaction import (
     AuthorizedExecutionPlan,
@@ -25,6 +26,7 @@ _MODELS: Mapping[str, type[BaseModel]] = {
     "atlas.capture-envelope": CaptureEnvelope,
     "atlas.intent-graph": IntentGraph,
     "atlas.proposed-execution-plan": ProposedExecutionPlan,
+    "atlas.provider-operation-payload": ProviderOperationPayload,
     "atlas.authorized-execution-plan": AuthorizedExecutionPlan,
     "atlas.execution-transaction-receipt": ExecutionTransactionReceipt,
     "atlas.pipeline-run-envelope": PipelineRunEnvelope,
