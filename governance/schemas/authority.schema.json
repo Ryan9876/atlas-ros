@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Ryan9876/atlas-ros/governance/schemas/authority.schema.json",
+  "title": "Atlas ROS GitHub Authority",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "repository", "authority_model_version", "active_release", "immediate_rollback", "notion_system_state_url", "release_index", "integrity"],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "repository": {"const": "Ryan9876/atlas-ros"},
+    "authority_model_version": {"const": "7.0"},
+    "minimum_compatible_initializer_version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+$"},
+    "active_release": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["version", "status", "immutable_commit", "tag", "manifest_path", "manifest_url", "release_url", "source_sha256", "wheel_sha256"],
+      "properties": {
+        "version": {"type": "string", "pattern": "^7\\.[0-9]+\\.[0-9]+$"},
+        "status": {"const": "Active"},
+        "immutable_commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+        "tag": {"type": "string", "pattern": "^v7\\.[0-9]+\\.[0-9]+$"},
+        "manifest_path": {"const": "release/RELEASE_MANIFEST.md"},
+        "manifest_url": {"type": "string", "format": "uri"},
+        "release_url": {"type": "string", "format": "uri"},
+        "source_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "wheel_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+      }
+    },
+    "immediate_rollback": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["version", "immutable_commit", "tag", "release_url"],
+      "properties": {
+        "version": {"const": "6.5.0"},
+        "immutable_commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+        "tag": {"const": "v6.5.0"},
+        "release_url": {"type": "string", "format": "uri"}
+      }
+    },
+    "historical_rollbacks": {"type": "array", "items": {"type": "object"}},
+    "notion_system_state_url": {"type": "string", "format": "uri"},
+    "release_index": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256"],
+      "properties": {
+        "path": {"const": "governance/RELEASE_INDEX.md"},
+        "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+      }
+    },
+    "integration_inventory_resolution": {"const": "active-release-manifest"},
+    "last_promotion_transaction_id": {"type": "string"},
+    "last_verified_at": {"type": "string", "format": "date-time"},
+    "integrity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["algorithm", "content_sha256"],
+      "properties": {
+        "algorithm": {"const": "sha256"},
+        "content_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+      }
+    }
+  }
+}
