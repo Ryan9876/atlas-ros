@@ -36,6 +36,10 @@ def test_canonical_coordinator_records_stage_lineage() -> None:
 
 
 def test_authority_record_rejects_tampered_integrity() -> None:
+    manifest_url = (
+        "https://github.com/Ryan9876/atlas-ros/blob/"
+        "v7.0.0/release/RELEASE_MANIFEST.md"
+    )
     payload = {
         "schema_version": "1.0",
         "repository": "Ryan9876/atlas-ros",
@@ -47,7 +51,7 @@ def test_authority_record_rejects_tampered_integrity() -> None:
             "immutable_commit": "a" * 40,
             "tag": "v7.0.0",
             "manifest_path": "release/RELEASE_MANIFEST.md",
-            "manifest_url": "https://github.com/Ryan9876/atlas-ros/blob/v7.0.0/release/RELEASE_MANIFEST.md",
+            "manifest_url": manifest_url,
             "release_url": "https://github.com/Ryan9876/atlas-ros/releases/tag/v7.0.0",
             "source_sha256": "b" * 64,
             "wheel_sha256": "c" * 64,
