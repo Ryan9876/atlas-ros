@@ -71,8 +71,9 @@ def compile_temp_catalog(path: Path):
 def test_repository_contract_catalog_compiles() -> None:
     registry = compile_contract_registry(Path("governance/contract-catalog.yaml"))
 
-    assert len(registry.contracts) == 6
+    assert len(registry.contracts) == 7
     assert registry.require("atlas.proposed-execution-plan").writer == "1.0"
+    assert registry.require("atlas.provider-operation-payload").writer == "1.0"
     assert registry.require("atlas.authorized-execution-plan").writer == "1.0"
     assert registry.require("atlas.execution-transaction-receipt").migrations == ()
     assert registry.require("atlas.intent-graph").schema_path == (
