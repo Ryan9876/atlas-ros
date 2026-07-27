@@ -10,11 +10,12 @@ from atlas_ros.application.execution import (
     AttendedExecutionService,
     ExecutionBoundaryError,
 )
-from atlas_ros.capabilities.interfaces import ProposedExecutionPlan, ReconciliationResult
+from atlas_ros.capabilities.interfaces import ReconciliationResult
 from atlas_ros.capabilities.reconciliation import CanonicalReconciliationService
 from atlas_ros.contracts.execution.transaction import (
     AuthorizedExecutionPlan,
     ExecutionTransactionReceipt,
+    ProposedExecutionPlan,
 )
 from atlas_ros.ports.execution import ProviderWriteGuard
 
@@ -45,13 +46,16 @@ class GovernedExecutionTransactionService:
         transaction_id: str,
         authorized_at: datetime | None = None,
     ) -> GovernedTransactionResult:
-        self.write_guard.require_provider_write_permission(authorization_id)
         authorized = self.authorizer.authorize(
             proposed_plan,
             authorization_id=authorization_id,
             authorized_at=authorized_at,
         )
-        receipt = self.executor.execute(authorized, transaction_id=transaction_id)
+        receipt = self.executor.execute(
+            authorized,
+            transaction_id=transaction_id,
+            write_guard=self.write_guard,
+        )
         reconciliation = self.reconciler.reconcile(proposed_plan, receipt)
         if not reconciliation.complete:
             raise ExecutionBoundaryError(
