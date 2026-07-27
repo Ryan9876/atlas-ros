@@ -86,7 +86,7 @@ jobs:
         run: |
           set -euo pipefail
           rm -rf v700-final-controller-evidence
-          python scripts/validate_v700_final_controller.py \
+          python -m scripts.validate_v700_final_controller \
             --exact-artifact-validation "$VALIDATION_FILE" \
             --final-source-commit "$HEAD_SHA" \
             --decision-record-url https://app.notion.com/p/3aab8344ad2c81399ff7e6f5c5ce644d \
@@ -135,7 +135,7 @@ jobs:
           )
       - name: Retain non-publishing final-controller evidence
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        uses: actions/upload-artifact@ea165f8d65b540449e92b4886f43607fa02
         with:
           name: atlas-ros-v700-final-controller-${{ github.event.pull_request.head.sha || github.sha }}
           path: v700-final-controller-evidence/
