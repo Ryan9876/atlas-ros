@@ -19,6 +19,7 @@ from tools.release.final_controller import (
     verify_post_publication,
 )
 from tools.release.live_authority_snapshot import LiveAuthoritySnapshot, load_snapshot
+from tools.release.rollback_evidence import load_receipt
 
 
 class FinalControllerValidationError(ValueError):
@@ -35,6 +36,7 @@ def validate_final_controller(
     output_dir: Path,
     drive_ledger_path: Path | None = None,
     live_authority_snapshot_path: Path | None = None,
+    v650_rollback_evidence_path: Path | None = None,
     exact_package_authorization_id: str | None = None,
 ) -> dict[str, Any]:
     """Generate non-publishing final, verification, and activation evidence."""
@@ -57,6 +59,11 @@ def validate_final_controller(
         live_authority_snapshot_path,
         candidate_sha=candidate_sha,
         artifact_digest=artifact_digest,
+    )
+    rollback_evidence = (
+        load_receipt(v650_rollback_evidence_path)
+        if v650_rollback_evidence_path
+        else None
     )
 
     final_receipt = compile_final_controller(
@@ -85,6 +92,12 @@ def validate_final_controller(
             required_integrations_ready=bool(exact.get("integration_snapshot_ready")),
             v650_rollback_restored=bool(
                 exact.get("active_v650_restoration_passed")
+            ),
+            v650_rollback_evidence_reconciled=(
+                rollback_evidence.status == "ready" if rollback_evidence else False
+            ),
+            v650_rollback_evidence_sha256=(
+                rollback_evidence.evidence_digest if rollback_evidence else None
             ),
             review_record_url=review_record_url,
             decision_record_url=decision_record_url,
@@ -152,6 +165,10 @@ def validate_final_controller(
         "live_authority_snapshot_present": live_authority is not None,
         "live_authority_snapshot_sha256": (
             live_authority.snapshot_sha256 if live_authority else None
+        ),
+        "v650_rollback_evidence_present": rollback_evidence is not None,
+        "v650_rollback_evidence_sha256": (
+            rollback_evidence.evidence_digest if rollback_evidence else None
         ),
         "provider_writes": 0,
         "publication_performed": False,
@@ -254,6 +271,7 @@ def _write_summary(result: dict[str, Any], path: Path) -> None:
 - Authority activation: `{activation['status']}`
 - Drive ledger: `{result['drive_migration_ledger_sha256'] or 'not supplied'}`
 - Live authority snapshot: `{result['live_authority_snapshot_sha256'] or 'not supplied'}`
+- v6.5 rollback evidence: `{result['v650_rollback_evidence_sha256'] or 'not supplied'}`
 - Provider writes: `0`
 - Publication performed: `false`
 - Tag created: `false`
@@ -277,6 +295,7 @@ def main() -> None:
     parser.add_argument("--review-record-url", required=True)
     parser.add_argument("--drive-ledger", type=Path)
     parser.add_argument("--live-authority-snapshot", type=Path)
+    parser.add_argument("--v650-rollback-evidence", type=Path)
     parser.add_argument("--authorization-id")
     parser.add_argument("--output-dir", type=Path, required=True)
     args = parser.parse_args()
@@ -289,6 +308,7 @@ def main() -> None:
         output_dir=args.output_dir,
         drive_ledger_path=args.drive_ledger,
         live_authority_snapshot_path=args.live_authority_snapshot,
+        v650_rollback_evidence_path=args.v650_rollback_evidence,
         exact_package_authorization_id=args.authorization_id,
     )
 
