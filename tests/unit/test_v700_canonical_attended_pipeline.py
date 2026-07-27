@@ -111,7 +111,11 @@ def operation(capture: CaptureEnvelope) -> PlannedProviderOperation:
     )
 
 
-def pipeline(tmp_path: Path, provider: FakeProvider, mode: RuntimeMode) -> CanonicalAttendedPipeline:
+def pipeline(
+    tmp_path: Path,
+    provider: FakeProvider,
+    mode: RuntimeMode,
+) -> CanonicalAttendedPipeline:
     pre_authorization = CanonicalPreAuthorizationPipeline(
         CanonicalProcessingCoordinator(
             release_version="7.0.0rc1",
