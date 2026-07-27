@@ -38,6 +38,8 @@ class FinalPackageEvidence:
     live_authority_readback_complete: bool
     required_integrations_ready: bool
     v650_rollback_restored: bool
+    v650_rollback_evidence_reconciled: bool
+    v650_rollback_evidence_sha256: str | None
     review_record_url: str
     decision_record_url: str
     exact_package_authorization_id: str | None
@@ -150,6 +152,9 @@ def compile_final_controller(
         "live authority readback": evidence.live_authority_readback_complete,
         "required integrations": evidence.required_integrations_ready,
         "v6.5 rollback restoration": evidence.v650_rollback_restored,
+        "v6.5 rollback evidence reconciliation": (
+            evidence.v650_rollback_evidence_reconciled
+        ),
     }
     blockers.extend(f"{name} has not passed" for name, passed in gates.items() if not passed)
     if evidence.drive_migration_ledger_complete:
@@ -162,6 +167,20 @@ def compile_final_controller(
                 evidence.drive_migration_ledger_sha256,
                 64,
             )
+    if evidence.v650_rollback_evidence_reconciled:
+        if evidence.v650_rollback_evidence_sha256 is None:
+            blockers.append("v6.5 rollback evidence digest is required")
+        else:
+            _append_invalid_sha(
+                blockers,
+                "v6.5 rollback evidence digest",
+                evidence.v650_rollback_evidence_sha256,
+                64,
+            )
+    elif evidence.v650_rollback_evidence_sha256 is not None:
+        blockers.append(
+            "v6.5 rollback evidence digest cannot replace reconciliation"
+        )
     if not _valid_url(evidence.review_record_url):
         blockers.append("governed review record URL is required")
     if not _valid_url(evidence.decision_record_url):
@@ -173,6 +192,7 @@ def compile_final_controller(
     planned_actions = (
         "freeze the exact final 7.0.0 source commit",
         "bind the final package to source, wheel, artifact, ledger, review, and decision digests",
+        "bind the immutable v6.5 rollback package to reconciled exception evidence",
         "validate the single final publication controller without publishing",
         "publish immutable v7.0.0 tag and GitHub Release only after exact authorization",
         "independently read back all published assets and checksums",
