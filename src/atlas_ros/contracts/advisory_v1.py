@@ -1,12 +1,12 @@
 """Provider-free shared advisory contracts for Atlas ROS v6.5.
 
-These contracts describe evidence-backed advice only.  They grant no provider,
+These contracts describe evidence-backed advice only. They grant no provider,
 planning, authorization, or execution authority.
 """
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import StrEnum
 from hashlib import sha256
 from json import dumps
@@ -101,11 +101,8 @@ def stable_advisory_digest(
 ) -> str:
     """Return a deterministic digest without concealing excluded fields."""
 
-    canonical = {
-        key: value
-        for key, value in sorted(payload.items())
-        if key not in set(excluded_keys)
-    }
+    excluded = set(excluded_keys)
+    canonical = {key: value for key, value in sorted(payload.items()) if key not in excluded}
     return sha256(
         dumps(canonical, sort_keys=True, separators=(",", ":"), default=str).encode()
     ).hexdigest()
