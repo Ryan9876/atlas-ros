@@ -119,30 +119,38 @@ If v6.2 p95 exceeds the active baseline by more than 20%:
 
 ## Candidate validation
 
-Run:
+The authoritative candidate path is `.github/workflows/release-candidate.yml`. It checks out the exact pull-request head and invokes `scripts/validate_v620_candidate.sh`, which binds the run to the candidate commit and retains checksum-verifiable evidence.
+
+For provider-free local development validation, run:
 
 ```bash
 ruff check .
 python scripts/validate_architecture.py
 mypy src
 pytest
-python scripts/evaluate_planning_benchmark.py --dataset benchmarks/planning-v1.json --output test-results/planning.json
+python scripts/evaluate_classification_intelligence.py --dataset benchmarks/classification-intelligence-v1.json --output test-results/classification-intelligence.json
+python scripts/evaluate_knowledge_management.py --dataset benchmarks/knowledge-management-v2.json --output test-results/knowledge-management.json
 python scripts/evaluate_semantic_fidelity.py --dataset benchmarks/semantic-fidelity-v1.json --output test-results/semantic-fidelity.json
 python scripts/evaluate_reasoning_coherence.py --dataset benchmarks/reasoning-coherence-v1.json --output test-results/reasoning-coherence.json
+python scripts/evaluate_execution_planning.py --dataset benchmarks/execution-planning-v1.json --output test-results/execution-planning.json
+python scripts/evaluate_execution_orchestration.py --dataset benchmarks/execution-orchestration-v1.json --output test-results/execution-orchestration.json
+python scripts/evaluate_canonical_reconciliation.py --dataset benchmarks/canonical-reconciliation-v1.json --output test-results/canonical-reconciliation.json
 python scripts/evaluate_adaptive_input_processing.py --dataset benchmarks/adaptive-input-processing-v1.json --output test-results/adaptive-input-processing.json
+python scripts/scan_candidate_secrets.py --root . --output test-results/secret-scan.json
 python -m build
 ```
 
-Then:
+The governed GitHub Actions controller additionally:
 
-1. install the wheel into a clean virtual environment;
-2. import the pipeline and run the CloudVision critical case;
-3. verify zero provider writes;
-4. generate checksums and SBOM;
-5. restore from the source distribution;
-6. restore and validate the immediate rollback;
-7. run dependency and secret scans;
-8. retain all evidence in the candidate artifact.
+1. generates and verifies the source checksum manifest;
+2. installs the candidate wheel in a clean environment and runs the CloudVision critical case;
+3. downloads and restores the active v6.1.1 baseline and preserved v6.1.0 rollback assets;
+4. compares v6.2 p95 performance with v6.1.1;
+5. records any preserved historical-package identity warning without modifying immutable assets;
+6. generates the SBOM, candidate manifest, evidence checksums, and publication checksums;
+7. uploads the exact candidate evidence artifact.
+
+A local run that requires release-asset download must use an authenticated GitHub CLI session with read access to the repository. Do not place credentials in command history, source files, logs, or evidence artifacts.
 
 ## CloudVision acceptance check
 
