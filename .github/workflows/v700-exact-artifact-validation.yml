@@ -113,6 +113,18 @@ jobs:
           python -m venv exact-v620
           exact-v620/bin/python -m pip install --disable-pip-version-check "$v620_wheel"
           exact-v620/bin/python -c "import atlas_ros; assert atlas_ros.__version__ == '6.2.0'"
+      - name: Reconcile immutable v6.5 rollback evidence
+        run: |
+          set -euo pipefail
+          clean_version="$(exact-v650/bin/python -c 'import atlas_ros; print(atlas_ros.__version__)')"
+          python scripts/validate_v650_rollback_evidence.py \
+            --repository-root . \
+            --source-commit bb6d6fea70d6824c9bc6a42e63ba36cc88029260 \
+            --release-assets-dir v650-assets \
+            --clean-install-version "$clean_version" \
+            --restoration-passed \
+            --metadata-exception-record-url https://app.notion.com/p/3aab8344ad2c81efad29c12b9b132374 \
+            --output v700-exact-evidence/V650_ROLLBACK_EVIDENCE.json
       - name: Compare equivalent v7 and v6.5 performance
         run: |
           python scripts/compare_v700_performance.py \
@@ -142,6 +154,7 @@ jobs:
             --architecture-run-id "$ARCHITECTURE_RUN_ID"
             --performance v700-exact-evidence/V700_V650_PERFORMANCE.json
             --integration-snapshot release/v700-integration-readiness.json
+            --rollback-evidence v700-exact-evidence/V650_ROLLBACK_EVIDENCE.json
             --output-dir v700-exact-evidence
           )
           if [[ -f release/v700-drive-migration-inventory.json ]]; then
