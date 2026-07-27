@@ -1,5 +1,7 @@
 from .advisory_v1 import (
     AdvisoryAlternative,
+    AdvisoryEnvelope,
+    AdvisoryValueState,
     AdvisoryRecommendation,
     AdvisoryReceipt,
     Assumption,
@@ -156,6 +158,8 @@ from .v62 import (
 
 __all__ = [
     "AdvisoryAlternative",
+    "AdvisoryEnvelope",
+    "AdvisoryValueState",
     "AdvisoryRecommendation",
     "AdvisoryReceipt",
     "Assumption",
