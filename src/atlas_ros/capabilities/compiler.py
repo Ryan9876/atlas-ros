@@ -200,7 +200,11 @@ def _validate_package_implementation(
             continue
         if not isinstance(node.value.value, str):
             continue
-        if any(isinstance(target, ast.Name) and target.id == "CAPABILITY_ID" for target in node.targets):
+        has_capability_target = any(
+            isinstance(target, ast.Name) and target.id == "CAPABILITY_ID"
+            for target in node.targets
+        )
+        if has_capability_target:
             declared_id = node.value.value
             break
     if declared_id != descriptor.capability_id:
