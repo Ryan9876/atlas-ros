@@ -72,7 +72,10 @@ class AuthorityRecord(BaseModel):
 def _canonicalize_urls(value: Any, *, key: str = "") -> Any:
     """Normalize equivalent URL values before deterministic authority hashing."""
     if isinstance(value, dict):
-        return {item_key: _canonicalize_urls(item, key=item_key) for item_key, item in value.items()}
+        return {
+            item_key: _canonicalize_urls(item, key=item_key)
+            for item_key, item in value.items()
+        }
     if isinstance(value, list):
         return [_canonicalize_urls(item, key=key) for item in value]
     if key.endswith("_url") and isinstance(value, str):
