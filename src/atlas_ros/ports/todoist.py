@@ -29,22 +29,26 @@ class TodoistTaskRecord(Protocol):
 
 
 class TodoistClientPort(Protocol):
-    """Minimal provider client surface used by exact attended execution."""
+    """Replaceable provider client that cannot plan or authorize work."""
 
     def list_projects(self) -> Sequence[TodoistProjectRecord]: ...
 
-    def list_tasks(self, *, project_id: str | None = None) -> Sequence[TodoistTaskRecord]: ...
+    def list_tasks(
+        self,
+        *,
+        project_id: str = "",
+        parent_id: str = "",
+    ) -> Sequence[TodoistTaskRecord]: ...
 
     def create_task(
         self,
         *,
         content: str,
-        description: str,
         project_id: str,
-        section_id: str | None = None,
-        parent_id: str | None = None,
-        priority: int = 1,
-        due_date: str | None = None,
+        section_id: str | None,
+        parent_id: str | None,
+        description: str,
+        idempotency_key: str,
     ) -> TodoistTaskRecord: ...
 
     def get_task(self, task_id: str) -> TodoistTaskRecord: ...
