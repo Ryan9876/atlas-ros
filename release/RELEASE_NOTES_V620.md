@@ -8,7 +8,7 @@ Atlas ROS v6.2 adds a provider-free adaptive input-processing architecture. It p
 
 ### Canonical intent
 
-Equivalent phrasing is normalized into a stable business intent and semantic fingerprint. Raw input and material qualifiers remain preserved. Material differences such as production scope, lab-only restrictions, downtime constraints, budget, timing, and authorization remain fingerprint inputs.
+Equivalent phrasing is normalized into a stable business intent and semantic fingerprint. Raw input remains preserved. Business-semantic qualifiers such as production scope, lab-only restrictions, downtime constraints, budget, and timing remain fingerprint inputs. Control-plane comparison, historical-preservation, provider-readback, authorization, and receipt directives remain retained as constraints, evidence, or normalization provenance but are excluded from the business semantic fingerprint.
 
 ### Multiple outcomes
 
