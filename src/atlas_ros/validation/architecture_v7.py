@@ -35,6 +35,14 @@ _LAYER_RULES: tuple[tuple[str, tuple[str, ...]], ...] = (
     ),
     ("ports/", ("atlas_ros.contracts", "atlas_ros.ports")),
     (
+        "adapters/",
+        (
+            "atlas_ros.adapters",
+            "atlas_ros.contracts",
+            "atlas_ros.ports",
+        ),
+    ),
+    (
         "kernel/",
         (
             "atlas_ros.application",
