@@ -1,5 +1,9 @@
 """Application use-case coordination layer."""
 
+from atlas_ros.application.attended_pipeline import (
+    CanonicalAttendedPipeline,
+    CanonicalAttendedResult,
+)
 from atlas_ros.application.canonical_processing import CanonicalProcessingCoordinator
 from atlas_ros.application.execution import (
     AttendedAuthorizationService,
@@ -21,6 +25,8 @@ from atlas_ros.application.transaction import (
 __all__ = [
     "AttendedAuthorizationService",
     "AttendedExecutionService",
+    "CanonicalAttendedPipeline",
+    "CanonicalAttendedResult",
     "CanonicalPipelineError",
     "CanonicalPipelineState",
     "CanonicalPreAuthorizationPipeline",
