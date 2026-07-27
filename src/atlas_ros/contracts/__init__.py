@@ -155,7 +155,18 @@ from .v62 import (
 )
 
 __all__ = [
-    "AdvisoryAlternative",\n    "AdvisoryRecommendation",\n    "AdvisoryReceipt",\n    "Assumption",\n    "ConfidenceAssessment",\n    "MissingDataIndicator",\n    "ProvenanceRecord",\n    "UncertaintyRange",\n    "ValueOrigin",\n    "stable_advisory_digest",\n    "ArchetypeSelection",\n    "AuthoritySource",
+    "AdvisoryAlternative",
+    "AdvisoryRecommendation",
+    "AdvisoryReceipt",
+    "Assumption",
+    "ConfidenceAssessment",
+    "MissingDataIndicator",
+    "ProvenanceRecord",
+    "UncertaintyRange",
+    "ValueOrigin",
+    "stable_advisory_digest",
+    "ArchetypeSelection",
+    "AuthoritySource",
     "BenchmarkExecutionPolicyV1",
     "BenchmarkMode",
     "CandidateType",
