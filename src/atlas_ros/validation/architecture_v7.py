@@ -64,6 +64,7 @@ _FORBIDDEN_RUNTIME_IMPORTS = (
 )
 
 _MIGRATION_FORBIDDEN_PREFIXES = (
+    "adapters/",
     "application/",
     "capabilities/",
     "contracts/execution/",
