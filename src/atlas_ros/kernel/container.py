@@ -13,6 +13,8 @@ from atlas_ros.application.canonical_processing import (
 )
 from atlas_ros.capabilities.compiler import compile_capability_registry
 from atlas_ros.capabilities.registry import CapabilityRegistry
+from atlas_ros.contracts.compiler import compile_contract_registry
+from atlas_ros.contracts.registry import ContractRegistry
 from atlas_ros.policy.compiler import compile_policy_registry
 from atlas_ros.policy.registry import PolicyRegistry
 
@@ -50,6 +52,7 @@ class RuntimeKernel:
     config: KernelConfig
     policy_registry: PolicyRegistry
     coordinator: CanonicalProcessingCoordinator
+    contract_registry: ContractRegistry | None = None
     capability_registry: CapabilityRegistry | None = None
 
     @classmethod
@@ -59,7 +62,7 @@ class RuntimeKernel:
         policy_paths: Iterable[Path],
         stages: tuple[ProcessingStage, ...],
     ) -> RuntimeKernel:
-        """Compose a compatibility kernel when the catalog is bound externally."""
+        """Compose a compatibility kernel when catalogs are bound externally."""
         policy_registry = compile_policy_registry(policy_paths)
         coordinator = _coordinator(config, policy_registry, stages)
         return cls(config=config, policy_registry=policy_registry, coordinator=coordinator)
@@ -69,12 +72,18 @@ class RuntimeKernel:
         cls,
         config: KernelConfig,
         policy_paths: Iterable[Path],
+        contract_catalog_path: Path,
         capability_catalog_path: Path,
         stages: tuple[ProcessingStage, ...],
     ) -> RuntimeKernel:
-        """Compile and bind all available canonical governance at composition time."""
+        """Compile and bind canonical governance at composition time."""
         policy_registry = compile_policy_registry(policy_paths)
+        contract_registry = compile_contract_registry(contract_catalog_path)
         capability_registry = compile_capability_registry(capability_catalog_path)
+        if contract_registry.digest != config.contract_catalog_digest:
+            raise KernelConfigurationError(
+                "compiled contract catalog digest does not match kernel configuration"
+            )
         if capability_registry.digest != config.capability_catalog_digest:
             raise KernelConfigurationError(
                 "compiled capability catalog digest does not match kernel configuration"
@@ -84,6 +93,7 @@ class RuntimeKernel:
             config=config,
             policy_registry=policy_registry,
             coordinator=coordinator,
+            contract_registry=contract_registry,
             capability_registry=capability_registry,
         )
 
