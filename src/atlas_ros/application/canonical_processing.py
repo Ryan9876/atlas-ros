@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass, is_dataclass
 from typing import Any, Protocol
 
 from atlas_ros.contracts.digests import sha256_digest
@@ -29,8 +29,13 @@ class CanonicalProcessingCoordinator:
     capability_catalog_digest: str
     stages: tuple[ProcessingStage, ...]
 
-    def process(self, envelope: CaptureEnvelope) -> tuple[Any, PipelineRunEnvelope]:
-        value: Any = envelope
+    def process(
+        self,
+        envelope: CaptureEnvelope,
+        *,
+        initial_value: Any | None = None,
+    ) -> tuple[Any, PipelineRunEnvelope]:
+        value: Any = envelope if initial_value is None else initial_value
         digests: dict[str, str] = {}
         for stage in self.stages:
             value = stage.process(value)
@@ -53,6 +58,8 @@ class CanonicalProcessingCoordinator:
         model_dump = getattr(value, "model_dump", None)
         if callable(model_dump):
             return model_dump(mode="json")
+        if is_dataclass(value) and not isinstance(value, type):
+            return asdict(value)
         if isinstance(value, str | int | float | bool | type(None) | list | tuple | dict):
             return value
         raise TypeError(f"canonical stage returned non-digestable value: {type(value).__name__}")
