@@ -114,7 +114,9 @@ def test_digest_tampering_is_rejected(tmp_path: Path) -> None:
 
 
 def test_live_folder_tree_is_complete_but_not_promotion_ready() -> None:
-    result = load_expand_and_validate(Path("release/v700-drive-folder-tree.json"))
+    result = load_expand_and_validate(
+        Path("release/v700-drive-folder-traversal.json")
+    )
 
     assert result["status"] == "folder_traversal_complete_item_inventory_incomplete"
     assert result["folder_count"] == 93
@@ -129,5 +131,5 @@ def test_live_folder_tree_is_complete_but_not_promotion_ready() -> None:
     assert result["provider_writes"] == 0
     assert result["drive_retirement_authorized"] is False
     assert result["source_evidence_sha256"] == (
-        "574cac3a8e1a4f00710f593cf14ae0534c46a31ffce847aff474414ae8886cf8"
+        "5138b252aa82524cf84971b7b501dee23586a20e91103a27420c4866dd9084c6"
     )
