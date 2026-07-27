@@ -5,6 +5,7 @@ from pathlib import PurePosixPath
 
 import pytest
 
+from atlas_ros.kernel.authority import canonical_authority_payload
 from atlas_ros.kernel.bootstrap import InitializationError, initialize
 from atlas_ros.kernel.digests import sha256_digest
 
@@ -81,7 +82,7 @@ def reader_for(payload: dict[str, object]) -> FakeAuthorityReader:
     }
     payload["integrity"] = {
         "algorithm": "sha256",
-        "content_sha256": sha256_digest(payload),
+        "content_sha256": sha256_digest(canonical_authority_payload(payload)),
     }
     authority_text = json.dumps(payload)
     return FakeAuthorityReader(
