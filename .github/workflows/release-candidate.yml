@@ -50,7 +50,7 @@ jobs:
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "$ATLAS_CANDIDATE_SHA"
           # Legacy evidence-controller contract retained: --head-sha "${ATLAS_CANDIDATE_SHA}"
-          bash scripts/validate_v620_candidate.sh
+          bash -x scripts/validate_v620_candidate.sh 2>&1 | tee validation-controller.log
 
       - name: Upload v6.2 candidate evidence
         if: always()
@@ -60,5 +60,6 @@ jobs:
           path: |
             publication/
             candidate-evidence/
+            validation-controller.log
           if-no-files-found: warn
           retention-days: 30
