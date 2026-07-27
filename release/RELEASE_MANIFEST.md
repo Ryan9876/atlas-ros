@@ -1,6 +1,6 @@
 # Atlas ROS v6.2.0 Release Manifest
 
-Status: Active production release after exact-candidate validation, Exact-Artifact Full Validation V4V-44, Ryan's explicit promotion authorization V4D-35, governed final-publication controller validation V4V-45, final GitHub publication, immutable tag verification, published-asset restoration, and post-publication readback on 2026-07-27.
+Status: Active production release after exact-candidate validation, Exact-Artifact Full Validation V4V-44, Ryan's explicit promotion authorization V4D-35, governed final-publication controller validation V4V-45, final GitHub publication, immutable tag verification, published-asset restoration, post-publication readback, and final production-promotion verification V4V-46 on 2026-07-27.
 
 - Package version: `6.2.0`
 - Validated candidate head: `6e18b270d125c297309915fb8cde545bc65ee5e1`
@@ -23,7 +23,7 @@ Status: Active production release after exact-candidate validation, Exact-Artifa
 - Post-publication verification artifact ID: `8639608992`
 - Post-publication verification artifact digest: `46bd8ddeebe019d43c9d1127d80c8f16eaa58e3bd754753e89a9678377461a58`
 - Published at: `2026-07-27T01:08:43Z`
-- Governed reviews: `V4V-44 — Atlas ROS v6.2.0rc1 Exact-Artifact Full Validation` and `V4V-45 — Atlas ROS v6.2.0 Final Publication Controller Validation` — Passed with Findings; no blocking findings
+- Governed reviews: `V4V-44 — Atlas ROS v6.2.0rc1 Exact-Artifact Full Validation`, `V4V-45 — Atlas ROS v6.2.0 Final Publication Controller Validation`, and `V4V-46 — Atlas ROS v6.2.0 Final Production-Promotion Verification` — Passed with Findings; no blocking findings
 - Promotion decision: `V4D-35 — Promote exact Atlas ROS v6.2.0 candidate to Active production`
 - Final release: `https://github.com/Ryan9876/atlas-ros/releases/tag/v6.2.0`
 - Immediate immutable rollback: Atlas ROS v6.1.1 at production source `e1b842765376c9e36bbdee981cddead3feb97173`
