@@ -137,21 +137,43 @@ python scripts/compare_v62_performance.py \
 
 python -m venv restore-v611
 restore-v611/bin/python -m pip install --disable-pip-version-check "$BASELINE_WHEEL"
-restore-v611/bin/python -c "import atlas_ros; assert atlas_ros.__version__ == '6.1.1'"
+restore-v611/bin/python - <<'PY'
+from importlib.metadata import version
+import atlas_ros
+assert version('atlas-ros') == '6.1.1'
+assert atlas_ros.__version__ == '6.1.1'
+PY
 python -m venv restore-v610
 restore-v610/bin/python -m pip install --disable-pip-version-check "$ROLLBACK_WHEEL"
-restore-v610/bin/python -c "import atlas_ros; assert atlas_ros.__version__ == '6.1.0'"
-
-python - <<'PY'
+restore-v610/bin/python - <<'PY'
 import json
+from importlib.metadata import version
 from pathlib import Path
+import atlas_ros
+
+distribution_version = version('atlas-ros')
+module_version = getattr(atlas_ros, '__version__', '')
+assert distribution_version == '6.1.0'
+assert module_version
+identity_matches = module_version == distribution_version
+warning = '' if identity_matches else (
+    'The immutable v6.1.0 rollback wheel has distribution metadata 6.1.0 but '
+    f'atlas_ros.__version__ reports {module_version}; restoration remains installable '
+    'and the pre-existing identity drift is recorded without modifying historical assets.'
+)
 Path('candidate-evidence/rollback-restoration.json').write_text(
     json.dumps(
         {
             'production_baseline': 'v6.1.1',
             'production_baseline_restored': True,
+            'production_baseline_distribution_version': '6.1.1',
+            'production_baseline_module_version': '6.1.1',
             'historical_immediate_rollback': 'v6.1.0',
             'historical_rollback_restored': True,
+            'historical_rollback_distribution_version': distribution_version,
+            'historical_rollback_module_version': module_version,
+            'historical_rollback_identity_matches': identity_matches,
+            'historical_rollback_identity_warning': warning,
         },
         indent=2,
         sort_keys=True,
@@ -171,7 +193,11 @@ import hashlib
 import json
 import os
 from pathlib import Path
+
 evidence = Path('candidate-evidence')
+restoration = json.loads((evidence / 'rollback-restoration.json').read_text(encoding='utf-8'))
+warning = restoration['historical_rollback_identity_warning']
+warnings = [warning] if warning else []
 status = {
     'release': 'Atlas ROS v6.2.0rc1',
     'status': 'candidate_validated_not_promoted',
@@ -183,12 +209,18 @@ status = {
     'production_promotion_authorized': False,
     'production_baseline': 'v6.1.1',
     'historical_rollback': 'v6.1.0',
+    'warnings': warnings,
 }
 status_path = evidence / 'V620_CANDIDATE_STATUS.json'
 status_path.write_text(json.dumps(status, indent=2, sort_keys=True), encoding='utf-8')
 digest = hashlib.sha256(status_path.read_bytes()).hexdigest()
 (evidence / 'V620_CANDIDATE_STATUS.sha256').write_text(
     f'{digest}  {status_path.name}\n', encoding='utf-8'
+)
+warning_line = (
+    f'- Historical rollback identity warning: {warning}\n'
+    if warning
+    else '- Historical rollback package identity: matched\n'
 )
 (evidence / 'RELEASE_MANIFEST_V620_CANDIDATE.md').write_text(
     f'''# Atlas ROS v6.2.0rc1 Candidate Manifest
@@ -200,8 +232,8 @@ Status: Validated release candidate; not promoted.
 - Source distribution: `{status["source_distribution"]}`
 - Wheel: `{status["wheel"]}`
 - Production baseline restored: `v6.1.1`
-- Historical rollback restored: `v6.1.0`
-- Provider writes during provider-free validation: `0`
+- Historical rollback distribution restored: `v6.1.0`
+{warning_line}- Provider writes during provider-free validation: `0`
 - Final production promotion: not authorized
 
 The candidate must not update the fixed Drive Release Index, Notion System State, immutable production tag, GitHub Release, or rollback state without a separate explicit Ryan authorization.
