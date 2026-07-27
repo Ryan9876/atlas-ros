@@ -86,3 +86,5 @@ if [[ "$PUBLISH" == "true" ]]; then
   gh release download "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --dir release-readback
   (cd release-readback && sha256sum -c CHECKSUMS.sha256)
 fi
+
+# Controller validation trigger.
