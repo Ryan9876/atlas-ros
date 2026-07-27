@@ -11,6 +11,7 @@ _LAYER_RULES: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("contracts/authority.py", ("atlas_ros.contracts",)),
     ("contracts/digests.py", ("atlas_ros.contracts",)),
     ("contracts/execution/", ("atlas_ros.contracts",)),
+    ("contracts/migrations/", ("atlas_ros",)),
     ("policy/", ("atlas_ros.contracts", "atlas_ros.policy")),
     (
         "capabilities/",
@@ -52,14 +53,14 @@ _FORBIDDEN_RUNTIME_IMPORTS = (
     "atlas_ros.release",
 )
 
-_CAPABILITY_COMPATIBILITY_IMPORTS = (
-    "atlas_ros.capture",
-    "atlas_ros.engines",
-    "atlas_ros.models",
-    "atlas_ros.orchestration",
-    "atlas_ros.planning",
-    "atlas_ros.reconciliation",
-    "atlas_ros.services",
+_MIGRATION_FORBIDDEN_PREFIXES = (
+    "application/",
+    "capabilities/",
+    "contracts/execution/",
+    "entry_points/",
+    "kernel/",
+    "policy/",
+    "ports/",
 )
 
 
@@ -87,9 +88,16 @@ def validate_v7(root: Path = PACKAGE_ROOT) -> list[dict[str, str]]:
         for module in sorted(module for module in modules if module.startswith("atlas_ros")):
             if relative == "entry_points/_legacy.py" and module == "atlas_ros.cli":
                 continue
-            if relative == "capabilities/__init__.py" and module.startswith(
-                _CAPABILITY_COMPATIBILITY_IMPORTS
+            if module.startswith("atlas_ros.contracts.migrations") and relative.startswith(
+                _MIGRATION_FORBIDDEN_PREFIXES
             ):
+                violations.append(
+                    {
+                        "path": relative,
+                        "import": module,
+                        "rule": "production v7 layers cannot import compatibility migrations",
+                    }
+                )
                 continue
             if not module.startswith(allowed):
                 violations.append(
