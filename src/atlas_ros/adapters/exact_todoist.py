@@ -5,7 +5,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, TypedDict
 
-from atlas_ros.adapters.todoist import TodoistAdapter, TodoistTask
 from atlas_ros.contracts.digests import sha256_digest
 from atlas_ros.contracts.execution.transaction import (
     PlannedProviderOperation,
@@ -13,6 +12,7 @@ from atlas_ros.contracts.execution.transaction import (
     ProviderWriteReceipt,
 )
 from atlas_ros.ports.execution import ExecutionPayloadPort
+from atlas_ros.ports.todoist import TodoistClientPort, TodoistTaskRecord
 
 
 class ExactTodoistExecutionError(RuntimeError):
@@ -46,7 +46,7 @@ def todoist_target(
 class ExactTodoistExecutionAdapter:
     """Execute exact Todoist creates; never plan, authorize, or add fields."""
 
-    client: TodoistAdapter
+    client: TodoistClientPort
     payloads: ExecutionPayloadPort
 
     def write(
@@ -161,7 +161,7 @@ def _optional_string(value: Any, field: str) -> str | None:
     return value
 
 
-def _task_projection(task: TodoistTask) -> dict[str, str | None]:
+def _task_projection(task: TodoistTaskRecord) -> dict[str, str | None]:
     return {
         "content": task.content,
         "project_id": task.project_id,
