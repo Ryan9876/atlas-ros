@@ -18,6 +18,7 @@ from tools.release.final_controller import (
     compile_final_controller,
     verify_post_publication,
 )
+from tools.release.live_authority_snapshot import load_snapshot
 
 
 class FinalControllerValidationError(ValueError):
@@ -52,7 +53,11 @@ def validate_final_controller(
     source_sha256 = _required_string(exact, "source_sha256")
     wheel_sha256 = _required_string(exact, "wheel_sha256")
     drive_ledger = load_ledger(drive_ledger_path) if drive_ledger_path else None
-    live_authority_ready = _live_authority_ready(live_authority_snapshot_path)
+    live_authority = _live_authority_snapshot(
+        live_authority_snapshot_path,
+        candidate_sha=candidate_sha,
+        artifact_digest=artifact_digest,
+    )
 
     final_receipt = compile_final_controller(
         FinalPackageEvidence(
@@ -74,7 +79,9 @@ def validate_final_controller(
             drive_migration_ledger_sha256=(
                 drive_ledger.ledger_sha256 if drive_ledger else None
             ),
-            live_authority_readback_complete=live_authority_ready,
+            live_authority_readback_complete=(
+                live_authority.complete if live_authority else False
+            ),
             required_integrations_ready=bool(exact.get("integration_snapshot_ready")),
             v650_rollback_restored=bool(
                 exact.get("active_v650_restoration_passed")
@@ -139,7 +146,13 @@ def validate_final_controller(
         "post_publication_verification": asdict(publication_receipt),
         "authority_activation": asdict(activation_receipt),
         "drive_migration_ledger_present": drive_ledger is not None,
-        "live_authority_snapshot_present": live_authority_snapshot_path is not None,
+        "drive_migration_ledger_sha256": (
+            drive_ledger.ledger_sha256 if drive_ledger else None
+        ),
+        "live_authority_snapshot_present": live_authority is not None,
+        "live_authority_snapshot_sha256": (
+            live_authority.snapshot_sha256 if live_authority else None
+        ),
         "provider_writes": 0,
         "publication_performed": False,
         "tag_created": False,
@@ -165,17 +178,28 @@ def validate_final_controller(
     return result
 
 
-def _live_authority_ready(path: Path | None) -> bool:
+def _live_authority_snapshot(
+    path: Path | None,
+    *,
+    candidate_sha: str,
+    artifact_digest: str,
+):
     if path is None:
-        return False
-    payload = _read_json(path)
-    required = (
-        "release_index_agrees",
-        "system_state_agrees",
-        "active_manifest_agrees",
-        "integration_inventory_agrees",
-    )
-    return all(payload.get(field) is True for field in required)
+        return None
+    snapshot = load_snapshot(path)
+    if snapshot.phase != "pre_promotion_baseline":
+        raise FinalControllerValidationError(
+            "final controller requires a pre-promotion baseline authority snapshot"
+        )
+    if snapshot.exact_package_commit != candidate_sha:
+        raise FinalControllerValidationError(
+            "live authority snapshot references a different candidate commit"
+        )
+    if snapshot.exact_artifact_digest != artifact_digest:
+        raise FinalControllerValidationError(
+            "live authority snapshot references a different candidate artifact"
+        )
+    return snapshot
 
 
 def _require_non_publishing_result(result: dict[str, Any]) -> None:
@@ -228,6 +252,8 @@ def _write_summary(result: dict[str, Any], path: Path) -> None:
 - Final controller: `{final['status']}`
 - Post-publication verification: `{publication['status']}`
 - Authority activation: `{activation['status']}`
+- Drive ledger: `{result['drive_migration_ledger_sha256'] or 'not supplied'}`
+- Live authority snapshot: `{result['live_authority_snapshot_sha256'] or 'not supplied'}`
 - Provider writes: `0`
 - Publication performed: `false`
 - Tag created: `false`
