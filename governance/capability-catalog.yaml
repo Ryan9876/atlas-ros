@@ -5,7 +5,7 @@ capabilities:
     owner: Atlas ROS Core
     writes_providers: false
     inputs: [CaptureEnvelope]
-    outputs: [CanonicalIntent, IntentGraph]
+    outputs: [IntentGraph]
   - id: atlas.classification
     package: capabilities/classification
     owner: Atlas ROS Core
@@ -30,6 +30,8 @@ capabilities:
     package: capabilities/execution_planning
     owner: Atlas ROS Core
     writes_providers: false
+    inputs: [IntentGraph, PlannedProviderOperation]
+    outputs: [ProposedExecutionPlan]
     sole_planning_authority: true
   - id: atlas.framework-composition
     package: capabilities/framework_composition
@@ -61,4 +63,6 @@ capabilities:
     package: capabilities/reconciliation
     owner: Atlas ROS Core
     writes_providers: false
+    inputs: [ProposedExecutionPlan, ExecutionTransactionReceipt]
+    outputs: [ReconciliationResult]
     may_create_execution_intent: false
