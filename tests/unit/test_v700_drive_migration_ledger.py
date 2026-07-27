@@ -9,6 +9,7 @@ import pytest
 from tools.release.drive_migration_ledger import (
     DriveMigrationLedgerError,
     compile_ledger,
+    load_and_compile,
     load_ledger,
     write_ledger,
 )
@@ -41,32 +42,106 @@ def record(
     }
 
 
+def records() -> list[dict[str, object]]:
+    return [
+        record(
+            "release-v650",
+            target="releases/v6.5.0/atlas-ros-6.5.0.tar.gz",
+            digest="a" * 64,
+        ),
+        record(
+            "release-v620",
+            target="releases/v6.2.0/atlas-ros-6.2.0.tar.gz",
+            digest="b" * 64,
+        ),
+    ]
+
+
 def ledger():
-    return compile_ledger(
-        [
-            record(
-                "release-v650",
-                target="releases/v6.5.0/atlas-ros-6.5.0.tar.gz",
-                digest="a" * 64,
-            ),
-            record(
-                "release-v620",
-                target="releases/v6.2.0/atlas-ros-6.2.0.tar.gz",
-                digest="b" * 64,
-            ),
-        ]
-    )
+    return compile_ledger(records())
+
+
+def inventory(
+    *,
+    traversal_complete: bool = True,
+    inaccessible_item_ids: list[str] | None = None,
+    unconsumed_page_tokens: int = 0,
+) -> dict[str, object]:
+    return {
+        "schema_version": "1.0",
+        "generated_for_release": "7.0.0rc1",
+        "source_root_id": "atlas-root",
+        "traversal_complete": traversal_complete,
+        "visited_folder_ids": ["atlas-root", "historical-root"],
+        "inaccessible_item_ids": inaccessible_item_ids or [],
+        "unconsumed_page_tokens": unconsumed_page_tokens,
+        "records": records(),
+    }
 
 
 def test_ledger_is_deterministic_and_promotion_ready() -> None:
     first = ledger()
     replay = ledger()
 
+    assert first.inventory_sha256 == replay.inventory_sha256
     assert first.ledger_sha256 == replay.ledger_sha256
+    assert first.inventory_complete is True
     assert first.unresolved_authoritative_items == 0
     assert first.verified_github_representations == 2
     assert first.complete_for_promotion_readiness is True
     assert first.ready_for_post_promotion_retirement is True
+
+
+def test_recursive_inventory_envelope_is_required_for_file_based_readiness(
+    tmp_path: Path,
+) -> None:
+    legacy = tmp_path / "legacy-list.json"
+    legacy.write_text(json.dumps(records()), encoding="utf-8")
+    legacy_ledger = load_and_compile(legacy)
+
+    assert legacy_ledger.inventory_complete is False
+    assert legacy_ledger.complete_for_promotion_readiness is False
+    assert legacy_ledger.unconsumed_page_tokens == 1
+
+    complete = tmp_path / "complete-inventory.json"
+    complete.write_text(json.dumps(inventory()), encoding="utf-8")
+    complete_ledger = load_and_compile(complete)
+
+    assert complete_ledger.inventory_complete is True
+    assert complete_ledger.complete_for_promotion_readiness is True
+    assert complete_ledger.source_root_id == "atlas-root"
+    assert complete_ledger.visited_folder_ids == ("atlas-root", "historical-root")
+
+
+def test_inventory_with_unconsumed_page_tokens_cannot_unlock_promotion(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "inventory.json"
+    path.write_text(
+        json.dumps(inventory(unconsumed_page_tokens=1)),
+        encoding="utf-8",
+    )
+
+    compiled = load_and_compile(path)
+
+    assert compiled.inventory_complete is False
+    assert compiled.complete_for_promotion_readiness is False
+
+
+def test_inventory_with_inaccessible_items_cannot_unlock_promotion(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "inventory.json"
+    path.write_text(
+        json.dumps(inventory(inaccessible_item_ids=["unreadable-folder"])),
+        encoding="utf-8",
+    )
+
+    compiled = load_and_compile(path)
+
+    assert compiled.inventory_complete is False
+    assert compiled.complete_for_promotion_readiness is False
+    assert compiled.inaccessible_item_ids == ("unreadable-folder",)
 
 
 def test_ledger_rejects_checksum_mismatch() -> None:
