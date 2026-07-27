@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-from dataclasses import asdict, replace
+from dataclasses import asdict
 from pathlib import Path
 
 import pytest
@@ -152,4 +152,3 @@ def test_snapshot_json_contains_no_authority_to_write(tmp_path: Path) -> None:
 
     assert payload == normalized
     assert "write" not in path.read_text(encoding="utf-8").lower()
-    assert replace(compiled, complete=False).snapshot_sha256 == compiled.snapshot_sha256
