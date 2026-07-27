@@ -1,4 +1,5 @@
 name: ci
+# v6.5 exact publication controller validation
 on: [push, pull_request]
 permissions:
   contents: read
