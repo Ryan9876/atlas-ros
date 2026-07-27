@@ -10,6 +10,7 @@ Only the documents listed here, the active Release Index, the Notion System Stat
 - `release/RELEASE_SCOPE_V620.md`
 - `release/RELEASE_NOTES_V620.md`
 - GitHub Release `v6.2.0`
+- Immediate immutable rollback: Atlas ROS v6.1.1 (retained unchanged)
 - Fixed Google Drive `RELEASE_INDEX.md`
 - Notion `Atlas/ROS System State — v6.2.0`
 
