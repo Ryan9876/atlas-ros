@@ -16,7 +16,7 @@ from pathlib import Path
 print(tomllib.loads(Path("pyproject.toml").read_text())["project"]["version"])
 PY
 )"
-test "$version" = "6.5.0rc1"
+test "$version" = "6.5.0"
 test "$(python -c 'import atlas_ros; print(atlas_ros.__version__)')" = "$version"
 test "$(git rev-parse HEAD)" = "$SOURCE_COMMIT"
 git merge-base --is-ancestor "$CANDIDATE_COMMIT" HEAD
@@ -36,17 +36,17 @@ rm -f release/CHECKSUMS.sha256
 atlas release checksums --root . --checksum-file release/CHECKSUMS.sha256
 atlas release verify --root . --checksum-file release/CHECKSUMS.sha256
 python -m build
-test -f dist/atlas_ros-6.5.0rc1.tar.gz
-test -f dist/atlas_ros-6.5.0rc1-py3-none-any.whl
+test -f dist/atlas_ros-6.5.0.tar.gz
+test -f dist/atlas_ros-6.5.0-py3-none-any.whl
 python -m venv final-wheel
-final-wheel/bin/python -m pip install --disable-pip-version-check dist/atlas_ros-6.5.0rc1-py3-none-any.whl
+final-wheel/bin/python -m pip install --disable-pip-version-check dist/atlas_ros-6.5.0-py3-none-any.whl
 final-wheel/bin/python - <<'PY'
 from importlib.metadata import version
 import atlas_ros
 from atlas_ros.contracts import AdvisoryRecommendation
 from atlas_ros.engines import ExecutionPresenterV65, GovernedFrameworkComposerV65, MinimumEffectivePathPlannerV65, ScenarioIntelligenceV65
-assert version("atlas-ros") == "6.5.0rc1"
-assert atlas_ros.__version__ == "6.5.0rc1"
+assert version("atlas-ros") == "6.5.0"
+assert atlas_ros.__version__ == "6.5.0"
 assert all((AdvisoryRecommendation, ExecutionPresenterV65, GovernedFrameworkComposerV65, MinimumEffectivePathPlannerV65, ScenarioIntelligenceV65))
 PY
 gh release download "$ROLLBACK_TAG" --repo "$GITHUB_REPOSITORY" --pattern 'atlas_ros-6.2.0*.whl' --dir restore-active
@@ -57,15 +57,15 @@ active-wheel/bin/python -c "import atlas_ros; assert atlas_ros.__version__ == '6
 python -m venv rollback-wheel
 rollback-wheel/bin/python -m pip install --disable-pip-version-check "$(find restore-rollback -name '*.whl' -print -quit)"
 rollback-wheel/bin/python -c "import atlas_ros; assert atlas_ros.__version__ == '6.1.1'"
-cp dist/atlas_ros-6.5.0rc1.tar.gz final-publication/
-cp dist/atlas_ros-6.5.0rc1-py3-none-any.whl final-publication/
+cp dist/atlas_ros-6.5.0.tar.gz final-publication/
+cp dist/atlas_ros-6.5.0-py3-none-any.whl final-publication/
 cp release/RELEASE_NOTES_V650.md final-publication/
 cp release/RELEASE_SCOPE_V650.md final-publication/
 cp release/SBOM_V650_CANDIDATE.cdx.json final-publication/SBOM.cdx.json
 cp release/CHECKSUMS.sha256 final-publication/SOURCE_CHECKSUMS.sha256
 candidate_digest="${CANDIDATE_ARTIFACT_DIGEST#sha256:}"
-wheel_sha="$(sha256sum final-publication/atlas_ros-6.5.0rc1-py3-none-any.whl | awk '{print $1}')"
-source_sha="$(sha256sum final-publication/atlas_ros-6.5.0rc1.tar.gz | awk '{print $1}')"
+wheel_sha="$(sha256sum final-publication/atlas_ros-6.5.0-py3-none-any.whl | awk '{print $1}')"
+source_sha="$(sha256sum final-publication/atlas_ros-6.5.0.tar.gz | awk '{print $1}')"
 export SOURCE_COMMIT CANDIDATE_COMMIT CANDIDATE_MERGE_COMMIT CANDIDATE_ARTIFACT_ID candidate_digest wheel_sha source_sha
 python - <<'PY'
 import json, os
