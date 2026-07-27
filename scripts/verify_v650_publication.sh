@@ -21,7 +21,6 @@ assert data["publishedAt"]
 assert data["url"]
 PY
 
-git fetch --tags --force
 test "$(git rev-list -n 1 "$RELEASE_TAG")" = "$EXPECTED_SOURCE_COMMIT"
 
 gh release download "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --dir release-readback
