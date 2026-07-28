@@ -237,6 +237,11 @@ def _validate_one(
     if package_sha != declared_sha or package_sha != file_sha[package_id]:
         _fail(f"release {release} package checksum does not reconcile")
     checksum_text = payload.get(checksum_text_key)
+    if not isinstance(checksum_text, str):
+        _fail(f"release {release} checksum-file text must be a string")
+    checksum_text_sha = hashlib.sha256(checksum_text.encode("utf-8")).hexdigest()
+    if checksum_text_sha != file_sha[checksum_id]:
+        _fail(f"release {release} checksum-file text hash does not match bytes")
     expected_text = f"{declared_sha}  {file_title[package_id]}\n"
     if checksum_text != expected_text:
         _fail(f"release {release} checksum-file text does not reconcile")
