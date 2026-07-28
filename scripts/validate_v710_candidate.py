@@ -6,14 +6,13 @@ from __future__ import annotations
 import argparse
 import json
 import subprocess
+import sys
 from dataclasses import asdict
 from pathlib import Path
 
-from tools.release.drive_dependency_inventory import (
-    assert_zero_current_drive_dependencies,
-    inventory_drive_dependencies,
-)
-from tools.release.release_compiler import compile_release, load_release_specification
+_REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
+if str(_REPOSITORY_ROOT) not in sys.path:
+    sys.path.insert(0, str(_REPOSITORY_ROOT))
 
 
 def run(*command: str, root: Path) -> None:
@@ -21,6 +20,15 @@ def run(*command: str, root: Path) -> None:
 
 
 def main() -> None:
+    from tools.release.drive_dependency_inventory import (
+        assert_zero_current_drive_dependencies,
+        inventory_drive_dependencies,
+    )
+    from tools.release.release_compiler import (
+        compile_release,
+        load_release_specification,
+    )
+
     parser = argparse.ArgumentParser()
     parser.add_argument("--root", type=Path, default=Path.cwd())
     parser.add_argument("--evidence", type=Path, default=Path("v710-evidence"))
@@ -34,12 +42,17 @@ def main() -> None:
     inventory = inventory_drive_dependencies(root)
     assert_zero_current_drive_dependencies(inventory)
     (evidence / "DRIVE_DEPENDENCY_INVENTORY.json").write_text(
-        json.dumps({
-            "inventory_digest": inventory.inventory_digest,
-            "summary": inventory.summary,
-            "current_dependencies": 0,
-            "references": [asdict(item) for item in inventory.references],
-        }, indent=2, sort_keys=True) + "\n"
+        json.dumps(
+            {
+                "inventory_digest": inventory.inventory_digest,
+                "summary": inventory.summary,
+                "current_dependencies": 0,
+                "references": [asdict(item) for item in inventory.references],
+            },
+            indent=2,
+            sort_keys=True,
+        )
+        + "\n"
     )
 
     if args.source_commit:
