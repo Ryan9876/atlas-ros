@@ -7,7 +7,7 @@ import sys
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from types import MappingProxyType
-from typing import Any
+from typing import Any, cast
 
 CommandHandler = Callable[[Sequence[str]], None]
 
@@ -31,7 +31,7 @@ class LazyCommandTarget:
             raise LazyCommandError(
                 f"lazy command target is not callable: {self.module}:{self.attribute}"
             )
-        return value
+        return cast(CommandHandler, value)
 
 
 @dataclass(frozen=True, slots=True)
