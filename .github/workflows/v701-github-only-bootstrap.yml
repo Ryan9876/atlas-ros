@@ -52,7 +52,7 @@ jobs:
             --output v701-ci/secret-scan.json
           python scripts/validate_dependency_lock.py requirements.runtime.lock
           python scripts/validate_vulnerability_exceptions.py
-          pytest -q \
+          pytest -q --no-cov \
             tests/unit/test_v700_authority_compiler.py \
             tests/unit/test_v700_bootstrap.py \
             tests/unit/test_v700_full_initialization.py
