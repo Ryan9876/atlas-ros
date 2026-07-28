@@ -47,7 +47,9 @@ def assemble(
     source = package_root / f"atlas_ros-{VERSION}.tar.gz"
     wheel = package_root / f"atlas_ros-{VERSION}-py3-none-any.whl"
     source_tree = package_root / "SOURCE_TREE.txt"
-    compiler_receipt_path = package_root / "compiler-output/evidence/RELEASE_COMPILATION_RECEIPT.json"
+    compiler_receipt_path = (
+        package_root / "compiler-output/evidence/RELEASE_COMPILATION_RECEIPT.json"
+    )
     manifest_receipt_path = package_root / "PRODUCTION_MANIFEST_VALIDATION.json"
 
     for path in (
@@ -125,7 +127,8 @@ def assemble(
         "SPDXID": "SPDXRef-DOCUMENT",
         "name": f"atlas-ros-{VERSION}",
         "documentNamespace": (
-            "https://github.com/Ryan9876/atlas-ros/releases/final-package/" + source_commit
+            "https://github.com/Ryan9876/atlas-ros/releases/final-package/"
+            + source_commit
         ),
         "creationInfo": {
             "created": source_timestamp,
@@ -173,9 +176,7 @@ def assemble(
                 ),
             ),
             notion_system_state_url=SYSTEM_STATE_URL,
-            last_promotion_transaction_id=(
-                "v710-promotion-pending-" + source_commit[:12]
-            ),
+            last_promotion_transaction_id=("v710-promotion-pending-" + source_commit[:12]),
             last_verified_at=source_timestamp,
         )
     )
