@@ -150,6 +150,12 @@ jobs:
             --inventory release/v700-drive-file-inventory.json \
             --folder-tree release/v700-drive-folder-traversal.json \
             --output v700-exact-evidence/V700_DRIVE_FILE_LISTING_RECEIPTS_VALIDATION.json
+          python -m scripts.validate_v700_drive_release_supplement \
+            --supplement release/v700-drive-v500-file-supplement.json \
+            --inventory release/v700-drive-file-inventory.json \
+            --receipts release/v700-drive-file-listing-receipts.json \
+            --folder-tree release/v700-drive-folder-traversal.json \
+            --output v700-exact-evidence/V700_DRIVE_V500_SUPPLEMENT_VALIDATION.json
           python - <<'PY'
           import json
           from pathlib import Path
@@ -167,6 +173,10 @@ jobs:
               (root / 'V700_DRIVE_FILE_LISTING_RECEIPTS_VALIDATION.json')
               .read_text(encoding='utf-8')
           )
+          supplement = json.loads(
+              (root / 'V700_DRIVE_V500_SUPPLEMENT_VALIDATION.json')
+              .read_text(encoding='utf-8')
+          )
           assert folders['status'] == (
               'folder_traversal_complete_item_inventory_incomplete'
           )
@@ -176,26 +186,49 @@ jobs:
           assert folders['drive_retirement_authorized'] is False
           assert files['status'] == 'partial_file_inventory'
           assert files['known_folder_count'] == 93
-          assert files['scanned_folder_count'] == 4
-          assert files['unscanned_folder_count'] == 89
-          assert files['file_count'] == 14
-          assert files['content_hashed_count'] == 13
+          assert files['scanned_folder_count'] == 5
+          assert files['unscanned_folder_count'] == 88
+          assert files['file_count'] == 16
+          assert files['content_hashed_count'] == 15
           assert files['sensitive_item_count'] == 1
           assert files['verified_github_equivalence_count'] == 1
-          assert files['governed_legacy_exception_count'] == 12
+          assert files['governed_legacy_exception_count'] == 14
           assert files['promotion_ready'] is False
           assert files['provider_writes'] == 0
           assert files['drive_retirement_authorized'] is False
           assert files['credential_action_authorized'] is False
           assert receipts['status'] == 'partial_file_listing_receipts'
           assert receipts['known_folder_count'] == 93
-          assert receipts['listed_folder_count'] == 4
-          assert receipts['unscanned_folder_count'] == 89
-          assert receipts['file_count'] == 14
-          assert receipts['bound_file_count'] == 14
+          assert receipts['listed_folder_count'] == 5
+          assert receipts['unscanned_folder_count'] == 88
+          assert receipts['file_count'] == 16
+          assert receipts['bound_file_count'] == 16
           assert receipts['enumeration_complete'] is False
           assert receipts['provider_writes'] == 0
           assert receipts['drive_retirement_authorized'] is False
+          assert supplement['status'] == (
+              'partial_file_inventory_with_complete_v500_supplement'
+          )
+          assert supplement['supplement_sha256'] == (
+              'f2c9094c6836da57a1af759efe76cc882a6a37a69924b5f9f512bf60dff1c3a0'
+          )
+          assert supplement['v500_scanned_folder_count'] == 1
+          assert supplement['v500_file_count'] == 18
+          assert supplement['v500_content_hashed_count'] == 18
+          assert supplement['v500_listing_count'] == 1
+          assert supplement['v500_candidate_checksum_reconciled'] is True
+          assert supplement['combined_known_folder_count'] == 93
+          assert supplement['combined_scanned_folder_count'] == 6
+          assert supplement['combined_unscanned_folder_count'] == 87
+          assert supplement['combined_file_count'] == 34
+          assert supplement['combined_content_hashed_count'] == 33
+          assert supplement['combined_sensitive_item_count'] == 1
+          assert supplement['combined_verified_github_equivalence_count'] == 1
+          assert supplement['combined_governed_legacy_exception_count'] == 32
+          assert supplement['promotion_ready'] is False
+          assert supplement['provider_writes'] == 0
+          assert supplement['drive_retirement_authorized'] is False
+          assert supplement['credential_action_authorized'] is False
           PY
       - name: Validate exact artifact and simulate release transactions
         env:
