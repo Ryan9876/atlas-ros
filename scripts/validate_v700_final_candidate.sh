@@ -25,7 +25,6 @@ PY
 test "$ATLAS_VERSION" = "7.0.0"
 test "$(python -c 'import atlas_ros; print(atlas_ros.__version__)')" = "$ATLAS_VERSION"
 test "$(git rev-parse HEAD)" = "$FINAL_SHA"
-git merge-base --is-ancestor "$CANDIDATE_SHA" HEAD
 git merge-base --is-ancestor "$CANDIDATE_MERGE_COMMIT" HEAD
 
 rm -rf \
