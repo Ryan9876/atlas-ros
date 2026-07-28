@@ -3,7 +3,12 @@ name: v700-drive-cutover-plan
 on:
   pull_request:
     branches: [main]
+    types: [ready_for_review]
   workflow_dispatch:
+
+concurrency:
+  group: v700-drive-cutover-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
@@ -129,4 +134,4 @@ jobs:
           name: atlas-ros-v700-drive-cutover-${{ github.event.pull_request.head.sha || github.sha }}
           path: v700-drive-cutover-evidence/
           if-no-files-found: warn
-          retention-days: 90
+          retention-days: 30
