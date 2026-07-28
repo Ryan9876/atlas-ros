@@ -81,10 +81,8 @@ def _flatten(node: Any) -> list[tuple[str, str]]:
 
 
 def _detected_major(title: str) -> int | None:
-    match = re.search(r"(?:^|[ _-])v?(\d+)(?:[._-]|$)", title, re.IGNORECASE)
-    if match is None:
-        return None
-    return int(match.group(1))
+    match = re.search(r"(?:^|[ _-])v(\d+)(?:[._-]|$)", title, re.IGNORECASE)
+    return int(match.group(1)) if match else None
 
 
 def validate_pre_v6_deletion_plan(
@@ -119,27 +117,35 @@ def validate_pre_v6_deletion_plan(
         _fail("pre-v6 deletion must target the governed historical root")
 
     records = _flatten(target)
-    if plan.get("target_folder_count") != len(records):
-        _fail("pre-v6 target folder count mismatch")
-    if len(records) != 92:
-        _fail("pre-v6 historical subtree must contain 92 folders")
+    if plan.get("target_folder_count") != len(records) or len(records) != 92:
+        _fail("pre-v6 historical subtree must contain exactly 92 folders")
     detected = [
         (title, major)
         for _, title in records
         if (major := _detected_major(title)) is not None
     ]
-    invalid_versions = sorted(title for title, major in detected if major >= 6)
-    if invalid_versions:
+    if any(major >= 6 for _, major in detected):
         _fail("pre-v6 deletion scope contains v6-or-newer folders")
 
-    if plan.get("scope_rule") != "delete_versions_below_6_after_v7_cutover":
-        _fail("unexpected pre-v6 deletion scope rule")
-    if plan.get("preserved_release_family") != "6.x_and_newer":
-        _fail("v6 and newer releases must be preserved")
-    if plan.get("target_file_count") is not None:
-        _fail("unknown pre-v6 file count cannot be asserted")
-    if plan.get("item_inventory_complete") is not False:
-        _fail("pre-v6 item inventory must remain explicitly incomplete")
+    expected = {
+        "scope_rule": "delete_versions_below_6_after_v7_cutover",
+        "preserved_release_family": "6.x_and_newer",
+        "target_file_count": None,
+        "item_inventory_complete": False,
+        "exclusion_review_required": True,
+        "exclusion_review_complete": False,
+        "v7_active": False,
+        "v7_post_promotion_readback_complete": False,
+        "v650_rollback_restored": False,
+        "explicit_deletion_authorization_id": None,
+        "deletion_authorized": False,
+        "promotion_blocking": False,
+        "provider_writes": 0,
+        "destructive_actions_performed": 0,
+    }
+    for field, value in expected.items():
+        if plan.get(field) != value:
+            _fail(f"pre-v6 deletion plan has unsafe state: {field}")
 
     required_exclusions = {
         "legal_hold",
@@ -150,24 +156,6 @@ def validate_pre_v6_deletion_plan(
     exclusions = plan.get("exclusion_classes")
     if not isinstance(exclusions, list) or set(exclusions) != required_exclusions:
         _fail("pre-v6 deletion exclusion classes are incomplete")
-    if plan.get("exclusion_review_required") is not True:
-        _fail("pre-v6 deletion requires an exclusion review")
-    if plan.get("exclusion_review_complete") is not False:
-        _fail("pre-v6 exclusion review cannot be complete before item review")
-
-    blocked_state = {
-        "v7_active": False,
-        "v7_post_promotion_readback_complete": False,
-        "v650_rollback_restored": False,
-        "explicit_deletion_authorization_id": None,
-        "deletion_authorized": False,
-        "promotion_blocking": False,
-        "provider_writes": 0,
-        "destructive_actions_performed": 0,
-    }
-    for field, expected in blocked_state.items():
-        if plan.get(field) != expected:
-            _fail(f"pre-v6 deletion plan has unsafe pre-cutover state: {field}")
 
     plan_sha = _sha(plan.get("plan_sha256"), "plan_sha256")
     unsigned = dict(plan)
