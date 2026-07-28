@@ -3,7 +3,12 @@ name: v700-release-candidate
 on:
   pull_request:
     branches: [main]
+    types: [ready_for_review]
   workflow_dispatch:
+
+concurrency:
+  group: v700-release-candidate-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
@@ -46,4 +51,4 @@ jobs:
             v700-publication/
             v700-candidate-validation.log
           if-no-files-found: error
-          retention-days: 90
+          retention-days: 30
