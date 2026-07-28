@@ -87,6 +87,19 @@
     "immediate_rollback": {
       "$ref": "#/$defs/ReleaseIdentity"
     },
+    "integration_inventory_data_source": {
+      "anyOf": [
+        {
+          "pattern": "^collection://[0-9a-f-]{36}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Integration Inventory Data Source"
+    },
     "integration_inventory_url": {
       "pattern": "^https://",
       "title": "Integration Inventory Url",

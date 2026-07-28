@@ -1,0 +1,202 @@
+name: v7.1.1 corrective candidate
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+    types: [synchronize]
+    paths:
+      - .github/workflows/v711-corrective-candidate.yml
+
+concurrency:
+  group: v711-corrective-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  validate-once:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.head_ref == 'agent/v711-fast-initialization'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 75
+    env:
+      SOURCE_COMMIT: ${{ github.event.pull_request.head.sha || github.sha }}
+      RELEASE_VERSION: 7.1.1
+    steps:
+      - name: Check out exact candidate
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          fetch-tags: true
+          persist-credentials: false
+
+      - name: Bind exact source identity
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$SOURCE_COMMIT"
+          mkdir -p final-package
+          git rev-parse HEAD > final-package/SOURCE_COMMIT.txt
+          git show -s --format=%cI HEAD > final-package/SOURCE_TIMESTAMP.txt
+          git ls-tree -r --full-tree HEAD > final-package/SOURCE_TREE.txt
+
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.12.10'
+          cache: pip
+
+      - name: Install one validation environment
+        run: python -m pip install --disable-pip-version-check -e '.[dev]'
+
+      - name: Run focused checks before full validation
+        run: |
+          set -euo pipefail
+          pytest -q -o addopts='' \
+            tests/unit/test_v700_bootstrap.py \
+            tests/unit/test_v700_full_initialization.py \
+            tests/unit/test_v710_lazy_warm_runtime.py \
+            tests/unit/test_v710_release_compiler.py \
+            tests/unit/test_v711_fast_initialization.py \
+            tests/unit/test_v711_initialization_schemas.py
+          python scripts/measure_v711_initialization.py \
+            --iterations 25 \
+            --output final-package/initialization-performance.json
+
+      - name: Run full source validation once
+        run: |
+          set -euo pipefail
+          ruff check .
+          python scripts/validate_architecture.py
+          python scripts/validate_legacy_isolation.py
+          python scripts/validate_dependency_lock.py requirements.runtime.lock
+          python scripts/validate_vulnerability_exceptions.py
+          mypy src
+          pytest \
+            --junitxml=final-package/pytest.xml \
+            --cov-report=json:final-package/coverage.json
+          python scripts/compile_release.py \
+            release/specifications/V711.yaml \
+            --source-commit "$SOURCE_COMMIT" \
+            --output final-package/compiler-output
+
+      - name: Scan exact source for secrets
+        run: |
+          set -euo pipefail
+          python scripts/scan_candidate_secrets.py \
+            --root . \
+            --output final-package/secret-scan.json
+
+      - name: Audit dependencies at final-candidate stage
+        run: |
+          set -euo pipefail
+          pip-audit --disable-pip --require-hashes --no-deps --timeout 15 \
+            --progress-spinner off --vulnerability-service pypi \
+            --requirement requirements.runtime.lock --format json \
+            --output final-package/pip-audit-pypi.json
+          pip-audit --disable-pip --require-hashes --no-deps --timeout 15 \
+            --progress-spinner off --vulnerability-service osv \
+            --requirement requirements.runtime.lock --format json \
+            --output final-package/pip-audit-osv.json
+          python scripts/evaluate_dependency_audit.py \
+            final-package/pip-audit-pypi.json \
+            final-package/pip-audit-osv.json
+
+      - name: Build exact package once and clean-install
+        run: |
+          set -euo pipefail
+          rm -rf dist build
+          python -m build
+          test -f "dist/atlas_ros-${RELEASE_VERSION}.tar.gz"
+          test -f "dist/atlas_ros-${RELEASE_VERSION}-py3-none-any.whl"
+          cp dist/* final-package/
+          python -m venv candidate-clean
+          candidate-clean/bin/python -m pip install --disable-pip-version-check \
+            "dist/atlas_ros-${RELEASE_VERSION}-py3-none-any.whl"
+          candidate-clean/bin/python -c \
+            "import atlas_ros; assert atlas_ros.__version__ == '${RELEASE_VERSION}'"
+          candidate-clean/bin/atlas status --json \
+            > final-package/runtime-status.json
+          candidate-clean/bin/atlas verify --json \
+            > final-package/runtime-verify.json
+          candidate-clean/bin/python -m pip list --format=json \
+            > final-package/INSTALLED_PACKAGES.json
+
+      - name: Assemble non-publishing final package
+        run: |
+          set -euo pipefail
+          python scripts/finalize_v711_package.py \
+            --package-root final-package \
+            --source-commit "$SOURCE_COMMIT" \
+            --source-timestamp "$(cat final-package/SOURCE_TIMESTAMP.txt)" \
+            --installed-packages final-package/INSTALLED_PACKAGES.json \
+            > final-package/FINALIZATION_OUTPUT.json \
+            2> final-package/FINALIZATION_STDERR.txt
+
+      - name: Restore immutable v7.1.0 rollback and compare startup
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p rollback-v710
+          gh release download v7.1.0 --repo "$GITHUB_REPOSITORY" --dir rollback-v710
+          (cd rollback-v710 && sha256sum -c CHECKSUMS.sha256)
+          rollback_wheel=$(find rollback-v710 -name 'atlas_ros-7.1.0*.whl' -print -quit)
+          test -n "$rollback_wheel"
+          python -m venv rollback-clean
+          rollback-clean/bin/python -m pip install --disable-pip-version-check "$rollback_wheel"
+          rollback-clean/bin/python -c \
+            "import atlas_ros; assert atlas_ros.__version__ == '7.1.0'"
+          rollback-clean/bin/atlas status --json \
+            > final-package/rollback-v710-status.json
+          python scripts/measure_startup_performance.py \
+            --candidate-python candidate-clean/bin/python \
+            --baseline-python rollback-clean/bin/python \
+            --iterations 7 \
+            --max-startup-regression 0.10 \
+            --max-module-regression 0 \
+            --output final-package/startup-comparison.json
+
+      - name: Validate staged package remains non-live
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          root = Path('final-package')
+          identity = json.loads((root / 'FINAL_PACKAGE_IDENTITY.json').read_text())
+          authority = json.loads((root / 'staged-authority/AUTHORITY.json').read_text())
+          live = json.loads(Path('governance/AUTHORITY.json').read_text())
+          assert identity['status'] == 'final_package_validated_not_authorized'
+          assert identity['production_authorized'] is False
+          assert identity['published'] is False
+          assert identity['authority_activated'] is False
+          assert identity['provider_writes'] == 0
+          assert authority['active_release']['version'] == '7.1.1'
+          assert authority['immediate_rollback']['version'] == '7.1.0'
+          assert live['active_release']['version'] == '7.1.0'
+          assert live['immediate_rollback']['version'] == '7.0.1'
+          PY
+
+      - name: Finalize nested checksums
+        if: always()
+        run: |
+          set -euo pipefail
+          (cd final-package && \
+            find . -type f ! -name SHA256SUMS -print0 | sort -z | \
+            xargs -0 sha256sum > SHA256SUMS)
+          (cd final-package && sha256sum -c SHA256SUMS)
+
+      - name: Retain exact non-publishing final package
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: atlas-ros-v711-final-package-${{ github.event.pull_request.head.sha || github.sha }}
+          path: final-package/
+          if-no-files-found: error
+          retention-days: 30

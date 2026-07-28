@@ -20,7 +20,7 @@ def status(*, json_output: bool = False) -> None:
         "status": "candidate_runtime_available",
         "version": __version__,
         "authority_model_version": "7.0",
-        "active_production_version": "7.0.1",
+        "active_production_version": "7.1.0",
         "production_authority_changed": False,
         "provider_writes": False,
     }
@@ -29,7 +29,7 @@ def status(*, json_output: bool = False) -> None:
         return
     print(
         f"Atlas ROS {__version__} candidate runtime is installed; "
-        "Atlas ROS 7.0.1 remains Active and no provider writes were performed."
+        "Atlas ROS 7.1.0 remains Active and no provider writes were performed."
     )
 
 
@@ -42,6 +42,7 @@ def initialize(*, json_output: bool = False) -> None:
             "GitHub authority reader",
             "Notion System State reader",
             "Notion Integration Inventory reader",
+            "Todoist liveness reader",
         ],
         "writes": False,
     }
@@ -57,20 +58,20 @@ def initialize(*, json_output: bool = False) -> None:
 def verify(*, json_output: bool = False) -> None:
     """Verify only the installed candidate identity; release verification is separate."""
     payload = {
-        "valid": __version__ == "7.1.0",
+        "valid": __version__ == "7.1.1",
         "scope": "installed_candidate_runtime_identity",
         "version": __version__,
-        "active_production_version": "7.0.1",
+        "active_production_version": "7.1.0",
         "writes": False,
     }
     if json_output:
         print(json.dumps(payload, sort_keys=True))
         return
     if not payload["valid"]:
-        raise RuntimeCommandError("installed runtime identity is not Atlas ROS v7.1.0")
+        raise RuntimeCommandError("installed runtime identity is not Atlas ROS v7.1.1")
     print(
         f"Installed candidate identity verified: Atlas ROS {__version__}; "
-        "Active production remains 7.0.1; writes: 0."
+        "Active production remains 7.1.0; writes: 0."
     )
 
 

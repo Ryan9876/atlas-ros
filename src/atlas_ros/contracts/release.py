@@ -53,6 +53,9 @@ class ReleaseSpecification(BaseModel):
     compatibility_rules: tuple[str, ...] = Field(min_length=1)
     notion_system_state_url: str = Field(pattern=r"^https://")
     integration_inventory_url: str = Field(pattern=r"^https://")
+    integration_inventory_data_source: str | None = Field(
+        default=None, pattern=r"^collection://[0-9a-f-]{36}$"
+    )
     candidate_only: Literal[True] = True
     specification_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
 

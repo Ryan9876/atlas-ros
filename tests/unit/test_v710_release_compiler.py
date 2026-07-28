@@ -63,6 +63,9 @@ def values(version: str = "7.1.0") -> dict[str, object]:
         ),
         "notion_system_state_url": "https://app.notion.com/p/system-state",
         "integration_inventory_url": "https://app.notion.com/p/integrations",
+        "integration_inventory_data_source": (
+            "collection://46af021f-eb9a-4eba-b10c-4523e70df0c3"
+        ),
         "candidate_only": True,
     }
 
@@ -84,6 +87,16 @@ def test_compiler_is_deterministic_and_candidate_only(tmp_path: Path) -> None:
     assert first.receipt.provider_writes == 0
     assert "release/RELEASE_MANIFEST_V710.md" in first.files
     assert '"status": "Candidate"' in first.files["governance/AUTHORITY_CANDIDATE.json"]
+    assert (
+        "Integration Inventory data source: "
+        "collection://46af021f-eb9a-4eba-b10c-4523e70df0c3"
+        in first.files["release/RELEASE_MANIFEST_V710.md"]
+    )
+    assert (
+        '"integration_inventory_data_source": '
+        '"collection://46af021f-eb9a-4eba-b10c-4523e70df0c3"'
+        in first.files["governance/AUTHORITY_CANDIDATE.json"]
+    )
     assert "Production status: not authorized" in first.files[
         "governance/RELEASE_INDEX_CANDIDATE.md"
     ]
@@ -149,3 +162,18 @@ def test_template_spec_requires_exact_source_commit_override(tmp_path: Path) -> 
         exact = tmp_path / "exact.yaml"
         exact.write_text(source.read_text().replace("__SOURCE_COMMIT__", "e" * 40))
         load_release_specification(exact, source_commit="f" * 40)
+
+
+def test_v711_repository_template_compiles_with_direct_inventory_reference() -> None:
+    source = Path("release/specifications/V711.yaml")
+    specification = load_release_specification(source, source_commit="1" * 40)
+    compiled = compile_release(specification)
+
+    manifest = compiled.files["release/RELEASE_MANIFEST_V711.md"]
+    assert specification.identity.version == "7.1.1"
+    assert specification.immediate_rollback.version == "7.1.0"
+    assert (
+        "Integration Inventory data source: "
+        "collection://46af021f-eb9a-4eba-b10c-4523e70df0c3"
+        in manifest
+    )

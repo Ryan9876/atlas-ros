@@ -1,9 +1,25 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-07-28T16:00:00Z",
-  "candidate_version": "7.1.0",
-  "source_head": "agent/v710-consolidation",
+  "generated_at": "2026-07-28T20:20:00Z",
+  "candidate_version": "7.1.1",
+  "source_head": "agent/v711-fast-initialization",
   "records": [
+    {
+      "record_id": "V711-FAST-INITIALIZATION",
+      "title": "Consolidated fast Quick Initialization",
+      "disposition": "candidate_implemented",
+      "implemented_scope": "One typed Quick Initialization operation; mandatory live GitHub authority; authenticated TTL and digest-bound reuse of immutable Release Index and manifest material; compact live System State and direct Integration Inventory contracts; one Todoist-only liveness probe; compact timing and diagnostic receipt; fail-closed cold fallback; zero provider writes and zero Google Drive reads.",
+      "remaining_scope": "Production Notion projection and connector adapter activation, remote end-to-end latency measurement, exact final-package validation, publication, and authority activation require separate reviewed transactions.",
+      "evidence": [
+        "src/atlas_ros/kernel/bootstrap.py",
+        "src/atlas_ros/contracts/authority.py",
+        "src/atlas_ros/runtime/warm.py",
+        "tests/unit/test_v711_fast_initialization.py",
+        "scripts/measure_v711_initialization.py",
+        "docs/adr/ADR-016-FAST-QUICK-INITIALIZATION.md",
+        "release/STARTUP_PERFORMANCE_REPORT_V711.md"
+      ]
+    },
     {
       "record_id": "V710-DRIVE-RETIREMENT",
       "title": "Google Drive retirement readiness",
