@@ -35,6 +35,17 @@ Atlas ROS v7.0 establishes the candidate foundation for a canonical, GitHub-firs
 - Requires v7 activation, v7 post-promotion readback, verified v6.5 rollback restoration, item-level exclusion review, and a separate exact deletion authorization before any destructive action can be prepared.
 - Records zero provider writes and zero destructive actions during candidate validation.
 
+## Actions cost controls
+
+- Routine pull-request synchronization runs one lean CI job with Ruff, architecture boundaries, deterministic dependency-policy validation, strict MyPy, pytest, execution-planning evaluation, package build, and configuration loading.
+- Routine CI installs the dedicated `ci` dependency set and does not install or execute `pip-audit`.
+- PyPI and OSV advisory audits run on `main` or an explicitly dispatched full-CI run.
+- Exact-artifact validation requires a successful manually dispatched full-CI run for the same exact source SHA, preserving the final dependency-security gate.
+- Architecture diagnostics, documentation authority, Drive cutover, and build-once candidate workflows run only at the review milestone or by explicit dispatch.
+- Exact-artifact and final-controller workflows are explicit final-stage dispatches and fail fast if exact-head prerequisites are absent; they do not consume runner time polling.
+- Concurrency groups cancel stale in-progress development runs.
+- Routine diagnostic and development artifacts use shortened retention while final governed release evidence retains release-grade retention.
+
 ## Governance
 
 - Corrects mutable governance records without changing production authority.
