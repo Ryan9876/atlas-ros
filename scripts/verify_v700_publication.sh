@@ -16,7 +16,6 @@ r = json.loads(sys.argv[1])
 assert r['draft'] is False
 assert r['prerelease'] is False
 PY
-git fetch --tags --force
 test "$(git rev-list -n 1 "$RELEASE_TAG")" = "$EXPECTED_SOURCE_COMMIT"
 gh release download "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --dir published-assets
 (cd published-assets && sha256sum -c CHECKSUMS.sha256)
