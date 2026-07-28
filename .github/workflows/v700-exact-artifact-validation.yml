@@ -152,6 +152,11 @@ jobs:
             --plan release/v700-pre-v6-deletion-plan.json \
             --folder-tree release/v700-drive-folder-traversal.json \
             --output v700-exact-evidence/V700_PRE_V6_DELETION_PLAN.json
+          python -m scripts.validate_v700_pre_v6_exclusion_review \
+            --review release/v700-pre-v6-exclusion-review.json \
+            --plan release/v700-pre-v6-deletion-plan.json \
+            --folder-tree release/v700-drive-folder-traversal.json \
+            --output v700-exact-evidence/V700_PRE_V6_EXCLUSION_REVIEW.json
           python - <<'PY'
           import json
           from pathlib import Path
@@ -167,6 +172,9 @@ jobs:
           deletion = json.loads(
               (root / 'V700_PRE_V6_DELETION_PLAN.json').read_text(encoding='utf-8')
           )
+          exclusion = json.loads(
+              (root / 'V700_PRE_V6_EXCLUSION_REVIEW.json').read_text(encoding='utf-8')
+          )
           assert authority['promotion_scope_complete'] is True
           assert authority['pre_v6_history_required_for_promotion'] is False
           assert ledger['item_count'] == 1
@@ -176,6 +184,16 @@ jobs:
           assert deletion['deletion_authorized'] is False
           assert deletion['provider_writes'] == 0
           assert deletion['destructive_actions_performed'] == 0
+          assert exclusion['candidate_folder_count'] == 92
+          assert exclusion['pending_folder_review_count'] == 92
+          assert exclusion['file_candidates_complete'] is False
+          assert exclusion['exclusion_review_complete'] is False
+          assert exclusion['promotion_blocking'] is False
+          assert exclusion['deletion_authorized'] is False
+          assert exclusion['provider_writes'] == 0
+          assert exclusion['destructive_actions_performed'] == 0
+          candidate_digest = exclusion['candidate_folder_set_sha256']
+          assert isinstance(candidate_digest, str) and len(candidate_digest) == 64
           PY
       - name: Validate exact artifact and simulate release transactions
         env:
