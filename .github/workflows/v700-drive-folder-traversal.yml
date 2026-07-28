@@ -98,13 +98,13 @@ jobs:
 
           assert files['status'] == 'partial_file_inventory'
           assert files['known_folder_count'] == 93
-          assert files['scanned_folder_count'] == 4
-          assert files['unscanned_folder_count'] == 89
-          assert files['file_count'] == 14
-          assert files['content_hashed_count'] == 13
+          assert files['scanned_folder_count'] == 5
+          assert files['unscanned_folder_count'] == 88
+          assert files['file_count'] == 16
+          assert files['content_hashed_count'] == 15
           assert files['sensitive_item_count'] == 1
           assert files['verified_github_equivalence_count'] == 1
-          assert files['governed_legacy_exception_count'] == 12
+          assert files['governed_legacy_exception_count'] == 14
           assert files['enumeration_complete'] is False
           assert files['content_checksums_complete'] is False
           assert files['promotion_ready'] is False
@@ -114,10 +114,10 @@ jobs:
 
           assert receipts['status'] == 'partial_file_listing_receipts'
           assert receipts['known_folder_count'] == 93
-          assert receipts['listed_folder_count'] == 4
-          assert receipts['unscanned_folder_count'] == 89
-          assert receipts['file_count'] == 14
-          assert receipts['bound_file_count'] == 14
+          assert receipts['listed_folder_count'] == 5
+          assert receipts['unscanned_folder_count'] == 88
+          assert receipts['file_count'] == 16
+          assert receipts['bound_file_count'] == 16
           assert receipts['enumeration_complete'] is False
           assert receipts['provider_writes'] == 0
           assert receipts['drive_retirement_authorized'] is False
@@ -127,12 +127,12 @@ jobs:
           )
           assert supplement['release'] == '5.0'
           assert supplement['supplement_sha256'] == (
-              '9e552db69c1387e4cb81b341775b4a2aebf75fab43b5c6697d0d7f6623838777'
+              'f2c9094c6836da57a1af759efe76cc882a6a37a69924b5f9f512bf60dff1c3a0'
           )
-          assert supplement['v500_scanned_folder_count'] == 2
-          assert supplement['v500_file_count'] == 20
-          assert supplement['v500_content_hashed_count'] == 20
-          assert supplement['v500_listing_count'] == 2
+          assert supplement['v500_scanned_folder_count'] == 1
+          assert supplement['v500_file_count'] == 18
+          assert supplement['v500_content_hashed_count'] == 18
+          assert supplement['v500_listing_count'] == 1
           assert supplement['v500_candidate_checksum_reconciled'] is True
           assert supplement['combined_known_folder_count'] == 93
           assert supplement['combined_scanned_folder_count'] == 6
