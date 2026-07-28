@@ -22,7 +22,7 @@ grep -Fq 'google_drive_bootstrap_forbidden: true' governance/release-policy.yaml
 grep -Fq 'required_production_integrations:' governance/release-policy.yaml
 grep -Fq 'google_drive_is_forbidden' policies/authority/bootstrap.yaml
 
-if git ls-remote --exit-code --tags origin refs/tags/v7.0.1 >/dev/null 2>&1; then
+if gh api "repos/${GITHUB_REPOSITORY}/git/ref/tags/v7.0.1" >/dev/null 2>&1; then
   echo 'v7.0.1 tag already exists before authorization' >&2
   exit 1
 fi
@@ -98,6 +98,7 @@ restore-v650/bin/python -c "import atlas_ros; assert atlas_ros.__version__ == '6
 python scripts/compare_v700_performance.py \
   --candidate-python clean-v701/bin/python \
   --baseline-python restore-v700/bin/python \
+  --baseline-version 7.0.0 \
   --dataset benchmarks/execution-planning-v1.json \
   --iterations 7 \
   --max-regression 0.10 \
