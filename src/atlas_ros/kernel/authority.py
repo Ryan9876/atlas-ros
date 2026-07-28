@@ -20,7 +20,7 @@ class ImmutableRelease(BaseModel):
 
 class ActiveRelease(ImmutableRelease):
     status: Literal["Active"]
-    manifest_path: Literal["release/RELEASE_MANIFEST.md"]
+    manifest_path: str = Field(pattern=r"^release/RELEASE_MANIFEST_V\d{3,}\.md$")
     manifest_url: AnyHttpUrl
     manifest_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
     source_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
