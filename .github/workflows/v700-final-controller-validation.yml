@@ -1,10 +1,13 @@
 name: v700-final-controller-validation
 
 on:
+  pull_request:
+    branches: [main]
+    types: [ready_for_review]
   workflow_dispatch:
 
 concurrency:
-  group: v700-final-controller-${{ github.ref }}
+  group: v700-final-controller-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 permissions:
@@ -13,12 +16,16 @@ permissions:
 
 jobs:
   validate-v700-final-controller:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'pull_request' &&
+       github.head_ref == 'agent/v700-canonical-architecture')
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
         with:
-          ref: ${{ github.sha }}
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 0
           persist-credentials: false
       - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
@@ -33,13 +40,14 @@ jobs:
         id: prerequisite
         env:
           GH_TOKEN: ${{ github.token }}
-          HEAD_SHA: ${{ github.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         run: |
           set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$HEAD_SHA"
           runs="$(gh api --method GET "repos/${GITHUB_REPOSITORY}/actions/runs?head_sha=${HEAD_SHA}&per_page=100")"
           exact_run="$(jq -r '[.workflow_runs[] | select(.name == "v700-exact-artifact-validation" and .conclusion == "success")] | sort_by(.created_at) | last | .id // empty' <<<"$runs")"
           if [[ -z "$exact_run" ]]; then
-            echo "Exact-head exact-artifact validation has not passed; run it before dispatching this workflow." >&2
+            echo "Exact-head exact-artifact validation has not passed; retry this job after that validation succeeds." >&2
             exit 1
           fi
           echo "exact_run_id=$exact_run" >> "$GITHUB_OUTPUT"
@@ -47,7 +55,7 @@ jobs:
         id: exact
         env:
           GH_TOKEN: ${{ github.token }}
-          HEAD_SHA: ${{ github.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
           EXACT_RUN_ID: ${{ steps.prerequisite.outputs.exact_run_id }}
         run: |
           set -euo pipefail
@@ -74,7 +82,7 @@ jobs:
           echo "artifact_digest=$normalized_digest" >> "$GITHUB_OUTPUT"
       - name: Validate the non-publishing final controller
         env:
-          HEAD_SHA: ${{ github.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
           VALIDATION_FILE: ${{ steps.exact.outputs.validation_file }}
           ROLLBACK_EVIDENCE_FILE: ${{ steps.exact.outputs.rollback_evidence_file }}
         run: |
@@ -139,7 +147,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: atlas-ros-v700-final-controller-${{ github.sha }}
+          name: atlas-ros-v700-final-controller-${{ github.event.pull_request.head.sha || github.sha }}
           path: v700-final-controller-evidence/
           if-no-files-found: warn
           retention-days: 90
