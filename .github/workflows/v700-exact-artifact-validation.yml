@@ -86,7 +86,6 @@ jobs:
           (cd "$ARTIFACT_ROOT" && sha256sum -c PUBLICATION_CHECKSUMS.sha256)
           (cd "$ARTIFACT_ROOT/evidence" && sha256sum -c EVIDENCE_CHECKSUMS.sha256)
       - name: Install exact candidate and immutable rollback releases
-        id: installations
         env:
           GH_TOKEN: ${{ github.token }}
           ARTIFACT_ROOT: ${{ steps.artifact.outputs.artifact_root }}
@@ -136,139 +135,47 @@ jobs:
             --iterations 7 \
             --max-regression 0.10 \
             --output v700-exact-evidence/V700_V650_PERFORMANCE.json
-      - name: Validate recursive Drive folder and file evidence
+      - name: Validate current Drive authority and post-cutover deletion plan
         run: |
+          set -euo pipefail
           python -m scripts.validate_v700_drive_folder_tree \
             --input release/v700-drive-folder-traversal.json \
-            --output v700-exact-evidence/V700_DRIVE_FOLDER_TRAVERSAL_VALIDATION.json
-          python -m scripts.validate_v700_drive_file_inventory \
-            --inventory release/v700-drive-file-inventory.json \
+            --output v700-exact-evidence/V700_DRIVE_FOLDER_TREE.json
+          python -m scripts.validate_v700_current_drive_authority \
+            --input release/v700-current-drive-authority-migration.json \
+            --output v700-exact-evidence/V700_CURRENT_DRIVE_AUTHORITY.json
+          python -m tools.release.drive_migration_cli compile \
+            release/v700-drive-migration-inventory.json \
+            v700-exact-evidence/V700_CURRENT_DRIVE_MIGRATION_LEDGER.json \
+            > v700-exact-evidence/V700_CURRENT_DRIVE_MIGRATION_SUMMARY.json
+          python -m scripts.validate_v700_pre_v6_deletion_plan \
+            --plan release/v700-pre-v6-deletion-plan.json \
             --folder-tree release/v700-drive-folder-traversal.json \
-            --output v700-exact-evidence/V700_DRIVE_FILE_INVENTORY_VALIDATION.json
-          python -m scripts.validate_v700_drive_file_listing_receipts \
-            --receipts release/v700-drive-file-listing-receipts.json \
-            --inventory release/v700-drive-file-inventory.json \
-            --folder-tree release/v700-drive-folder-traversal.json \
-            --output v700-exact-evidence/V700_DRIVE_FILE_LISTING_RECEIPTS_VALIDATION.json
-          python -m scripts.validate_v700_drive_release_supplement \
-            --supplement release/v700-drive-v500-file-supplement.json \
-            --inventory release/v700-drive-file-inventory.json \
-            --receipts release/v700-drive-file-listing-receipts.json \
-            --folder-tree release/v700-drive-folder-traversal.json \
-            --output v700-exact-evidence/V700_DRIVE_V500_SUPPLEMENT_VALIDATION.json
-          python -m scripts.validate_v700_drive_release_supplement_chain \
-            --supplement release/v700-drive-v500-file-supplement.json \
-            --supplement release/v700-drive-v453-file-supplement.json \
-            --supplement release/v700-drive-v450-file-supplement.json \
-            --inventory release/v700-drive-file-inventory.json \
-            --receipts release/v700-drive-file-listing-receipts.json \
-            --folder-tree release/v700-drive-folder-traversal.json \
-            --output v700-exact-evidence/V700_DRIVE_RELEASE_SUPPLEMENT_CHAIN_VALIDATION.json
+            --output v700-exact-evidence/V700_PRE_V6_DELETION_PLAN.json
           python - <<'PY'
           import json
           from pathlib import Path
 
           root = Path('v700-exact-evidence')
-          folders = json.loads(
-              (root / 'V700_DRIVE_FOLDER_TRAVERSAL_VALIDATION.json')
+          authority = json.loads(
+              (root / 'V700_CURRENT_DRIVE_AUTHORITY.json').read_text(encoding='utf-8')
+          )
+          ledger = json.loads(
+              (root / 'V700_CURRENT_DRIVE_MIGRATION_SUMMARY.json')
               .read_text(encoding='utf-8')
           )
-          files = json.loads(
-              (root / 'V700_DRIVE_FILE_INVENTORY_VALIDATION.json')
-              .read_text(encoding='utf-8')
+          deletion = json.loads(
+              (root / 'V700_PRE_V6_DELETION_PLAN.json').read_text(encoding='utf-8')
           )
-          receipts = json.loads(
-              (root / 'V700_DRIVE_FILE_LISTING_RECEIPTS_VALIDATION.json')
-              .read_text(encoding='utf-8')
-          )
-          supplement = json.loads(
-              (root / 'V700_DRIVE_V500_SUPPLEMENT_VALIDATION.json')
-              .read_text(encoding='utf-8')
-          )
-          chain = json.loads(
-              (root / 'V700_DRIVE_RELEASE_SUPPLEMENT_CHAIN_VALIDATION.json')
-              .read_text(encoding='utf-8')
-          )
-          assert folders['status'] == (
-              'folder_traversal_complete_item_inventory_incomplete'
-          )
-          assert folders['folder_count'] == 93
-          assert folders['promotion_ready'] is False
-          assert folders['provider_writes'] == 0
-          assert folders['drive_retirement_authorized'] is False
-          assert files['status'] == 'partial_file_inventory'
-          assert files['known_folder_count'] == 93
-          assert files['scanned_folder_count'] == 5
-          assert files['unscanned_folder_count'] == 88
-          assert files['file_count'] == 16
-          assert files['content_hashed_count'] == 15
-          assert files['sensitive_item_count'] == 1
-          assert files['verified_github_equivalence_count'] == 1
-          assert files['governed_legacy_exception_count'] == 14
-          assert files['promotion_ready'] is False
-          assert files['provider_writes'] == 0
-          assert files['drive_retirement_authorized'] is False
-          assert files['credential_action_authorized'] is False
-          assert receipts['status'] == 'partial_file_listing_receipts'
-          assert receipts['known_folder_count'] == 93
-          assert receipts['listed_folder_count'] == 5
-          assert receipts['unscanned_folder_count'] == 88
-          assert receipts['file_count'] == 16
-          assert receipts['bound_file_count'] == 16
-          assert receipts['enumeration_complete'] is False
-          assert receipts['provider_writes'] == 0
-          assert receipts['drive_retirement_authorized'] is False
-          assert supplement['status'] == (
-              'partial_file_inventory_with_complete_v500_supplement'
-          )
-          assert supplement['supplement_sha256'] == (
-              'de6d34904f1e926da1b9e27d7be4502ab255a50662dcc5b70da89ea081de1196'
-          )
-          assert supplement['v500_scanned_folder_count'] == 1
-          assert supplement['v500_file_count'] == 18
-          assert supplement['v500_content_hashed_count'] == 18
-          assert supplement['v500_listing_count'] == 1
-          assert supplement['v500_candidate_checksum_reconciled'] is True
-          assert supplement['combined_known_folder_count'] == 93
-          assert supplement['combined_scanned_folder_count'] == 6
-          assert supplement['combined_unscanned_folder_count'] == 87
-          assert supplement['combined_file_count'] == 34
-          assert supplement['combined_content_hashed_count'] == 33
-          assert supplement['combined_sensitive_item_count'] == 1
-          assert supplement['combined_verified_github_equivalence_count'] == 1
-          assert supplement['combined_governed_legacy_exception_count'] == 32
-          assert supplement['promotion_ready'] is False
-          assert supplement['provider_writes'] == 0
-          assert supplement['drive_retirement_authorized'] is False
-          assert supplement['credential_action_authorized'] is False
-          assert chain['status'] == (
-              'partial_file_inventory_with_complete_release_supplement_chain'
-          )
-          assert chain['supplement_count'] == 3
-          assert chain['releases'] == ['5.0', '4.5.3', '4.5.0']
-          assert chain['supplements'][0]['supplement_sha256'] == (
-              'de6d34904f1e926da1b9e27d7be4502ab255a50662dcc5b70da89ea081de1196'
-          )
-          assert chain['supplements'][1]['supplement_sha256'] == (
-              '20d51011071c1a976c52756b1f1d667075e7d60a0001e692daf290209e9ab6d6'
-          )
-          assert chain['supplements'][2]['supplement_sha256'] == (
-              'c13f30d78891a132bd4f32721e9c510c6f93d91f4a5697a39421c1e2e2cd119a'
-          )
-          assert chain['combined_known_folder_count'] == 93
-          assert chain['combined_scanned_folder_count'] == 8
-          assert chain['combined_unscanned_folder_count'] == 85
-          assert chain['combined_file_count'] == 53
-          assert chain['combined_content_hashed_count'] == 52
-          assert chain['combined_sensitive_item_count'] == 1
-          assert chain['combined_verified_github_equivalence_count'] == 1
-          assert chain['combined_governed_legacy_exception_count'] == 51
-          assert chain['enumeration_complete'] is False
-          assert chain['content_checksums_complete'] is False
-          assert chain['promotion_ready'] is False
-          assert chain['provider_writes'] == 0
-          assert chain['drive_retirement_authorized'] is False
-          assert chain['credential_action_authorized'] is False
+          assert authority['promotion_scope_complete'] is True
+          assert authority['pre_v6_history_required_for_promotion'] is False
+          assert ledger['item_count'] == 1
+          assert ledger['complete_for_promotion_readiness'] is True
+          assert deletion['target_folder_count'] == 92
+          assert deletion['promotion_blocking'] is False
+          assert deletion['deletion_authorized'] is False
+          assert deletion['provider_writes'] == 0
+          assert deletion['destructive_actions_performed'] == 0
           PY
       - name: Validate exact artifact and simulate release transactions
         env:
@@ -280,23 +187,19 @@ jobs:
           STANDARD_RUN_ID: ${{ steps.prerequisites.outputs.standard_run_id }}
           ARCHITECTURE_RUN_ID: ${{ steps.prerequisites.outputs.architecture_run_id }}
         run: |
-          args=(
-            --artifact-root "$ARTIFACT_ROOT"
-            --candidate-sha "$HEAD_SHA"
-            --artifact-id "$ARTIFACT_ID"
-            --artifact-digest "$ARTIFACT_DIGEST"
-            --candidate-run-id "$CANDIDATE_RUN_ID"
-            --standard-ci-run-id "$STANDARD_RUN_ID"
-            --architecture-run-id "$ARCHITECTURE_RUN_ID"
-            --performance v700-exact-evidence/V700_V650_PERFORMANCE.json
-            --integration-snapshot release/v700-integration-readiness.json
-            --rollback-evidence v700-exact-evidence/V650_ROLLBACK_EVIDENCE.json
+          python -m scripts.validate_v700_exact_artifact \
+            --artifact-root "$ARTIFACT_ROOT" \
+            --candidate-sha "$HEAD_SHA" \
+            --artifact-id "$ARTIFACT_ID" \
+            --artifact-digest "$ARTIFACT_DIGEST" \
+            --candidate-run-id "$CANDIDATE_RUN_ID" \
+            --standard-ci-run-id "$STANDARD_RUN_ID" \
+            --architecture-run-id "$ARCHITECTURE_RUN_ID" \
+            --performance v700-exact-evidence/V700_V650_PERFORMANCE.json \
+            --integration-snapshot release/v700-integration-readiness.json \
+            --drive-inventory release/v700-drive-migration-inventory.json \
+            --rollback-evidence v700-exact-evidence/V650_ROLLBACK_EVIDENCE.json \
             --output-dir v700-exact-evidence
-          )
-          if [[ -f release/v700-drive-migration-inventory.json ]]; then
-            args+=(--drive-inventory release/v700-drive-migration-inventory.json)
-          fi
-          python -m scripts.validate_v700_exact_artifact "${args[@]}"
           (
             cd v700-exact-evidence
             find . -type f ! -name EXACT_ARTIFACT_CHECKSUMS.sha256 -print0 | sort -z |
