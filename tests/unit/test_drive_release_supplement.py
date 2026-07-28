@@ -46,12 +46,12 @@ def test_live_v500_supplement_is_complete_and_fail_closed() -> None:
         "partial_file_inventory_with_complete_v500_supplement"
     )
     assert result["supplement_sha256"] == (
-        "9e552db69c1387e4cb81b341775b4a2aebf75fab43b5c6697d0d7f6623838777"
+        "f2c9094c6836da57a1af759efe76cc882a6a37a69924b5f9f512bf60dff1c3a0"
     )
-    assert result["v500_scanned_folder_count"] == 2
-    assert result["v500_file_count"] == 20
-    assert result["v500_content_hashed_count"] == 20
-    assert result["v500_listing_count"] == 2
+    assert result["v500_scanned_folder_count"] == 1
+    assert result["v500_file_count"] == 18
+    assert result["v500_content_hashed_count"] == 18
+    assert result["v500_listing_count"] == 1
     assert result["v500_candidate_checksum_reconciled"] is True
     assert result["combined_known_folder_count"] == 93
     assert result["combined_scanned_folder_count"] == 6
