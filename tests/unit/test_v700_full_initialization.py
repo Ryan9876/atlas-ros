@@ -145,6 +145,22 @@ def test_full_initialization_requires_github_notion_and_todoist_to_agree() -> No
     assert context.active_version == "7.0.1"
 
 
+def test_optional_disconnected_drive_does_not_block_initialization() -> None:
+    dynamic = FakeDynamicReader(
+        system_state(),
+        inventory(
+            integration("GitHub"),
+            integration("Notion"),
+            integration("Todoist"),
+            integration("Google Drive", required=False, connection_status="disconnected"),
+        ),
+    )
+
+    context = initialize_full(compiled_reader(), dynamic)
+
+    assert context.active_version == "7.0.1"
+
+
 def test_full_initialization_rejects_drive_as_required_authority() -> None:
     dynamic = FakeDynamicReader(
         system_state(),
