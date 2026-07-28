@@ -7,7 +7,8 @@ Status: Corrective patch package. Production activation is determined exclusivel
 - Minimum compatible initializer version: `7.0.1`
 - Immediate immutable rollback after promotion: Atlas ROS v6.5.0 at `bb6d6fea70d6824c9bc6a42e63ba36cc88029260`
 - Historical rollback retained: Atlas ROS v6.2.0 at `863d5ddf9ebd4723200166cf31c7acd93ebec54f`
-- Integration Inventory authority: https://app.notion.com/p/8ba4fafb5ce244ef9add3013aff3746b
+
+Integration Inventory authority: https://app.notion.com/p/8ba4fafb5ce244ef9add3013aff3746b
 
 ## Corrective scope
 
