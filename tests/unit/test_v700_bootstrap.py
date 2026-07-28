@@ -18,6 +18,10 @@ class FakeAuthorityReader:
         return self.values[(path.as_posix(), ref)]
 
 
+def manifest_path() -> str:
+    return "release/RELEASE_MANIFEST_V701.md"
+
+
 def manifest_text() -> str:
     return (
         "# Atlas ROS v7.0.1\n"
@@ -36,11 +40,11 @@ def authority_payload() -> dict[str, object]:
             "status": "Active",
             "immutable_commit": "a" * 40,
             "tag": "v7.0.1",
-            "manifest_path": "release/RELEASE_MANIFEST.md",
+            "manifest_path": manifest_path(),
             "manifest_url": (
                 "https://github.com/Ryan9876/atlas-ros/blob/"
                 + "a" * 40
-                + "/release/RELEASE_MANIFEST.md"
+                + f"/{manifest_path()}"
             ),
             "manifest_sha256": sha256_digest(manifest_text()),
             "release_url": "https://github.com/Ryan9876/atlas-ros/releases/tag/v7.0.1",
@@ -71,7 +75,7 @@ def expected_index() -> str:
         + "- Immutable commit: "
         + "a" * 40
         + "\n- Tag: v7.0.1\n"
-        "- Manifest: release/RELEASE_MANIFEST.md\n"
+        f"- Manifest: {manifest_path()}\n"
         "- Release: https://github.com/Ryan9876/atlas-ros/releases/tag/v7.0.1\n\n"
         "## Immediate Rollback\n\n"
         "- Version: 6.5.0\n"
@@ -97,7 +101,7 @@ def reader_for(payload: dict[str, object]) -> FakeAuthorityReader:
         {
             ("governance/AUTHORITY.json", "HEAD"): authority_text,
             ("governance/RELEASE_INDEX.md", "HEAD"): index,
-            ("release/RELEASE_MANIFEST.md", "a" * 40): manifest_text(),
+            (manifest_path(), "a" * 40): manifest_text(),
         }
     )
 
@@ -117,6 +121,6 @@ def test_initialize_rejects_tampered_generated_index() -> None:
 
 def test_initialize_rejects_tampered_immutable_manifest() -> None:
     reader = reader_for(authority_payload())
-    reader.values[("release/RELEASE_MANIFEST.md", "a" * 40)] = "tampered"
+    reader.values[(manifest_path(), "a" * 40)] = "tampered"
     with pytest.raises(InitializationError, match="manifest digest"):
         initialize(reader)
