@@ -1,14 +1,14 @@
 from __future__ import annotations
 
-from copy import deepcopy
 import json
+from copy import deepcopy
 from pathlib import Path
 
 import pytest
 
 from scripts.validate_v700_pre_v6_exclusion_review import (
-    PreV6ExclusionReviewError,
     canonical_sha256,
+    PreV6ExclusionReviewError,
     validate_pre_v6_exclusion_review,
 )
 
