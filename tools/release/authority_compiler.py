@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import dataclass
 from datetime import datetime
 
@@ -28,6 +29,7 @@ class ActiveReleaseSpec:
     immutable_commit: str
     tag: str
     manifest_url: str
+    manifest_sha256: str
     release_url: str
     source_sha256: str
     wheel_sha256: str
@@ -71,6 +73,7 @@ def compile_authority(spec: AuthorityCompilationSpec) -> CompiledAuthority:
             "tag": spec.active.tag,
             "manifest_path": "release/RELEASE_MANIFEST.md",
             "manifest_url": spec.active.manifest_url,
+            "manifest_sha256": spec.active.manifest_sha256,
             "release_url": spec.active.release_url,
             "source_sha256": spec.active.source_sha256,
             "wheel_sha256": spec.active.wheel_sha256,
@@ -83,7 +86,7 @@ def compile_authority(spec: AuthorityCompilationSpec) -> CompiledAuthority:
         schema_version="1.0",
         repository="Ryan9876/atlas-ros",
         authority_model_version="7.0",
-        minimum_compatible_initializer_version="7.0",
+        minimum_compatible_initializer_version="7.0.1",
         active_release=active,
         immediate_rollback=rollback,
         historical_rollbacks=historical,
@@ -104,7 +107,7 @@ def compile_authority(spec: AuthorityCompilationSpec) -> CompiledAuthority:
         schema_version="1.0",
         repository="Ryan9876/atlas-ros",
         authority_model_version="7.0",
-        minimum_compatible_initializer_version="7.0",
+        minimum_compatible_initializer_version="7.0.1",
         active_release=active,
         immediate_rollback=rollback,
         historical_rollbacks=historical,
@@ -151,10 +154,10 @@ def _rollback_model(spec: RollbackReleaseSpec) -> ImmutableRelease:
 
 
 def _validate_spec(spec: AuthorityCompilationSpec) -> None:
-    if spec.active.version != "7.0.0" or spec.active.tag != "v7.0.0":
-        raise AuthorityCompilationError(
-            "v7.0 activation must identify version 7.0.0 and tag v7.0.0"
-        )
+    if re.fullmatch(r"7\.0\.\d+", spec.active.version) is None:
+        raise AuthorityCompilationError("active release must be in the Atlas ROS 7.0 patch family")
+    if spec.active.tag != f"v{spec.active.version}":
+        raise AuthorityCompilationError("active release version and tag must agree")
     if spec.rollback.version != "6.5.0" or spec.rollback.tag != "v6.5.0":
         raise AuthorityCompilationError("the v7.0 immediate rollback must be immutable v6.5.0")
     if spec.active.immutable_commit == spec.rollback.immutable_commit:
