@@ -55,7 +55,6 @@ jobs:
           gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" \
             --json tagName,targetCommitish,isDraft,isPrerelease,url \
             > independent-readback/RELEASE_METADATA.json
-          git fetch --tags --force
           test "$(git rev-list -n 1 "$RELEASE_TAG")" = "$FINAL_SOURCE_COMMIT"
           gh release download "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" \
             --dir independent-readback/release-assets
