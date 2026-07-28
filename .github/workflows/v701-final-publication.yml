@@ -1,0 +1,144 @@
+name: v701-final-publication
+
+on:
+  pull_request:
+    branches: [main]
+    types: [ready_for_review]
+  push:
+    branches: [main]
+
+concurrency:
+  group: v701-final-publication-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  validate-publication-controller:
+    if: github.event_name == 'pull_request' && github.head_ref == 'release/v701-publication-controller'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.12.10'
+          cache: pip
+      - name: Install validation tooling
+        run: |
+          python -m pip install --disable-pip-version-check --upgrade pip
+          python -m pip install --disable-pip-version-check -e '.[dev]'
+      - name: Validate controller source and security
+        run: |
+          set -euo pipefail
+          ruff check .
+          python scripts/validate_architecture.py
+          mypy src
+          pytest
+          python scripts/evaluate_execution_planning.py \
+            --dataset benchmarks/execution-planning-v1.json \
+            --output v701-controller-execution-planning.json
+          python scripts/scan_candidate_secrets.py \
+            --root . \
+            --output v701-controller-secret-scan.json
+          python scripts/validate_dependency_lock.py requirements.runtime.lock
+          python scripts/validate_vulnerability_exceptions.py
+          pip-audit --disable-pip --require-hashes --no-deps --timeout 15 \
+            --progress-spinner off --vulnerability-service pypi \
+            --requirement requirements.runtime.lock --format json \
+            --output v701-controller-pypi.json
+          pip-audit --disable-pip --require-hashes --no-deps --timeout 15 \
+            --progress-spinner off --vulnerability-service osv \
+            --requirement requirements.runtime.lock --format json \
+            --output v701-controller-osv.json
+          python scripts/evaluate_dependency_audit.py \
+            v701-controller-pypi.json v701-controller-osv.json
+      - name: Rehearse exact v7.0.1 publication without publishing
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SOURCE_COMMIT: ${{ github.event.pull_request.head.sha }}
+          FINAL_SOURCE_COMMIT: f26f5154ea6cd4b431c5a2638c439d7de9282761
+          FINAL_ARTIFACT_ID: '8678726714'
+          FINAL_ARTIFACT_DIGEST: c47e150960c0b827445bcd45338c038245f521b2d9eb1ffeca7a7484f012ac0f
+          EXPECTED_SOURCE_SHA256: 21d266963231bc1b2a2eb2ea2ed3b5f38a17d7e447fb2c1a74f4e98fe2389629
+          EXPECTED_WHEEL_SHA256: 213def6ff15874e525eeb6e74687b915dcb2ec13b57b7726bea188cd703d8be1
+          EXPECTED_MANIFEST_SHA256: 3ccda11f3ebf72457d82d7fd92d0ea2e3076fae593ee7abaeba6d80f836ea366
+          DECISION_URL: https://app.notion.com/p/3abb8344ad2c81eebf1fc3a5a39b1c7b
+          REVIEW_URL: https://app.notion.com/p/3abb8344ad2c812b8ba5f5cf60e430b7
+          RELEASE_TAG: v7.0.1
+          ROLLBACK_TAG: v6.5.0
+          HISTORICAL_ROLLBACK_TAG: v6.2.0
+          PUBLISH: 'false'
+        run: bash scripts/publish_v701_final.sh
+      - name: Retain controller rehearsal evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: atlas-ros-v701-publication-controller-${{ github.event.pull_request.head.sha }}
+          path: |
+            final-publication/
+            final-evidence/
+            v701-controller-execution-planning.json
+            v701-controller-secret-scan.json
+            v701-controller-pypi.json
+            v701-controller-osv.json
+          if-no-files-found: warn
+          retention-days: 90
+
+  publish-v701-final:
+    if: >-
+      github.event_name == 'push' &&
+      github.ref_name == 'main' &&
+      startsWith(github.event.head_commit.message, 'release: execute exact Atlas ROS v7.0.1 publication')
+    permissions:
+      contents: write
+      actions: read
+    runs-on: ubuntu-24.04
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.12.10'
+          cache: pip
+      - run: |
+          python -m pip install --disable-pip-version-check --upgrade pip
+          python -m pip install --disable-pip-version-check -e '.[dev]'
+      - name: Publish and read back exact v7.0.1 release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SOURCE_COMMIT: ${{ github.sha }}
+          FINAL_SOURCE_COMMIT: f26f5154ea6cd4b431c5a2638c439d7de9282761
+          FINAL_ARTIFACT_ID: '8678726714'
+          FINAL_ARTIFACT_DIGEST: c47e150960c0b827445bcd45338c038245f521b2d9eb1ffeca7a7484f012ac0f
+          EXPECTED_SOURCE_SHA256: 21d266963231bc1b2a2eb2ea2ed3b5f38a17d7e447fb2c1a74f4e98fe2389629
+          EXPECTED_WHEEL_SHA256: 213def6ff15874e525eeb6e74687b915dcb2ec13b57b7726bea188cd703d8be1
+          EXPECTED_MANIFEST_SHA256: 3ccda11f3ebf72457d82d7fd92d0ea2e3076fae593ee7abaeba6d80f836ea366
+          DECISION_URL: https://app.notion.com/p/3abb8344ad2c81eebf1fc3a5a39b1c7b
+          REVIEW_URL: https://app.notion.com/p/3abb8344ad2c812b8ba5f5cf60e430b7
+          RELEASE_TAG: v7.0.1
+          ROLLBACK_TAG: v6.5.0
+          HISTORICAL_ROLLBACK_TAG: v6.2.0
+          PUBLISH: 'true'
+        run: bash scripts/publish_v701_final.sh
+      - name: Retain final publication evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: atlas-ros-v701-final-publication-${{ github.sha }}
+          path: |
+            final-publication/
+            final-evidence/
+            release-readback/
+          if-no-files-found: warn
+          retention-days: 90
