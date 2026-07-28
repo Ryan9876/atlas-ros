@@ -6,9 +6,14 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import sys
 import traceback
 from datetime import datetime
 from pathlib import Path
+
+_REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
+if str(_REPOSITORY_ROOT) not in sys.path:
+    sys.path.insert(0, str(_REPOSITORY_ROOT))
 
 from atlas_ros.contracts.digests import sha256_digest
 from tools.release.authority_compiler import (
