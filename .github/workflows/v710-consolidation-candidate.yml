@@ -42,14 +42,26 @@ jobs:
           python scripts/validate_legacy_isolation.py
           mypy src
           pytest --junitxml=v710-evidence/pytest.xml --cov-report=json:v710-evidence/coverage.json
-      - name: Drive independence compiler and security gates
+      - name: Validate Drive independence and compiler fixtures
         run: |
           set -euo pipefail
-          python scripts/validate_v710_candidate.py --skip-tests --source-commit "${{ github.event.pull_request.head.sha || github.sha }}"
-          python scripts/validate_dependency_lock.py requirements.runtime.lock
-          python scripts/validate_vulnerability_exceptions.py
+          python scripts/validate_v710_candidate.py --skip-tests --source-commit "${{ github.event.pull_request.head.sha || github.sha }}" 2>&1 | tee v710-evidence/validate-v710.log
+      - name: Validate deterministic dependency policy
+        run: |
+          set -euo pipefail
+          python scripts/validate_dependency_lock.py requirements.runtime.lock 2>&1 | tee v710-evidence/dependency-policy.log
+          python scripts/validate_vulnerability_exceptions.py 2>&1 | tee v710-evidence/vulnerability-exceptions.log
+      - name: Scan candidate secrets
+        run: |
+          set -euo pipefail
           python scripts/scan_candidate_secrets.py --root . --output v710-evidence/secret-scan.json
+      - name: Audit PyPI vulnerabilities
+        run: |
+          set -euo pipefail
           pip-audit --disable-pip --require-hashes --no-deps --timeout 15 --progress-spinner off --vulnerability-service pypi --requirement requirements.runtime.lock --format json --output v710-evidence/pip-audit-pypi.json
+      - name: Audit OSV vulnerabilities
+        run: |
+          set -euo pipefail
           pip-audit --disable-pip --require-hashes --no-deps --timeout 15 --progress-spinner off --vulnerability-service osv --requirement requirements.runtime.lock --format json --output v710-evidence/pip-audit-osv.json
           python scripts/evaluate_dependency_audit.py v710-evidence/pip-audit-pypi.json v710-evidence/pip-audit-osv.json
       - name: Deterministic compiler outputs and build-once artifacts
