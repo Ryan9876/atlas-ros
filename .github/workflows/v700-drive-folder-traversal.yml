@@ -57,6 +57,15 @@ jobs:
             --receipts release/v700-drive-file-listing-receipts.json \
             --folder-tree release/v700-drive-folder-traversal.json \
             --output v700-drive-folder-evidence/V700_DRIVE_V500_SUPPLEMENT_VALIDATION.json
+      - name: Validate ordered Drive release supplement chain
+        run: |
+          python -m scripts.validate_v700_drive_release_supplement_chain \
+            --supplement release/v700-drive-v500-file-supplement.json \
+            --supplement release/v700-drive-v453-file-supplement.json \
+            --inventory release/v700-drive-file-inventory.json \
+            --receipts release/v700-drive-file-listing-receipts.json \
+            --folder-tree release/v700-drive-folder-traversal.json \
+            --output v700-drive-folder-evidence/V700_DRIVE_RELEASE_SUPPLEMENT_CHAIN_VALIDATION.json
       - name: Enforce fail-closed traversal and file-inventory results
         run: |
           python - <<'PY'
@@ -78,6 +87,10 @@ jobs:
           )
           supplement = json.loads(
               (root / 'V700_DRIVE_V500_SUPPLEMENT_VALIDATION.json')
+              .read_text(encoding='utf-8')
+          )
+          chain = json.loads(
+              (root / 'V700_DRIVE_RELEASE_SUPPLEMENT_CHAIN_VALIDATION.json')
               .read_text(encoding='utf-8')
           )
           assert folders['status'] == (
@@ -148,6 +161,32 @@ jobs:
           assert supplement['provider_writes'] == 0
           assert supplement['drive_retirement_authorized'] is False
           assert supplement['credential_action_authorized'] is False
+
+          assert chain['status'] == (
+              'partial_file_inventory_with_complete_release_supplement_chain'
+          )
+          assert chain['supplement_count'] == 2
+          assert chain['releases'] == ['5.0', '4.5.3']
+          assert chain['supplements'][0]['supplement_sha256'] == (
+              'de6d34904f1e926da1b9e27d7be4502ab255a50662dcc5b70da89ea081de1196'
+          )
+          assert chain['supplements'][1]['supplement_sha256'] == (
+              '20d51011071c1a976c52756b1f1d667075e7d60a0001e692daf290209e9ab6d6'
+          )
+          assert chain['combined_known_folder_count'] == 93
+          assert chain['combined_scanned_folder_count'] == 7
+          assert chain['combined_unscanned_folder_count'] == 86
+          assert chain['combined_file_count'] == 47
+          assert chain['combined_content_hashed_count'] == 46
+          assert chain['combined_sensitive_item_count'] == 1
+          assert chain['combined_verified_github_equivalence_count'] == 1
+          assert chain['combined_governed_legacy_exception_count'] == 45
+          assert chain['enumeration_complete'] is False
+          assert chain['content_checksums_complete'] is False
+          assert chain['promotion_ready'] is False
+          assert chain['provider_writes'] == 0
+          assert chain['drive_retirement_authorized'] is False
+          assert chain['credential_action_authorized'] is False
           PY
       - name: Create and verify Drive evidence checksums
         run: |
