@@ -46,7 +46,7 @@ def test_live_v500_supplement_is_complete_and_fail_closed() -> None:
         "partial_file_inventory_with_complete_v500_supplement"
     )
     assert result["supplement_sha256"] == (
-        "f2c9094c6836da57a1af759efe76cc882a6a37a69924b5f9f512bf60dff1c3a0"
+        "de6d34904f1e926da1b9e27d7be4502ab255a50662dcc5b70da89ea081de1196"
     )
     assert result["v500_scanned_folder_count"] == 1
     assert result["v500_file_count"] == 18
@@ -76,7 +76,21 @@ def test_v500_supplement_rejects_candidate_checksum_mismatch() -> None:
 
     with pytest.raises(
         DriveReleaseSupplementError,
-        match="candidate package checksum does not reconcile",
+        match="checksum file text does not declare the expected package",
+    ):
+        validate(payload)
+
+
+def test_v500_supplement_rejects_checksum_text_byte_mismatch() -> None:
+    payload = copy.deepcopy(
+        load("release/v700-drive-v500-file-supplement.json")
+    )
+    payload["candidate_checksum_file_text"] += "tampered"
+    resign(payload)
+
+    with pytest.raises(
+        DriveReleaseSupplementError,
+        match="checksum file text hash does not match captured bytes",
     ):
         validate(payload)
 
