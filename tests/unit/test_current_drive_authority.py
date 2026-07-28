@@ -5,12 +5,12 @@ from copy import deepcopy
 from pathlib import Path
 
 import pytest
+
 from scripts.validate_v700_current_drive_authority import (
     CurrentDriveAuthorityError,
     canonical_sha256,
     validate_current_drive_authority,
 )
-
 
 ROOT = Path(__file__).resolve().parents[2]
 
