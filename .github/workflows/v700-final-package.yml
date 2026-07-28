@@ -1,0 +1,164 @@
+name: v700-final-package
+
+on:
+  pull_request:
+    branches: [main]
+    types: [ready_for_review]
+  workflow_dispatch:
+
+concurrency:
+  group: v700-final-package-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  validate-v700-final-package:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'pull_request' &&
+       github.head_ref == 'release/v700-final')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.12.10'
+          cache: pip
+      - name: Install exact final-package tooling
+        run: |
+          python -m pip install --disable-pip-version-check --upgrade pip
+          python -m pip install --disable-pip-version-check -e '.[dev]'
+      - name: Validate exact final source identity
+        env:
+          FINAL_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          test "$(git rev-parse HEAD)" = "$FINAL_SHA"
+          test "$(python -c 'import atlas_ros; print(atlas_ros.__version__)')" = '7.0.0'
+      - name: Ruff
+        run: ruff check .
+      - name: Validate architecture boundaries
+        run: python scripts/validate_architecture.py
+      - name: Validate deterministic dependency policy
+        run: |
+          python scripts/validate_dependency_lock.py requirements.runtime.lock
+          python scripts/validate_vulnerability_exceptions.py
+      - name: Strict MyPy
+        run: mypy src
+      - name: Test
+        run: pytest
+      - name: Evaluate execution planning
+        run: |
+          mkdir -p v700-final-workflow-evidence
+          python scripts/evaluate_execution_planning.py \
+            --dataset benchmarks/execution-planning-v1.json \
+            --output v700-final-workflow-evidence/EXECUTION_PLANNING_REPORT.json
+      - name: Scan final source for secrets
+        run: |
+          python scripts/scan_candidate_secrets.py \
+            --root . \
+            --output v700-final-workflow-evidence/SECRET_SCAN.json
+      - name: Audit against PyPI advisory service
+        id: pypi_audit
+        continue-on-error: true
+        run: |
+          mkdir -p v700-final-dependency-audit
+          pip-audit --disable-pip --require-hashes --no-deps --timeout 15 \
+            --progress-spinner off --vulnerability-service pypi \
+            --requirement requirements.runtime.lock --format json \
+            --output v700-final-dependency-audit/pip-audit-pypi.json \
+            >v700-final-dependency-audit/pip-audit-pypi.stdout \
+            2>v700-final-dependency-audit/pip-audit-pypi.stderr
+      - name: Audit against OSV advisory service
+        id: osv_audit
+        continue-on-error: true
+        run: |
+          pip-audit --disable-pip --require-hashes --no-deps --timeout 15 \
+            --progress-spinner off --vulnerability-service osv \
+            --requirement requirements.runtime.lock --format json \
+            --output v700-final-dependency-audit/pip-audit-osv.json \
+            >v700-final-dependency-audit/pip-audit-osv.stdout \
+            2>v700-final-dependency-audit/pip-audit-osv.stderr
+      - name: Enforce advisory and exception policy
+        run: |
+          python scripts/evaluate_dependency_audit.py \
+            v700-final-dependency-audit/pip-audit-pypi.json \
+            v700-final-dependency-audit/pip-audit-osv.json
+      - name: Download and verify validated RC exact-artifact evidence
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CANDIDATE_EXACT_ARTIFACT_ID: '8675702886'
+          CANDIDATE_EXACT_ARTIFACT_DIGEST: b1c537e6fda16bc4e79120daa4fd6ec94c9216d39b794d2f4ee040b8f76848b9
+        run: |
+          set -euo pipefail
+          gh api \
+            "repos/${GITHUB_REPOSITORY}/actions/artifacts/${CANDIDATE_EXACT_ARTIFACT_ID}/zip" \
+            > candidate-exact-artifact.zip
+          echo "${CANDIDATE_EXACT_ARTIFACT_DIGEST}  candidate-exact-artifact.zip" | \
+            sha256sum -c -
+          rm -rf candidate-exact-artifact
+          mkdir candidate-exact-artifact
+          unzip -q candidate-exact-artifact.zip -d candidate-exact-artifact
+          checksum_file="$(find candidate-exact-artifact \
+            -name EXACT_ARTIFACT_CHECKSUMS.sha256 -print -quit)"
+          test -n "$checksum_file"
+          evidence_root="$(dirname "$checksum_file")"
+          (cd "$evidence_root" && sha256sum -c EXACT_ARTIFACT_CHECKSUMS.sha256)
+      - name: Build and validate exact final package without publishing
+        env:
+          GH_TOKEN: ${{ github.token }}
+          FINAL_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          CANDIDATE_EXACT_ARTIFACT_ID: '8675702886'
+          CANDIDATE_EXACT_ARTIFACT_DIGEST: b1c537e6fda16bc4e79120daa4fd6ec94c9216d39b794d2f4ee040b8f76848b9
+        run: |
+          set -euo pipefail
+          validation_file="$(find candidate-exact-artifact \
+            -name EXACT_ARTIFACT_VALIDATION.json -print -quit)"
+          test -n "$validation_file"
+          python scripts/build_v700_final_package.py \
+            --repository-root . \
+            --final-source-commit "$FINAL_SHA" \
+            --workflow-run-id "$GITHUB_RUN_ID" \
+            --candidate-exact-validation "$validation_file" \
+            --candidate-exact-artifact-id "$CANDIDATE_EXACT_ARTIFACT_ID" \
+            --candidate-exact-artifact-digest "$CANDIDATE_EXACT_ARTIFACT_DIGEST" \
+            --decision-record-url \
+              https://app.notion.com/p/3aab8344ad2c81399ff7e6f5c5ce644d \
+            --review-record-url \
+              https://app.notion.com/p/3aab8344ad2c819e93bce697d6ee8ae1 \
+            --output-dir v700-final-publication
+      - name: Create workflow evidence checksums
+        if: always()
+        run: |
+          cp requirements.runtime.lock v700-final-dependency-audit/
+          cp security/vulnerability-exceptions.yml v700-final-dependency-audit/
+          printf 'PyPI step outcome=%s\nOSV step outcome=%s\nprovider_writes=0\n' \
+            '${{ steps.pypi_audit.outcome }}' '${{ steps.osv_audit.outcome }}' \
+            > v700-final-dependency-audit/workflow-outcomes.txt
+          (cd v700-final-dependency-audit && \
+            sha256sum * > DEPENDENCY_AUDIT_CHECKSUMS.sha256)
+          (cd v700-final-workflow-evidence && \
+            sha256sum * > WORKFLOW_EVIDENCE_CHECKSUMS.sha256)
+      - name: Retain final dependency audit evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: v700-final-dependency-audit-${{ github.event.pull_request.head.sha || github.sha }}
+          path: v700-final-dependency-audit/
+          if-no-files-found: error
+          retention-days: 90
+      - name: Retain exact final package and evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: atlas-ros-v700-final-package-${{ github.event.pull_request.head.sha || github.sha }}
+          path: v700-final-publication/
+          if-no-files-found: warn
+          retention-days: 90
