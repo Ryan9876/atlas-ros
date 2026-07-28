@@ -1,0 +1,13 @@
+schema_version: "1.0"
+canonical_compiler: tools/release/release_compiler.py
+canonical_candidate_workflow: .github/workflows/v710-consolidation-candidate.yml
+historical_release_workflows:
+  pattern: .github/workflows/v*-*.yml
+  policy: preserved_for_immutable_release_evidence
+  production_runtime_reachable: false
+  may_define_new_policy: false
+compatibility_rules:
+  - Existing release-family workflows remain preserved for their historical releases.
+  - Future candidate workflows must compile from atlas.release-specification.
+  - Compatibility wrappers may call the canonical compiler but may not duplicate policy.
+  - Removal requires proof that restoration and audit evidence are preserved.

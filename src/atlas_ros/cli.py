@@ -46,8 +46,8 @@ def runtime() -> RuntimeDatabase:
 
 def status() -> None:
     print(
-        "runtime status: production-capable attended executable; "
-        "live release authority must be resolved from Google Drive and Notion"
+        "production-capable legacy compatibility CLI: canonical release authority is GitHub-first; "
+        "dynamic management state remains in Notion"
     )
 
 

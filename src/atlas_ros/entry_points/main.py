@@ -17,9 +17,10 @@ class RuntimeCommandError(RuntimeError):
 def status(*, json_output: bool = False) -> None:
     """Report installed runtime identity without loading providers or release tooling."""
     payload = {
-        "status": "runtime_available",
+        "status": "candidate_runtime_available",
         "version": __version__,
         "authority_model_version": "7.0",
+        "active_production_version": "7.0.1",
         "production_authority_changed": False,
         "provider_writes": False,
     }
@@ -27,8 +28,8 @@ def status(*, json_output: bool = False) -> None:
         print(json.dumps(payload, sort_keys=True))
         return
     print(
-        f"Atlas ROS {__version__} runtime is installed; "
-        "production authority is unchanged and no provider writes were performed."
+        f"Atlas ROS {__version__} candidate runtime is installed; "
+        "Atlas ROS 7.0.1 remains Active and no provider writes were performed."
     )
 
 
@@ -54,19 +55,23 @@ def initialize(*, json_output: bool = False) -> None:
 
 
 def verify(*, json_output: bool = False) -> None:
-    """Verify only the installed runtime identity; release verification is separate."""
+    """Verify only the installed candidate identity; release verification is separate."""
     payload = {
-        "valid": __version__ == "7.0.1",
-        "scope": "installed_runtime_identity",
+        "valid": __version__ == "7.1.0",
+        "scope": "installed_candidate_runtime_identity",
         "version": __version__,
+        "active_production_version": "7.0.1",
         "writes": False,
     }
     if json_output:
         print(json.dumps(payload, sort_keys=True))
         return
     if not payload["valid"]:
-        raise RuntimeCommandError("installed runtime identity is not Atlas ROS v7.0.1")
-    print(f"Installed runtime identity verified: Atlas ROS {__version__}; writes: 0.")
+        raise RuntimeCommandError("installed runtime identity is not Atlas ROS v7.1.0")
+    print(
+        f"Installed candidate identity verified: Atlas ROS {__version__}; "
+        "Active production remains 7.0.1; writes: 0."
+    )
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -81,35 +86,66 @@ def _parser() -> argparse.ArgumentParser:
     return parser
 
 
+def _dispatch_status(arguments: Sequence[str]) -> None:
+    args = _parser().parse_args(["status", *arguments])
+    status(json_output=args.json)
+
+
+def _dispatch_initialize(arguments: Sequence[str]) -> None:
+    args = _parser().parse_args(["initialize", *arguments])
+    initialize(json_output=args.json)
+
+
+def _dispatch_verify(arguments: Sequence[str]) -> None:
+    args = _parser().parse_args(["verify", *arguments])
+    verify(json_output=args.json)
+
+
+def _dispatch_process(arguments: Sequence[str]) -> None:
+    if arguments:
+        raise RuntimeCommandError("process does not accept arguments in the candidate surface")
+    raise RuntimeCommandError(
+        "process is not exposed until the canonical capability pipeline is bound"
+    )
+
+
+def _dispatch_plan(arguments: Sequence[str]) -> None:
+    if arguments:
+        raise RuntimeCommandError("plan does not accept arguments in the candidate surface")
+    raise RuntimeCommandError(
+        "plan is not exposed until the canonical capability pipeline is bound"
+    )
+
+
+def _dispatch_execute(arguments: Sequence[str]) -> None:
+    if arguments:
+        raise RuntimeCommandError("execute does not accept arguments in the candidate surface")
+    raise RuntimeCommandError(
+        "execution requires an immutable authorized plan and configured provider adapter"
+    )
+
+
+_COMMANDS = {
+    "status": _dispatch_status,
+    "initialize": _dispatch_initialize,
+    "verify": _dispatch_verify,
+    "process": _dispatch_process,
+    "plan": _dispatch_plan,
+    "execute": _dispatch_execute,
+}
+
+
 def main(argv: Sequence[str] | None = None) -> None:
-    """Dispatch lightweight commands and lazily load compatibility commands."""
+    """Dispatch canonical commands without legacy or release-tooling fallbacks."""
     arguments = list(sys.argv[1:] if argv is None else argv)
     if not arguments:
         _parser().print_help()
         raise SystemExit(2)
-
-    command = arguments[0]
-    if command not in {"status", "initialize", "verify", "process", "plan", "execute"}:
-        from atlas_ros.entry_points._legacy import forward_legacy
-
-        forward_legacy()
-        return
-
-    args = _parser().parse_args(arguments)
-    if args.command == "status":
-        status(json_output=args.json)
-    elif args.command == "initialize":
-        initialize(json_output=args.json)
-    elif args.command == "verify":
-        verify(json_output=args.json)
-    elif args.command == "execute":
-        raise RuntimeCommandError(
-            "execution requires an immutable authorized plan and configured provider adapter"
-        )
-    else:
-        raise RuntimeCommandError(
-            f"{args.command} is not exposed until the canonical capability pipeline is bound"
-        )
+    command, *remaining = arguments
+    handler = _COMMANDS.get(command)
+    if handler is None:
+        _parser().error(f"unknown command: {command}")
+    handler(remaining)
 
 
 if __name__ == "__main__":

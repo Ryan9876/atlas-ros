@@ -1,0 +1,217 @@
+{
+  "$defs": {
+    "CleanupAction": {
+      "enum": [
+        "migrate",
+        "archive",
+        "delete"
+      ],
+      "title": "CleanupAction",
+      "type": "string"
+    },
+    "HistoricalOperationResult": {
+      "additionalProperties": false,
+      "properties": {
+        "action": {
+          "$ref": "#/$defs/CleanupAction"
+        },
+        "applied": {
+          "title": "Applied",
+          "type": "boolean"
+        },
+        "changed": {
+          "title": "Changed",
+          "type": "boolean"
+        },
+        "error": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Error"
+        },
+        "idempotency_key": {
+          "title": "Idempotency Key",
+          "type": "string"
+        },
+        "item_id": {
+          "title": "Item Id",
+          "type": "string"
+        },
+        "operation_id": {
+          "title": "Operation Id",
+          "type": "string"
+        },
+        "result_digest": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Result Digest",
+          "type": "string"
+        }
+      },
+      "required": [
+        "operation_id",
+        "item_id",
+        "idempotency_key",
+        "action",
+        "applied",
+        "changed",
+        "result_digest"
+      ],
+      "title": "HistoricalOperationResult",
+      "type": "object"
+    },
+    "HistoricalReadbackResult": {
+      "additionalProperties": false,
+      "properties": {
+        "error": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Error"
+        },
+        "item_id": {
+          "title": "Item Id",
+          "type": "string"
+        },
+        "observed_digest": {
+          "anyOf": [
+            {
+              "pattern": "^[0-9a-f]{64}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Observed Digest"
+        },
+        "observed_state": {
+          "enum": [
+            "present",
+            "archived",
+            "migrated",
+            "deleted",
+            "unknown"
+          ],
+          "title": "Observed State",
+          "type": "string"
+        },
+        "operation_id": {
+          "title": "Operation Id",
+          "type": "string"
+        },
+        "verified": {
+          "title": "Verified",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "operation_id",
+        "item_id",
+        "observed_state",
+        "verified"
+      ],
+      "title": "HistoricalReadbackResult",
+      "type": "object"
+    }
+  },
+  "$id": "https://github.com/Ryan9876/atlas-ros/schemas/history/historical-cleanup-receipt.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "authorization_id": {
+      "title": "Authorization Id",
+      "type": "string"
+    },
+    "completed_at": {
+      "format": "date-time",
+      "title": "Completed At",
+      "type": "string"
+    },
+    "contract_id": {
+      "const": "atlas.historical-cleanup-receipt",
+      "default": "atlas.historical-cleanup-receipt",
+      "title": "Contract Id",
+      "type": "string"
+    },
+    "destructive_actions": {
+      "minimum": 0,
+      "title": "Destructive Actions",
+      "type": "integer"
+    },
+    "inventory_digest": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Inventory Digest",
+      "type": "string"
+    },
+    "operation_results": {
+      "items": {
+        "$ref": "#/$defs/HistoricalOperationResult"
+      },
+      "title": "Operation Results",
+      "type": "array"
+    },
+    "plan_digest": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Plan Digest",
+      "type": "string"
+    },
+    "provider_writes": {
+      "minimum": 0,
+      "title": "Provider Writes",
+      "type": "integer"
+    },
+    "readback_results": {
+      "items": {
+        "$ref": "#/$defs/HistoricalReadbackResult"
+      },
+      "title": "Readback Results",
+      "type": "array"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "status": {
+      "enum": [
+        "simulated",
+        "completed",
+        "partial",
+        "failed"
+      ],
+      "title": "Status",
+      "type": "string"
+    },
+    "transaction_id": {
+      "title": "Transaction Id",
+      "type": "string"
+    }
+  },
+  "required": [
+    "transaction_id",
+    "authorization_id",
+    "inventory_digest",
+    "plan_digest",
+    "status",
+    "operation_results",
+    "readback_results",
+    "provider_writes",
+    "destructive_actions"
+  ],
+  "title": "HistoricalCleanupReceipt",
+  "type": "object"
+}

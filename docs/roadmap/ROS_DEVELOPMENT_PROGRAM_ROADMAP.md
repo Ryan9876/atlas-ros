@@ -1,6 +1,6 @@
-# Atlas ROS Development Program Roadmap
+# HISTORICAL — Atlas ROS Development Program Roadmap
 
-Status: Approved development roadmap. Production promotion remains Ryan-only.
+Status: Superseded historical planning record. Current release and development authority are resolved through GitHub governance, the active release manifest, and current governed decisions. Production promotion remains Ryan-only.
 
 ## Purpose
 
@@ -52,7 +52,7 @@ Deliverables:
 - Implement GitHub Release publication and post-publication verification.
 - Add a machine-readable implementation registry.
 - Add bidirectional development-record reconciliation with Notion.
-- Preserve the fixed Drive initialization bootstrap and explicitly allowlisted exceptions.
+- Historical implementation note: the fixed Drive initialization bootstrap was preserved during the initial migration wave and was later removed from current initialization authority.
 - Prove Active and rollback restoration without Drive release folders.
 - Produce a promotion-ready authority-migration release candidate.
 

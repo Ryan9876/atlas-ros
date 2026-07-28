@@ -1,6 +1,13 @@
-schema_version: "1.1"
-release_family: "7.0"
+schema_version: "1.2"
+release_family: "7.x"
 authority_model_version: "7.0"
+compiler:
+  canonical: tools/release/release_compiler.py
+  specification_contract: atlas.release-specification
+  version_neutral: true
+  release_family_paths_forbidden: true
+  candidate_outputs_must_not_claim_active: true
+  compatibility_registry: governance/release-workflow-compatibility.yaml
 production_activation:
   requires_explicit_ryan_authorization: true
   candidate_pr_must_be_merged: true
@@ -53,6 +60,9 @@ drive:
   preserve_release_family: "6.x_and_newer"
   historical_target_root_id: 1kkJBRR1cdIOolURmxnxM2SP_U611vlyf
   historical_target_folder_count: 92
+  dependency_inventory_required: true
+  retirement_simulation_required: true
+  post_retirement_readback_required: true
 pre_v6_deletion:
   permitted_before_v701_activation: false
   requires_v701_post_promotion_readback: true
@@ -72,3 +82,27 @@ drive_retirement:
   requires_v650_restoration: true
   requires_zero_current_dependencies: true
   requires_exact_transaction_authorization: true
+  account_and_credential_scope_required: true
+  non_destructive_simulation_required: true
+historical_cleanup:
+  item_level_inventory_required: true
+  immutable_digests_required: true
+  unknown_classification: fail_closed
+  exact_transaction_authorization_required: true
+  object_and_byte_budgets_required: true
+  dry_run_required: true
+  idempotency_required: true
+  uncertain_apply_readback_required: true
+  partial_failure_receipts_required: true
+  destructive_actions_during_validation: 0
+lazy_loading:
+  provider_adapters_deferred: true
+  release_tooling_excluded_from_runtime: true
+  migration_tooling_excluded_from_runtime: true
+  cold_start_required: true
+  optional_warm_runtime:
+    authoritative: false
+    provider_writes: false
+    authentication_required: true
+    freshness_required: true
+    disposable: true

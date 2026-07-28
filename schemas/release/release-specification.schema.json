@@ -1,0 +1,202 @@
+{
+  "$defs": {
+    "ReleaseIdentity": {
+      "additionalProperties": false,
+      "properties": {
+        "source_commit": {
+          "pattern": "^[0-9a-f]{40}$",
+          "title": "Source Commit",
+          "type": "string"
+        },
+        "tag": {
+          "pattern": "^v\\d+\\.\\d+\\.\\d+$",
+          "title": "Tag",
+          "type": "string"
+        },
+        "version": {
+          "pattern": "^\\d+\\.\\d+\\.\\d+$",
+          "title": "Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "version",
+        "source_commit",
+        "tag"
+      ],
+      "title": "ReleaseIdentity",
+      "type": "object"
+    }
+  },
+  "$id": "https://github.com/Ryan9876/atlas-ros/schemas/release/release-specification.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "artifact_requirements": {
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "title": "Artifact Requirements",
+      "type": "array"
+    },
+    "authority_activation_policy": {
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "title": "Authority Activation Policy",
+      "type": "array"
+    },
+    "authority_model_version": {
+      "pattern": "^\\d+\\.\\d+$",
+      "title": "Authority Model Version",
+      "type": "string"
+    },
+    "candidate_only": {
+      "const": true,
+      "default": true,
+      "title": "Candidate Only",
+      "type": "boolean"
+    },
+    "compatibility_rules": {
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "title": "Compatibility Rules",
+      "type": "array"
+    },
+    "contract_id": {
+      "const": "atlas.release-specification",
+      "default": "atlas.release-specification",
+      "title": "Contract Id",
+      "type": "string"
+    },
+    "historical_rollbacks": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/ReleaseIdentity"
+      },
+      "title": "Historical Rollbacks",
+      "type": "array"
+    },
+    "identity": {
+      "$ref": "#/$defs/ReleaseIdentity"
+    },
+    "immediate_rollback": {
+      "$ref": "#/$defs/ReleaseIdentity"
+    },
+    "integration_inventory_url": {
+      "pattern": "^https://",
+      "title": "Integration Inventory Url",
+      "type": "string"
+    },
+    "migration_requirements": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Migration Requirements",
+      "type": "array"
+    },
+    "notion_system_state_url": {
+      "pattern": "^https://",
+      "title": "Notion System State Url",
+      "type": "string"
+    },
+    "optional_integrations": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Optional Integrations",
+      "type": "array"
+    },
+    "package_name": {
+      "maxLength": 128,
+      "minLength": 1,
+      "title": "Package Name",
+      "type": "string"
+    },
+    "promotion_prerequisites": {
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "title": "Promotion Prerequisites",
+      "type": "array"
+    },
+    "publication_policy": {
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "title": "Publication Policy",
+      "type": "array"
+    },
+    "release_scope": {
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "title": "Release Scope",
+      "type": "array"
+    },
+    "required_integrations": {
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "title": "Required Integrations",
+      "type": "array"
+    },
+    "restoration_requirements": {
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "title": "Restoration Requirements",
+      "type": "array"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "specification_digest": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Specification Digest",
+      "type": "string"
+    },
+    "validation_profile": {
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "title": "Validation Profile",
+      "type": "array"
+    }
+  },
+  "required": [
+    "package_name",
+    "identity",
+    "authority_model_version",
+    "release_scope",
+    "immediate_rollback",
+    "required_integrations",
+    "validation_profile",
+    "artifact_requirements",
+    "promotion_prerequisites",
+    "publication_policy",
+    "authority_activation_policy",
+    "restoration_requirements",
+    "compatibility_rules",
+    "notion_system_state_url",
+    "integration_inventory_url",
+    "specification_digest"
+  ],
+  "title": "ReleaseSpecification",
+  "type": "object"
+}

@@ -1,0 +1,227 @@
+{
+  "$defs": {
+    "DependencyRelationship": {
+      "additionalProperties": false,
+      "properties": {
+        "active_release_required": {
+          "default": false,
+          "title": "Active Release Required",
+          "type": "boolean"
+        },
+        "related_item_id": {
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Related Item Id",
+          "type": "string"
+        },
+        "relationship": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Relationship",
+          "type": "string"
+        },
+        "rollback_release_required": {
+          "default": false,
+          "title": "Rollback Release Required",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "related_item_id",
+        "relationship"
+      ],
+      "title": "DependencyRelationship",
+      "type": "object"
+    },
+    "HistoricalItem": {
+      "additionalProperties": false,
+      "properties": {
+        "audit_relevance": {
+          "default": false,
+          "title": "Audit Relevance",
+          "type": "boolean"
+        },
+        "classification": {
+          "$ref": "#/$defs/RetentionClassification"
+        },
+        "contract_id": {
+          "const": "atlas.historical-item",
+          "default": "atlas.historical-item",
+          "title": "Contract Id",
+          "type": "string"
+        },
+        "dependencies": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/DependencyRelationship"
+          },
+          "title": "Dependencies",
+          "type": "array"
+        },
+        "destination_location": {
+          "anyOf": [
+            {
+              "maxLength": 2048,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Destination Location"
+        },
+        "exclusion_reasons": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Exclusion Reasons",
+          "type": "array"
+        },
+        "governance_relevance": {
+          "default": false,
+          "title": "Governance Relevance",
+          "type": "boolean"
+        },
+        "immutable_digest": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Immutable Digest",
+          "type": "string"
+        },
+        "item_id": {
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Item Id",
+          "type": "string"
+        },
+        "legal_relevance": {
+          "default": false,
+          "title": "Legal Relevance",
+          "type": "boolean"
+        },
+        "release_family": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Release Family",
+          "type": "string"
+        },
+        "rollback_relevance": {
+          "default": false,
+          "title": "Rollback Relevance",
+          "type": "boolean"
+        },
+        "schema_version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "security_relevance": {
+          "default": false,
+          "title": "Security Relevance",
+          "type": "boolean"
+        },
+        "size_bytes": {
+          "minimum": 0,
+          "title": "Size Bytes",
+          "type": "integer"
+        },
+        "source_location": {
+          "maxLength": 2048,
+          "minLength": 1,
+          "title": "Source Location",
+          "type": "string"
+        },
+        "source_system": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Source System",
+          "type": "string"
+        },
+        "uncertainty_reasons": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Uncertainty Reasons",
+          "type": "array"
+        }
+      },
+      "required": [
+        "item_id",
+        "source_system",
+        "source_location",
+        "immutable_digest",
+        "size_bytes",
+        "release_family",
+        "classification"
+      ],
+      "title": "HistoricalItem",
+      "type": "object"
+    },
+    "RetentionClassification": {
+      "enum": [
+        "preserve_permanently",
+        "preserve_for_rollback",
+        "preserve_for_audit",
+        "preserve_for_governance",
+        "preserve_for_legal_or_security",
+        "migrate_before_retirement",
+        "archive_outside_active_surface",
+        "eligible_for_deletion",
+        "uncertain_human_decision_required"
+      ],
+      "title": "RetentionClassification",
+      "type": "string"
+    }
+  },
+  "$id": "https://github.com/Ryan9876/atlas-ros/schemas/history/historical-inventory.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "contract_id": {
+      "const": "atlas.historical-inventory",
+      "default": "atlas.historical-inventory",
+      "title": "Contract Id",
+      "type": "string"
+    },
+    "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+    },
+    "inventory_digest": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Inventory Digest",
+      "type": "string"
+    },
+    "inventory_id": {
+      "maxLength": 256,
+      "minLength": 1,
+      "title": "Inventory Id",
+      "type": "string"
+    },
+    "items": {
+      "items": {
+        "$ref": "#/$defs/HistoricalItem"
+      },
+      "minItems": 1,
+      "title": "Items",
+      "type": "array"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    }
+  },
+  "required": [
+    "inventory_id",
+    "items",
+    "inventory_digest"
+  ],
+  "title": "HistoricalInventory",
+  "type": "object"
+}

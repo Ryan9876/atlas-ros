@@ -89,7 +89,7 @@ def test_compiler_builds_digest_bound_immutable_registry(tmp_path: Path) -> None
 def test_repository_catalog_compiles_with_exact_invariants() -> None:
     registry = compile_capability_registry(Path("governance/capability-catalog.yaml"))
 
-    assert len(registry.capabilities) == 14
+    assert len(registry.capabilities) == 15
     assert registry.planning_authority_id == "atlas.execution-planning"
     assert registry.require("atlas.reconciliation").may_create_execution_intent is False
     assert all(not item.writes_providers for item in registry.capabilities.values())

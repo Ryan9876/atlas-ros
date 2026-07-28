@@ -18,6 +18,13 @@ from atlas_ros.contracts.execution.transaction import (
     ProposedExecutionPlan,
 )
 from atlas_ros.contracts.reasoning import IntentGraph
+from atlas_ros.contracts.history import (
+    HistoricalCleanupPlan,
+    HistoricalCleanupReceipt,
+    HistoricalInventory,
+    HistoricalItem,
+)
+from atlas_ros.contracts.release import ReleaseCompilationReceipt, ReleaseSpecification
 from atlas_ros.contracts.registry import ContractDescriptor
 
 _SCHEMA_DRAFT = "https://json-schema.org/draft/2020-12/schema"
@@ -30,6 +37,12 @@ _MODELS: Mapping[str, type[BaseModel]] = {
     "atlas.authorized-execution-plan": AuthorizedExecutionPlan,
     "atlas.execution-transaction-receipt": ExecutionTransactionReceipt,
     "atlas.pipeline-run-envelope": PipelineRunEnvelope,
+    "atlas.historical-item": HistoricalItem,
+    "atlas.historical-inventory": HistoricalInventory,
+    "atlas.historical-cleanup-plan": HistoricalCleanupPlan,
+    "atlas.historical-cleanup-receipt": HistoricalCleanupReceipt,
+    "atlas.release-specification": ReleaseSpecification,
+    "atlas.release-compilation-receipt": ReleaseCompilationReceipt,
 }
 
 
