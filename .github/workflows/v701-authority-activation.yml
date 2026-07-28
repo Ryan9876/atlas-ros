@@ -54,7 +54,6 @@ jobs:
             --json tagName,isDraft,isPrerelease,targetCommitish,assets \
             > authority-activation-evidence/RELEASE_METADATA.json
           printf '%s\n' metadata-read > authority-activation-evidence/STAGE.txt
-          git fetch --tags --force
           git rev-list -n 1 v7.0.1 > authority-activation-evidence/TAG_TARGET.txt
           test "$(cat authority-activation-evidence/TAG_TARGET.txt)" = f26f5154ea6cd4b431c5a2638c439d7de9282761
           printf '%s\n' tag-target-passed > authority-activation-evidence/STAGE.txt
