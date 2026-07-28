@@ -30,7 +30,8 @@ def test_candidate_only_text_is_rejected(tmp_path: Path) -> None:
     ):
         destination = tmp_path / relative
         destination.parent.mkdir(parents=True, exist_ok=True)
-        destination.write_text((Path.cwd() / relative).read_text(encoding="utf-8"), encoding="utf-8")
+        source = (Path.cwd() / relative).read_text(encoding="utf-8")
+        destination.write_text(source, encoding="utf-8")
 
     manifest = tmp_path / MANIFEST_PATH
     manifest.write_text(
