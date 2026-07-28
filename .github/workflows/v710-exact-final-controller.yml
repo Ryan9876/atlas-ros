@@ -1,0 +1,82 @@
+name: v710-exact-final-controller
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, ready_for_review, reopened]
+
+concurrency:
+  group: v710-exact-final-controller-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  validate-exact-merged-source:
+    if: github.head_ref == 'release/v710-exact-final-controller'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 110
+    env:
+      SOURCE_COMMIT: 0711b045f34f5ab7b03f7a61bc80653e0d815463
+      RELEASE_VERSION: 7.1.0
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Check out exact merged source
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          ref: 0711b045f34f5ab7b03f7a61bc80653e0d815463
+          fetch-depth: 0
+          fetch-tags: true
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.12.10'
+          cache: pip
+
+      - name: Install exact-source validation tooling
+        run: |
+          python -m pip install --disable-pip-version-check --upgrade pip
+          python -m pip install --disable-pip-version-check -e '.[dev]'
+
+      - name: Execute committed final-package run blocks verbatim
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import os
+          import subprocess
+          from pathlib import Path
+
+          import yaml
+
+          workflow = yaml.safe_load(
+              Path('.github/workflows/v710-corrective-final-package.yml').read_text(
+                  encoding='utf-8'
+              )
+          )
+          steps = workflow['jobs']['validate-and-package']['steps']
+          for step in steps:
+              script = step.get('run')
+              if script is None:
+                  continue
+              name = step.get('name', 'unnamed run step')
+              print(f'::group::{name}', flush=True)
+              subprocess.run(
+                  ['bash', '-lc', script],
+                  check=True,
+                  env=os.environ.copy(),
+              )
+              print('::endgroup::', flush=True)
+          PY
+
+      - name: Retain exact merged-source final package
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: atlas-ros-v710-exact-final-package-0711b045f34f5ab7b03f7a61bc80653e0d815463
+          path: final-package/
+          if-no-files-found: error
+          retention-days: 90
