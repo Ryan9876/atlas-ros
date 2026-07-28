@@ -26,13 +26,21 @@ Atlas ROS v7.0 establishes the candidate foundation for a canonical, GitHub-firs
 - Requires independent readback for every provider write.
 - Produces immutable transaction receipts and rejects adapter substitution or readback mismatch.
 
-## Migration and governance
+## Drive cutover and historical cleanup
 
-- Adds provider-neutral Google Drive migration and retirement simulation.
-- Requires v7 activation, v6.5 restoration, post-promotion readback, zero unresolved authoritative items, and zero current Drive dependencies before a retirement transaction can be prepared.
+- Limits v7 promotion migration to the fixed current Drive Release Index bootstrap and its checksum-equivalent GitHub target.
+- Removes pre-v6 package-by-package migration, hashing, and validation from the v7 promotion path.
+- Adds a checksum-bound, non-authorized plan for the single 92-folder historical subtree containing versions below v6.
+- Preserves every v6.x and newer release outside the historical deletion scope.
+- Requires v7 activation, v7 post-promotion readback, verified v6.5 rollback restoration, item-level exclusion review, and a separate exact deletion authorization before any destructive action can be prepared.
+- Records zero provider writes and zero destructive actions during candidate validation.
+
+## Governance
+
 - Corrects mutable governance records without changing production authority.
 - Moves current Capture Service guidance to immutable GitHub documentation.
+- Keeps production at v6.5.0 with v6.2.0 as immediate immutable rollback until a separately authorized v7 promotion completes.
 
 ## Candidate limitations
 
-This candidate is not production-authorized. It cannot publish a final release, create or move the final `v7.0.0` tag, activate GitHub authority, retire Google Drive, change integration scope, or perform provider writes during validation.
+This candidate is not production-authorized. It cannot publish a final release, create or move the final `v7.0.0` tag, activate GitHub authority, retire Google Drive, delete historical Drive content, change integration scope, or perform provider writes during validation.
