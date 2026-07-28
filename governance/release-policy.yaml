@@ -30,6 +30,25 @@ provider_boundaries:
   autonomous_messaging: forbidden
   autonomous_deletion: forbidden
   production_promotion_from_candidate_workflow: forbidden
+drive_cutover:
+  promotion_scope: current_release_index_bootstrap_only
+  pre_v6_history_required_for_promotion: false
+  preserve_release_family: "6.x_and_newer"
+  historical_target_root_id: 1kkJBRR1cdIOolURmxnxM2SP_U611vlyf
+  historical_target_folder_count: 92
+pre_v6_deletion:
+  permitted_before_v7_activation: false
+  requires_v7_post_promotion_readback: true
+  requires_v650_restoration: true
+  requires_item_level_exclusion_review: true
+  exclusion_classes:
+    - legal_hold
+    - security_record_required_for_v6_or_v7
+    - decision_record_required_for_v6_or_v7
+    - audit_record_required_for_v6_or_v7
+  requires_exact_transaction_authorization: true
+  provider_writes_during_validation: 0
+  destructive_actions_during_validation: 0
 drive_retirement:
   permitted_before_v7_activation: false
   requires_v7_post_promotion_readback: true
