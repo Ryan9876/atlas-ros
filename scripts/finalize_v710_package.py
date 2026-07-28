@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import traceback
 from datetime import datetime
 from pathlib import Path
 
@@ -236,13 +237,21 @@ def main() -> None:
     parser.add_argument("--installed-packages", type=Path, required=True)
     args = parser.parse_args()
 
-    identity = assemble(
-        repository_root=args.repository_root.resolve(),
-        package_root=args.package_root.resolve(),
-        source_commit=args.source_commit,
-        source_timestamp=args.source_timestamp,
-        installed_packages_path=args.installed_packages.resolve(),
-    )
+    package_root = args.package_root.resolve()
+    try:
+        identity = assemble(
+            repository_root=args.repository_root.resolve(),
+            package_root=package_root,
+            source_commit=args.source_commit,
+            source_timestamp=args.source_timestamp,
+            installed_packages_path=args.installed_packages.resolve(),
+        )
+    except Exception:
+        package_root.mkdir(parents=True, exist_ok=True)
+        (package_root / "FINALIZATION_ERROR.txt").write_text(
+            traceback.format_exc(), encoding="utf-8"
+        )
+        raise
     print(json.dumps(identity, indent=2, sort_keys=True))
 
 
