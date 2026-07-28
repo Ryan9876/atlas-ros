@@ -1,0 +1,283 @@
+{
+  "$defs": {
+    "InitializationIntegrationResult": {
+      "additionalProperties": false,
+      "description": "Compact governed and live state for one required integration.",
+      "properties": {
+        "inventory_ready": {
+          "title": "Inventory Ready",
+          "type": "boolean"
+        },
+        "live_readable": {
+          "title": "Live Readable",
+          "type": "boolean"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "inventory_ready",
+        "live_readable"
+      ],
+      "title": "InitializationIntegrationResult",
+      "type": "object"
+    },
+    "InitializationStageTiming": {
+      "additionalProperties": false,
+      "description": "Elapsed time for one deterministic initialization stage.",
+      "properties": {
+        "elapsed_ms": {
+          "minimum": 0,
+          "title": "Elapsed Ms",
+          "type": "number"
+        },
+        "stage": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Stage",
+          "type": "string"
+        }
+      },
+      "required": [
+        "stage",
+        "elapsed_ms"
+      ],
+      "title": "InitializationStageTiming",
+      "type": "object"
+    }
+  },
+  "$id": "https://github.com/Ryan9876/atlas-ros/schemas/authority/initialization-receipt.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Compact non-authoritative receipt for one Quick Initialization attempt.",
+  "properties": {
+    "active_commit": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Active Commit"
+    },
+    "active_version": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Active Version"
+    },
+    "authority_agreement": {
+      "default": false,
+      "title": "Authority Agreement",
+      "type": "boolean"
+    },
+    "authority_last_verified_at": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Authority Last Verified At"
+    },
+    "authority_model_version": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Authority Model Version"
+    },
+    "blocked_condition": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Blocked Condition"
+    },
+    "cache_hit": {
+      "default": false,
+      "title": "Cache Hit",
+      "type": "boolean"
+    },
+    "cache_rejection_reason": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Cache Rejection Reason"
+    },
+    "execution_path": {
+      "default": "cold",
+      "enum": [
+        "cold",
+        "warm",
+        "warm_fallback_to_cold"
+      ],
+      "title": "Execution Path",
+      "type": "string"
+    },
+    "google_drive_reads": {
+      "const": 0,
+      "default": 0,
+      "title": "Google Drive Reads",
+      "type": "integer"
+    },
+    "immediate_rollback_commit": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Immediate Rollback Commit"
+    },
+    "immediate_rollback_version": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Immediate Rollback Version"
+    },
+    "inventory_last_verified_at": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Inventory Last Verified At"
+    },
+    "manifest_digest_valid": {
+      "default": false,
+      "title": "Manifest Digest Valid",
+      "type": "boolean"
+    },
+    "provider_writes": {
+      "const": 0,
+      "default": 0,
+      "title": "Provider Writes",
+      "type": "integer"
+    },
+    "published_workspace_valid": {
+      "default": false,
+      "title": "Published Workspace Valid",
+      "type": "boolean"
+    },
+    "release_index_digest_valid": {
+      "default": false,
+      "title": "Release Index Digest Valid",
+      "type": "boolean"
+    },
+    "required_integrations": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/InitializationIntegrationResult"
+      },
+      "title": "Required Integrations",
+      "type": "array"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "stage_timings": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/InitializationStageTiming"
+      },
+      "title": "Stage Timings",
+      "type": "array"
+    },
+    "status": {
+      "enum": [
+        "READY",
+        "READY_WITH_WARNINGS",
+        "INITIALIZATION_BLOCKED"
+      ],
+      "title": "Status",
+      "type": "string"
+    },
+    "system_state_agreement": {
+      "default": false,
+      "title": "System State Agreement",
+      "type": "boolean"
+    },
+    "system_state_last_verified_at": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "System State Last Verified At"
+    },
+    "total_elapsed_ms": {
+      "minimum": 0,
+      "title": "Total Elapsed Ms",
+      "type": "number"
+    },
+    "warnings": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Warnings",
+      "type": "array"
+    }
+  },
+  "required": [
+    "status",
+    "total_elapsed_ms"
+  ],
+  "title": "InitializationReceipt",
+  "type": "object"
+}

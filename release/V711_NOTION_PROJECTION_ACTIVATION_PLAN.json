@@ -1,0 +1,26 @@
+{
+  "schema_version": "1.0",
+  "status": "disabled_pending_exact_authorization",
+  "release_version": "7.1.1",
+  "operations": [
+    "create or update the compact System State initialization projection",
+    "configure the production dynamic reader to fetch only projection fields",
+    "configure direct Integration Inventory query by the manifest-bound data source",
+    "read back and compare the projection with canonical GitHub authority"
+  ],
+  "preconditions": [
+    "exact v7.1.1 package is independently verified",
+    "immutable publication readback passed",
+    "exact production Notion transaction is authorized",
+    "rollback to the prior full System State read remains available"
+  ],
+  "prohibited_actions": [
+    "change release authority before publication readback",
+    "change required integration scope",
+    "read or modify Google Drive",
+    "perform Todoist writes",
+    "cache mutable Notion state as authority"
+  ],
+  "enabled": false,
+  "provider_writes": 0
+}

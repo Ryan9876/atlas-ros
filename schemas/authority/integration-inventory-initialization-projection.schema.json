@@ -1,0 +1,113 @@
+{
+  "$defs": {
+    "IntegrationStatusSnapshot": {
+      "additionalProperties": false,
+      "description": "Governed status of one integration at initialization time.",
+      "properties": {
+        "acceptance_status": {
+          "enum": [
+            "passed",
+            "partial",
+            "not_run",
+            "failed"
+          ],
+          "title": "Acceptance Status",
+          "type": "string"
+        },
+        "approval_status": {
+          "enum": [
+            "approved",
+            "pending",
+            "not_required",
+            "denied"
+          ],
+          "title": "Approval Status",
+          "type": "string"
+        },
+        "connection_status": {
+          "enum": [
+            "connected",
+            "disconnected",
+            "degraded",
+            "error"
+          ],
+          "title": "Connection Status",
+          "type": "string"
+        },
+        "current": {
+          "title": "Current",
+          "type": "boolean"
+        },
+        "least_privilege_verified": {
+          "title": "Least Privilege Verified",
+          "type": "boolean"
+        },
+        "lifecycle_status": {
+          "default": "production",
+          "enum": [
+            "production",
+            "validated_not_active",
+            "contract_only",
+            "prohibited",
+            "paused",
+            "retired"
+          ],
+          "title": "Lifecycle Status",
+          "type": "string"
+        },
+        "name": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "required": {
+          "title": "Required",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "name",
+        "required",
+        "connection_status",
+        "approval_status",
+        "acceptance_status",
+        "current",
+        "least_privilege_verified"
+      ],
+      "title": "IntegrationStatusSnapshot",
+      "type": "object"
+    }
+  },
+  "$id": "https://github.com/Ryan9876/atlas-ros/schemas/authority/integration-inventory-initialization-projection.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Minimal live Integration Inventory projection required for initialization.",
+  "properties": {
+    "integrations": {
+      "items": {
+        "$ref": "#/$defs/IntegrationStatusSnapshot"
+      },
+      "minItems": 1,
+      "title": "Integrations",
+      "type": "array"
+    },
+    "last_verified_at": {
+      "format": "date-time",
+      "title": "Last Verified At",
+      "type": "string"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    }
+  },
+  "required": [
+    "integrations",
+    "last_verified_at"
+  ],
+  "title": "IntegrationInventorySnapshot",
+  "type": "object"
+}

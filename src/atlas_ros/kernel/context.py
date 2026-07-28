@@ -1,9 +1,10 @@
-"""Immutable context produced by successful Atlas ROS initialization."""
+"""Immutable context and result produced by Atlas ROS initialization."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass
 
+from atlas_ros.contracts.authority import InitializationReceipt
 from atlas_ros.kernel.authority import AuthorityRecord
 
 
@@ -24,3 +25,11 @@ class InitializationContext:
     @property
     def active_version(self) -> str:
         return self.authority.active_release.version
+
+
+@dataclass(frozen=True)
+class InitializationResult:
+    """One consolidated Quick Initialization result and compact receipt."""
+
+    context: InitializationContext | None
+    receipt: InitializationReceipt

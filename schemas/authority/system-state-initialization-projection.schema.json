@@ -1,0 +1,45 @@
+{
+  "$id": "https://github.com/Ryan9876/atlas-ros/schemas/authority/system-state-initialization-projection.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Minimal live System State projection required for initialization.",
+  "properties": {
+    "active_version": {
+      "title": "Active Version",
+      "type": "string"
+    },
+    "authority_model_version": {
+      "const": "7.0",
+      "title": "Authority Model Version",
+      "type": "string"
+    },
+    "immediate_rollback_version": {
+      "title": "Immediate Rollback Version",
+      "type": "string"
+    },
+    "last_verified_at": {
+      "format": "date-time",
+      "title": "Last Verified At",
+      "type": "string"
+    },
+    "published_workspace_valid": {
+      "title": "Published Workspace Valid",
+      "type": "boolean"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    }
+  },
+  "required": [
+    "active_version",
+    "immediate_rollback_version",
+    "authority_model_version",
+    "published_workspace_valid",
+    "last_verified_at"
+  ],
+  "title": "SystemStateSnapshot",
+  "type": "object"
+}
