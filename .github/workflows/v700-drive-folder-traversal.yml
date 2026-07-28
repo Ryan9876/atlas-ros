@@ -127,7 +127,7 @@ jobs:
           )
           assert supplement['release'] == '5.0'
           assert supplement['supplement_sha256'] == (
-              'f2c9094c6836da57a1af759efe76cc882a6a37a69924b5f9f512bf60dff1c3a0'
+              'de6d34904f1e926da1b9e27d7be4502ab255a50662dcc5b70da89ea081de1196'
           )
           assert supplement['v500_scanned_folder_count'] == 1
           assert supplement['v500_file_count'] == 18
