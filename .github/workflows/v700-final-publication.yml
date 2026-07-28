@@ -145,7 +145,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: v7.0.0
-          EXPECTED_SOURCE_COMMIT: __PUBLICATION_COMMIT__
+          EXPECTED_SOURCE_COMMIT: 5e480de42b6aeba3c1b5b84384610555f87b2f0e
           EXPECTED_FINAL_SOURCE_SHA256: a1ca0114b07b0d6e0080da2a412d68dc4a31870cbd5adfcfa58cd25499032391
           EXPECTED_FINAL_WHEEL_SHA256: dd4baa87440fc51c3bc8e845104fbedcd15489de4683eee36f3436632979463d
         run: bash scripts/verify_v700_publication.sh

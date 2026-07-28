@@ -8,6 +8,7 @@ set -euo pipefail
 : "${EXPECTED_FINAL_WHEEL_SHA256:?EXPECTED_FINAL_WHEEL_SHA256 is required}"
 rm -rf post-publication-evidence published-assets verify-published verify-v650 verify-v620 rollback-v650 rollback-v620
 mkdir -p post-publication-evidence published-assets
+trap 'rc=$?; printf "exit_code=%s\nline=%s\ncommand=%q\n" "$rc" "$LINENO" "$BASH_COMMAND" > post-publication-evidence/FAILURE.txt; exit "$rc"' ERR
 release_json="$(gh api "repos/${GITHUB_REPOSITORY}/releases/tags/${RELEASE_TAG}")"
 python - "$release_json" <<'PY'
 import json, sys
@@ -15,7 +16,6 @@ r = json.loads(sys.argv[1])
 assert r['draft'] is False
 assert r['prerelease'] is False
 PY
-git fetch --tags --force
 test "$(git rev-list -n 1 "$RELEASE_TAG")" = "$EXPECTED_SOURCE_COMMIT"
 gh release download "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --dir published-assets
 (cd published-assets && sha256sum -c CHECKSUMS.sha256)
