@@ -77,7 +77,14 @@ stage exact-identity-verified
 
 test "$(sha256sum "$publication_dir/atlas_ros-7.0.1.tar.gz" | awk '{print $1}')" = "$EXPECTED_SOURCE_SHA256"
 test "$(sha256sum "$publication_dir/atlas_ros-7.0.1-py3-none-any.whl" | awk '{print $1}')" = "$EXPECTED_WHEEL_SHA256"
-test "$(sha256sum "$publication_dir/RELEASE_MANIFEST_V701.md" | awk '{print $1}')" = "$EXPECTED_MANIFEST_SHA256"
+manifest_digest="$(python - "$publication_dir/RELEASE_MANIFEST_V701.md" <<'PY'
+import sys
+from pathlib import Path
+from atlas_ros.kernel.digests import sha256_digest
+print(sha256_digest(Path(sys.argv[1]).read_text(encoding='utf-8')))
+PY
+)"
+test "$manifest_digest" = "$EXPECTED_MANIFEST_SHA256"
 stage exact-files-verified
 cp "$publication_dir"/* final-publication/
 cp "$evidence_dir"/* final-evidence/ 2>/dev/null || true
