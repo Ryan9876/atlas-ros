@@ -171,7 +171,8 @@ jobs:
             --source-commit "$SOURCE_COMMIT" \
             --source-timestamp "$(cat final-package/SOURCE_TIMESTAMP.txt)" \
             --installed-packages final-package/INSTALLED_PACKAGES.json \
-            > final-package/FINALIZATION_OUTPUT.json
+            > final-package/FINALIZATION_OUTPUT.json \
+            2> final-package/FINALIZATION_STDERR.txt
 
       - name: Restore production and rollback releases
         env:
