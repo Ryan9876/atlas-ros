@@ -43,6 +43,26 @@ jobs:
           python scripts/validate_dependency_lock.py requirements.runtime.lock
           python scripts/validate_vulnerability_exceptions.py
           python scripts/validate_documentation_authority.py
+      - name: Inspect immutable v7.0.1 Release metadata and asset inventory
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p authority-activation-evidence release-diagnostic
+          printf '%s\n' metadata-started > authority-activation-evidence/STAGE.txt
+          gh release view v7.0.1 --repo "$GITHUB_REPOSITORY" \
+            --json tagName,isDraft,isPrerelease,targetCommitish,assets \
+            > authority-activation-evidence/RELEASE_METADATA.json
+          printf '%s\n' metadata-read > authority-activation-evidence/STAGE.txt
+          git fetch --tags --force
+          git rev-list -n 1 v7.0.1 > authority-activation-evidence/TAG_TARGET.txt
+          test "$(cat authority-activation-evidence/TAG_TARGET.txt)" = f26f5154ea6cd4b431c5a2638c439d7de9282761
+          printf '%s\n' tag-target-passed > authority-activation-evidence/STAGE.txt
+          gh release download v7.0.1 --repo "$GITHUB_REPOSITORY" --dir release-diagnostic
+          find release-diagnostic -maxdepth 1 -type f -printf '%f\n' | sort \
+            > authority-activation-evidence/ASSET_FILES.txt
+          test -s authority-activation-evidence/ASSET_FILES.txt
+          printf '%s\n' assets-downloaded > authority-activation-evidence/STAGE.txt
       - name: Independently verify published v7.0.1 assets and rollback
         env:
           GH_TOKEN: ${{ github.token }}
@@ -51,9 +71,13 @@ jobs:
           EXPECTED_SOURCE_SHA256: 21d266963231bc1b2a2eb2ea2ed3b5f38a17d7e447fb2c1a74f4e98fe2389629
           EXPECTED_WHEEL_SHA256: 213def6ff15874e525eeb6e74687b915dcb2ec13b57b7726bea188cd703d8be1
           EXPECTED_MANIFEST_SHA256: 3ccda11f3ebf72457d82d7fd92d0ea2e3076fae593ee7abaeba6d80f836ea366
-        run: bash scripts/verify_v701_publication.sh
+        run: |
+          bash scripts/verify_v701_publication.sh
+          printf '%s\n' publication-readback-passed > authority-activation-evidence/STAGE.txt
       - name: Validate proposed live GitHub authority
-        run: python scripts/validate_v701_authority_activation.py
+        run: |
+          python scripts/validate_v701_authority_activation.py
+          printf '%s\n' authority-validation-passed > authority-activation-evidence/STAGE.txt
       - name: Finalize evidence checksums
         if: always()
         run: |
