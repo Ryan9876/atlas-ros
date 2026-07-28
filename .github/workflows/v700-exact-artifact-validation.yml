@@ -1,10 +1,13 @@
 name: v700-exact-artifact-validation
 
 on:
+  pull_request:
+    branches: [main]
+    types: [ready_for_review]
   workflow_dispatch:
 
 concurrency:
-  group: v700-exact-artifact-${{ github.ref }}
+  group: v700-exact-artifact-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 permissions:
@@ -13,12 +16,16 @@ permissions:
 
 jobs:
   validate-exact-v700-artifact:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'pull_request' &&
+       github.head_ref == 'agent/v700-canonical-architecture')
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
         with:
-          ref: ${{ github.sha }}
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 0
           persist-credentials: false
       - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
@@ -33,25 +40,35 @@ jobs:
         id: prerequisites
         env:
           GH_TOKEN: ${{ github.token }}
-          HEAD_SHA: ${{ github.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         run: |
           set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$HEAD_SHA"
           runs="$(gh api --method GET "repos/${GITHUB_REPOSITORY}/actions/runs?head_sha=${HEAD_SHA}&per_page=100")"
           candidate_run="$(jq -r '[.workflow_runs[] | select(.name == "v700-release-candidate" and .conclusion == "success")] | sort_by(.created_at) | last | .id // empty' <<<"$runs")"
-          standard_run="$(jq -r '[.workflow_runs[] | select(.name == "ci" and .event == "workflow_dispatch" and .conclusion == "success")] | sort_by(.created_at) | last | .id // empty' <<<"$runs")"
+          full_ci_run="$(jq -r '[.workflow_runs[] | select(.name == "v700-full-ci" and .conclusion == "success")] | sort_by(.created_at) | last | .id // empty' <<<"$runs")"
           architecture_run="$(jq -r '[.workflow_runs[] | select(.name == "v700-architecture-diagnostics" and .conclusion == "success")] | sort_by(.created_at) | last | .id // empty' <<<"$runs")"
-          if [[ -z "$candidate_run" || -z "$standard_run" || -z "$architecture_run" ]]; then
-            echo "Exact-head prerequisites have not all passed. Dispatch full CI, architecture diagnostics, and release-candidate validation before this workflow." >&2
+          documentation_run="$(jq -r '[.workflow_runs[] | select(.name == "Documentation Authority" and .conclusion == "success")] | sort_by(.created_at) | last | .id // empty' <<<"$runs")"
+          drive_run="$(jq -r '[.workflow_runs[] | select(.name == "v700-drive-cutover-plan" and .conclusion == "success")] | sort_by(.created_at) | last | .id // empty' <<<"$runs")"
+          if [[ -z "$candidate_run" || -z "$full_ci_run" || -z "$architecture_run" || -z "$documentation_run" || -z "$drive_run" ]]; then
+            echo "Exact-head prerequisites have not all passed. Complete full CI, architecture, documentation, Drive cutover, and release-candidate validation before retrying this job." >&2
             exit 1
           fi
+          audit_artifacts="$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${full_ci_run}/artifacts")"
+          audit_name="dependency-audit-evidence-${HEAD_SHA}"
+          audit_id="$(jq -r --arg name "$audit_name" '[.artifacts[] | select(.name == $name and .expired == false)] | last | .id // empty' <<<"$audit_artifacts")"
+          [[ -n "$audit_id" ]]
           echo "candidate_run_id=$candidate_run" >> "$GITHUB_OUTPUT"
-          echo "standard_run_id=$standard_run" >> "$GITHUB_OUTPUT"
+          echo "standard_run_id=$full_ci_run" >> "$GITHUB_OUTPUT"
           echo "architecture_run_id=$architecture_run" >> "$GITHUB_OUTPUT"
+          echo "documentation_run_id=$documentation_run" >> "$GITHUB_OUTPUT"
+          echo "drive_run_id=$drive_run" >> "$GITHUB_OUTPUT"
+          echo "dependency_audit_artifact_id=$audit_id" >> "$GITHUB_OUTPUT"
       - name: Download and verify exact build-once artifact
         id: artifact
         env:
           GH_TOKEN: ${{ github.token }}
-          HEAD_SHA: ${{ github.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
           CANDIDATE_RUN_ID: ${{ steps.prerequisites.outputs.candidate_run_id }}
         run: |
           set -euo pipefail
@@ -182,7 +199,7 @@ jobs:
           PY
       - name: Validate exact artifact and simulate release transactions
         env:
-          HEAD_SHA: ${{ github.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
           ARTIFACT_ROOT: ${{ steps.artifact.outputs.artifact_root }}
           ARTIFACT_ID: ${{ steps.artifact.outputs.artifact_id }}
           ARTIFACT_DIGEST: ${{ steps.artifact.outputs.artifact_digest }}
@@ -213,7 +230,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: atlas-ros-v700-exact-artifact-${{ github.sha }}
+          name: atlas-ros-v700-exact-artifact-${{ github.event.pull_request.head.sha || github.sha }}
           path: v700-exact-evidence/
           if-no-files-found: warn
           retention-days: 90
