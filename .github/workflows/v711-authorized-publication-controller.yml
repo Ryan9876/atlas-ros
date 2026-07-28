@@ -1,0 +1,129 @@
+name: v711-authorized-publication-controller
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, ready_for_review, reopened]
+  push:
+    branches: [main]
+
+concurrency:
+  group: v711-authorized-publication-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  validate-publication-controller:
+    if: github.event_name == 'pull_request' && github.head_ref == 'release/v711-authorized-publication'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          fetch-tags: true
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.12.10'
+          cache: pip
+      - name: Install validation tooling
+        run: python -m pip install --disable-pip-version-check -e '.[dev]'
+      - name: Validate controller and rehearse exact publication
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SOURCE_COMMIT: ${{ github.event.pull_request.head.sha }}
+          FINAL_SOURCE_COMMIT: 7e18113b58fcd486b5c7e8eb9368c7c70bc83bcd
+          FINAL_ARTIFACT_ID: '8704221961'
+          FINAL_ARTIFACT_DIGEST: ba784bc15e01bcf19936d3ee5bf21c1fef3b71de0e7588b3660d5b6da4f36f33
+          EXPECTED_SOURCE_SHA256: 250113a5053e90c8be701bd638f2dac276b25b3115a377fd5c5a78bc40f52cf7
+          EXPECTED_WHEEL_SHA256: 10caa8768675cff65d1cd2765e1c15374e6e3b78b59ef921e9d4d78f6d236d71
+          EXPECTED_MANIFEST_CANONICAL_SHA256: 508a460cc373360ce722dde2788894a338f32b3b6869d172c1144e3a229179cc
+          EXPECTED_MANIFEST_RAW_SHA256: 753cb7cab2f63ae5cc3e9c7d8e6338224371232063c5210819f3c6f42de8bacb
+          EXPECTED_SBOM_SHA256: 72a02199e27f3d1394f78642e14e56cd59adbb98f1f1b1692320a6eac7e32237
+          EXPECTED_SOURCE_MANIFEST_SHA256: 24455ba8089478a4c2cbc4419030c3868d7312238c948a82c531661216e066e2
+          EXPECTED_STAGED_AUTHORITY_SHA256: 54c1829b09c06113b9c4c705d2c2a91edfc8e8077b438a443af1d84d7ccadbd5
+          EXPECTED_STAGED_INDEX_SHA256: 34f02428a4e21c3fe4c5d950c4686ed7d204edd257ff5a1ff3288aca25be9335
+          DECISION_URL: https://app.notion.com/p/3abb8344ad2c81389408c42ffbac99f7
+          PACKAGE_REVIEW_URL: https://app.notion.com/p/3abb8344ad2c819fb497e65cccbe1222
+          PREPUBLICATION_REVIEW_URL: https://app.notion.com/p/3abb8344ad2c81a59883ca8c4d0a509f
+          RELEASE_TAG: v7.1.1
+          ROLLBACK_TAG: v7.1.0
+          PUBLISH: 'false'
+        run: |
+          set -euo pipefail
+          bash -n scripts/publish_v711_final.sh
+          python scripts/validate_architecture.py
+          python scripts/validate_legacy_isolation.py
+          bash scripts/publish_v711_final.sh
+      - name: Retain controller rehearsal evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: atlas-ros-v711-publication-controller-${{ github.event.pull_request.head.sha }}
+          path: |
+            final-publication/
+            final-evidence/
+          if-no-files-found: warn
+          retention-days: 90
+
+  publish-v711-final:
+    if: >-
+      github.event_name == 'push' &&
+      github.ref_name == 'main' &&
+      startsWith(github.event.head_commit.message,
+      'release: execute exact Atlas ROS v7.1.1 publication')
+    permissions:
+      contents: write
+      actions: read
+    runs-on: ubuntu-24.04
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          fetch-tags: true
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.12.10'
+          cache: pip
+      - run: python -m pip install --disable-pip-version-check -e '.[dev]'
+      - name: Publish and perform initial readback
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SOURCE_COMMIT: ${{ github.sha }}
+          FINAL_SOURCE_COMMIT: 7e18113b58fcd486b5c7e8eb9368c7c70bc83bcd
+          FINAL_ARTIFACT_ID: '8704221961'
+          FINAL_ARTIFACT_DIGEST: ba784bc15e01bcf19936d3ee5bf21c1fef3b71de0e7588b3660d5b6da4f36f33
+          EXPECTED_SOURCE_SHA256: 250113a5053e90c8be701bd638f2dac276b25b3115a377fd5c5a78bc40f52cf7
+          EXPECTED_WHEEL_SHA256: 10caa8768675cff65d1cd2765e1c15374e6e3b78b59ef921e9d4d78f6d236d71
+          EXPECTED_MANIFEST_CANONICAL_SHA256: 508a460cc373360ce722dde2788894a338f32b3b6869d172c1144e3a229179cc
+          EXPECTED_MANIFEST_RAW_SHA256: 753cb7cab2f63ae5cc3e9c7d8e6338224371232063c5210819f3c6f42de8bacb
+          EXPECTED_SBOM_SHA256: 72a02199e27f3d1394f78642e14e56cd59adbb98f1f1b1692320a6eac7e32237
+          EXPECTED_SOURCE_MANIFEST_SHA256: 24455ba8089478a4c2cbc4419030c3868d7312238c948a82c531661216e066e2
+          EXPECTED_STAGED_AUTHORITY_SHA256: 54c1829b09c06113b9c4c705d2c2a91edfc8e8077b438a443af1d84d7ccadbd5
+          EXPECTED_STAGED_INDEX_SHA256: 34f02428a4e21c3fe4c5d950c4686ed7d204edd257ff5a1ff3288aca25be9335
+          DECISION_URL: https://app.notion.com/p/3abb8344ad2c81389408c42ffbac99f7
+          PACKAGE_REVIEW_URL: https://app.notion.com/p/3abb8344ad2c819fb497e65cccbe1222
+          PREPUBLICATION_REVIEW_URL: https://app.notion.com/p/3abb8344ad2c81a59883ca8c4d0a509f
+          RELEASE_TAG: v7.1.1
+          ROLLBACK_TAG: v7.1.0
+          PUBLISH: 'true'
+        run: bash scripts/publish_v711_final.sh
+      - name: Retain final publication evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: atlas-ros-v711-final-publication-${{ github.sha }}
+          path: |
+            final-publication/
+            final-evidence/
+            release-readback/
+          if-no-files-found: warn
+          retention-days: 90
