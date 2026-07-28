@@ -1,0 +1,125 @@
+{
+  "$defs": {
+    "CompiledReleaseArtifact": {
+      "additionalProperties": false,
+      "properties": {
+        "content_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Content Sha256",
+          "type": "string"
+        },
+        "media_type": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Media Type",
+          "type": "string"
+        },
+        "path": {
+          "maxLength": 1024,
+          "minLength": 1,
+          "title": "Path",
+          "type": "string"
+        }
+      },
+      "required": [
+        "path",
+        "content_sha256",
+        "media_type"
+      ],
+      "title": "CompiledReleaseArtifact",
+      "type": "object"
+    }
+  },
+  "$id": "https://github.com/Ryan9876/atlas-ros/schemas/release/release-compilation-receipt.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "artifacts": {
+      "items": {
+        "$ref": "#/$defs/CompiledReleaseArtifact"
+      },
+      "minItems": 1,
+      "title": "Artifacts",
+      "type": "array"
+    },
+    "authority_activated": {
+      "const": false,
+      "default": false,
+      "title": "Authority Activated",
+      "type": "boolean"
+    },
+    "compiled_at": {
+      "format": "date-time",
+      "title": "Compiled At",
+      "type": "string"
+    },
+    "compiler_version": {
+      "title": "Compiler Version",
+      "type": "string"
+    },
+    "contract_id": {
+      "const": "atlas.release-compilation-receipt",
+      "default": "atlas.release-compilation-receipt",
+      "title": "Contract Id",
+      "type": "string"
+    },
+    "output_digest": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Output Digest",
+      "type": "string"
+    },
+    "package_name": {
+      "title": "Package Name",
+      "type": "string"
+    },
+    "production_authorized": {
+      "const": false,
+      "default": false,
+      "title": "Production Authorized",
+      "type": "boolean"
+    },
+    "provider_writes": {
+      "const": 0,
+      "default": 0,
+      "title": "Provider Writes",
+      "type": "integer"
+    },
+    "published": {
+      "const": false,
+      "default": false,
+      "title": "Published",
+      "type": "boolean"
+    },
+    "release_version": {
+      "title": "Release Version",
+      "type": "string"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "source_commit": {
+      "pattern": "^[0-9a-f]{40}$",
+      "title": "Source Commit",
+      "type": "string"
+    },
+    "specification_digest": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Specification Digest",
+      "type": "string"
+    }
+  },
+  "required": [
+    "package_name",
+    "release_version",
+    "source_commit",
+    "specification_digest",
+    "compiler_version",
+    "artifacts",
+    "output_digest"
+  ],
+  "title": "ReleaseCompilationReceipt",
+  "type": "object"
+}

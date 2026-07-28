@@ -1,0 +1,141 @@
+{
+  "$defs": {
+    "CleanupAction": {
+      "enum": [
+        "migrate",
+        "archive",
+        "delete"
+      ],
+      "title": "CleanupAction",
+      "type": "string"
+    },
+    "HistoricalCleanupOperation": {
+      "additionalProperties": false,
+      "properties": {
+        "action": {
+          "$ref": "#/$defs/CleanupAction"
+        },
+        "destination_location": {
+          "anyOf": [
+            {
+              "maxLength": 2048,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Destination Location"
+        },
+        "expected_digest": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Expected Digest",
+          "type": "string"
+        },
+        "idempotency_key": {
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Idempotency Key",
+          "type": "string"
+        },
+        "item_id": {
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Item Id",
+          "type": "string"
+        },
+        "operation_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Operation Id",
+          "type": "string"
+        },
+        "sequence": {
+          "minimum": 0,
+          "title": "Sequence",
+          "type": "integer"
+        },
+        "size_bytes": {
+          "minimum": 0,
+          "title": "Size Bytes",
+          "type": "integer"
+        },
+        "source_location": {
+          "maxLength": 2048,
+          "minLength": 1,
+          "title": "Source Location",
+          "type": "string"
+        }
+      },
+      "required": [
+        "operation_id",
+        "sequence",
+        "item_id",
+        "action",
+        "source_location",
+        "expected_digest",
+        "size_bytes",
+        "idempotency_key"
+      ],
+      "title": "HistoricalCleanupOperation",
+      "type": "object"
+    }
+  },
+  "$id": "https://github.com/Ryan9876/atlas-ros/schemas/history/historical-cleanup-plan.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "blockers": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Blockers",
+      "type": "array"
+    },
+    "contract_id": {
+      "const": "atlas.historical-cleanup-plan",
+      "default": "atlas.historical-cleanup-plan",
+      "title": "Contract Id",
+      "type": "string"
+    },
+    "inventory_digest": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Inventory Digest",
+      "type": "string"
+    },
+    "operations": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/HistoricalCleanupOperation"
+      },
+      "title": "Operations",
+      "type": "array"
+    },
+    "plan_digest": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Plan Digest",
+      "type": "string"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "transaction_id": {
+      "maxLength": 256,
+      "minLength": 1,
+      "title": "Transaction Id",
+      "type": "string"
+    }
+  },
+  "required": [
+    "transaction_id",
+    "inventory_digest",
+    "plan_digest"
+  ],
+  "title": "HistoricalCleanupPlan",
+  "type": "object"
+}

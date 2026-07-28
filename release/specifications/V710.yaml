@@ -1,0 +1,73 @@
+package_name: atlas-ros
+identity:
+  version: 7.1.0
+  source_commit: __SOURCE_COMMIT__
+  tag: v7.1.0
+authority_model_version: '7.0'
+release_scope:
+  - Complete Google Drive retirement readiness without retiring or deleting Drive.
+  - Provide governed historical-cleanup planning and exact-transaction controls.
+  - Introduce a version-neutral deterministic release compiler.
+  - Isolate legacy, migration, and release tooling from production runtime.
+  - Add verified lazy loading and an optional authenticated read-only warm runtime.
+immediate_rollback:
+  version: 7.0.1
+  source_commit: f26f5154ea6cd4b431c5a2638c439d7de9282761
+  tag: v7.0.1
+historical_rollbacks:
+  - version: 6.5.0
+    source_commit: bb6d6fea70d6824c9bc6a42e63ba36cc88029260
+    tag: v6.5.0
+  - version: 6.2.0
+    source_commit: 863d5ddf9ebd4723200166cf31c7acd93ebec54f
+    tag: v6.2.0
+required_integrations: [GitHub, Notion, Todoist]
+optional_integrations: [Google Drive]
+validation_profile:
+  - Ruff
+  - strict MyPy
+  - architecture validation
+  - complete pytest with branch coverage
+  - dependency and vulnerability audits
+  - deterministic compiler fixtures
+  - Drive independence and retirement simulation
+  - legacy import isolation
+  - cold and warm canonical equivalence
+  - clean source and wheel installation
+  - SBOM and nested checksum validation
+  - startup performance comparison
+  - rollback restoration
+artifact_requirements:
+  - build-once source distribution
+  - build-once wheel
+  - CycloneDX SBOM
+  - source manifest
+  - nested checksums
+  - exact candidate identity
+promotion_prerequisites:
+  - build-once artifacts
+  - independent post-publication readback
+  - rollback restoration
+  - exact Ryan authorization
+publication_policy:
+  - candidate validation and publication are separate transactions
+  - immutable publication requires exact package authorization
+  - publication performs no authority activation
+authority_activation_policy:
+  - activation follows independent publication readback
+  - GitHub and Notion authority change transactionally
+  - active authority remains unchanged during candidate validation
+restoration_requirements:
+  - Atlas ROS v7.0.1 restores from immutable assets
+  - Atlas ROS v6.5.0 restores from immutable assets
+  - Atlas ROS v6.2.0 remains historical restoration evidence
+migration_requirements:
+  - compatibility wrappers call canonical compiler only
+  - production runtime cannot import migration or release tooling
+compatibility_rules:
+  - public v7 contracts remain supported
+  - breaking changes require a future major release
+  - compatibility paths require owner review condition tests and isolation
+notion_system_state_url: https://app.notion.com/p/3a0b8344ad2c81d1b545d0266b7cd809
+integration_inventory_url: https://app.notion.com/p/8ba4fafb5ce244ef9add3013aff3746b
+candidate_only: true

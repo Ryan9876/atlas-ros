@@ -66,3 +66,11 @@ capabilities:
     inputs: [ProposedExecutionPlan, ExecutionTransactionReceipt]
     outputs: [ReconciliationResult]
     may_create_execution_intent: false
+  - id: atlas.historical-cleanup-planning
+    package: capabilities/historical_cleanup
+    owner: Atlas ROS Governance
+    writes_providers: false
+    inputs: [HistoricalInventory]
+    outputs: [HistoricalCleanupPlan]
+    advisory_only: false
+    may_create_execution_intent: false

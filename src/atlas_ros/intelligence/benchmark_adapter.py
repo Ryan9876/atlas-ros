@@ -175,7 +175,6 @@ class BenchmarkScenarioCompiler:
         )
         application_tokens = (
             "notion",
-            "google drive",
             "todoist",
             "system state",
             "inventory",

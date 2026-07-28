@@ -209,3 +209,143 @@ def _digest(evidence: RetirementEvidence) -> str:
         asdict(evidence), sort_keys=True, separators=(",", ":")
     ).encode("utf-8")
     return sha256(encoded).hexdigest()
+
+
+@dataclass(frozen=True)
+class DriveRetirementAuthorization:
+    """Exact attended authorization for a future Drive retirement transaction."""
+
+    authorization_id: str
+    transaction_id: str
+    dependency_inventory_sha256: str
+    historical_inventory_sha256: str
+    exclusion_review_sha256: str
+    account_scope: str
+    credential_scope_sha256: str
+    object_budget: int
+    byte_budget: int
+    exact_target_ids: tuple[str, ...]
+    content_deletion_authorized: bool = False
+    credential_revocation_authorized: bool = False
+    connector_removal_authorized: bool = False
+
+
+@dataclass(frozen=True)
+class DriveRetirementPreflight:
+    """Read-only evidence required before a retirement transaction can exist."""
+
+    dependency_inventory_sha256: str
+    historical_inventory_sha256: str
+    exclusion_review_sha256: str
+    zero_current_dependencies: bool
+    historical_inventory_complete: bool
+    exclusion_review_complete: bool
+    rollback_restoration_passed: bool
+    post_promotion_readback_passed: bool
+    account_scope: str
+    credential_scope_sha256: str
+    target_ids: tuple[str, ...]
+    object_count: int
+    byte_count: int
+
+
+@dataclass(frozen=True)
+class DriveRetirementSimulationReceipt:
+    """Non-destructive exact-transaction simulation evidence."""
+
+    transaction_id: str
+    authorization_id: str
+    preflight_digest: str
+    authorized_actions: tuple[str, ...]
+    exact_target_ids: tuple[str, ...]
+    object_count: int
+    byte_count: int
+    provider_writes: int
+    destructive_actions: int
+    status: Literal["simulated"] = "simulated"
+
+
+def simulate_retirement_transaction(
+    preflight: DriveRetirementPreflight,
+    authorization: DriveRetirementAuthorization,
+) -> DriveRetirementSimulationReceipt:
+    """Validate an exact future transaction without contacting Google Drive."""
+    _validate_retirement_transaction(preflight, authorization)
+    actions: list[str] = []
+    if authorization.content_deletion_authorized:
+        actions.append("content_deletion")
+    if authorization.credential_revocation_authorized:
+        actions.append("credential_revocation")
+    if authorization.connector_removal_authorized:
+        actions.append("connector_removal")
+    return DriveRetirementSimulationReceipt(
+        transaction_id=authorization.transaction_id,
+        authorization_id=authorization.authorization_id,
+        preflight_digest=_digest_dataclass(preflight),
+        authorized_actions=tuple(actions),
+        exact_target_ids=authorization.exact_target_ids,
+        object_count=preflight.object_count,
+        byte_count=preflight.byte_count,
+        provider_writes=0,
+        destructive_actions=0,
+    )
+
+
+def _validate_retirement_transaction(
+    preflight: DriveRetirementPreflight,
+    authorization: DriveRetirementAuthorization,
+) -> None:
+    for value, label in (
+        (preflight.dependency_inventory_sha256, "dependency inventory"),
+        (preflight.historical_inventory_sha256, "historical inventory"),
+        (preflight.exclusion_review_sha256, "exclusion review"),
+        (preflight.credential_scope_sha256, "credential scope"),
+    ):
+        _require_ledger_digest(value)
+        if not value:
+            raise RetirementPreconditionError(f"{label} digest is required")
+    if not preflight.zero_current_dependencies:
+        raise RetirementPreconditionError("current Drive dependencies remain")
+    if not preflight.historical_inventory_complete:
+        raise RetirementPreconditionError("historical Drive inventory is incomplete")
+    if not preflight.exclusion_review_complete:
+        raise RetirementPreconditionError("Drive exclusion review is incomplete")
+    if not preflight.rollback_restoration_passed:
+        raise RetirementPreconditionError("rollback restoration has not passed")
+    if not preflight.post_promotion_readback_passed:
+        raise RetirementPreconditionError("post-promotion readback has not passed")
+    if not authorization.authorization_id or not authorization.transaction_id:
+        raise RetirementPreconditionError("exact authorization and transaction IDs are required")
+    if authorization.dependency_inventory_sha256 != preflight.dependency_inventory_sha256:
+        raise RetirementPreconditionError("authorization dependency inventory does not match")
+    if authorization.historical_inventory_sha256 != preflight.historical_inventory_sha256:
+        raise RetirementPreconditionError("authorization historical inventory does not match")
+    if authorization.exclusion_review_sha256 != preflight.exclusion_review_sha256:
+        raise RetirementPreconditionError("authorization exclusion review does not match")
+    if authorization.account_scope != preflight.account_scope:
+        raise RetirementPreconditionError("authorization account scope does not match")
+    if authorization.credential_scope_sha256 != preflight.credential_scope_sha256:
+        raise RetirementPreconditionError("authorization credential scope does not match")
+    if set(authorization.exact_target_ids) != set(preflight.target_ids):
+        raise RetirementPreconditionError("authorization target set does not match preflight")
+    if preflight.object_count != len(preflight.target_ids):
+        raise RetirementPreconditionError("preflight object count does not match target set")
+    if preflight.object_count > authorization.object_budget:
+        raise RetirementPreconditionError("Drive retirement object budget would be exceeded")
+    if preflight.byte_count > authorization.byte_budget:
+        raise RetirementPreconditionError("Drive retirement byte budget would be exceeded")
+    if not any(
+        (
+            authorization.content_deletion_authorized,
+            authorization.credential_revocation_authorized,
+            authorization.connector_removal_authorized,
+        )
+    ):
+        raise RetirementPreconditionError("authorization contains no retirement action")
+
+
+def _digest_dataclass(value: object) -> str:
+    encoded = json.dumps(asdict(value), sort_keys=True, separators=(",", ":")).encode(
+        "utf-8"
+    )
+    return sha256(encoded).hexdigest()

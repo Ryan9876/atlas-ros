@@ -1,0 +1,25 @@
+schema_version: "1.0"
+compatibility_paths:
+  - id: atlas.release-cli-compatibility
+    path: src/atlas_ros/entry_points/release.py
+    owner: Atlas ROS Release Engineering
+    review_condition: Remove after all release-family scripts invoke the version-neutral compiler.
+    tests:
+      - tests/unit/test_v710_legacy_isolation.py
+      - tests/unit/test_release.py
+    production_reachable: false
+  - id: atlas.migration-cli-compatibility
+    path: src/atlas_ros/entry_points/migrate.py
+    owner: Atlas ROS Migration Tooling
+    review_condition: Remove after supported historical inputs are migrated through explicit migration packages.
+    tests:
+      - tests/unit/test_v710_legacy_isolation.py
+      - tests/migration/test_v6_execution_plan.py
+    production_reachable: false
+  - id: atlas.legacy-cli-loader
+    path: src/atlas_ros/entry_points/_legacy.py
+    owner: Atlas ROS Migration Tooling
+    review_condition: Remove when release and migration compatibility entry points no longer depend on the legacy CLI.
+    tests:
+      - tests/unit/test_v710_legacy_isolation.py
+    production_reachable: false

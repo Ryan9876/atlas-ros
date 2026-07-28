@@ -1,9 +1,74 @@
 {
-  "schema_version": 1,
-  "generated_at": "2026-07-25T03:30:00Z",
-  "candidate_version": "6.0.0rc1",
-  "source_head": "agent/canonical-reconciliation-phase5",
+  "schema_version": 2,
+  "generated_at": "2026-07-28T16:00:00Z",
+  "candidate_version": "7.1.0",
+  "source_head": "agent/v710-consolidation",
   "records": [
+    {
+      "record_id": "V710-DRIVE-RETIREMENT",
+      "title": "Google Drive retirement readiness",
+      "disposition": "candidate_implemented",
+      "implemented_scope": "Deterministic repository dependency inventory, architectural reintroduction guards, exact retirement preflight contracts, non-destructive simulator, account/credential/target/budget binding, post-retirement validation and recovery guidance. No retirement or provider action is enabled.",
+      "remaining_scope": "Live historical inventory reconciliation and an exact separately authorized retirement transaction.",
+      "evidence": [
+        "tools/release/drive_dependency_inventory.py",
+        "tools/release/drive_retirement.py",
+        "docs/runbooks/DRIVE_RETIREMENT_READINESS.md",
+        "release/DRIVE_RETIREMENT_READINESS_REPORT.md"
+      ]
+    },
+    {
+      "record_id": "V710-HISTORICAL-CLEANUP",
+      "title": "Governed historical cleanup",
+      "disposition": "candidate_implemented",
+      "implemented_scope": "Typed item-level inventory, retention, dependency, plan, authorization, operation, readback, result and receipt contracts; deterministic fail-closed planning; dry-run and exact transaction model with budgets, idempotency and partial-failure handling.",
+      "remaining_scope": "No live destructive provider adapter is enabled; each destructive transaction requires separate exact authorization.",
+      "evidence": [
+        "src/atlas_ros/contracts/history.py",
+        "src/atlas_ros/capabilities/historical_cleanup/__init__.py",
+        "tools/release/historical_cleanup.py",
+        "docs/runbooks/HISTORICAL_CLEANUP_OPERATOR.md"
+      ]
+    },
+    {
+      "record_id": "V710-RELEASE-COMPILER",
+      "title": "Version-neutral release compiler",
+      "disposition": "candidate_implemented",
+      "implemented_scope": "One declarative release specification deterministically generates candidate manifests, scope, notes, authority and Release Index candidates, checksum/source/SBOM references, validation/publication/activation/restoration plans, rollback requirements, identities and receipts.",
+      "remaining_scope": "Production publication and activation remain separate exact transactions and are not authorized.",
+      "evidence": [
+        "src/atlas_ros/contracts/release.py",
+        "tools/release/release_compiler.py",
+        "scripts/compile_release.py",
+        "release/specifications/V710.yaml"
+      ]
+    },
+    {
+      "record_id": "V710-LEGACY-ISOLATION",
+      "title": "Legacy and compatibility isolation",
+      "disposition": "candidate_implemented",
+      "implemented_scope": "Production CLI no longer falls back to legacy commands; architecture validation rejects production imports from migration, release, provider and legacy packages; remaining wrappers have owners, tests, review conditions and are not production-reachable.",
+      "remaining_scope": "Remove wrappers when their documented review conditions are met.",
+      "evidence": [
+        "src/atlas_ros/entry_points/main.py",
+        "scripts/validate_legacy_isolation.py",
+        "governance/compatibility-paths.yaml",
+        "release/LEGACY_COMPATIBILITY_ISOLATION_REPORT.md"
+      ]
+    },
+    {
+      "record_id": "V710-LAZY-WARM",
+      "title": "Verified lazy loading and optional warm runtime",
+      "disposition": "candidate_implemented",
+      "implemented_scope": "Explicit lazy command targets, import profiling, startup measurement, and an authenticated TTL/source-digest-bound disposable read-only warm cache with provider writes disabled.",
+      "remaining_scope": "CI must establish final performance measurements and equivalence evidence before promotion review.",
+      "evidence": [
+        "src/atlas_ros/runtime/lazy.py",
+        "src/atlas_ros/runtime/warm.py",
+        "scripts/measure_startup_performance.py",
+        "release/STARTUP_PERFORMANCE_REPORT.md"
+      ]
+    },
     {
       "record_id": "IDEA-4",
       "title": "Knowledge Composition Engine and Management Structure Framework",

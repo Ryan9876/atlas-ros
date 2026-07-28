@@ -1,8 +1,16 @@
-version: 1
+version: 2
 sources:
-  drive: {owns: [release_policy, manifests, checksums, rollback]}
-  notion: {owns: [system_state, captures, actions, delegated_work, projects, risks, operations, decisions, integrations, automations, reviews]}
-  todoist: {owns: [task_completion, priority, due_date, project, section, labels, task_tree]}
-  sqlite: {owns: [pending_capture, outbox, retry, cache, locks], non_authoritative: true}
+  github:
+    owns: [startup_authority, release_policy, manifests, checksums, rollback, restoration]
+  notion:
+    owns: [system_state, captures, actions, delegated_work, projects, risks, operations, decisions, integrations, automations, reviews]
+  todoist:
+    owns: [task_completion, priority, due_date, project, section, labels, task_tree]
+  google_drive:
+    owns: [optional_historical_reference]
+    non_authoritative: true
+    required: false
+  sqlite:
+    owns: [pending_capture, outbox, retry, cache, locks]
+    non_authoritative: true
 prohibited: [outlook_email, outlook_calendar, autonomous_execution, calendar]
-

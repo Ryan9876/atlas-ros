@@ -11,6 +11,8 @@ _LAYER_RULES: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("contracts/authority.py", ("atlas_ros.contracts",)),
     ("contracts/compiler.py", ("atlas_ros.contracts",)),
     ("contracts/digests.py", ("atlas_ros.contracts",)),
+    ("contracts/history.py", ("atlas_ros.contracts",)),
+    ("contracts/release.py", ("atlas_ros.contracts",)),
     ("contracts/registry.py", ("atlas_ros.contracts",)),
     ("contracts/execution/", ("atlas_ros.contracts",)),
     ("contracts/migrations/", ("atlas_ros",)),
@@ -53,12 +55,20 @@ _LAYER_RULES: tuple[tuple[str, tuple[str, ...]], ...] = (
             "atlas_ros.ports",
         ),
     ),
+    (
+        "runtime/",
+        (
+            "atlas_ros.capabilities",
+            "atlas_ros.contracts",
+            "atlas_ros.domain",
+            "atlas_ros.policy",
+            "atlas_ros.runtime",
+        ),
+    ),
     ("entry_points/", ("atlas_ros",)),
 )
 
-# These inherited v6 adapters remain only for migration and regression coverage.
-# They are not v7-owned modules and the canonical v7 entry points must not import
-# them directly. Removal is governed by the later runtime cutover tranche.
+# These inherited adapters remain only for migration and regression coverage.
 _HISTORICAL_ADAPTERS = frozenset(
     {
         "adapters/llm.py",
@@ -70,8 +80,19 @@ _HISTORICAL_ADAPTERS = frozenset(
 _FORBIDDEN_RUNTIME_IMPORTS = (
     "tools.release",
     "atlas_ros.adapters",
+    "atlas_ros.cli",
+    "atlas_ros.contracts.migrations",
+    "atlas_ros.entry_points._legacy",
     "atlas_ros.intelligence",
     "atlas_ros.release",
+)
+
+_COMPATIBILITY_ENTRY_POINTS = frozenset(
+    {
+        "entry_points/_legacy.py",
+        "entry_points/migrate.py",
+        "entry_points/release.py",
+    }
 )
 
 _MIGRATION_FORBIDDEN_PREFIXES = (
@@ -83,6 +104,7 @@ _MIGRATION_FORBIDDEN_PREFIXES = (
     "kernel/",
     "policy/",
     "ports/",
+    "runtime/",
 )
 
 
@@ -127,7 +149,7 @@ def validate_v7(root: Path = PACKAGE_ROOT) -> list[dict[str, str]]:
             continue
         modules = imported_modules(path)
         for module in sorted(module for module in modules if module.startswith("atlas_ros")):
-            if relative == "entry_points/_legacy.py" and module == "atlas_ros.cli":
+            if relative in _COMPATIBILITY_ENTRY_POINTS:
                 continue
             if module.startswith("atlas_ros.contracts.migrations") and relative.startswith(
                 _MIGRATION_FORBIDDEN_PREFIXES

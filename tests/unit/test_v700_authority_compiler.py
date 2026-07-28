@@ -78,33 +78,33 @@ def test_compile_authority_binds_json_index_manifest_and_integrity() -> None:
     )
 
 
-def test_compile_authority_accepts_v7_patch_family() -> None:
+def test_compile_authority_accepts_future_minor_release() -> None:
     spec = compilation_spec()
     compiled = compile_authority(
         replace(
             spec,
             active=replace(
                 spec.active,
-                version="7.0.2",
-                tag="v7.0.2",
-                manifest_path="release/RELEASE_MANIFEST_V702.md",
+                version="7.1.0",
+                tag="v7.1.0",
+                manifest_path="release/RELEASE_MANIFEST_V710.md",
                 manifest_url=(
                     "https://github.com/Ryan9876/atlas-ros/blob/"
                     + "a" * 40
-                    + "/release/RELEASE_MANIFEST_V702.md"
+                    + "/release/RELEASE_MANIFEST_V710.md"
                 ),
             ),
         )
     )
 
-    assert compiled.record.active_release.version == "7.0.2"
+    assert compiled.record.active_release.version == "7.1.0"
 
 
-def test_compile_authority_rejects_non_v7_patch_family() -> None:
+def test_compile_authority_rejects_non_semantic_release() -> None:
     spec = compilation_spec()
-    invalid = replace(spec, active=replace(spec.active, version="7.1.0", tag="v7.1.0"))
+    invalid = replace(spec, active=replace(spec.active, version="7.1", tag="v7.1"))
 
-    with pytest.raises(AuthorityCompilationError, match="7.0 patch family"):
+    with pytest.raises(AuthorityCompilationError, match="semantic versioning"):
         compile_authority(invalid)
 
 
@@ -127,11 +127,11 @@ def test_compile_authority_rejects_mutable_manifest_path() -> None:
         compile_authority(invalid)
 
 
-def test_compile_authority_rejects_wrong_rollback() -> None:
+def test_compile_authority_rejects_inconsistent_rollback_identity() -> None:
     spec = compilation_spec()
     invalid = replace(
         spec,
-        rollback=replace(spec.rollback, version="6.2.0", tag="v6.2.0"),
+        rollback=replace(spec.rollback, version="6.2.0", tag="v6.5.0"),
     )
 
     with pytest.raises(AuthorityCompilationError, match="rollback"):

@@ -1,35 +1,43 @@
 schema_version: "1.0"
-architecture_version: "7.0"
+architecture_version: "7.1"
 layers:
   - contracts
   - policy
   - capabilities
   - application
+  - runtime
   - entry_points
   - adapters
+  - migration
   - tooling
 dependency_rules:
   contracts:
     may_depend_on: []
-    must_not_depend_on: [policy, capabilities, application, adapters, runtime, tooling]
+    must_not_depend_on: [policy, capabilities, application, runtime, adapters, tooling]
   policy:
     may_depend_on: [contracts]
-    must_not_depend_on: [application, adapters, runtime, tooling]
+    must_not_depend_on: [application, runtime, adapters, tooling]
   capabilities:
     may_depend_on: [contracts, policy]
     must_not_depend_on: [adapters, tooling]
   application:
     may_depend_on: [contracts, policy, capabilities, ports]
     must_not_depend_on: [adapters, tooling]
+  runtime:
+    may_depend_on: [contracts, policy, capabilities]
+    must_not_depend_on: [adapters, migration, release_tooling]
   entry_points:
-    may_depend_on: [application, kernel]
-    must_not_depend_on: [adapters, tooling]
+    may_depend_on: [application, kernel, runtime]
+    must_not_depend_on: [adapters, migration, release_tooling]
   adapters:
     may_depend_on: [contracts, ports]
     must_not_depend_on: [capabilities, application, tooling]
+  migration:
+    may_depend_on: [contracts, historical_compatibility]
+    must_not_be_imported_by: [application, capabilities, entry_points, kernel, policy, ports, runtime]
   tooling:
     may_depend_on: [contracts, policy, capabilities, application, ports, adapters, kernel]
-    must_not_be_imported_by: [contracts, policy, capabilities, application, entry_points, adapters]
+    must_not_be_imported_by: [contracts, policy, capabilities, application, runtime, entry_points, adapters]
 provider_boundaries:
   provider_writes_only_from: [src/atlas_ros/adapters]
   planning_only_from: [src/atlas_ros/capabilities/execution_planning]
@@ -43,12 +51,16 @@ prohibitions:
   - advisory_capabilities_must_not_mutate_records
   - production_runtime_must_not_import_legacy_compatibility
   - production_runtime_must_not_import_release_tooling
+  - migration_packages_must_not_be_imported_by_production_runtime
   - current_runtime_must_not_depend_on_google_drive
+  - warm_runtime_must_remain_non_authoritative
 public_interfaces:
   - atlas_ros.kernel.bootstrap
   - atlas_ros.application.canonical_processing.CanonicalProcessingCoordinator
   - atlas_ros.contracts
-  - atlas_ros.cli.main
+  - atlas_ros.entry_points.main.main
+  - atlas_ros.runtime.lazy
+  - atlas_ros.runtime.warm
 validation:
   manifest_driven: true
   required_ci_check: architecture-validation
