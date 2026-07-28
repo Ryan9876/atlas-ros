@@ -1,0 +1,129 @@
+name: v700-final-candidate
+
+on:
+  pull_request:
+    branches: [main]
+    types: [ready_for_review]
+  workflow_dispatch:
+
+concurrency:
+  group: v700-final-candidate-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  full-ci-security:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'pull_request' &&
+       github.head_ref == 'release/v700-final-candidate')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.12.10'
+          cache: pip
+      - name: Install final validation tooling
+        run: |
+          python -m pip install --disable-pip-version-check --upgrade pip
+          python -m pip install --disable-pip-version-check -e '.[dev]'
+      - name: Validate final source
+        run: |
+          set -euo pipefail
+          mkdir -p v700-final-ci
+          ruff check .
+          python scripts/validate_architecture.py
+          mypy src
+          pytest --junitxml=v700-final-ci/pytest.xml --cov-report=json:v700-final-ci/coverage.json
+          python scripts/evaluate_execution_planning.py \
+            --dataset benchmarks/execution-planning-v1.json \
+            --output v700-final-ci/EXECUTION_PLANNING_REPORT.json
+          python scripts/scan_candidate_secrets.py \
+            --root . \
+            --output v700-final-ci/secret-scan.json
+          python scripts/validate_dependency_lock.py requirements.runtime.lock
+          python scripts/validate_vulnerability_exceptions.py
+      - name: Audit PyPI and OSV advisory services
+        run: |
+          set -euo pipefail
+          pip-audit --disable-pip --require-hashes --no-deps --timeout 15 \
+            --progress-spinner off --vulnerability-service pypi \
+            --requirement requirements.runtime.lock --format json \
+            --output v700-final-ci/pip-audit-pypi.json
+          pip-audit --disable-pip --require-hashes --no-deps --timeout 15 \
+            --progress-spinner off --vulnerability-service osv \
+            --requirement requirements.runtime.lock --format json \
+            --output v700-final-ci/pip-audit-osv.json
+          python scripts/evaluate_dependency_audit.py \
+            v700-final-ci/pip-audit-pypi.json \
+            v700-final-ci/pip-audit-osv.json
+      - name: Checksum and retain final CI evidence
+        if: always()
+        run: |
+          if [[ -d v700-final-ci ]]; then
+            (cd v700-final-ci && find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS)
+          fi
+      - if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: atlas-ros-v700-final-ci-${{ github.event.pull_request.head.sha || github.sha }}
+          path: v700-final-ci/
+          if-no-files-found: warn
+          retention-days: 90
+
+  validate-final-package:
+    needs: full-ci-security
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'pull_request' &&
+       github.head_ref == 'release/v700-final-candidate')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.12.10'
+          cache: pip
+      - name: Install final-package tooling
+        run: |
+          python -m pip install --disable-pip-version-check --upgrade pip
+          python -m pip install --disable-pip-version-check -e '.[dev]'
+      - name: Validate exact final v7.0.0 package without publishing
+        env:
+          GH_TOKEN: ${{ github.token }}
+          FINAL_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          CANDIDATE_SHA: cdda737ca158c4b8f00fb0ef693d01bf172ff7ce
+          CANDIDATE_MERGE_COMMIT: bced12a75127a685ff2107363292a121381993cb
+          CANDIDATE_ARTIFACT_ID: '8675677855'
+          CANDIDATE_ARTIFACT_DIGEST: 856e9293206202135370824ce98b869ed8477f189dbf599de85ee8b3d10292e1
+          EXACT_ARTIFACT_ID: '8675702886'
+          EXACT_ARTIFACT_DIGEST: b1c537e6fda16bc4e79120daa4fd6ec94c9216d39b794d2f4ee040b8f76848b9
+          CONTROLLER_ARTIFACT_ID: '8675722183'
+          CONTROLLER_ARTIFACT_DIGEST: ebdf9aeb59223ba5870f6e62ada3d785bce0dd8317289be608610e24452945be
+          DECISION_RECORD_URL: https://app.notion.com/p/3aab8344ad2c81399ff7e6f5c5ce644d
+          REVIEW_RECORD_URL: https://app.notion.com/p/3aab8344ad2c819e93bce697d6ee8ae1
+        run: bash scripts/validate_v700_final_candidate.sh
+      - name: Retain exact final-package artifacts and evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: atlas-ros-v700-final-candidate-${{ github.event.pull_request.head.sha || github.sha }}
+          path: |
+            v700-final-publication/
+            v700-final-evidence/
+          if-no-files-found: warn
+          retention-days: 90

@@ -17,7 +17,7 @@ class RuntimeCommandError(RuntimeError):
 def status(*, json_output: bool = False) -> None:
     """Report installed runtime identity without loading providers or release tooling."""
     payload = {
-        "status": "candidate_runtime_available",
+        "status": "runtime_available",
         "version": __version__,
         "authority_model_version": "7.0",
         "production_authority_changed": False,
@@ -27,7 +27,7 @@ def status(*, json_output: bool = False) -> None:
         print(json.dumps(payload, sort_keys=True))
         return
     print(
-        f"Atlas ROS {__version__} candidate runtime is installed; "
+        f"Atlas ROS {__version__} runtime is installed; "
         "production authority is unchanged and no provider writes were performed."
     )
 
@@ -56,7 +56,7 @@ def initialize(*, json_output: bool = False) -> None:
 def verify(*, json_output: bool = False) -> None:
     """Verify only the installed runtime identity; release verification is separate."""
     payload = {
-        "valid": __version__ == "7.0.0rc1",
+        "valid": __version__ == "7.0.0",
         "scope": "installed_runtime_identity",
         "version": __version__,
         "writes": False,
@@ -65,7 +65,7 @@ def verify(*, json_output: bool = False) -> None:
         print(json.dumps(payload, sort_keys=True))
         return
     if not payload["valid"]:
-        raise RuntimeCommandError("installed runtime identity is not the v7.0.0rc1 candidate")
+        raise RuntimeCommandError("installed runtime identity is not Atlas ROS v7.0.0")
     print(f"Installed runtime identity verified: Atlas ROS {__version__}; writes: 0.")
 
 

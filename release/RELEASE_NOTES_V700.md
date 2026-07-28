@@ -1,14 +1,14 @@
-# Atlas ROS v7.0.0rc1 Candidate Release Notes
+# Atlas ROS v7.0.0 Final Release Notes
 
-Atlas ROS v7.0 establishes the candidate foundation for a canonical, GitHub-first operating architecture while retaining the attended and fail-closed safety boundaries of the active v6.5 production release.
+Atlas ROS v7.0 establishes the canonical GitHub-first operating architecture while preserving the attended, read-before-write, and fail-closed safety boundaries of the active v6.5 production release.
 
 ## Authority and initialization
 
 - Adds a typed GitHub authority record with deterministic integrity validation.
-- Adds a staged authority compiler that produces mutually bound authority JSON and a generated human-readable Release Index.
-- Replaces the future v7 Google Drive bootstrap with GitHub authority, while preserving the current v6.5 bootstrap until promotion.
-- Requires GitHub authority, the immutable release manifest, Notion System State, and the Integration Inventory to agree before initialization succeeds.
-- Requires GitHub, Notion, and Todoist as the exact v7 production integration set; Google Drive cannot be a required v7 initialization authority.
+- Adds an authority compiler that produces mutually bound authority JSON and a generated human-readable Release Index.
+- Moves v7 initialization authority from the legacy Google Drive bootstrap to GitHub after separately authorized promotion and readback.
+- Requires GitHub authority, the immutable release manifest, Notion System State, and the manifest-resolved Integration Inventory to agree before initialization succeeds.
+- Requires GitHub, Notion, and Todoist as the exact v7 production integration set.
 
 ## Runtime architecture
 
@@ -29,29 +29,19 @@ Atlas ROS v7.0 establishes the candidate foundation for a canonical, GitHub-firs
 ## Drive cutover and historical cleanup
 
 - Limits v7 promotion migration to the fixed current Drive Release Index bootstrap and its checksum-equivalent GitHub target.
-- Removes pre-v6 package-by-package migration, hashing, and validation from the v7 promotion path.
-- Adds a checksum-bound, non-authorized plan for the single 92-folder historical subtree containing versions below v6.
+- Keeps pre-v6 package history outside the v7 promotion critical path.
+- Retains the checksum-bound, non-authorized plan for the single 92-folder historical subtree containing versions below v6.
 - Preserves every v6.x and newer release outside the historical deletion scope.
-- Requires v7 activation, v7 post-promotion readback, verified v6.5 rollback restoration, item-level exclusion review, and a separate exact deletion authorization before any destructive action can be prepared.
-- Records zero provider writes and zero destructive actions during candidate validation.
+- Requires v7 activation, post-promotion readback, verified v6.5 rollback restoration, item-level exclusion review, and a separate exact deletion authorization before any destructive action.
 
 ## Actions cost controls
 
-- Routine pull-request synchronization runs one lean CI job with Ruff, architecture boundaries, deterministic dependency-policy validation, strict MyPy, pytest, execution-planning evaluation, package build, and configuration loading.
-- Routine CI installs the dedicated `ci` dependency set and does not install or execute `pip-audit`.
-- PyPI and OSV advisory audits run on `main` or an explicitly dispatched full-CI run.
-- Exact-artifact validation requires a successful manually dispatched full-CI run for the same exact source SHA, preserving the final dependency-security gate.
-- Architecture diagnostics, documentation authority, Drive cutover, and build-once candidate workflows run only at the review milestone or by explicit dispatch.
-- Exact-artifact and final-controller workflows are explicit final-stage dispatches and fail fast if exact-head prerequisites are absent; they do not consume runner time polling.
-- Concurrency groups cancel stale in-progress development runs.
-- Routine diagnostic and development artifacts use shortened retention while final governed release evidence retains release-grade retention.
+- Routine pull-request synchronization runs one lean CI job.
+- Full dependency security, architecture, documentation, Drive, candidate, exact-artifact, and controller validation run only at governed release milestones.
+- Exact-head prerequisites are bound by commit SHA and artifact digest.
+- Stale in-progress development runs are canceled.
+- Routine evidence uses short retention; final governed evidence uses release-grade retention.
 
-## Governance
+## Final-package boundary
 
-- Corrects mutable governance records without changing production authority.
-- Moves current Capture Service guidance to immutable GitHub documentation.
-- Keeps production at v6.5.0 with v6.2.0 as immediate immutable rollback until a separately authorized v7 promotion completes.
-
-## Candidate limitations
-
-This candidate is not production-authorized. It cannot publish a final release, create or move the final `v7.0.0` tag, activate GitHub authority, retire Google Drive, delete historical Drive content, change integration scope, or perform provider writes during validation.
+The final `7.0.0` package may be built and validated without changing production. Publication, the immutable `v7.0.0` tag, authority activation, Drive retirement, historical deletion, integration-scope changes, and provider writes remain blocked until Ryan separately authorizes the exact validated package.
