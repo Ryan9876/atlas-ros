@@ -1,14 +1,14 @@
 from __future__ import annotations
 
-from copy import deepcopy
 import json
+from copy import deepcopy
 from pathlib import Path
 
 import pytest
 
 from scripts.validate_v700_current_drive_authority import (
-    CurrentDriveAuthorityError,
     canonical_sha256,
+    CurrentDriveAuthorityError,
     validate_current_drive_authority,
 )
 
