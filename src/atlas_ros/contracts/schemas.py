@@ -17,13 +17,13 @@ from atlas_ros.contracts.execution.transaction import (
     ExecutionTransactionReceipt,
     ProposedExecutionPlan,
 )
-from atlas_ros.contracts.reasoning import IntentGraph
 from atlas_ros.contracts.history import (
     HistoricalCleanupPlan,
     HistoricalCleanupReceipt,
     HistoricalInventory,
     HistoricalItem,
 )
+from atlas_ros.contracts.reasoning import IntentGraph
 from atlas_ros.contracts.release import ReleaseCompilationReceipt, ReleaseSpecification
 from atlas_ros.contracts.registry import ContractDescriptor
 
