@@ -1,0 +1,76 @@
+package_name: atlas-ros
+identity:
+  version: 7.1.1
+  source_commit: __SOURCE_COMMIT__
+  tag: v7.1.1
+authority_model_version: '7.0'
+release_scope:
+  - Consolidate Quick Initialization behind one typed read-only operation and compact receipt.
+  - Always read live GitHub authority while reusing digest-bound immutable Release Index and manifest snapshots when eligible.
+  - Use compact live System State and direct Integration Inventory projections with only one Todoist liveness probe.
+  - Add stage-level initialization telemetry and deterministic cold/warm equivalence evidence.
+  - Minimize GitHub Actions jobs, builds, artifacts, matrices, and live connector use.
+immediate_rollback:
+  version: 7.1.0
+  source_commit: 0711b045f34f5ab7b03f7a61bc80653e0d815463
+  tag: v7.1.0
+historical_rollbacks:
+  - version: 7.0.1
+    source_commit: f26f5154ea6cd4b431c5a2638c439d7de9282761
+    tag: v7.0.1
+  - version: 6.5.0
+    source_commit: bb6d6fea70d6824c9bc6a42e63ba36cc88029260
+    tag: v6.5.0
+  - version: 6.2.0
+    source_commit: 863d5ddf9ebd4723200166cf31c7acd93ebec54f
+    tag: v6.2.0
+required_integrations: [GitHub, Notion, Todoist]
+optional_integrations: [Google Drive]
+validation_profile:
+  - focused Ruff and strict MyPy
+  - architecture and legacy-isolation validation
+  - complete pytest with branch coverage
+  - deterministic cold and warm initialization equivalence
+  - cache rejection and fail-closed fallback
+  - compact projection and receipt schema validation
+  - build-once source and wheel validation
+  - dependency and vulnerability audits at final-candidate stage
+  - startup and initialization performance comparison
+  - immutable v7.1.0 rollback restoration
+artifact_requirements:
+  - build-once source distribution
+  - build-once wheel
+  - SPDX SBOM
+  - source manifest
+  - nested checksums
+  - exact candidate identity
+  - cold and warm initialization performance evidence
+promotion_prerequisites:
+  - build-once artifacts
+  - independent post-publication readback
+  - rollback restoration
+  - exact Ryan authorization
+publication_policy:
+  - candidate validation and publication are separate transactions
+  - immutable publication requires exact package authorization
+  - publication performs no authority activation
+authority_activation_policy:
+  - activation follows independent publication readback
+  - GitHub and Notion authority change transactionally
+  - active authority remains unchanged during candidate validation
+restoration_requirements:
+  - Atlas ROS v7.1.0 restores from immutable assets
+  - Atlas ROS v7.0.1 remains historical restoration evidence
+  - Atlas ROS v6.5.0 and v6.2.0 remain historical restoration evidence
+migration_requirements:
+  - production Notion projection activation requires a separate exact transaction
+  - existing initialization callers remain compatible
+compatibility_rules:
+  - public v7 initialization contracts remain supported
+  - initialize and initialize_full retain cold canonical behavior
+  - compact projections do not replace owned Notion authority fields
+  - breaking changes require a future major release
+notion_system_state_url: https://app.notion.com/p/3a0b8344ad2c81d1b545d0266b7cd809
+integration_inventory_url: https://app.notion.com/p/8ba4fafb5ce244ef9add3013aff3746b
+integration_inventory_data_source: collection://46af021f-eb9a-4eba-b10c-4523e70df0c3
+candidate_only: true

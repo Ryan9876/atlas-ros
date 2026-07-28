@@ -23,7 +23,7 @@ from atlas_ros.contracts.release import (
     ReleaseSpecification,
 )
 
-COMPILER_VERSION = "1.0.0"
+COMPILER_VERSION = "1.1.0"
 
 
 class ReleaseCompilationError(ValueError):
@@ -287,7 +287,14 @@ def _render_manifest(spec: ReleaseSpecification) -> str:
         f"- Candidate tag: `{spec.identity.tag}`\n"
         f"- Immediate rollback: `{spec.immediate_rollback.version}` at "
         f"`{spec.immediate_rollback.source_commit}`\n"
-        f"- Integration Inventory authority: {spec.integration_inventory_url}\n\n"
+        f"- Integration Inventory authority: {spec.integration_inventory_url}\n"
+        + (
+            f"- Integration Inventory data source: "
+            f"{spec.integration_inventory_data_source}\n"
+            if spec.integration_inventory_data_source is not None
+            else ""
+        )
+        + "\n"
         "## Required integrations\n\n"
         + "\n".join(f"- {item}" for item in spec.required_integrations)
         + "\n\n## Optional integrations\n\n"
@@ -349,6 +356,9 @@ def _authority_candidate(
         "optional_integrations": list(spec.optional_integrations),
         "notion_system_state_url": spec.notion_system_state_url,
         "integration_inventory_url": spec.integration_inventory_url,
+        "integration_inventory_data_source": (
+            spec.integration_inventory_data_source
+        ),
         "activation_transaction_id": f"authority-activation-{transaction_prefix}",
         "production_authorized": False,
         "authority_activated": False,

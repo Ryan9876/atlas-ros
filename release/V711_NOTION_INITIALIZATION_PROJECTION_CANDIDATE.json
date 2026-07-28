@@ -1,0 +1,29 @@
+{
+  "schema_version": "1.0",
+  "status": "staged_not_active",
+  "system_state_projection": {
+    "schema_version": "1.0",
+    "active_version": "7.1.0",
+    "immediate_rollback_version": "7.0.1",
+    "authority_model_version": "7.0",
+    "published_workspace_valid": true,
+    "last_verified_at": "2026-07-28T15:31:55-04:00"
+  },
+  "integration_inventory": {
+    "authority_url": "https://app.notion.com/p/8ba4fafb5ce244ef9add3013aff3746b",
+    "data_source": "collection://46af021f-eb9a-4eba-b10c-4523e70df0c3",
+    "required_columns": [
+      "Integration",
+      "Required",
+      "Connection Status",
+      "Approval Status",
+      "Acceptance Status",
+      "Lifecycle Status",
+      "Least Privilege Verified",
+      "Last Verified"
+    ],
+    "required_integrations": ["GitHub", "Notion", "Todoist"]
+  },
+  "production_write_authorized": false,
+  "provider_writes": 0
+}
