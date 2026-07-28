@@ -1,0 +1,258 @@
+name: v710-corrective-final-package
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, ready_for_review, reopened]
+  push:
+    branches: [main]
+
+concurrency:
+  group: v710-corrective-final-package-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  validate-and-package:
+    if: >-
+      (github.event_name == 'pull_request' &&
+       github.head_ref == 'release/v710-corrective-finalization') ||
+      (github.event_name == 'push' &&
+       startsWith(github.event.head_commit.message,
+       'release: finalize Atlas ROS v7.1.0 package'))
+    runs-on: ubuntu-24.04
+    timeout-minutes: 100
+    env:
+      SOURCE_COMMIT: ${{ github.event.pull_request.head.sha || github.sha }}
+      RELEASE_VERSION: 7.1.0
+    steps:
+      - name: Check out exact source
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          fetch-tags: true
+          persist-credentials: false
+
+      - name: Verify exact source binding
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$SOURCE_COMMIT"
+          mkdir -p final-package
+          git rev-parse HEAD > final-package/SOURCE_COMMIT.txt
+          git show -s --format=%cI HEAD > final-package/SOURCE_TIMESTAMP.txt
+          git ls-tree -r --full-tree HEAD > final-package/SOURCE_TREE.txt
+
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.12.10'
+          cache: pip
+
+      - name: Install pinned validation tooling
+        run: |
+          python -m pip install --disable-pip-version-check --upgrade pip
+          python -m pip install --disable-pip-version-check -e '.[dev]'
+
+      - name: Validate source quality architecture typing and tests
+        run: |
+          set -euo pipefail
+          ruff check .
+          python scripts/validate_architecture.py
+          python scripts/validate_legacy_isolation.py
+          python scripts/validate_dependency_lock.py requirements.runtime.lock
+          python scripts/validate_vulnerability_exceptions.py
+          mypy src
+          pytest \
+            --junitxml=final-package/pytest.xml \
+            --cov-report=json:final-package/coverage.json
+          mkdir -p final-package/execution-planning
+          python scripts/evaluate_execution_planning.py \
+            --dataset benchmarks/execution-planning-v1.json \
+            --output final-package/execution-planning/EXECUTION_PLANNING_REPORT.json
+
+      - name: Validate committed production manifest
+        run: |
+          set -euo pipefail
+          python scripts/validate_v710_production_manifest.py \
+            --source-commit "$SOURCE_COMMIT" \
+            --output final-package/PRODUCTION_MANIFEST_VALIDATION.json
+
+      - name: Validate Drive independence and deterministic compiler
+        run: |
+          set -euo pipefail
+          python scripts/validate_v710_candidate.py \
+            --skip-tests \
+            --source-commit "$SOURCE_COMMIT" \
+            --evidence final-package/candidate-evidence
+          python scripts/compile_release.py \
+            release/specifications/V710.yaml \
+            --source-commit "$SOURCE_COMMIT" \
+            --output final-package/compiler-output
+          python scripts/compile_release.py \
+            release/specifications/V710.yaml \
+            --source-commit "$SOURCE_COMMIT" \
+            --output final-package/compiler-output-repeat
+          diff -ru \
+            final-package/compiler-output \
+            final-package/compiler-output-repeat
+          rm -rf final-package/compiler-output-repeat
+
+      - name: Scan exact source for secrets
+        run: |
+          set -euo pipefail
+          python scripts/scan_candidate_secrets.py \
+            --root . \
+            --output final-package/secret-scan.json
+
+      - name: Audit PyPI and OSV vulnerabilities
+        run: |
+          set -euo pipefail
+          pip-audit \
+            --disable-pip \
+            --require-hashes \
+            --no-deps \
+            --timeout 15 \
+            --progress-spinner off \
+            --vulnerability-service pypi \
+            --requirement requirements.runtime.lock \
+            --format json \
+            --output final-package/pip-audit-pypi.json
+          pip-audit \
+            --disable-pip \
+            --require-hashes \
+            --no-deps \
+            --timeout 15 \
+            --progress-spinner off \
+            --vulnerability-service osv \
+            --requirement requirements.runtime.lock \
+            --format json \
+            --output final-package/pip-audit-osv.json
+          python scripts/evaluate_dependency_audit.py \
+            final-package/pip-audit-pypi.json \
+            final-package/pip-audit-osv.json
+
+      - name: Build exact source and wheel once
+        run: |
+          set -euo pipefail
+          rm -rf dist build
+          python -m build
+          test -f "dist/atlas_ros-${RELEASE_VERSION}.tar.gz"
+          test -f "dist/atlas_ros-${RELEASE_VERSION}-py3-none-any.whl"
+          cp "dist/atlas_ros-${RELEASE_VERSION}.tar.gz" final-package/
+          cp "dist/atlas_ros-${RELEASE_VERSION}-py3-none-any.whl" final-package/
+
+      - name: Clean-install and verify exact package identity
+        run: |
+          set -euo pipefail
+          python -m venv final-clean
+          final-clean/bin/python -m pip install \
+            --disable-pip-version-check \
+            "final-package/atlas_ros-${RELEASE_VERSION}-py3-none-any.whl"
+          final-clean/bin/python -c \
+            "import atlas_ros; assert atlas_ros.__version__ == '${RELEASE_VERSION}'"
+          final-clean/bin/atlas status --json > final-package/runtime-status.json
+          final-clean/bin/atlas verify --json > final-package/runtime-verify.json
+          final-clean/bin/python -m pip list --format=json \
+            > final-package/INSTALLED_PACKAGES.json
+          python scripts/measure_startup_performance.py \
+            --candidate-python final-clean/bin/python \
+            --iterations 7 \
+            --output final-package/startup-performance.json
+
+      - name: Assemble final package and staged authority
+        run: |
+          set -euo pipefail
+          python scripts/finalize_v710_package.py \
+            --package-root final-package \
+            --source-commit "$SOURCE_COMMIT" \
+            --source-timestamp "$(cat final-package/SOURCE_TIMESTAMP.txt)" \
+            --installed-packages final-package/INSTALLED_PACKAGES.json \
+            > final-package/FINALIZATION_OUTPUT.json
+
+      - name: Restore production and rollback releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p restore-assets/v701 restore-assets/v650 restore-assets/v620
+          gh release download v7.0.1 \
+            --repo "$GITHUB_REPOSITORY" \
+            --dir restore-assets/v701
+          gh release download v6.5.0 \
+            --repo "$GITHUB_REPOSITORY" \
+            --dir restore-assets/v650
+          gh release download v6.2.0 \
+            --repo "$GITHUB_REPOSITORY" \
+            --dir restore-assets/v620
+          (cd restore-assets/v701 && sha256sum -c CHECKSUMS.sha256)
+          (cd restore-assets/v650 && sha256sum -c CHECKSUMS.sha256)
+          (cd restore-assets/v620 && sha256sum -c CHECKSUMS.sha256)
+          for pair in 'v701 7.0.1' 'v650 6.5.0' 'v620 6.2.0'; do
+            set -- $pair
+            wheel=$(find "restore-assets/$1" \
+              -name "atlas_ros-$2*.whl" -print -quit)
+            test -n "$wheel"
+            envname="restore-${2//./-}"
+            python -m venv "$envname"
+            "$envname/bin/python" -m pip install \
+              --disable-pip-version-check "$wheel"
+            "$envname/bin/python" -c \
+              "import atlas_ros; assert atlas_ros.__version__ == '$2'"
+          done
+          python scripts/measure_startup_performance.py \
+            --candidate-python final-clean/bin/python \
+            --baseline-python restore-7-0-1/bin/python \
+            --iterations 7 \
+            --max-startup-regression 0.10 \
+            --max-module-regression 0 \
+            --output final-package/startup-comparison.json
+
+      - name: Validate staged authority remains non-live
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          root = Path('final-package')
+          authority = json.loads(
+              (root / 'staged-authority/AUTHORITY.json').read_text()
+          )
+          identity = json.loads(
+              (root / 'FINAL_PACKAGE_IDENTITY.json').read_text()
+          )
+          live = json.loads(Path('governance/AUTHORITY.json').read_text())
+          assert authority['active_release']['version'] == '7.1.0'
+          assert authority['immediate_rollback']['version'] == '7.0.1'
+          assert authority['active_release']['manifest_path'] == (
+              'release/RELEASE_MANIFEST_V710.md'
+          )
+          assert identity['status'] == 'final_package_validated_not_authorized'
+          assert identity['production_authorized'] is False
+          assert identity['published'] is False
+          assert identity['authority_activated'] is False
+          assert live['active_release']['version'] == '7.0.1'
+          assert live['immediate_rollback']['version'] == '6.5.0'
+          PY
+
+      - name: Finalize nested checksums
+        if: always()
+        run: |
+          set -euo pipefail
+          (cd final-package && \
+            find . -type f ! -name SHA256SUMS -print0 | \
+            sort -z | xargs -0 sha256sum > SHA256SUMS)
+          (cd final-package && sha256sum -c SHA256SUMS)
+
+      - name: Retain non-publishing final package
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: atlas-ros-v710-final-package-${{ github.event.pull_request.head.sha || github.sha }}
+          path: final-package/
+          if-no-files-found: error
+          retention-days: 90
