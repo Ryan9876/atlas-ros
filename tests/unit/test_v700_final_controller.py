@@ -20,12 +20,16 @@ def final_evidence() -> FinalPackageEvidence:
         candidate_pr_merged=True,
         candidate_artifact_id="artifact-1",
         candidate_artifact_digest="c" * 64,
+        final_package_version="7.0.0",
+        final_package_artifact_id="final-artifact-1",
+        final_package_artifact_digest="2" * 64,
         source_sha256="d" * 64,
         wheel_sha256="e" * 64,
         standard_ci_passed=True,
         architecture_validation_passed=True,
         candidate_validation_passed=True,
         exact_artifact_validation_passed=True,
+        final_package_validation_passed=True,
         drive_migration_ledger_complete=True,
         drive_migration_ledger_sha256="f" * 64,
         live_authority_readback_complete=True,
@@ -112,6 +116,21 @@ def test_final_controller_fails_closed_on_live_governance_gaps() -> None:
     assert "v6.5 rollback evidence reconciliation has not passed" in receipt.blockers
     assert "exact-package Ryan authorization is required" in receipt.blockers
     assert receipt.provider_writes == 0
+
+
+def test_final_controller_rejects_missing_final_package_validation() -> None:
+    receipt = compile_final_controller(
+        replace(
+            final_evidence(),
+            final_package_validation_passed=False,
+            final_package_artifact_id="",
+        ),
+        transaction_id="final-controller-v700",
+    )
+
+    assert receipt.status == "blocked"
+    assert "final-package validation has not passed" in receipt.blockers
+    assert "final package artifact ID is required" in receipt.blockers
 
 
 def test_rollback_digest_cannot_replace_reconciliation() -> None:
