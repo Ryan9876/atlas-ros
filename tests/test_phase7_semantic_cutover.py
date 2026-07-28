@@ -1,7 +1,8 @@
 import importlib.util
 from pathlib import Path
 
-from atlas_ros.capabilities import (
+import atlas_ros.capabilities as capabilities
+from atlas_ros.contracts.migrations.capability_surface_v6 import (
     CanonicalReconciliationService,
     CaptureService,
     DecompositionService,
@@ -12,13 +13,14 @@ from atlas_ros.capabilities import (
 from atlas_ros.validation.architecture import validate
 
 
-def test_semantic_capability_surface_is_importable() -> None:
+def test_historical_capability_surface_is_migration_only() -> None:
     assert CaptureService.__name__ == "CaptureService"
     assert DecompositionService.__name__ == "DecompositionService"
     assert TodoistService.__name__ == "TodoistService"
     assert CanonicalReconciliationService.__name__ == "CanonicalReconciliationService"
     assert ExecutionPlanner.__name__ == "ExecutionPlanner"
     assert RecordRoutingService.__name__ == "RecordRoutingService"
+    assert not hasattr(capabilities, "CaptureService")
     assert importlib.util.find_spec("atlas_ros.workflows") is None
     assert importlib.util.find_spec("atlas_ros.legacy") is None
 

@@ -1,0 +1,236 @@
+name: v700-exact-artifact-validation
+
+on:
+  pull_request:
+    branches: [main]
+    types: [ready_for_review]
+  workflow_dispatch:
+
+concurrency:
+  group: v700-exact-artifact-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  validate-exact-v700-artifact:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'pull_request' &&
+       github.head_ref == 'agent/v700-canonical-architecture')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.12.10'
+          cache: pip
+      - name: Install exact-artifact validation tooling
+        run: |
+          python -m pip install --disable-pip-version-check --upgrade pip
+          python -m pip install --disable-pip-version-check -e '.[dev]'
+      - name: Resolve successful prerequisite runs at the exact head
+        id: prerequisites
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$HEAD_SHA"
+          runs="$(gh api --method GET "repos/${GITHUB_REPOSITORY}/actions/runs?head_sha=${HEAD_SHA}&per_page=100")"
+          candidate_run="$(jq -r '[.workflow_runs[] | select(.name == "v700-release-candidate" and .conclusion == "success")] | sort_by(.created_at) | last | .id // empty' <<<"$runs")"
+          full_ci_run="$(jq -r '[.workflow_runs[] | select(.name == "v700-full-ci" and .conclusion == "success")] | sort_by(.created_at) | last | .id // empty' <<<"$runs")"
+          architecture_run="$(jq -r '[.workflow_runs[] | select(.name == "v700-architecture-diagnostics" and .conclusion == "success")] | sort_by(.created_at) | last | .id // empty' <<<"$runs")"
+          documentation_run="$(jq -r '[.workflow_runs[] | select(.name == "Documentation Authority" and .conclusion == "success")] | sort_by(.created_at) | last | .id // empty' <<<"$runs")"
+          drive_run="$(jq -r '[.workflow_runs[] | select(.name == "v700-drive-cutover-plan" and .conclusion == "success")] | sort_by(.created_at) | last | .id // empty' <<<"$runs")"
+          if [[ -z "$candidate_run" || -z "$full_ci_run" || -z "$architecture_run" || -z "$documentation_run" || -z "$drive_run" ]]; then
+            echo "Exact-head prerequisites have not all passed. Complete full CI, architecture, documentation, Drive cutover, and release-candidate validation before retrying this job." >&2
+            exit 1
+          fi
+          audit_artifacts="$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${full_ci_run}/artifacts")"
+          audit_name="dependency-audit-evidence-${HEAD_SHA}"
+          audit_id="$(jq -r --arg name "$audit_name" '[.artifacts[] | select(.name == $name and .expired == false)] | last | .id // empty' <<<"$audit_artifacts")"
+          [[ -n "$audit_id" ]]
+          echo "candidate_run_id=$candidate_run" >> "$GITHUB_OUTPUT"
+          echo "standard_run_id=$full_ci_run" >> "$GITHUB_OUTPUT"
+          echo "architecture_run_id=$architecture_run" >> "$GITHUB_OUTPUT"
+          echo "documentation_run_id=$documentation_run" >> "$GITHUB_OUTPUT"
+          echo "drive_run_id=$drive_run" >> "$GITHUB_OUTPUT"
+          echo "dependency_audit_artifact_id=$audit_id" >> "$GITHUB_OUTPUT"
+      - name: Download and verify exact build-once artifact
+        id: artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          CANDIDATE_RUN_ID: ${{ steps.prerequisites.outputs.candidate_run_id }}
+        run: |
+          set -euo pipefail
+          artifacts="$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${CANDIDATE_RUN_ID}/artifacts")"
+          name="atlas-ros-v700-candidate-${HEAD_SHA}"
+          artifact_id="$(jq -r --arg name "$name" '[.artifacts[] | select(.name == $name and .expired == false)] | last | .id // empty' <<<"$artifacts")"
+          artifact_digest="$(jq -r --arg name "$name" '[.artifacts[] | select(.name == $name and .expired == false)] | last | .digest // empty' <<<"$artifacts")"
+          [[ -n "$artifact_id" && -n "$artifact_digest" ]]
+          normalized_digest="${artifact_digest#sha256:}"
+          gh api "repos/${GITHUB_REPOSITORY}/actions/artifacts/${artifact_id}/zip" > exact-candidate.zip
+          echo "${normalized_digest}  exact-candidate.zip" | sha256sum -c -
+          rm -rf exact-artifact
+          mkdir exact-artifact
+          unzip -q exact-candidate.zip -d exact-artifact
+          publication_checksums="$(find exact-artifact -name PUBLICATION_CHECKSUMS.sha256 -print -quit)"
+          [[ -n "$publication_checksums" ]]
+          artifact_root="$(dirname "$publication_checksums")"
+          echo "artifact_id=$artifact_id" >> "$GITHUB_OUTPUT"
+          echo "artifact_digest=$normalized_digest" >> "$GITHUB_OUTPUT"
+          echo "artifact_root=$artifact_root" >> "$GITHUB_OUTPUT"
+      - name: Verify publication and nested evidence checksums
+        env:
+          ARTIFACT_ROOT: ${{ steps.artifact.outputs.artifact_root }}
+        run: |
+          set -euo pipefail
+          (cd "$ARTIFACT_ROOT" && sha256sum -c PUBLICATION_CHECKSUMS.sha256)
+          (cd "$ARTIFACT_ROOT/evidence" && sha256sum -c EVIDENCE_CHECKSUMS.sha256)
+      - name: Install exact candidate and immutable rollback releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ARTIFACT_ROOT: ${{ steps.artifact.outputs.artifact_root }}
+        run: |
+          set -euo pipefail
+          candidate_wheel="$(find "$ARTIFACT_ROOT" -maxdepth 1 -name 'atlas_ros-7.0.0rc1-*.whl' -print -quit)"
+          [[ -n "$candidate_wheel" ]]
+          python -m venv exact-v700
+          exact-v700/bin/python -m pip install --disable-pip-version-check "$candidate_wheel"
+          exact-v700/bin/python -c "import atlas_ros; assert atlas_ros.__version__ == '7.0.0rc1'"
+          exact-v700/bin/atlas status --json > exact-v700-status.json
+
+          mkdir -p v650-assets v620-assets
+          gh release download v6.5.0 --repo "$GITHUB_REPOSITORY" --dir v650-assets
+          gh release download v6.2.0 --repo "$GITHUB_REPOSITORY" --dir v620-assets
+          (cd v650-assets && sha256sum -c CHECKSUMS.sha256)
+          (cd v620-assets && sha256sum -c CHECKSUMS.sha256)
+          v650_wheel="$(find v650-assets -name 'atlas_ros-6.5.0*.whl' -print -quit)"
+          v620_wheel="$(find v620-assets -name 'atlas_ros-6.2.0*.whl' -print -quit)"
+          [[ -n "$v650_wheel" && -n "$v620_wheel" ]]
+          python -m venv exact-v650
+          exact-v650/bin/python -m pip install --disable-pip-version-check "$v650_wheel"
+          exact-v650/bin/python -c "import atlas_ros; assert atlas_ros.__version__ == '6.5.0'"
+          python -m venv exact-v620
+          exact-v620/bin/python -m pip install --disable-pip-version-check "$v620_wheel"
+          exact-v620/bin/python -c "import atlas_ros; assert atlas_ros.__version__ == '6.2.0'"
+      - name: Reconcile immutable v6.5 rollback evidence
+        run: |
+          set -euo pipefail
+          mkdir -p v700-exact-evidence
+          clean_version="$(exact-v650/bin/python -c 'import atlas_ros; print(atlas_ros.__version__)')"
+          python -m scripts.validate_v650_rollback_evidence \
+            --repository-root . \
+            --source-commit bb6d6fea70d6824c9bc6a42e63ba36cc88029260 \
+            --release-assets-dir v650-assets \
+            --clean-install-version "$clean_version" \
+            --restoration-passed \
+            --metadata-exception-record-url https://app.notion.com/p/3aab8344ad2c81efad29c12b9b132374 \
+            --output v700-exact-evidence/V650_ROLLBACK_EVIDENCE.json \
+            2>&1 | tee v700-exact-evidence/V650_ROLLBACK_RECONCILIATION.log
+      - name: Compare equivalent v7 and v6.5 performance
+        run: |
+          python scripts/compare_v700_performance.py \
+            --candidate-python exact-v700/bin/python \
+            --baseline-python exact-v650/bin/python \
+            --dataset benchmarks/execution-planning-v1.json \
+            --iterations 7 \
+            --max-regression 0.10 \
+            --output v700-exact-evidence/V700_V650_PERFORMANCE.json
+      - name: Validate current Drive authority and post-cutover deletion plan
+        run: |
+          set -euo pipefail
+          python -m scripts.validate_v700_drive_folder_tree \
+            --input release/v700-drive-folder-traversal.json \
+            --output v700-exact-evidence/V700_DRIVE_FOLDER_TREE.json
+          python -m scripts.validate_v700_current_drive_authority \
+            --input release/v700-current-drive-authority-migration.json \
+            --output v700-exact-evidence/V700_CURRENT_DRIVE_AUTHORITY.json
+          python -m tools.release.drive_migration_cli compile \
+            release/v700-drive-migration-inventory.json \
+            v700-exact-evidence/V700_CURRENT_DRIVE_MIGRATION_LEDGER.json \
+            > v700-exact-evidence/V700_CURRENT_DRIVE_MIGRATION_SUMMARY.json
+          python -m scripts.validate_v700_pre_v6_deletion_plan \
+            --plan release/v700-pre-v6-deletion-plan.json \
+            --folder-tree release/v700-drive-folder-traversal.json \
+            --output v700-exact-evidence/V700_PRE_V6_DELETION_PLAN.json
+          python -m scripts.validate_v700_pre_v6_exclusion_review \
+            --review release/v700-pre-v6-exclusion-review.json \
+            --plan release/v700-pre-v6-deletion-plan.json \
+            --folder-tree release/v700-drive-folder-traversal.json \
+            --output v700-exact-evidence/V700_PRE_V6_EXCLUSION_REVIEW.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          root = Path('v700-exact-evidence')
+          authority = json.loads((root / 'V700_CURRENT_DRIVE_AUTHORITY.json').read_text(encoding='utf-8'))
+          ledger = json.loads((root / 'V700_CURRENT_DRIVE_MIGRATION_SUMMARY.json').read_text(encoding='utf-8'))
+          deletion = json.loads((root / 'V700_PRE_V6_DELETION_PLAN.json').read_text(encoding='utf-8'))
+          exclusion = json.loads((root / 'V700_PRE_V6_EXCLUSION_REVIEW.json').read_text(encoding='utf-8'))
+          assert authority['promotion_scope_complete'] is True
+          assert authority['pre_v6_history_required_for_promotion'] is False
+          assert ledger['item_count'] == 1
+          assert ledger['complete_for_promotion_readiness'] is True
+          assert deletion['target_folder_count'] == 92
+          assert deletion['promotion_blocking'] is False
+          assert deletion['deletion_authorized'] is False
+          assert deletion['provider_writes'] == 0
+          assert deletion['destructive_actions_performed'] == 0
+          assert exclusion['candidate_folder_count'] == 92
+          assert exclusion['pending_folder_review_count'] == 92
+          assert exclusion['file_candidates_complete'] is False
+          assert exclusion['exclusion_review_complete'] is False
+          assert exclusion['promotion_blocking'] is False
+          assert exclusion['deletion_authorized'] is False
+          assert exclusion['provider_writes'] == 0
+          assert exclusion['destructive_actions_performed'] == 0
+          candidate_digest = exclusion['candidate_folder_set_sha256']
+          assert isinstance(candidate_digest, str) and len(candidate_digest) == 64
+          PY
+      - name: Validate exact artifact and simulate release transactions
+        env:
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          ARTIFACT_ROOT: ${{ steps.artifact.outputs.artifact_root }}
+          ARTIFACT_ID: ${{ steps.artifact.outputs.artifact_id }}
+          ARTIFACT_DIGEST: ${{ steps.artifact.outputs.artifact_digest }}
+          CANDIDATE_RUN_ID: ${{ steps.prerequisites.outputs.candidate_run_id }}
+          STANDARD_RUN_ID: ${{ steps.prerequisites.outputs.standard_run_id }}
+          ARCHITECTURE_RUN_ID: ${{ steps.prerequisites.outputs.architecture_run_id }}
+        run: |
+          python -m scripts.validate_v700_exact_artifact \
+            --artifact-root "$ARTIFACT_ROOT" \
+            --candidate-sha "$HEAD_SHA" \
+            --artifact-id "$ARTIFACT_ID" \
+            --artifact-digest "$ARTIFACT_DIGEST" \
+            --candidate-run-id "$CANDIDATE_RUN_ID" \
+            --standard-ci-run-id "$STANDARD_RUN_ID" \
+            --architecture-run-id "$ARCHITECTURE_RUN_ID" \
+            --performance v700-exact-evidence/V700_V650_PERFORMANCE.json \
+            --integration-snapshot release/v700-integration-readiness.json \
+            --drive-inventory release/v700-drive-migration-inventory.json \
+            --rollback-evidence v700-exact-evidence/V650_ROLLBACK_EVIDENCE.json \
+            --output-dir v700-exact-evidence
+          (
+            cd v700-exact-evidence
+            find . -type f ! -name EXACT_ARTIFACT_CHECKSUMS.sha256 -print0 | sort -z |
+              xargs -0 sha256sum > EXACT_ARTIFACT_CHECKSUMS.sha256
+            sha256sum -c EXACT_ARTIFACT_CHECKSUMS.sha256
+          )
+      - name: Retain exact-artifact Full Validation evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: atlas-ros-v700-exact-artifact-${{ github.event.pull_request.head.sha || github.sha }}
+          path: v700-exact-evidence/
+          if-no-files-found: warn
+          retention-days: 90

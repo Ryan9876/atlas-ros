@@ -1,0 +1,11 @@
+schema_version: "1.0"
+policy_id: atlas.execution.attended
+lifecycle: active
+rules:
+  - explicit_todoist_instruction_is_required
+  - authorization_must_precede_provider_write
+  - exact_authorized_plan_is_required
+  - provider_readback_is_required
+  - autonomous_scheduling_is_forbidden
+  - autonomous_messaging_is_forbidden
+  - autonomous_deletion_is_forbidden

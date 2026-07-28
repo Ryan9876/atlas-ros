@@ -1,0 +1,20 @@
+{
+  "schema_version": "1.0",
+  "generated_for_release": "7.0.0rc1",
+  "source_bootstrap": {
+    "drive_id": "1F8fXT9oLtXnorbyL--5Vw0Ajo6MyW0Xk",
+    "title": "RELEASE_INDEX.md",
+    "drive_content_sha256": "4cd420871aa98efbf62e192e563200f77399405e8614dbbbf04dcd2d749c327d",
+    "github_target": "governance/RELEASE_INDEX.md",
+    "github_content_sha256": "4cd420871aa98efbf62e192e563200f77399405e8614dbbbf04dcd2d749c327d",
+    "content_equivalent": true,
+    "migration_status": "staged",
+    "disposition": "retire_after_v7_activation"
+  },
+  "current_drive_dependency_count": 1,
+  "promotion_scope_complete": true,
+  "pre_v6_history_required_for_promotion": false,
+  "provider_writes": 0,
+  "drive_retirement_authorized": false,
+  "authority_migration_sha256": "156db7dffc53626f82e530a16246286604767310649dbe6c7dbf306b29c0ca07"
+}

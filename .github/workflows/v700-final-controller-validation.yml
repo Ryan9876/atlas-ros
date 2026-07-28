@@ -1,0 +1,153 @@
+name: v700-final-controller-validation
+
+on:
+  pull_request:
+    branches: [main]
+    types: [ready_for_review]
+  workflow_dispatch:
+
+concurrency:
+  group: v700-final-controller-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  validate-v700-final-controller:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'pull_request' &&
+       github.head_ref == 'agent/v700-canonical-architecture')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.12.10'
+          cache: pip
+      - name: Install final-controller validation tooling
+        run: |
+          python -m pip install --disable-pip-version-check --upgrade pip
+          python -m pip install --disable-pip-version-check -e '.[dev]'
+      - name: Resolve successful exact-artifact validation at the exact head
+        id: prerequisite
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$HEAD_SHA"
+          runs="$(gh api --method GET "repos/${GITHUB_REPOSITORY}/actions/runs?head_sha=${HEAD_SHA}&per_page=100")"
+          exact_run="$(jq -r '[.workflow_runs[] | select(.name == "v700-exact-artifact-validation" and .conclusion == "success")] | sort_by(.created_at) | last | .id // empty' <<<"$runs")"
+          if [[ -z "$exact_run" ]]; then
+            echo "Exact-head exact-artifact validation has not passed; retry this job after that validation succeeds." >&2
+            exit 1
+          fi
+          echo "exact_run_id=$exact_run" >> "$GITHUB_OUTPUT"
+      - name: Download and verify exact-artifact Full Validation evidence
+        id: exact
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          EXACT_RUN_ID: ${{ steps.prerequisite.outputs.exact_run_id }}
+        run: |
+          set -euo pipefail
+          artifacts="$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${EXACT_RUN_ID}/artifacts")"
+          name="atlas-ros-v700-exact-artifact-${HEAD_SHA}"
+          artifact_id="$(jq -r --arg name "$name" '[.artifacts[] | select(.name == $name and .expired == false)] | last | .id // empty' <<<"$artifacts")"
+          artifact_digest="$(jq -r --arg name "$name" '[.artifacts[] | select(.name == $name and .expired == false)] | last | .digest // empty' <<<"$artifacts")"
+          [[ -n "$artifact_id" && -n "$artifact_digest" ]]
+          normalized_digest="${artifact_digest#sha256:}"
+          gh api "repos/${GITHUB_REPOSITORY}/actions/artifacts/${artifact_id}/zip" > exact-artifact.zip
+          echo "${normalized_digest}  exact-artifact.zip" | sha256sum -c -
+          rm -rf exact-artifact
+          mkdir exact-artifact
+          unzip -q exact-artifact.zip -d exact-artifact
+          checksum_file="$(find exact-artifact -name EXACT_ARTIFACT_CHECKSUMS.sha256 -print -quit)"
+          validation_file="$(find exact-artifact -name EXACT_ARTIFACT_VALIDATION.json -print -quit)"
+          rollback_evidence_file="$(find exact-artifact -name V650_ROLLBACK_EVIDENCE.json -print -quit)"
+          [[ -n "$checksum_file" && -n "$validation_file" && -n "$rollback_evidence_file" ]]
+          evidence_root="$(dirname "$checksum_file")"
+          (cd "$evidence_root" && sha256sum -c EXACT_ARTIFACT_CHECKSUMS.sha256)
+          echo "validation_file=$validation_file" >> "$GITHUB_OUTPUT"
+          echo "rollback_evidence_file=$rollback_evidence_file" >> "$GITHUB_OUTPUT"
+          echo "artifact_id=$artifact_id" >> "$GITHUB_OUTPUT"
+          echo "artifact_digest=$normalized_digest" >> "$GITHUB_OUTPUT"
+      - name: Validate the non-publishing final controller
+        env:
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          VALIDATION_FILE: ${{ steps.exact.outputs.validation_file }}
+          ROLLBACK_EVIDENCE_FILE: ${{ steps.exact.outputs.rollback_evidence_file }}
+        run: |
+          set -euo pipefail
+          rm -rf v700-final-controller-evidence
+          mkdir -p v700-final-controller-evidence
+          python -m tools.release.drive_migration_cli compile \
+            release/v700-drive-migration-inventory.json \
+            v700-final-controller-evidence/V700_CURRENT_DRIVE_MIGRATION_LEDGER.json \
+            > v700-final-controller-evidence/V700_CURRENT_DRIVE_MIGRATION_SUMMARY.json
+          python -m scripts.validate_v700_final_controller \
+            --exact-artifact-validation "$VALIDATION_FILE" \
+            --final-source-commit "$HEAD_SHA" \
+            --decision-record-url https://app.notion.com/p/3aab8344ad2c81399ff7e6f5c5ce644d \
+            --review-record-url https://app.notion.com/p/3aab8344ad2c819e93bce697d6ee8ae1 \
+            --drive-ledger v700-final-controller-evidence/V700_CURRENT_DRIVE_MIGRATION_LEDGER.json \
+            --v650-rollback-evidence "$ROLLBACK_EVIDENCE_FILE" \
+            --output-dir v700-final-controller-evidence
+      - name: Enforce fail-closed controller result
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          result = json.loads(
+              Path('v700-final-controller-evidence/V700_FINAL_CONTROLLER_VALIDATION.json')
+              .read_text(encoding='utf-8')
+          )
+          assert result['status'] == 'validated_not_authorized'
+          final = result['final_controller']
+          assert final['status'] == 'blocked'
+          assert 'candidate PR merge has not passed' in final['blockers']
+          assert 'Drive migration ledger has not passed' not in final['blockers']
+          assert 'live authority readback has not passed' in final['blockers']
+          assert 'v6.5 rollback evidence reconciliation has not passed' not in final['blockers']
+          assert 'v6.5 rollback evidence digest is required' not in final['blockers']
+          assert 'exact-package Ryan authorization is required' in final['blockers']
+          assert result['drive_migration_ledger_present'] is True
+          drive_digest = result['drive_migration_ledger_sha256']
+          assert isinstance(drive_digest, str) and len(drive_digest) == 64
+          assert result['v650_rollback_evidence_present'] is True
+          rollback_digest = result['v650_rollback_evidence_sha256']
+          assert isinstance(rollback_digest, str) and len(rollback_digest) == 64
+          assert result['post_publication_verification']['status'] == 'blocked'
+          assert result['authority_activation']['status'] == 'blocked'
+          assert result['provider_writes'] == 0
+          assert result['publication_performed'] is False
+          assert result['tag_created'] is False
+          assert result['authority_activated'] is False
+          assert result['drive_retired'] is False
+          PY
+      - name: Create and verify final-controller evidence checksums
+        run: |
+          set -euo pipefail
+          (
+            cd v700-final-controller-evidence
+            find . -type f ! -name FINAL_CONTROLLER_CHECKSUMS.sha256 -print0 | sort -z |
+              xargs -0 sha256sum > FINAL_CONTROLLER_CHECKSUMS.sha256
+            sha256sum -c FINAL_CONTROLLER_CHECKSUMS.sha256
+          )
+      - name: Retain non-publishing final-controller evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: atlas-ros-v700-final-controller-${{ github.event.pull_request.head.sha || github.sha }}
+          path: v700-final-controller-evidence/
+          if-no-files-found: warn
+          retention-days: 90

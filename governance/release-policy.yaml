@@ -1,0 +1,57 @@
+schema_version: "1.0"
+release_family: "7.0"
+authority_model_version: "7.0"
+production_activation:
+  requires_explicit_ryan_authorization: true
+  candidate_pr_must_be_merged: true
+  exact_final_source_required: true
+  build_once_artifacts_required: true
+  final_publication_controller_required: true
+  post_publication_readback_required: true
+  authority_activation_transaction_required: true
+  allow_candidate_to_claim_active: false
+rollback:
+  immediate_version: "6.5.0"
+  immediate_tag: "v6.5.0"
+  immutable_commit: "bb6d6fea70d6824c9bc6a42e63ba36cc88029260"
+  restoration_required: true
+  historical_versions:
+    - "6.2.0"
+authority:
+  canonical_record: governance/AUTHORITY.json
+  generated_release_index: governance/RELEASE_INDEX.md
+  active_manifest: release/RELEASE_MANIFEST.md
+  integration_inventory_resolution: active-release-manifest
+  notion_system_state_url: https://app.notion.com/p/3a0b8344ad2c81d1b545d0266b7cd809
+  google_drive_bootstrap_forbidden: true
+provider_boundaries:
+  candidate_provider_writes: 0
+  autonomous_scheduling: forbidden
+  autonomous_messaging: forbidden
+  autonomous_deletion: forbidden
+  production_promotion_from_candidate_workflow: forbidden
+drive_cutover:
+  promotion_scope: current_release_index_bootstrap_only
+  pre_v6_history_required_for_promotion: false
+  preserve_release_family: "6.x_and_newer"
+  historical_target_root_id: 1kkJBRR1cdIOolURmxnxM2SP_U611vlyf
+  historical_target_folder_count: 92
+pre_v6_deletion:
+  permitted_before_v7_activation: false
+  requires_v7_post_promotion_readback: true
+  requires_v650_restoration: true
+  requires_item_level_exclusion_review: true
+  exclusion_classes:
+    - legal_hold
+    - security_record_required_for_v6_or_v7
+    - decision_record_required_for_v6_or_v7
+    - audit_record_required_for_v6_or_v7
+  requires_exact_transaction_authorization: true
+  provider_writes_during_validation: 0
+  destructive_actions_during_validation: 0
+drive_retirement:
+  permitted_before_v7_activation: false
+  requires_v7_post_promotion_readback: true
+  requires_v650_restoration: true
+  requires_zero_current_dependencies: true
+  requires_exact_transaction_authorization: true

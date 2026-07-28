@@ -1,0 +1,30 @@
+{
+  "schema_version": "1.0",
+  "generated_for_release": "7.0.0rc1",
+  "source_root_id": "1TG_2OP6iZpCmih734SumSsi62gOQ1zH4",
+  "folder_tree_sha256": "5138b252aa82524cf84971b7b501dee23586a20e91103a27420c4866dd9084c6",
+  "target_root_id": "1kkJBRR1cdIOolURmxnxM2SP_U611vlyf",
+  "target_root_title": "Historical Documentation — Not Current Authority",
+  "scope_rule": "delete_versions_below_6_after_v7_cutover",
+  "preserved_release_family": "6.x_and_newer",
+  "target_folder_count": 92,
+  "target_file_count": null,
+  "item_inventory_complete": false,
+  "exclusion_review_required": true,
+  "exclusion_review_complete": false,
+  "exclusion_classes": [
+    "legal_hold",
+    "security_record_required_for_v6_or_v7",
+    "decision_record_required_for_v6_or_v7",
+    "audit_record_required_for_v6_or_v7"
+  ],
+  "v7_active": false,
+  "v7_post_promotion_readback_complete": false,
+  "v650_rollback_restored": false,
+  "explicit_deletion_authorization_id": null,
+  "deletion_authorized": false,
+  "promotion_blocking": false,
+  "provider_writes": 0,
+  "destructive_actions_performed": 0,
+  "plan_sha256": "57d0959d3f805581cd8e3fe5918bd08ea562997b35ad8a96c6def8361416d8de"
+}

@@ -1,0 +1,47 @@
+{
+  "$id": "https://github.com/Ryan9876/atlas-ros/schemas/capture/capture-envelope.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "content": {
+      "maxLength": 50000,
+      "minLength": 1,
+      "title": "Content",
+      "type": "string"
+    },
+    "contract_id": {
+      "const": "atlas.capture-envelope",
+      "default": "atlas.capture-envelope",
+      "title": "Contract Id",
+      "type": "string"
+    },
+    "correlation_id": {
+      "format": "uuid",
+      "title": "Correlation Id",
+      "type": "string"
+    },
+    "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "source": {
+      "maxLength": 128,
+      "minLength": 1,
+      "title": "Source",
+      "type": "string"
+    }
+  },
+  "required": [
+    "source",
+    "content"
+  ],
+  "title": "CaptureEnvelope",
+  "type": "object"
+}
