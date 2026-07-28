@@ -1,0 +1,30 @@
+{
+  "schema_version": "1.0",
+  "generated_for_release": "7.0.0rc1",
+  "source_root_id": "1TG_2OP6iZpCmih734SumSsi62gOQ1zH4",
+  "folder_tree_sha256": "5138b252aa82524cf84971b7b501dee23586a20e91103a27420c4866dd9084c6",
+  "deletion_plan_sha256": "57d0959d3f805581cd8e3fe5918bd08ea562997b35ad8a96c6def8361416d8de",
+  "target_root_id": "1kkJBRR1cdIOolURmxnxM2SP_U611vlyf",
+  "target_root_title": "Historical Documentation — Not Current Authority",
+  "review_scope": "folder_and_file_item_level",
+  "candidate_folder_count": 92,
+  "candidate_file_count": null,
+  "folder_candidates_complete": true,
+  "file_candidates_complete": false,
+  "reviewed_folder_ids": [],
+  "excluded_items": [],
+  "exclusion_classes": [
+    "legal_hold",
+    "security_record_required_for_v6_or_v7",
+    "decision_record_required_for_v6_or_v7",
+    "audit_record_required_for_v6_or_v7"
+  ],
+  "exclusion_review_complete": false,
+  "review_decision_record_url": null,
+  "explicit_deletion_authorization_id": null,
+  "deletion_authorized": false,
+  "promotion_blocking": false,
+  "provider_writes": 0,
+  "destructive_actions_performed": 0,
+  "review_sha256": "08ae415e501a258a50932f9ecf77e855aa412236a4066390dcb6e17c28657eef"
+}
