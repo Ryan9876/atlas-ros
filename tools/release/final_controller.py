@@ -27,12 +27,16 @@ class FinalPackageEvidence:
     candidate_pr_merged: bool
     candidate_artifact_id: str
     candidate_artifact_digest: str
+    final_package_version: str
+    final_package_artifact_id: str
+    final_package_artifact_digest: str
     source_sha256: str
     wheel_sha256: str
     standard_ci_passed: bool
     architecture_validation_passed: bool
     candidate_validation_passed: bool
     exact_artifact_validation_passed: bool
+    final_package_validation_passed: bool
     drive_migration_ledger_complete: bool
     drive_migration_ledger_sha256: str | None
     live_authority_readback_complete: bool
@@ -130,24 +134,37 @@ def compile_final_controller(
     blockers: list[str] = []
     if evidence.candidate_version != "7.0.0rc1":
         blockers.append("candidate version must be 7.0.0rc1")
+    if evidence.final_package_version != "7.0.0":
+        blockers.append("final package version must be 7.0.0")
     _append_invalid_sha(blockers, "candidate commit", evidence.candidate_commit, 40)
     _append_invalid_sha(blockers, "final source commit", evidence.final_source_commit, 40)
+    if evidence.candidate_commit == evidence.final_source_commit:
+        blockers.append("final source commit must differ from candidate commit")
     _append_invalid_sha(
         blockers,
         "candidate artifact digest",
         evidence.candidate_artifact_digest,
         64,
     )
+    _append_invalid_sha(
+        blockers,
+        "final package artifact digest",
+        evidence.final_package_artifact_digest,
+        64,
+    )
     _append_invalid_sha(blockers, "source SHA-256", evidence.source_sha256, 64)
     _append_invalid_sha(blockers, "wheel SHA-256", evidence.wheel_sha256, 64)
     if not evidence.candidate_artifact_id.strip():
         blockers.append("candidate artifact ID is required")
+    if not evidence.final_package_artifact_id.strip():
+        blockers.append("final package artifact ID is required")
     gates = {
         "candidate PR merge": evidence.candidate_pr_merged,
         "standard CI": evidence.standard_ci_passed,
         "architecture validation": evidence.architecture_validation_passed,
         "candidate validation": evidence.candidate_validation_passed,
         "exact-artifact Full Validation": evidence.exact_artifact_validation_passed,
+        "final-package validation": evidence.final_package_validation_passed,
         "Drive migration ledger": evidence.drive_migration_ledger_complete,
         "live authority readback": evidence.live_authority_readback_complete,
         "required integrations": evidence.required_integrations_ready,
