@@ -1,0 +1,151 @@
+name: v711-independent-publication-readback
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, ready_for_review, reopened]
+
+concurrency:
+  group: v711-independent-readback-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  verify-published-release:
+    if: github.head_ref == 'release/v711-independent-readback'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      FINAL_SOURCE_COMMIT: 7e18113b58fcd486b5c7e8eb9368c7c70bc83bcd
+      FINAL_ARTIFACT_DIGEST: ba784bc15e01bcf19936d3ee5bf21c1fef3b71de0e7588b3660d5b6da4f36f33
+      EXPECTED_SOURCE_SHA256: 250113a5053e90c8be701bd638f2dac276b25b3115a377fd5c5a78bc40f52cf7
+      EXPECTED_WHEEL_SHA256: 10caa8768675cff65d1cd2765e1c15374e6e3b78b59ef921e9d4d78f6d236d71
+      EXPECTED_MANIFEST_CANONICAL_SHA256: 508a460cc373360ce722dde2788894a338f32b3b6869d172c1144e3a229179cc
+      EXPECTED_MANIFEST_RAW_SHA256: 753cb7cab2f63ae5cc3e9c7d8e6338224371232063c5210819f3c6f42de8bacb
+      EXPECTED_SBOM_SHA256: 72a02199e27f3d1394f78642e14e56cd59adbb98f1f1b1692320a6eac7e32237
+      EXPECTED_SOURCE_MANIFEST_SHA256: 24455ba8089478a4c2cbc4419030c3868d7312238c948a82c531661216e066e2
+      RELEASE_TAG: v7.1.1
+    steps:
+      - name: Check out exact published source
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          ref: 7e18113b58fcd486b5c7e8eb9368c7c70bc83bcd
+          fetch-depth: 0
+          fetch-tags: true
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.12.10'
+          cache: pip
+      - name: Install exact-source validation tooling
+        run: python -m pip install --disable-pip-version-check -e '.[dev]'
+      - name: Verify immutable publication independently
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$FINAL_SOURCE_COMMIT"
+          test "$(git rev-list -n 1 "$RELEASE_TAG")" = "$FINAL_SOURCE_COMMIT"
+          mkdir -p independent-readback/release-assets
+          gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" \
+            --json tagName,targetCommitish,isDraft,isPrerelease,url \
+            > independent-readback/RELEASE_METADATA.json
+          gh release download "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" \
+            --dir independent-readback/release-assets
+          (cd independent-readback/release-assets && sha256sum -c CHECKSUMS.sha256)
+          test "$(sha256sum independent-readback/release-assets/atlas-ros-v7.1.1-final-package.zip | awk '{print $1}')" = "$FINAL_ARTIFACT_DIGEST"
+          test "$(sha256sum independent-readback/release-assets/atlas_ros-7.1.1.tar.gz | awk '{print $1}')" = "$EXPECTED_SOURCE_SHA256"
+          test "$(sha256sum independent-readback/release-assets/atlas_ros-7.1.1-py3-none-any.whl | awk '{print $1}')" = "$EXPECTED_WHEEL_SHA256"
+          test "$(sha256sum independent-readback/release-assets/RELEASE_MANIFEST_V711.md | awk '{print $1}')" = "$EXPECTED_MANIFEST_RAW_SHA256"
+          unzip -q independent-readback/release-assets/atlas-ros-v7.1.1-final-package.zip \
+            -d independent-readback/final-package
+          (cd independent-readback/final-package && sha256sum -c SHA256SUMS)
+          python - <<'PY'
+          import hashlib
+          import json
+          import os
+          from pathlib import Path
+          from atlas_ros.kernel.digests import sha256_digest
+
+          root = Path('independent-readback/release-assets')
+          meta = json.loads(Path('independent-readback/RELEASE_METADATA.json').read_text(encoding='utf-8'))
+          assert meta['tagName'] == 'v7.1.1'
+          assert meta['isDraft'] is False
+          assert meta['isPrerelease'] is False
+          assert sha256_digest((root / 'RELEASE_MANIFEST_V711.md').read_text(encoding='utf-8')) == os.environ['EXPECTED_MANIFEST_CANONICAL_SHA256']
+          assert hashlib.sha256((root / 'SBOM.spdx.json').read_bytes()).hexdigest() == os.environ['EXPECTED_SBOM_SHA256']
+          assert hashlib.sha256((root / 'SOURCE_MANIFEST_FINAL.json').read_bytes()).hexdigest() == os.environ['EXPECTED_SOURCE_MANIFEST_SHA256']
+          identity = json.loads((root / 'FINAL_IDENTITY.json').read_text(encoding='utf-8'))
+          assert identity['source_commit'] == os.environ['FINAL_SOURCE_COMMIT']
+          assert identity['production_authorized'] is True
+          assert identity['published'] is True
+          assert identity['authority_activated'] is False
+          assert identity['required_integrations'] == ['GitHub', 'Notion', 'Todoist']
+          assert identity['optional_integrations'] == ['Google Drive']
+          assert identity['immediate_rollback_after_promotion'] == '7.1.0'
+          assert identity['historical_rollbacks'] == ['7.0.1', '6.5.0', '6.2.0']
+          assert identity['promotion_decision'] == 'V4D-50'
+          assert identity['package_review'] == 'V4V-74'
+          assert identity['prepublication_review'] == 'V4V-75'
+          PY
+          python -m venv independent-readback/clean-v711
+          independent-readback/clean-v711/bin/python -m pip install \
+            --disable-pip-version-check \
+            independent-readback/release-assets/atlas_ros-7.1.1-py3-none-any.whl
+          independent-readback/clean-v711/bin/python -c \
+            "import atlas_ros; assert atlas_ros.__version__ == '7.1.1'"
+          for pair in "v7.1.0 7.1.0" "v7.0.1 7.0.1" "v6.5.0 6.5.0" "v6.2.0 6.2.0"; do
+            set -- $pair
+            tag="$1"; expected="$2"
+            dir="independent-readback/rollback-${expected//./-}"
+            envdir="independent-readback/venv-${expected//./-}"
+            mkdir -p "$dir"
+            gh release download "$tag" --repo "$GITHUB_REPOSITORY" \
+              --pattern "atlas_ros-${expected}*.whl" --dir "$dir"
+            wheel="$(find "$dir" -name '*.whl' -print -quit)"
+            test -n "$wheel"
+            python -m venv "$envdir"
+            "$envdir/bin/python" -m pip install --disable-pip-version-check "$wheel"
+            "$envdir/bin/python" -c \
+              "import atlas_ros; assert atlas_ros.__version__ == '${expected}'"
+          done
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          receipt = {
+              'schema_version': '1.0',
+              'status': 'independent_publication_readback_passed',
+              'release_tag': 'v7.1.1',
+              'source_commit': os.environ['FINAL_SOURCE_COMMIT'],
+              'artifact_digest': os.environ['FINAL_ARTIFACT_DIGEST'],
+              'source_sha256': os.environ['EXPECTED_SOURCE_SHA256'],
+              'wheel_sha256': os.environ['EXPECTED_WHEEL_SHA256'],
+              'manifest_canonical_sha256': os.environ['EXPECTED_MANIFEST_CANONICAL_SHA256'],
+              'immediate_rollback': 'v7.1.0',
+              'historical_rollbacks': ['v7.0.1', 'v6.5.0', 'v6.2.0'],
+              'required_integrations': ['GitHub', 'Notion', 'Todoist'],
+              'google_drive_required': False,
+              'authority_activation_permitted_next': True,
+              'provider_writes': 0,
+          }
+          Path('independent-readback/PUBLICATION_READBACK.json').write_text(
+              json.dumps(receipt, indent=2, sort_keys=True) + '\n',
+              encoding='utf-8',
+          )
+          PY
+          (cd independent-readback && \
+            find . -type f ! -name READBACK_CHECKSUMS.sha256 -print0 | \
+            sort -z | xargs -0 sha256sum > READBACK_CHECKSUMS.sha256)
+          (cd independent-readback && sha256sum -c READBACK_CHECKSUMS.sha256)
+      - name: Retain independent readback evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: atlas-ros-v711-independent-publication-readback-7e18113b58fcd486b5c7e8eb9368c7c70bc83bcd
+          path: independent-readback/
+          if-no-files-found: error
+          retention-days: 90
