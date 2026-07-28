@@ -36,7 +36,7 @@ jobs:
         run: |
           python -m pip install --disable-pip-version-check --upgrade pip
           python -m pip install --disable-pip-version-check -e '.[dev]'
-      - name: Validate source and GitHub-only authority boundaries
+      - name: Quality, architecture, typing, and complete test suite
         run: |
           set -euo pipefail
           mkdir -p v701-ci
@@ -44,18 +44,20 @@ jobs:
           python scripts/validate_architecture.py
           mypy src
           pytest --junitxml=v701-ci/pytest.xml --cov-report=json:v701-ci/coverage.json
+      - name: Execution planning and secret scan
+        run: |
+          set -euo pipefail
           python scripts/evaluate_execution_planning.py \
             --dataset benchmarks/execution-planning-v1.json \
             --output v701-ci/EXECUTION_PLANNING_REPORT.json
           python scripts/scan_candidate_secrets.py \
             --root . \
             --output v701-ci/secret-scan.json
+      - name: Dependency policy and vulnerability exceptions
+        run: |
+          set -euo pipefail
           python scripts/validate_dependency_lock.py requirements.runtime.lock
           python scripts/validate_vulnerability_exceptions.py
-          pytest -q --no-cov \
-            tests/unit/test_v700_authority_compiler.py \
-            tests/unit/test_v700_bootstrap.py \
-            tests/unit/test_v700_full_initialization.py
       - name: Audit PyPI and OSV advisory services
         run: |
           set -euo pipefail
