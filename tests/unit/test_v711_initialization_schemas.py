@@ -3,13 +3,12 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from pydantic import BaseModel
-
 from atlas_ros.contracts.authority import (
     InitializationReceipt,
     IntegrationInventorySnapshot,
     SystemStateSnapshot,
 )
+from pydantic import BaseModel
 
 
 SCHEMAS: tuple[tuple[str, type[BaseModel]], ...] = (
