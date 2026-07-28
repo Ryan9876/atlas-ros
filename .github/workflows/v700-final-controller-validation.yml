@@ -19,7 +19,7 @@ jobs:
     if: >-
       github.event_name == 'workflow_dispatch' ||
       (github.event_name == 'pull_request' &&
-       github.head_ref == 'agent/v700-canonical-architecture')
+       github.head_ref == 'release/v700-final')
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     steps:
@@ -36,72 +36,116 @@ jobs:
         run: |
           python -m pip install --disable-pip-version-check --upgrade pip
           python -m pip install --disable-pip-version-check -e '.[dev]'
-      - name: Resolve successful exact-artifact validation at the exact head
+      - name: Resolve successful final-package validation at the exact head
         id: prerequisite
         env:
           GH_TOKEN: ${{ github.token }}
-          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          FINAL_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD)" = "$HEAD_SHA"
-          runs="$(gh api --method GET "repos/${GITHUB_REPOSITORY}/actions/runs?head_sha=${HEAD_SHA}&per_page=100")"
-          exact_run="$(jq -r '[.workflow_runs[] | select(.name == "v700-exact-artifact-validation" and .conclusion == "success")] | sort_by(.created_at) | last | .id // empty' <<<"$runs")"
-          if [[ -z "$exact_run" ]]; then
-            echo "Exact-head exact-artifact validation has not passed; retry this job after that validation succeeds." >&2
+          test "$(git rev-parse HEAD)" = "$FINAL_SHA"
+          runs="$(gh api --method GET \
+            "repos/${GITHUB_REPOSITORY}/actions/runs?head_sha=${FINAL_SHA}&per_page=100")"
+          final_run="$(jq -r '[.workflow_runs[] | select(.name == "v700-final-package" and .conclusion == "success")] | sort_by(.created_at) | last | .id // empty' <<<"$runs")"
+          if [[ -z "$final_run" ]]; then
+            echo "Exact-head final-package validation has not passed; retry this job after it succeeds." >&2
             exit 1
           fi
-          echo "exact_run_id=$exact_run" >> "$GITHUB_OUTPUT"
-      - name: Download and verify exact-artifact Full Validation evidence
-        id: exact
+          echo "final_run_id=$final_run" >> "$GITHUB_OUTPUT"
+      - name: Download and verify exact final package
+        id: final
         env:
           GH_TOKEN: ${{ github.token }}
-          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
-          EXACT_RUN_ID: ${{ steps.prerequisite.outputs.exact_run_id }}
+          FINAL_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          FINAL_RUN_ID: ${{ steps.prerequisite.outputs.final_run_id }}
         run: |
           set -euo pipefail
-          artifacts="$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${EXACT_RUN_ID}/artifacts")"
-          name="atlas-ros-v700-exact-artifact-${HEAD_SHA}"
+          artifacts="$(gh api \
+            "repos/${GITHUB_REPOSITORY}/actions/runs/${FINAL_RUN_ID}/artifacts")"
+          name="atlas-ros-v700-final-package-${FINAL_SHA}"
           artifact_id="$(jq -r --arg name "$name" '[.artifacts[] | select(.name == $name and .expired == false)] | last | .id // empty' <<<"$artifacts")"
           artifact_digest="$(jq -r --arg name "$name" '[.artifacts[] | select(.name == $name and .expired == false)] | last | .digest // empty' <<<"$artifacts")"
-          [[ -n "$artifact_id" && -n "$artifact_digest" ]]
+          test -n "$artifact_id"
+          test -n "$artifact_digest"
           normalized_digest="${artifact_digest#sha256:}"
-          gh api "repos/${GITHUB_REPOSITORY}/actions/artifacts/${artifact_id}/zip" > exact-artifact.zip
-          echo "${normalized_digest}  exact-artifact.zip" | sha256sum -c -
-          rm -rf exact-artifact
-          mkdir exact-artifact
-          unzip -q exact-artifact.zip -d exact-artifact
-          checksum_file="$(find exact-artifact -name EXACT_ARTIFACT_CHECKSUMS.sha256 -print -quit)"
-          validation_file="$(find exact-artifact -name EXACT_ARTIFACT_VALIDATION.json -print -quit)"
-          rollback_evidence_file="$(find exact-artifact -name V650_ROLLBACK_EVIDENCE.json -print -quit)"
-          [[ -n "$checksum_file" && -n "$validation_file" && -n "$rollback_evidence_file" ]]
+          gh api "repos/${GITHUB_REPOSITORY}/actions/artifacts/${artifact_id}/zip" \
+            > final-package.zip
+          echo "${normalized_digest}  final-package.zip" | sha256sum -c -
+          rm -rf final-package
+          mkdir final-package
+          unzip -q final-package.zip -d final-package
+          checksum_file="$(find final-package -name PUBLICATION_CHECKSUMS.sha256 -print -quit)"
+          validation_file="$(find final-package -name FINAL_PACKAGE_VALIDATION.json -print -quit)"
+          test -n "$checksum_file"
+          test -n "$validation_file"
+          package_root="$(dirname "$checksum_file")"
+          (cd "$package_root" && sha256sum -c PUBLICATION_CHECKSUMS.sha256)
+          evidence_root="$(dirname "$validation_file")"
+          (cd "$evidence_root" && sha256sum -c EVIDENCE_CHECKSUMS.sha256)
+          echo "artifact_id=$artifact_id" >> "$GITHUB_OUTPUT"
+          echo "artifact_digest=$normalized_digest" >> "$GITHUB_OUTPUT"
+          echo "validation_file=$validation_file" >> "$GITHUB_OUTPUT"
+      - name: Download and verify validated RC exact-artifact evidence
+        id: candidate
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CANDIDATE_EXACT_ARTIFACT_ID: '8675702886'
+          CANDIDATE_EXACT_ARTIFACT_DIGEST: b1c537e6fda16bc4e79120daa4fd6ec94c9216d39b794d2f4ee040b8f76848b9
+        run: |
+          set -euo pipefail
+          gh api \
+            "repos/${GITHUB_REPOSITORY}/actions/artifacts/${CANDIDATE_EXACT_ARTIFACT_ID}/zip" \
+            > candidate-exact.zip
+          echo "${CANDIDATE_EXACT_ARTIFACT_DIGEST}  candidate-exact.zip" | \
+            sha256sum -c -
+          rm -rf candidate-exact
+          mkdir candidate-exact
+          unzip -q candidate-exact.zip -d candidate-exact
+          checksum_file="$(find candidate-exact \
+            -name EXACT_ARTIFACT_CHECKSUMS.sha256 -print -quit)"
+          validation_file="$(find candidate-exact \
+            -name EXACT_ARTIFACT_VALIDATION.json -print -quit)"
+          rollback_file="$(find candidate-exact \
+            -name V650_ROLLBACK_EVIDENCE.json -print -quit)"
+          test -n "$checksum_file"
+          test -n "$validation_file"
+          test -n "$rollback_file"
           evidence_root="$(dirname "$checksum_file")"
           (cd "$evidence_root" && sha256sum -c EXACT_ARTIFACT_CHECKSUMS.sha256)
           echo "validation_file=$validation_file" >> "$GITHUB_OUTPUT"
-          echo "rollback_evidence_file=$rollback_evidence_file" >> "$GITHUB_OUTPUT"
-          echo "artifact_id=$artifact_id" >> "$GITHUB_OUTPUT"
-          echo "artifact_digest=$normalized_digest" >> "$GITHUB_OUTPUT"
-      - name: Validate the non-publishing final controller
-        env:
-          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
-          VALIDATION_FILE: ${{ steps.exact.outputs.validation_file }}
-          ROLLBACK_EVIDENCE_FILE: ${{ steps.exact.outputs.rollback_evidence_file }}
+          echo "rollback_file=$rollback_file" >> "$GITHUB_OUTPUT"
+      - name: Compile promotion-scoped Drive ledger
         run: |
-          set -euo pipefail
-          rm -rf v700-final-controller-evidence
           mkdir -p v700-final-controller-evidence
           python -m tools.release.drive_migration_cli compile \
             release/v700-drive-migration-inventory.json \
-            v700-final-controller-evidence/V700_CURRENT_DRIVE_MIGRATION_LEDGER.json \
-            > v700-final-controller-evidence/V700_CURRENT_DRIVE_MIGRATION_SUMMARY.json
+            v700-final-controller-evidence/V700_DRIVE_MIGRATION_LEDGER.json \
+            > v700-final-controller-evidence/V700_DRIVE_MIGRATION_SUMMARY.json
+      - name: Validate non-publishing final controller
+        env:
+          FINAL_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          FINAL_PACKAGE_VALIDATION: ${{ steps.final.outputs.validation_file }}
+          FINAL_PACKAGE_ARTIFACT_ID: ${{ steps.final.outputs.artifact_id }}
+          FINAL_PACKAGE_ARTIFACT_DIGEST: ${{ steps.final.outputs.artifact_digest }}
+          CANDIDATE_EXACT_VALIDATION: ${{ steps.candidate.outputs.validation_file }}
+          V650_ROLLBACK_EVIDENCE: ${{ steps.candidate.outputs.rollback_file }}
+        run: |
           python -m scripts.validate_v700_final_controller \
-            --exact-artifact-validation "$VALIDATION_FILE" \
-            --final-source-commit "$HEAD_SHA" \
-            --decision-record-url https://app.notion.com/p/3aab8344ad2c81399ff7e6f5c5ce644d \
-            --review-record-url https://app.notion.com/p/3aab8344ad2c819e93bce697d6ee8ae1 \
-            --drive-ledger v700-final-controller-evidence/V700_CURRENT_DRIVE_MIGRATION_LEDGER.json \
-            --v650-rollback-evidence "$ROLLBACK_EVIDENCE_FILE" \
+            --exact-artifact-validation "$CANDIDATE_EXACT_VALIDATION" \
+            --final-package-validation "$FINAL_PACKAGE_VALIDATION" \
+            --final-package-artifact-id "$FINAL_PACKAGE_ARTIFACT_ID" \
+            --final-package-artifact-digest "$FINAL_PACKAGE_ARTIFACT_DIGEST" \
+            --final-source-commit "$FINAL_SHA" \
+            --candidate-pr-merged \
+            --decision-record-url \
+              https://app.notion.com/p/3aab8344ad2c81399ff7e6f5c5ce644d \
+            --review-record-url \
+              https://app.notion.com/p/3aab8344ad2c819e93bce697d6ee8ae1 \
+            --drive-ledger \
+              v700-final-controller-evidence/V700_DRIVE_MIGRATION_LEDGER.json \
+            --v650-rollback-evidence "$V650_ROLLBACK_EVIDENCE" \
             --output-dir v700-final-controller-evidence
-      - name: Enforce fail-closed controller result
+      - name: Enforce authorization hold and passed package gates
         run: |
           python - <<'PY'
           import json
@@ -114,35 +158,27 @@ jobs:
           assert result['status'] == 'validated_not_authorized'
           final = result['final_controller']
           assert final['status'] == 'blocked'
-          assert 'candidate PR merge has not passed' in final['blockers']
+          assert 'candidate PR merge has not passed' not in final['blockers']
+          assert 'final-package validation has not passed' not in final['blockers']
           assert 'Drive migration ledger has not passed' not in final['blockers']
-          assert 'live authority readback has not passed' in final['blockers']
+          assert 'required integrations has not passed' not in final['blockers']
+          assert 'v6.5 rollback restoration has not passed' not in final['blockers']
           assert 'v6.5 rollback evidence reconciliation has not passed' not in final['blockers']
-          assert 'v6.5 rollback evidence digest is required' not in final['blockers']
+          assert 'live authority readback has not passed' in final['blockers']
           assert 'exact-package Ryan authorization is required' in final['blockers']
-          assert result['drive_migration_ledger_present'] is True
-          drive_digest = result['drive_migration_ledger_sha256']
-          assert isinstance(drive_digest, str) and len(drive_digest) == 64
-          assert result['v650_rollback_evidence_present'] is True
-          rollback_digest = result['v650_rollback_evidence_sha256']
-          assert isinstance(rollback_digest, str) and len(rollback_digest) == 64
-          assert result['post_publication_verification']['status'] == 'blocked'
-          assert result['authority_activation']['status'] == 'blocked'
+          assert result['final_package_validation_present'] is True
           assert result['provider_writes'] == 0
           assert result['publication_performed'] is False
           assert result['tag_created'] is False
           assert result['authority_activated'] is False
           assert result['drive_retired'] is False
           PY
-      - name: Create and verify final-controller evidence checksums
+      - name: Create and verify final-controller checksums
         run: |
-          set -euo pipefail
-          (
-            cd v700-final-controller-evidence
-            find . -type f ! -name FINAL_CONTROLLER_CHECKSUMS.sha256 -print0 | sort -z |
-              xargs -0 sha256sum > FINAL_CONTROLLER_CHECKSUMS.sha256
-            sha256sum -c FINAL_CONTROLLER_CHECKSUMS.sha256
-          )
+          (cd v700-final-controller-evidence && \
+            find . -type f ! -name FINAL_CONTROLLER_CHECKSUMS.sha256 -print0 | \
+            sort -z | xargs -0 sha256sum > FINAL_CONTROLLER_CHECKSUMS.sha256 && \
+            sha256sum -c FINAL_CONTROLLER_CHECKSUMS.sha256)
       - name: Retain non-publishing final-controller evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
