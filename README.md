@@ -1,24 +1,24 @@
-# Atlas ROS Python Platform — v6.5.0
+# Atlas ROS Python Platform — v7.0.0
 
 Atlas ROS is the governed executable core for the Atlas Ryan Operating System.
 
 - **GitHub** is canonical for source, architecture, policy, schemas, runbooks, release manifests, packages, checksums, SBOMs, validation evidence, restoration assets, and immutable release history.
 - **Notion** is the dynamic management authority for operating records, decisions, risks, integrations, automation state, and review evidence.
 - **Todoist** is the attended execution authority for Ryan-owned executable work.
-- **Google Drive** provides the fixed initialization Release Index and preserves legacy historical release records.
+- **Google Drive** provides the fixed initialization Release Index and preserves legacy historical release records pending any separately authorized retirement transaction.
 - **SQLite** is non-authoritative temporary runtime state.
 
 ## Active authority
 
-- Active production release: **Atlas ROS v6.5.0**
-- Production source and immutable tag target: `bb6d6fea70d6824c9bc6a42e63ba36cc88029260`
-- Immediate immutable rollback: **Atlas ROS v6.2.0** at `863d5ddf9ebd4723200166cf31c7acd93ebec54f`
-- Historical rollback retained: **Atlas ROS v6.1.1** at `e1b842765376c9e36bbdee981cddead3feb97173`
-- Final release: `v6.5.0`
+- Active production release: **Atlas ROS v7.0.0**
+- Production source and immutable tag target: `5e480de42b6aeba3c1b5b84384610555f87b2f0e`
+- Immediate immutable rollback: **Atlas ROS v6.5.0** at `bb6d6fea70d6824c9bc6a42e63ba36cc88029260`
+- Historical rollback retained: **Atlas ROS v6.2.0** at `863d5ddf9ebd4723200166cf31c7acd93ebec54f`
+- Final release: `v7.0.0`
 
 ## Capability-based architecture
 
-Atlas ROS v6 uses capability ownership rather than numbered workflow ownership. The v6.2 baseline capabilities remain active:
+Atlas ROS uses capability ownership rather than numbered workflow ownership. The compatible v6.5 capabilities remain active:
 
 1. Capture
 2. Adaptive Input Processing
@@ -28,24 +28,30 @@ Atlas ROS v6 uses capability ownership rather than numbered workflow ownership. 
 6. Dependency Discovery and Constraint Propagation
 7. Multidimensional Confidence and Dynamic Risk
 8. Clarification, Current-Path Projection, and Reflection
-9. Management Reasoning and Record Routing
-10. Execution Planning and Decomposition
-11. Attended Authorization and Execution Orchestration
-12. Provider Adapters, Readback, Receipts, and Canonical Reconciliation
+9. Governed Operating Framework Composition
+10. Minimum Effective Path Planning
+11. Management Reasoning and Record Routing
+12. Execution Planning and Decomposition
+13. Execution Intelligence
+14. Human-Readable Execution Presentation
+15. Scenario Intelligence
+16. Attended Authorization and Execution Orchestration
+17. Provider Adapters, Readback, Receipts, and Canonical Reconciliation
 
-Atlas ROS v6.5.0 adds five separated, provider-free execution-intelligence capabilities:
+Atlas ROS v7.0.0 adds the canonical GitHub-first control plane:
 
-1. Governed Operating Framework Composition
-2. Minimum Effective Path Planning
-3. Execution Intelligence
-4. Human-Readable Execution Presentation
-5. Scenario Intelligence
+1. four-authority initialization using the fixed Release Index, Notion System State, active GitHub manifest, and manifest-resolved Integration Inventory;
+2. deterministic authority compilation and fail-closed policy resolution;
+3. declarative architecture, capability, contract, and release-policy catalogs;
+4. runtime kernel and canonical coordinator with digest-bound lineage;
+5. immutable attended-authorization and exact provider-transaction contracts; and
+6. mandatory provider readback with provider-neutral transaction receipts.
 
-The v6.5 capabilities are additive. They improve evidence, planning, presentation, and advisory analysis without gaining provider, task, authorization, scheduling, messaging, deletion, or execution authority.
+The v7 capabilities improve authority integrity and transaction control without gaining autonomous scheduling, messaging, email, calendar, deletion, live-network, credential, or unapproved provider-write authority.
 
 ## Safety and authority boundaries
 
-Reasoning, framework composition, path planning, execution intelligence, presentation, and scenario analysis remain provider-free. Write-capable operations fail closed when authority, scope, constraints, exact-plan authorization, provider-object budget, or readback cannot be verified. Autonomous scheduling, messaging, email, calendar actions, deletion, live network changes, and unattended consequential automation remain inactive.
+Reasoning, authority compilation, framework composition, path planning, execution intelligence, presentation, and scenario analysis remain provider-free. Write-capable operations fail closed when authority, scope, constraints, exact-plan authorization, provider-object budget, or readback cannot be verified. Adapters cannot plan or authorize. Planning cannot authorize. Reconciliation cannot introduce execution intent. Autonomous scheduling, messaging, email, calendar actions, deletion, live network changes, and unattended consequential automation remain inactive.
 
 ## Execution controls
 
@@ -53,10 +59,8 @@ Reasoning, framework composition, path planning, execution intelligence, present
 - Portfolio Projects remain outcome-management records in Notion; a high-confidence Ryan-accountable project normally derives a current Action Record and execution path.
 - Delegated technical implementation remains in Notion Delegated Work or dependency context rather than Ryan's personal execution queue.
 - Parent tasks and subtasks use explicit Objective and Done When contracts.
-- Governed frameworks must preserve applicability, authority, provenance, precedence, and conflicts.
-- Minimum-effective-path planning must preserve mandatory controls, ordered prerequisites, rollback, escalation, and evidence.
-- Human-readable execution presentation must remain digest-bound to the canonical plan and separate facts, assumptions, warnings, blockers, decisions, and next steps.
-- Scenario Intelligence uses immutable provider-neutral snapshots and remains advisory.
+- Governed frameworks preserve applicability, authority, provenance, precedence, and conflicts.
+- Minimum-effective-path planning preserves mandatory controls, ordered prerequisites, rollback, escalation, and evidence.
 - Exact-plan authorization, deterministic commands, object budgets, idempotency, bounded retry, uncertain-apply readback, partial-failure handling, and fail-closed receipts are mandatory.
 - Reconciliation cannot introduce work that was not present in the approved plan.
 
@@ -68,16 +72,13 @@ Commands not listed above are not part of the current executable surface.
 
 ## Validation
 
-Atlas ROS v6.5.0 passed Final Promotion Package Validation V4V-48 and Production Publication and Readback Verification V4V-49. The final package passed Ruff, architecture validation, strict MyPy, dependency and secret security, 495 tests with 88.76% branch-aware coverage, execution-planning benchmark 52/52, package construction, source checksums, SBOM identity, clean installation, exact-source restoration, v6.2.0 immediate rollback restoration, v6.1.1 historical rollback restoration, and zero-provider-write controls.
+Atlas ROS v7.0.0 passed Exact Final Package Validation V4V-55 and Production Publication and Readback Verification V4V-56 under exact authorization V4D-39. Validation covered Ruff, architecture validation, strict MyPy, the complete pytest suite with branch-aware coverage, execution-planning evaluation, dependency and secret security, PyPI and OSV audits, exact prior-artifact binding, nested checksums, SBOM identity, clean v7.0.0 installation, immutable v6.5.0 immediate rollback restoration, immutable v6.2.0 historical rollback restoration, performance validation, Drive promotion boundaries, and zero-provider-write controls outside the authorized immutable GitHub publication.
 
 ## Current documentation
 
 - `docs/CURRENT_DOCUMENTATION.md`
 - `release/RELEASE_MANIFEST.md`
-- `release/RELEASE_NOTES_V650.md`
-- `docs/runbooks/V650_PRODUCTION_OPERATOR_AND_RECOVERY.md`
-- `docs/architecture/ADR-065-v650-governed-execution-intelligence.md`
+- `release/RELEASE_NOTES_V700.md`
+- `release/RELEASE_SCOPE_V700.md`
+- `docs/runbooks/V700_PRODUCTION_OPERATOR_AND_RECOVERY.md`
 - `docs/architecture/TARGET_ARCHITECTURE.md`
-- `docs/migration/V6_CANONICAL_CUTOVER_AND_W_RETIREMENT.md`
-
-Prior-version release evidence, scopes, restoration assets, ADRs, runbooks, migration records, workflows, and validation artifacts remain preserved for history and rollback. They are not current operating authority unless the active manifest or current documentation index explicitly incorporates them.
