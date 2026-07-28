@@ -80,12 +80,16 @@ class HistoricalItem(BaseModel):
             return self
         if self.uncertainty_reasons:
             raise ValueError("resolved historical item cannot retain uncertainty reasons")
-        if self.classification is RetentionClassification.MIGRATE_BEFORE_RETIREMENT:
-            if not self.destination_location:
-                raise ValueError("migration classification requires an exact destination")
-        if self.classification is RetentionClassification.ARCHIVE_OUTSIDE_ACTIVE_SURFACE:
-            if not self.destination_location:
-                raise ValueError("archive classification requires an exact destination")
+        if (
+            self.classification is RetentionClassification.MIGRATE_BEFORE_RETIREMENT
+            and not self.destination_location
+        ):
+            raise ValueError("migration classification requires an exact destination")
+        if (
+            self.classification is RetentionClassification.ARCHIVE_OUTSIDE_ACTIVE_SURFACE
+            and not self.destination_location
+        ):
+            raise ValueError("archive classification requires an exact destination")
         if self.classification is RetentionClassification.ELIGIBLE_FOR_DELETION:
             if any(
                 (
@@ -167,9 +171,11 @@ class HistoricalCleanupOperation(BaseModel):
 
     @model_validator(mode="after")
     def validate_destination(self) -> HistoricalCleanupOperation:
-        if self.action in {CleanupAction.MIGRATE, CleanupAction.ARCHIVE}:
-            if not self.destination_location:
-                raise ValueError("migrate and archive operations require a destination")
+        if (
+            self.action in {CleanupAction.MIGRATE, CleanupAction.ARCHIVE}
+            and not self.destination_location
+        ):
+            raise ValueError("migrate and archive operations require a destination")
         if self.action is CleanupAction.DELETE and self.destination_location is not None:
             raise ValueError("delete operations cannot declare a destination")
         return self
