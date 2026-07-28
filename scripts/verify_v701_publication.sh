@@ -27,7 +27,14 @@ gh release download "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --dir release-rea
 (cd release-readback && sha256sum -c CHECKSUMS.sha256)
 test "$(sha256sum release-readback/atlas_ros-7.0.1.tar.gz | awk '{print $1}')" = "$EXPECTED_SOURCE_SHA256"
 test "$(sha256sum release-readback/atlas_ros-7.0.1-py3-none-any.whl | awk '{print $1}')" = "$EXPECTED_WHEEL_SHA256"
-test "$(sha256sum release-readback/RELEASE_MANIFEST_V701.md | awk '{print $1}')" = "$EXPECTED_MANIFEST_SHA256"
+manifest_digest="$(python - release-readback/RELEASE_MANIFEST_V701.md <<'PY'
+import sys
+from pathlib import Path
+from atlas_ros.kernel.digests import sha256_digest
+print(sha256_digest(Path(sys.argv[1]).read_text(encoding='utf-8')))
+PY
+)"
+test "$manifest_digest" = "$EXPECTED_MANIFEST_SHA256"
 
 python - <<'PY'
 import json, os
