@@ -5,11 +5,15 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 from pathlib import Path
 
 from atlas_ros.capabilities.historical_cleanup import HistoricalCleanupPlanner
 from atlas_ros.contracts.history import CleanupAuthorization, HistoricalInventory
-from tools.release.historical_cleanup import InMemoryHistoricalStore, execute_cleanup
+
+_REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
+if str(_REPOSITORY_ROOT) not in sys.path:
+    sys.path.insert(0, str(_REPOSITORY_ROOT))
 
 
 def _load(path: Path) -> object:
@@ -17,6 +21,11 @@ def _load(path: Path) -> object:
 
 
 def main() -> None:
+    from tools.release.historical_cleanup import (
+        InMemoryHistoricalStore,
+        execute_cleanup,
+    )
+
     parser = argparse.ArgumentParser()
     parser.add_argument("--inventory", type=Path, required=True)
     parser.add_argument("--transaction-id", required=True)
