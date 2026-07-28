@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -57,7 +57,7 @@ class ReleaseSpecification(BaseModel):
     specification_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
 
     @classmethod
-    def create(cls, **values: object) -> ReleaseSpecification:
+    def create(cls, **values: Any) -> ReleaseSpecification:
         payload = dict(values)
         payload.pop("specification_digest", None)
         identity = ReleaseIdentity.model_validate(payload["identity"])
@@ -126,8 +126,8 @@ class ReleaseSpecification(BaseModel):
             "migration_requirements",
             "compatibility_rules",
         ):
-            values = getattr(self, field_name)
-            if len(set(values)) != len(values):
+            field_values = getattr(self, field_name)
+            if len(set(field_values)) != len(field_values):
                 raise ValueError(f"release specification contains duplicate {field_name}")
         if set(self.required_integrations) & set(self.optional_integrations):
             raise ValueError("required and optional integration sets must not overlap")
