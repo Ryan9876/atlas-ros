@@ -38,10 +38,10 @@ jobs:
           set -euo pipefail
           runs="$(gh api --method GET "repos/${GITHUB_REPOSITORY}/actions/runs?head_sha=${HEAD_SHA}&per_page=100")"
           candidate_run="$(jq -r '[.workflow_runs[] | select(.name == "v700-release-candidate" and .conclusion == "success")] | sort_by(.created_at) | last | .id // empty' <<<"$runs")"
-          standard_run="$(jq -r '[.workflow_runs[] | select(.name == "ci" and .conclusion == "success")] | sort_by(.created_at) | last | .id // empty' <<<"$runs")"
+          standard_run="$(jq -r '[.workflow_runs[] | select(.name == "ci" and .event == "workflow_dispatch" and .conclusion == "success")] | sort_by(.created_at) | last | .id // empty' <<<"$runs")"
           architecture_run="$(jq -r '[.workflow_runs[] | select(.name == "v700-architecture-diagnostics" and .conclusion == "success")] | sort_by(.created_at) | last | .id // empty' <<<"$runs")"
           if [[ -z "$candidate_run" || -z "$standard_run" || -z "$architecture_run" ]]; then
-            echo "Exact-head prerequisite workflows have not all passed; run them before dispatching this workflow." >&2
+            echo "Exact-head prerequisites have not all passed. Dispatch full CI, architecture diagnostics, and release-candidate validation before this workflow." >&2
             exit 1
           fi
           echo "candidate_run_id=$candidate_run" >> "$GITHUB_OUTPUT"
