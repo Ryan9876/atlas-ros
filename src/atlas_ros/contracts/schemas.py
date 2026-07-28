@@ -24,8 +24,8 @@ from atlas_ros.contracts.history import (
     HistoricalItem,
 )
 from atlas_ros.contracts.reasoning import IntentGraph
-from atlas_ros.contracts.release import ReleaseCompilationReceipt, ReleaseSpecification
 from atlas_ros.contracts.registry import ContractDescriptor
+from atlas_ros.contracts.release import ReleaseCompilationReceipt, ReleaseSpecification
 
 _SCHEMA_DRAFT = "https://json-schema.org/draft/2020-12/schema"
 _SCHEMA_ID_BASE = "https://github.com/Ryan9876/atlas-ros/"
