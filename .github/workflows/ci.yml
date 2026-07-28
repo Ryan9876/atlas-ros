@@ -1,5 +1,15 @@
 name: ci
-on: [push, pull_request]
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 jobs:
@@ -118,8 +128,7 @@ jobs:
           name: dependency-audit-evidence
           path: audit/
           if-no-files-found: error
-          retention-days: 90
-
+          retention-days: 30
 
   validate-v650-final-controller:
     if: github.event_name == 'pull_request' && github.head_ref == 'release/v650-ci-publisher'
@@ -159,7 +168,6 @@ jobs:
           if-no-files-found: warn
           retention-days: 90
 
-
   validate-v650-final-candidate:
     if: github.event_name == 'pull_request' && github.head_ref == 'release/v650-final-candidate'
     runs-on: ubuntu-24.04
@@ -197,7 +205,6 @@ jobs:
             final-evidence/
           if-no-files-found: error
           retention-days: 90
-
 
   publish-v650-final:
     if: >-
@@ -242,7 +249,6 @@ jobs:
             release-readback/
           if-no-files-found: warn
           retention-days: 90
-
 
   verify-v650-publication:
     if: github.event_name == 'pull_request' && github.head_ref == 'release/v650-post-publication-verification'
