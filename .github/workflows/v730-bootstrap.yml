@@ -6,16 +6,24 @@ on:
     paths:
       - '.github/v730-bootstrap/**'
       - '.github/workflows/v730-bootstrap.yml'
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/v730-bootstrap/**'
+      - '.github/workflows/v730-bootstrap.yml'
 
 permissions:
   contents: write
+  pull-requests: read
 
 concurrency:
-  group: v730-bootstrap-${{ github.ref }}
+  group: v730-bootstrap-${{ github.event.pull_request.head.ref || github.ref }}
   cancel-in-progress: false
 
 jobs:
   apply:
+    if: github.event_name == 'push' || github.event.pull_request.head.ref == 'agent/v730-operational-awareness-impl'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
