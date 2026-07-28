@@ -11,6 +11,7 @@ from atlas_ros.contracts.authority import (
     SystemStateSnapshot,
 )
 from atlas_ros.kernel.bootstrap import InitializationError, initialize_full
+from atlas_ros.kernel.digests import sha256_digest
 from tools.release.authority_compiler import (
     ActiveReleaseSpec,
     AuthorityCompilationSpec,
@@ -47,17 +48,24 @@ class FakeDynamicReader:
 
 def compiled_reader() -> FakeAuthorityReader:
     active_commit = "a" * 40
+    manifest_path = "release/RELEASE_MANIFEST_V701.md"
+    manifest = (
+        "# Atlas ROS v7.0.1\n"
+        "Integration Inventory authority: https://app.notion.com/p/inventory"
+    )
     compiled = compile_authority(
         AuthorityCompilationSpec(
             active=ActiveReleaseSpec(
-                version="7.0.0",
+                version="7.0.1",
                 immutable_commit=active_commit,
-                tag="v7.0.0",
+                tag="v7.0.1",
+                manifest_path=manifest_path,
                 manifest_url=(
                     f"https://github.com/Ryan9876/atlas-ros/blob/{active_commit}/"
-                    "release/RELEASE_MANIFEST.md"
+                    f"{manifest_path}"
                 ),
-                release_url="https://github.com/Ryan9876/atlas-ros/releases/tag/v7.0.0",
+                manifest_sha256=sha256_digest(manifest),
+                release_url="https://github.com/Ryan9876/atlas-ros/releases/tag/v7.0.1",
                 source_sha256="b" * 64,
                 wheel_sha256="c" * 64,
             ),
@@ -70,28 +78,24 @@ def compiled_reader() -> FakeAuthorityReader:
             notion_system_state_url=(
                 "https://app.notion.com/p/3a0b8344ad2c81d1b545d0266b7cd809"
             ),
-            last_promotion_transaction_id="promotion-v7.0.0-001",
-            last_verified_at="2026-07-27T19:00:00Z",
+            last_promotion_transaction_id="promotion-v7.0.1-001",
+            last_verified_at="2026-07-28T19:00:00Z",
         )
-    )
-    manifest = (
-        f"# Atlas ROS v7.0.0\ncommit {active_commit}\n"
-        "Integration Inventory authority: https://app.notion.com/p/inventory"
     )
     return FakeAuthorityReader(
         {
             ("governance/AUTHORITY.json", "HEAD"): compiled.authority_json,
-            ("governance/RELEASE_INDEX.md", active_commit): (
+            ("governance/RELEASE_INDEX.md", "HEAD"): (
                 compiled.release_index_markdown
             ),
-            ("release/RELEASE_MANIFEST.md", active_commit): manifest,
+            (manifest_path, active_commit): manifest,
         }
     )
 
 
 def system_state() -> SystemStateSnapshot:
     return SystemStateSnapshot(
-        active_version="7.0.0",
+        active_version="7.0.1",
         immediate_rollback_version="6.5.0",
         authority_model_version="7.0",
         published_workspace_valid=True,
@@ -125,7 +129,7 @@ def inventory(*items: IntegrationStatusSnapshot) -> IntegrationInventorySnapshot
     )
 
 
-def test_full_initialization_requires_all_four_authorities_to_agree() -> None:
+def test_full_initialization_requires_github_notion_and_todoist_to_agree() -> None:
     dynamic = FakeDynamicReader(
         system_state(),
         inventory(
@@ -138,7 +142,23 @@ def test_full_initialization_requires_all_four_authorities_to_agree() -> None:
 
     context = initialize_full(compiled_reader(), dynamic)
 
-    assert context.active_version == "7.0.0"
+    assert context.active_version == "7.0.1"
+
+
+def test_optional_disconnected_drive_does_not_block_initialization() -> None:
+    dynamic = FakeDynamicReader(
+        system_state(),
+        inventory(
+            integration("GitHub"),
+            integration("Notion"),
+            integration("Todoist"),
+            integration("Google Drive", required=False, connection_status="disconnected"),
+        ),
+    )
+
+    context = initialize_full(compiled_reader(), dynamic)
+
+    assert context.active_version == "7.0.1"
 
 
 def test_full_initialization_rejects_drive_as_required_authority() -> None:

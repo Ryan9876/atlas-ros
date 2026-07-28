@@ -56,7 +56,7 @@ def initialize(*, json_output: bool = False) -> None:
 def verify(*, json_output: bool = False) -> None:
     """Verify only the installed runtime identity; release verification is separate."""
     payload = {
-        "valid": __version__ == "7.0.0",
+        "valid": __version__ == "7.0.1",
         "scope": "installed_runtime_identity",
         "version": __version__,
         "writes": False,
@@ -65,7 +65,7 @@ def verify(*, json_output: bool = False) -> None:
         print(json.dumps(payload, sort_keys=True))
         return
     if not payload["valid"]:
-        raise RuntimeCommandError("installed runtime identity is not Atlas ROS v7.0.0")
+        raise RuntimeCommandError("installed runtime identity is not Atlas ROS v7.0.1")
     print(f"Installed runtime identity verified: Atlas ROS {__version__}; writes: 0.")
 
 
