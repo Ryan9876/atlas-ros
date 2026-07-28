@@ -75,7 +75,10 @@ jobs:
           ROLLBACK_TAG: v6.5.0
           HISTORICAL_ROLLBACK_TAG: v6.2.0
           PUBLISH: 'false'
-        run: bash scripts/publish_v701_final.sh
+        run: |
+          bash scripts/publish_v701_final.sh
+          (cd final-evidence && find . -type f ! -name PUBLICATION_EVIDENCE_CHECKSUMS.sha256 -print0 | sort -z | xargs -0 sha256sum > PUBLICATION_EVIDENCE_CHECKSUMS.sha256)
+          (cd final-evidence && sha256sum -c PUBLICATION_EVIDENCE_CHECKSUMS.sha256)
       - name: Retain controller rehearsal evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
@@ -130,7 +133,10 @@ jobs:
           ROLLBACK_TAG: v6.5.0
           HISTORICAL_ROLLBACK_TAG: v6.2.0
           PUBLISH: 'true'
-        run: bash scripts/publish_v701_final.sh
+        run: |
+          bash scripts/publish_v701_final.sh
+          (cd final-evidence && find . -type f ! -name PUBLICATION_EVIDENCE_CHECKSUMS.sha256 -print0 | sort -z | xargs -0 sha256sum > PUBLICATION_EVIDENCE_CHECKSUMS.sha256)
+          (cd final-evidence && sha256sum -c PUBLICATION_EVIDENCE_CHECKSUMS.sha256)
       - name: Retain final publication evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
