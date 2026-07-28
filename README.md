@@ -28,7 +28,7 @@ Atlas ROS is the governed executable core for the Atlas Ryan Operating System.
 5. Read the Integration Inventory identified by the immutable manifest.
 6. Confirm GitHub, Notion, and Todoist are the exact required integrations and are connected, approved, accepted, current, and least-privilege verified.
 
-Google Drive must not be used as an initialization authority.
+Google Drive is not read during initialization and is not an initialization authority.
 
 ## Capability-based architecture
 
@@ -78,7 +78,7 @@ Commands not listed above are not part of the current executable surface.
 
 ## Validation
 
-Atlas ROS v7.0.1 passed exact corrective-package validation, complete security and quality validation, governed publication rehearsal, immutable GitHub publication, independent release-asset readback, clean installation, exact startup-authority validation, and rollback restoration. Required production integrations are GitHub, Notion, and Todoist exactly; initialization succeeds without Google Drive.
+Atlas ROS v7.0.1 passed exact corrective-package validation, complete security and quality validation, governed publication rehearsal, immutable GitHub publication, independent release-asset readback, clean installation, exact startup-authority validation, and rollback restoration. Required production integrations are GitHub, Notion, and Todoist exactly. Google Drive is not read during initialization.
 
 ## Current documentation
 
