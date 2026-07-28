@@ -5,6 +5,7 @@ on:
     branches: [main]
   push:
     branches: [main]
+  workflow_dispatch:
 
 concurrency:
   group: ci-${{ github.event.pull_request.number || github.ref }}
@@ -38,6 +39,10 @@ jobs:
           retention-days: 7
       - name: Validate architecture boundaries
         run: python scripts/validate_architecture.py
+      - name: Validate deterministic dependency policy
+        run: |
+          python scripts/validate_dependency_lock.py requirements.runtime.lock
+          python scripts/validate_vulnerability_exceptions.py
       - name: Strict MyPy
         id: mypy
         run: |
@@ -74,6 +79,7 @@ jobs:
       - run: python -c "from atlas_ros.config.loader import load_config; assert load_config('todoist')['version']"
 
   dependency-security:
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
