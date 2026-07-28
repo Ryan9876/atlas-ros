@@ -5,12 +5,12 @@ from copy import deepcopy
 from pathlib import Path
 
 import pytest
+
 from scripts.validate_v700_pre_v6_deletion_plan import (
     PreV6DeletionPlanError,
     canonical_sha256,
     validate_pre_v6_deletion_plan,
 )
-
 
 ROOT = Path(__file__).resolve().parents[2]
 
