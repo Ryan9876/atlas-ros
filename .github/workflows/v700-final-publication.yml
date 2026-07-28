@@ -1,0 +1,159 @@
+name: v700-final-publication
+
+on:
+  pull_request:
+    branches: [main]
+    types: [ready_for_review]
+  push:
+    branches: [main]
+
+concurrency:
+  group: v700-final-publication-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  validate-publication-controller:
+    if: github.event_name == 'pull_request' && github.head_ref == 'release/v700-publication-controller'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.12.10'
+          cache: pip
+      - name: Install validation tooling
+        run: |
+          python -m pip install --disable-pip-version-check --upgrade pip
+          python -m pip install --disable-pip-version-check -e '.[dev]'
+      - name: Validate controller source and security
+        run: |
+          set -euo pipefail
+          ruff check .
+          python scripts/validate_architecture.py
+          mypy src
+          pytest
+          python scripts/scan_candidate_secrets.py --root . --output v700-controller-secret-scan.json
+          python scripts/validate_dependency_lock.py requirements.runtime.lock
+          python scripts/validate_vulnerability_exceptions.py
+          pip-audit --disable-pip --require-hashes --no-deps --timeout 15 --progress-spinner off --vulnerability-service pypi --requirement requirements.runtime.lock --format json --output v700-controller-pypi.json
+          pip-audit --disable-pip --require-hashes --no-deps --timeout 15 --progress-spinner off --vulnerability-service osv --requirement requirements.runtime.lock --format json --output v700-controller-osv.json
+          python scripts/evaluate_dependency_audit.py v700-controller-pypi.json v700-controller-osv.json
+      - name: Rehearse exact v7.0.0 publication without publishing
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SOURCE_COMMIT: ${{ github.event.pull_request.head.sha }}
+          FINAL_SOURCE_COMMIT: a20bfd55ff73fc42addd882ae0211668dca35417
+          FINAL_PACKAGE_MERGE_COMMIT: 70effffcf492d5e83f6ae267f4b4f2ab4a7caf37
+          FINAL_ARTIFACT_ID: '8676702505'
+          FINAL_ARTIFACT_DIGEST: 5dea7f30217778a8f8315d041f0772408599a3f18105b6476d8e9b9ed1b35cc5
+          EXPECTED_SOURCE_SHA256: a1ca0114b07b0d6e0080da2a412d68dc4a31870cbd5adfcfa58cd25499032391
+          EXPECTED_WHEEL_SHA256: dd4baa87440fc51c3bc8e845104fbedcd15489de4683eee36f3436632979463d
+          DECISION_URL: https://app.notion.com/p/3abb8344ad2c81af8b72fa9bdee61ded
+          REVIEW_URL: https://app.notion.com/p/3abb8344ad2c81c0aae9db01c881b94b
+          RELEASE_TAG: v7.0.0
+          ROLLBACK_TAG: v6.5.0
+          HISTORICAL_ROLLBACK_TAG: v6.2.0
+          PUBLISH: 'false'
+        run: bash scripts/publish_v700_final.sh
+      - name: Retain controller rehearsal evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: atlas-ros-v700-publication-controller-${{ github.event.pull_request.head.sha }}
+          path: |
+            final-publication/
+            final-evidence/
+            v700-controller-secret-scan.json
+            v700-controller-pypi.json
+            v700-controller-osv.json
+          if-no-files-found: warn
+          retention-days: 90
+
+  publish-v700-final:
+    if: >-
+      github.event_name == 'push' &&
+      github.ref_name == 'main' &&
+      startsWith(github.event.head_commit.message, 'release: execute exact Atlas ROS v7.0.0 publication')
+    permissions:
+      contents: write
+      actions: read
+    runs-on: ubuntu-24.04
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.12.10'
+          cache: pip
+      - run: python -m pip install --disable-pip-version-check --upgrade pip && python -m pip install --disable-pip-version-check -e '.[dev]'
+      - name: Publish and read back exact v7.0.0 release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SOURCE_COMMIT: ${{ github.sha }}
+          FINAL_SOURCE_COMMIT: a20bfd55ff73fc42addd882ae0211668dca35417
+          FINAL_PACKAGE_MERGE_COMMIT: 70effffcf492d5e83f6ae267f4b4f2ab4a7caf37
+          FINAL_ARTIFACT_ID: '8676702505'
+          FINAL_ARTIFACT_DIGEST: 5dea7f30217778a8f8315d041f0772408599a3f18105b6476d8e9b9ed1b35cc5
+          EXPECTED_SOURCE_SHA256: a1ca0114b07b0d6e0080da2a412d68dc4a31870cbd5adfcfa58cd25499032391
+          EXPECTED_WHEEL_SHA256: dd4baa87440fc51c3bc8e845104fbedcd15489de4683eee36f3436632979463d
+          DECISION_URL: https://app.notion.com/p/3abb8344ad2c81af8b72fa9bdee61ded
+          REVIEW_URL: https://app.notion.com/p/3abb8344ad2c81c0aae9db01c881b94b
+          RELEASE_TAG: v7.0.0
+          ROLLBACK_TAG: v6.5.0
+          HISTORICAL_ROLLBACK_TAG: v6.2.0
+          PUBLISH: 'true'
+        run: bash scripts/publish_v700_final.sh
+      - name: Retain final publication evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: atlas-ros-v700-final-publication-${{ github.sha }}
+          path: |
+            final-publication/
+            final-evidence/
+            release-readback/
+          if-no-files-found: warn
+          retention-days: 90
+
+  verify-v700-publication:
+    if: github.event_name == 'pull_request' && github.head_ref == 'release/v700-post-publication-verification'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.12.10'
+      - name: Verify immutable v7.0.0 publication and rollback restoration
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: v7.0.0
+          EXPECTED_SOURCE_COMMIT: __PUBLICATION_COMMIT__
+          EXPECTED_FINAL_SOURCE_SHA256: a1ca0114b07b0d6e0080da2a412d68dc4a31870cbd5adfcfa58cd25499032391
+          EXPECTED_FINAL_WHEEL_SHA256: dd4baa87440fc51c3bc8e845104fbedcd15489de4683eee36f3436632979463d
+        run: bash scripts/verify_v700_publication.sh
+      - name: Retain post-publication evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: atlas-ros-v700-post-publication-${{ github.event.pull_request.head.sha }}
+          path: post-publication-evidence/
+          if-no-files-found: error
+          retention-days: 90
