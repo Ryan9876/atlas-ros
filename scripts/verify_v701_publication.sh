@@ -19,9 +19,9 @@ payload = json.loads(sys.argv[1])
 assert payload['tagName'] == os.environ['RELEASE_TAG']
 assert payload['isDraft'] is False
 assert payload['isPrerelease'] is False
+assert payload['targetCommitish'] == os.environ['EXPECTED_SOURCE_COMMIT']
 PY
 
-git fetch --tags --force
 test "$(git rev-list -n 1 "$RELEASE_TAG")" = "$EXPECTED_SOURCE_COMMIT"
 gh release download "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --dir release-readback
 (cd release-readback && sha256sum -c CHECKSUMS.sha256)
