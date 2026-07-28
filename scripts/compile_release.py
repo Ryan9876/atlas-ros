@@ -3,12 +3,20 @@
 from __future__ import annotations
 
 import argparse
+import sys
 from pathlib import Path
 
-from tools.release.release_compiler import compile_release, load_release_specification
+_REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
+if str(_REPOSITORY_ROOT) not in sys.path:
+    sys.path.insert(0, str(_REPOSITORY_ROOT))
 
 
 def main() -> None:
+    from tools.release.release_compiler import (
+        compile_release,
+        load_release_specification,
+    )
+
     parser = argparse.ArgumentParser()
     parser.add_argument("specification", type=Path)
     parser.add_argument("output", type=Path, nargs="?")
