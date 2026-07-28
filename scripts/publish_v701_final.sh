@@ -26,7 +26,7 @@ PY
 test "$version" = "7.0.1"
 test "$(python -c 'import atlas_ros; print(atlas_ros.__version__)')" = "$version"
 test "$(git rev-parse HEAD)" = "$SOURCE_COMMIT"
-git cat-file -e "${FINAL_SOURCE_COMMIT}^{commit}"
+gh api "repos/${GITHUB_REPOSITORY}/commits/${FINAL_SOURCE_COMMIT}" >/dev/null
 
 rm -rf final-artifact final-publication final-evidence release-readback rollback-v700 rollback-v650 verify-v701 verify-v700 verify-v650
 mkdir -p final-artifact final-publication final-evidence
