@@ -48,6 +48,7 @@ class FakeDynamicReader:
 
 def compiled_reader() -> FakeAuthorityReader:
     active_commit = "a" * 40
+    manifest_path = "release/RELEASE_MANIFEST_V701.md"
     manifest = (
         "# Atlas ROS v7.0.1\n"
         "Integration Inventory authority: https://app.notion.com/p/inventory"
@@ -58,9 +59,10 @@ def compiled_reader() -> FakeAuthorityReader:
                 version="7.0.1",
                 immutable_commit=active_commit,
                 tag="v7.0.1",
+                manifest_path=manifest_path,
                 manifest_url=(
                     f"https://github.com/Ryan9876/atlas-ros/blob/{active_commit}/"
-                    "release/RELEASE_MANIFEST.md"
+                    f"{manifest_path}"
                 ),
                 manifest_sha256=sha256_digest(manifest),
                 release_url="https://github.com/Ryan9876/atlas-ros/releases/tag/v7.0.1",
@@ -86,7 +88,7 @@ def compiled_reader() -> FakeAuthorityReader:
             ("governance/RELEASE_INDEX.md", "HEAD"): (
                 compiled.release_index_markdown
             ),
-            ("release/RELEASE_MANIFEST.md", active_commit): manifest,
+            (manifest_path, active_commit): manifest,
         }
     )
 
