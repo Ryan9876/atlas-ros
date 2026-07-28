@@ -3,7 +3,12 @@ name: v700-architecture-diagnostics
 on:
   pull_request:
     branches: [main]
+    types: [ready_for_review]
   workflow_dispatch:
+
+concurrency:
+  group: v700-architecture-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
