@@ -1,0 +1,249 @@
+name: v710-final-package-validation
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, ready_for_review, reopened]
+
+concurrency:
+  group: v710-final-package-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  exact-final-package:
+    if: github.head_ref == 'release/v710-final-package'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      SOURCE_COMMIT: 5793c1a82c7bf9dfa0d3bd0457a2fab08c23ec9f
+      RELEASE_VERSION: 7.1.0
+    steps:
+      - name: Check out exact merged source
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          ref: 5793c1a82c7bf9dfa0d3bd0457a2fab08c23ec9f
+          fetch-depth: 0
+          fetch-tags: true
+          persist-credentials: false
+
+      - name: Verify exact source binding
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$SOURCE_COMMIT"
+          mkdir -p final-package
+          git rev-parse HEAD > final-package/SOURCE_COMMIT.txt
+          git ls-tree -r --full-tree "$SOURCE_COMMIT" > final-package/SOURCE_TREE.txt
+
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.12.10'
+          cache: pip
+
+      - name: Install pinned validation tooling
+        run: |
+          python -m pip install --disable-pip-version-check --upgrade pip
+          python -m pip install --disable-pip-version-check -e '.[dev]'
+
+      - name: Validate source quality architecture typing and tests
+        run: |
+          set -euo pipefail
+          ruff check .
+          python scripts/validate_architecture.py
+          python scripts/validate_legacy_isolation.py
+          python scripts/validate_dependency_lock.py requirements.runtime.lock
+          python scripts/validate_vulnerability_exceptions.py
+          mypy src
+          pytest --junitxml=final-package/pytest.xml --cov-report=json:final-package/coverage.json
+          python scripts/evaluate_execution_planning.py > final-package/execution-planning.log
+
+      - name: Validate Drive independence and deterministic compiler
+        run: |
+          set -euo pipefail
+          python scripts/validate_v710_candidate.py --skip-tests --source-commit "$SOURCE_COMMIT" --evidence final-package/candidate-evidence
+          python scripts/compile_release.py release/specifications/V710.yaml --source-commit "$SOURCE_COMMIT" --output final-package/compiler-output
+          python scripts/compile_release.py release/specifications/V710.yaml --source-commit "$SOURCE_COMMIT" --output final-package/compiler-output-repeat
+          diff -ru final-package/compiler-output final-package/compiler-output-repeat
+          rm -rf final-package/compiler-output-repeat
+
+      - name: Scan exact source for secrets
+        run: |
+          set -euo pipefail
+          python scripts/scan_candidate_secrets.py --root . --output final-package/secret-scan.json
+
+      - name: Audit PyPI vulnerabilities
+        run: |
+          set -euo pipefail
+          pip-audit --disable-pip --require-hashes --no-deps --timeout 15 --progress-spinner off --vulnerability-service pypi --requirement requirements.runtime.lock --format json --output final-package/pip-audit-pypi.json
+
+      - name: Audit OSV vulnerabilities
+        run: |
+          set -euo pipefail
+          pip-audit --disable-pip --require-hashes --no-deps --timeout 15 --progress-spinner off --vulnerability-service osv --requirement requirements.runtime.lock --format json --output final-package/pip-audit-osv.json
+          python scripts/evaluate_dependency_audit.py final-package/pip-audit-pypi.json final-package/pip-audit-osv.json
+
+      - name: Build exact source and wheel once
+        run: |
+          set -euo pipefail
+          rm -rf dist build
+          python -m build
+          test -f "dist/atlas_ros-${RELEASE_VERSION}.tar.gz"
+          test -f "dist/atlas_ros-${RELEASE_VERSION}-py3-none-any.whl"
+          cp "dist/atlas_ros-${RELEASE_VERSION}.tar.gz" final-package/
+          cp "dist/atlas_ros-${RELEASE_VERSION}-py3-none-any.whl" final-package/
+
+      - name: Clean-install and verify candidate identity
+        run: |
+          set -euo pipefail
+          python -m venv final-clean
+          final-clean/bin/python -m pip install --disable-pip-version-check "final-package/atlas_ros-${RELEASE_VERSION}-py3-none-any.whl"
+          final-clean/bin/python -c "import atlas_ros; assert atlas_ros.__version__ == '${RELEASE_VERSION}'"
+          final-clean/bin/atlas status --json > final-package/runtime-status.json
+          final-clean/bin/atlas verify --json > final-package/runtime-verify.json
+          python scripts/measure_startup_performance.py --candidate-python final-clean/bin/python --iterations 7 --output final-package/startup-performance.json
+
+      - name: Generate source manifest and SPDX SBOM
+        run: |
+          set -euo pipefail
+          final-clean/bin/python -m pip list --format=json > final-package/INSTALLED_PACKAGES.json
+          python - <<'PY'
+          import hashlib, json, os
+          from datetime import UTC, datetime
+          from pathlib import Path
+
+          root = Path('final-package')
+          version = os.environ['RELEASE_VERSION']
+          source_commit = os.environ['SOURCE_COMMIT']
+          wheel = root / f'atlas_ros-{version}-py3-none-any.whl'
+          sdist = root / f'atlas_ros-{version}.tar.gz'
+          packages = json.loads((root / 'INSTALLED_PACKAGES.json').read_text())
+
+          def digest(path: Path) -> str:
+              return hashlib.sha256(path.read_bytes()).hexdigest()
+
+          source_manifest = {
+              'schema_version': '1.0',
+              'package_name': 'atlas-ros',
+              'release_version': version,
+              'source_commit': source_commit,
+              'source_tree_sha256': digest(root / 'SOURCE_TREE.txt'),
+              'sdist_file': sdist.name,
+              'sdist_sha256': digest(sdist),
+              'wheel_file': wheel.name,
+              'wheel_sha256': digest(wheel),
+              'compiler_receipt': 'compiler-output/evidence/RELEASE_COMPILATION_RECEIPT.json',
+              'provider_writes_outside_github': 0,
+              'production_authorized': False,
+              'published': False,
+              'authority_activated': False,
+          }
+          (root / 'SOURCE_MANIFEST_FINAL.json').write_text(json.dumps(source_manifest, indent=2, sort_keys=True) + '\n')
+
+          spdx_packages = []
+          for index, package in enumerate(sorted(packages, key=lambda item: item['name'].lower()), start=1):
+              spdx_packages.append({
+                  'SPDXID': f'SPDXRef-Package-{index}',
+                  'name': package['name'],
+                  'versionInfo': package['version'],
+                  'downloadLocation': 'NOASSERTION',
+                  'filesAnalyzed': False,
+                  'licenseConcluded': 'NOASSERTION',
+                  'licenseDeclared': 'NOASSERTION',
+                  'copyrightText': 'NOASSERTION',
+              })
+          sbom = {
+              'spdxVersion': 'SPDX-2.3',
+              'dataLicense': 'CC0-1.0',
+              'SPDXID': 'SPDXRef-DOCUMENT',
+              'name': f'atlas-ros-{version}',
+              'documentNamespace': f'https://github.com/Ryan9876/atlas-ros/releases/candidate/{source_commit}',
+              'creationInfo': {
+                  'created': datetime.now(UTC).replace(microsecond=0).isoformat().replace('+00:00', 'Z'),
+                  'creators': ['Tool: Atlas ROS v7.1.0 final-package controller'],
+              },
+              'packages': spdx_packages,
+          }
+          (root / 'SBOM.spdx.json').write_text(json.dumps(sbom, indent=2, sort_keys=True) + '\n')
+          PY
+
+      - name: Restore immutable production and rollback releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p restore-assets/v701 restore-assets/v650 restore-assets/v620
+          gh release download v7.0.1 --repo "$GITHUB_REPOSITORY" --dir restore-assets/v701
+          gh release download v6.5.0 --repo "$GITHUB_REPOSITORY" --dir restore-assets/v650
+          gh release download v6.2.0 --repo "$GITHUB_REPOSITORY" --dir restore-assets/v620
+          (cd restore-assets/v701 && sha256sum -c CHECKSUMS.sha256)
+          (cd restore-assets/v650 && sha256sum -c CHECKSUMS.sha256)
+          (cd restore-assets/v620 && sha256sum -c CHECKSUMS.sha256)
+          for pair in 'v701 7.0.1' 'v650 6.5.0' 'v620 6.2.0'; do
+            set -- $pair
+            wheel=$(find "restore-assets/$1" -name "atlas_ros-$2*.whl" -print -quit)
+            test -n "$wheel"
+            envname="restore-${2//./-}"
+            python -m venv "$envname"
+            "$envname/bin/python" -m pip install --disable-pip-version-check "$wheel"
+            "$envname/bin/python" -c "import atlas_ros; assert atlas_ros.__version__ == '$2'"
+          done
+          python scripts/measure_startup_performance.py --candidate-python final-clean/bin/python --baseline-python restore-7-0-1/bin/python --iterations 7 --max-startup-regression 0.10 --max-module-regression 0 --output final-package/startup-comparison.json
+
+      - name: Finalize exact package identity and nested checksums
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import hashlib, json, os
+          from pathlib import Path
+
+          root = Path('final-package')
+          version = os.environ['RELEASE_VERSION']
+          source_commit = os.environ['SOURCE_COMMIT']
+
+          def digest(path: Path) -> str:
+              return hashlib.sha256(path.read_bytes()).hexdigest()
+
+          compiler_receipt = json.loads((root / 'compiler-output/evidence/RELEASE_COMPILATION_RECEIPT.json').read_text())
+          manifest = root / 'compiler-output/release/RELEASE_MANIFEST_V710.md'
+          source = root / f'atlas_ros-{version}.tar.gz'
+          wheel = root / f'atlas_ros-{version}-py3-none-any.whl'
+          identity = {
+              'schema_version': '1.0',
+              'status': 'final_package_validated_not_authorized',
+              'release_version': version,
+              'source_commit': source_commit,
+              'source_sha256': digest(source),
+              'wheel_sha256': digest(wheel),
+              'manifest_sha256': digest(manifest),
+              'sbom_sha256': digest(root / 'SBOM.spdx.json'),
+              'source_manifest_sha256': digest(root / 'SOURCE_MANIFEST_FINAL.json'),
+              'compiler_output_digest': compiler_receipt['output_digest'],
+              'compiler_specification_digest': compiler_receipt['specification_digest'],
+              'active_production_release': '7.0.1',
+              'immediate_rollback_after_promotion': '7.0.1',
+              'historical_rollbacks': ['6.5.0', '6.2.0'],
+              'required_integrations': ['GitHub', 'Notion', 'Todoist'],
+              'optional_integrations': ['Google Drive'],
+              'provider_writes_outside_github': 0,
+              'destructive_actions': 0,
+              'production_authorized': False,
+              'published': False,
+              'authority_activated': False,
+          }
+          (root / 'FINAL_PACKAGE_IDENTITY.json').write_text(json.dumps(identity, indent=2, sort_keys=True) + '\n')
+          PY
+          (cd final-package && find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS)
+          (cd final-package && sha256sum -c SHA256SUMS)
+
+      - name: Retain exact non-publishing final package
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: atlas-ros-v710-final-package-5793c1a82c7bf9dfa0d3bd0457a2fab08c23ec9f
+          path: final-package/
+          if-no-files-found: error
+          retention-days: 90
