@@ -1,0 +1,43 @@
+name: v701-post-publication-verification
+
+on:
+  workflow_run:
+    workflows: [v701-final-publication]
+    types: [completed]
+    branches: [main]
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  verify-v701-publication:
+    if: github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.12.10'
+      - name: Independently verify immutable v7.0.1 publication and rollback restoration
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: v7.0.1
+          EXPECTED_SOURCE_COMMIT: f26f5154ea6cd4b431c5a2638c439d7de9282761
+          EXPECTED_SOURCE_SHA256: 21d266963231bc1b2a2eb2ea2ed3b5f38a17d7e447fb2c1a74f4e98fe2389629
+          EXPECTED_WHEEL_SHA256: 213def6ff15874e525eeb6e74687b915dcb2ec13b57b7726bea188cd703d8be1
+          EXPECTED_MANIFEST_SHA256: 3ccda11f3ebf72457d82d7fd92d0ea2e3076fae593ee7abaeba6d80f836ea366
+        run: bash scripts/verify_v701_publication.sh
+      - name: Retain independent post-publication evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: atlas-ros-v701-post-publication-${{ github.event.workflow_run.head_sha }}
+          path: post-publication-evidence/
+          if-no-files-found: error
+          retention-days: 90
