@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Compare equivalent provider-neutral execution-planning performance for v7 and v6.5."""
+"""Compare equivalent provider-neutral execution-planning performance."""
 
 from __future__ import annotations
 
@@ -65,13 +65,14 @@ def compare(
     *,
     candidate_python: Path,
     baseline_python: Path,
+    baseline_version: str,
     dataset: Path,
     iterations: int,
     max_regression: float,
 ) -> dict[str, Any]:
     if iterations < 3:
         raise ValueError("at least three measured iterations are required")
-    with tempfile.TemporaryDirectory(prefix="atlas-v700-performance-") as directory:
+    with tempfile.TemporaryDirectory(prefix="atlas-performance-") as directory:
         root = Path(directory)
         candidate = _measure(candidate_python, dataset, iterations, root)
         baseline = _measure(baseline_python, dataset, iterations, root)
@@ -79,7 +80,7 @@ def compare(
     baseline_p95 = _percentile(baseline, 0.95)
     regression = (candidate_p95 - baseline_p95) / baseline_p95
     return {
-        "schema_version": "1.0",
+        "schema_version": "1.1",
         "benchmark": "execution-planning-v1-equivalent-process-runtime",
         "iterations": iterations,
         "candidate": {
@@ -89,7 +90,7 @@ def compare(
             "p95_ms": candidate_p95,
         },
         "baseline": {
-            "version": "6.5.0",
+            "version": baseline_version,
             "python": str(baseline_python),
             "measurements_ms": baseline,
             "p50_ms": _percentile(baseline, 0.50),
@@ -106,6 +107,7 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--candidate-python", type=Path, required=True)
     parser.add_argument("--baseline-python", type=Path, required=True)
+    parser.add_argument("--baseline-version", default="6.5.0")
     parser.add_argument("--dataset", type=Path, required=True)
     parser.add_argument("--iterations", type=int, default=7)
     parser.add_argument("--max-regression", type=float, default=0.10)
@@ -114,6 +116,7 @@ def main() -> None:
     result = compare(
         candidate_python=args.candidate_python,
         baseline_python=args.baseline_python,
+        baseline_version=args.baseline_version,
         dataset=args.dataset,
         iterations=args.iterations,
         max_regression=args.max_regression,
