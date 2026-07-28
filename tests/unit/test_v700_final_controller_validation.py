@@ -36,6 +36,21 @@ def exact_artifact(path: Path, *, status: str = "passed_with_findings") -> Path:
     )
 
 
+def final_package(path: Path, *, status: str = "passed_with_findings") -> Path:
+    return write_json(
+        path,
+        {
+            "status": status,
+            "final_version": "7.0.0",
+            "final_source_commit": "e" * 40,
+            "final_package_digest": "6" * 64,
+            "source_sha256": "c" * 64,
+            "wheel_sha256": "d" * 64,
+            "provider_writes": 0,
+        },
+    )
+
+
 def authority_records() -> list[dict[str, object]]:
     return [
         {
@@ -73,8 +88,8 @@ def integration_records() -> list[dict[str, object]]:
 def live_snapshot(
     path: Path,
     *,
-    candidate_sha: str = "a" * 40,
-    artifact_digest: str = "b" * 64,
+    candidate_sha: str = "e" * 40,
+    artifact_digest: str = "f" * 64,
 ) -> Path:
     snapshot = compile_snapshot(
         phase="pre_promotion_baseline",
@@ -95,6 +110,9 @@ def test_final_controller_validation_emits_blocked_zero_write_plans(tmp_path: Pa
 
     result = validate_final_controller(
         exact_artifact_validation_path=exact_artifact(tmp_path / "exact.json"),
+        final_package_validation_path=final_package(tmp_path / "final-package.json"),
+        final_package_artifact_id="final-artifact-1",
+        final_package_artifact_digest="f" * 64,
         final_source_commit="e" * 40,
         candidate_pr_merged=False,
         decision_record_url="https://app.notion.com/decision",
@@ -124,6 +142,9 @@ def test_final_controller_validation_emits_blocked_zero_write_plans(tmp_path: Pa
 def test_bound_live_snapshot_closes_only_live_readback_blocker(tmp_path: Path) -> None:
     result = validate_final_controller(
         exact_artifact_validation_path=exact_artifact(tmp_path / "exact.json"),
+        final_package_validation_path=final_package(tmp_path / "final-package.json"),
+        final_package_artifact_id="final-artifact-1",
+        final_package_artifact_digest="f" * 64,
         final_source_commit="e" * 40,
         candidate_pr_merged=False,
         decision_record_url="https://app.notion.com/decision",
@@ -143,9 +164,12 @@ def test_bound_live_snapshot_closes_only_live_readback_blocker(tmp_path: Path) -
 
 
 def test_final_controller_rejects_snapshot_for_different_package(tmp_path: Path) -> None:
-    with pytest.raises(FinalControllerValidationError, match="different candidate commit"):
+    with pytest.raises(FinalControllerValidationError, match="different final source commit"):
         validate_final_controller(
             exact_artifact_validation_path=exact_artifact(tmp_path / "exact.json"),
+            final_package_validation_path=final_package(tmp_path / "final-package.json"),
+            final_package_artifact_id="final-artifact-1",
+            final_package_artifact_digest="f" * 64,
             final_source_commit="e" * 40,
             candidate_pr_merged=False,
             decision_record_url="https://app.notion.com/decision",
@@ -153,8 +177,26 @@ def test_final_controller_rejects_snapshot_for_different_package(tmp_path: Path)
             output_dir=tmp_path / "output",
             live_authority_snapshot_path=live_snapshot(
                 tmp_path / "wrong-live-authority.json",
-                candidate_sha="f" * 40,
+                candidate_sha="a" * 40,
             ),
+        )
+
+
+def test_final_controller_rejects_failed_final_package(tmp_path: Path) -> None:
+    with pytest.raises(FinalControllerValidationError, match="final-package"):
+        validate_final_controller(
+            exact_artifact_validation_path=exact_artifact(tmp_path / "exact.json"),
+            final_package_validation_path=final_package(
+                tmp_path / "final-package.json",
+                status="failed",
+            ),
+            final_package_artifact_id="final-artifact-1",
+            final_package_artifact_digest="f" * 64,
+            final_source_commit="e" * 40,
+            candidate_pr_merged=True,
+            decision_record_url="https://app.notion.com/decision",
+            review_record_url="https://app.notion.com/review",
+            output_dir=tmp_path / "output",
         )
 
 
@@ -165,6 +207,9 @@ def test_final_controller_validation_rejects_failed_exact_artifact(tmp_path: Pat
                 tmp_path / "exact.json",
                 status="failed",
             ),
+            final_package_validation_path=final_package(tmp_path / "final-package.json"),
+            final_package_artifact_id="final-artifact-1",
+            final_package_artifact_digest="f" * 64,
             final_source_commit="e" * 40,
             candidate_pr_merged=False,
             decision_record_url="https://app.notion.com/decision",
@@ -182,6 +227,9 @@ def test_final_controller_validation_rejects_provider_write_evidence(tmp_path: P
     with pytest.raises(FinalControllerValidationError, match="provider writes"):
         validate_final_controller(
             exact_artifact_validation_path=path,
+            final_package_validation_path=final_package(tmp_path / "final-package.json"),
+            final_package_artifact_id="final-artifact-1",
+            final_package_artifact_digest="f" * 64,
             final_source_commit="e" * 40,
             candidate_pr_merged=False,
             decision_record_url="https://app.notion.com/decision",
