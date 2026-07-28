@@ -59,7 +59,10 @@ jobs:
           python scripts/validate_vulnerability_exceptions.py
           mypy src
           pytest --junitxml=final-package/pytest.xml --cov-report=json:final-package/coverage.json
-          python scripts/evaluate_execution_planning.py > final-package/execution-planning.log
+          mkdir -p final-package/execution-planning
+          python scripts/evaluate_execution_planning.py \
+            --dataset benchmarks/execution-planning-v1.json \
+            --output final-package/execution-planning/EXECUTION_PLANNING_REPORT.json
 
       - name: Validate Drive independence and deterministic compiler
         run: |
