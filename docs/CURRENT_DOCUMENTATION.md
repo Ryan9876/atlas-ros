@@ -1,6 +1,6 @@
-# Atlas ROS v7.1.0 Current Documentation Authority
+# Atlas ROS v7.1.1 Current Documentation Authority
 
-Status: Current operating guidance for Atlas ROS v7.1.0.
+Status: Current operating guidance for Atlas ROS v7.1.1.
 
 Only the documents listed here, the canonical GitHub authority record and generated Release Index, the Notion System State, and authoritative application records for their owned fields may be treated as current operating guidance. Production status is determined by the live canonical authority record and exact immutable manifest, not by historical wording or mutable summaries.
 
@@ -9,16 +9,17 @@ Only the documents listed here, the canonical GitHub authority record and genera
 - `governance/AUTHORITY.json`
 - `governance/RELEASE_INDEX.md`
 - `release/RELEASE_MANIFEST.md` — mutable current projection
-- `release/RELEASE_MANIFEST_V710.md` at exact immutable commit `0711b045f34f5ab7b03f7a61bc80653e0d815463`
-- GitHub Release `v7.1.0`
-- Production source and immutable tag target: `0711b045f34f5ab7b03f7a61bc80653e0d815463`
-- Immediate immutable rollback: Atlas ROS v7.0.1 at `f26f5154ea6cd4b431c5a2638c439d7de9282761`
+- `release/RELEASE_MANIFEST_V711.md` at exact immutable commit `7e18113b58fcd486b5c7e8eb9368c7c70bc83bcd`
+- GitHub Release `v7.1.1`
+- Production source and immutable tag target: `7e18113b58fcd486b5c7e8eb9368c7c70bc83bcd`
+- Immediate immutable rollback: Atlas ROS v7.1.0 at `0711b045f34f5ab7b03f7a61bc80653e0d815463`
+- Historical rollback retained: Atlas ROS v7.0.1 at `f26f5154ea6cd4b431c5a2638c439d7de9282761`
 - Historical rollback retained: Atlas ROS v6.5.0 at `bb6d6fea70d6824c9bc6a42e63ba36cc88029260`
 - Historical rollback retained: Atlas ROS v6.2.0 at `863d5ddf9ebd4723200166cf31c7acd93ebec54f`
 - Notion `Atlas ROS System State`
 - Manifest-resolved Notion Integration Inventory
 
-Draft or candidate v7.1.0 release notes, scopes, manifests, runbooks, compiler output, packaging instructions, and promotion workflows are preserved as historical release evidence. They do not define current production operation unless explicitly incorporated by the canonical authority record, immutable active manifest, or this index.
+Draft or candidate release notes, scopes, manifests, runbooks, compiler output, packaging instructions, and promotion workflows are preserved as historical release evidence. They do not define current production operation unless explicitly incorporated by the canonical authority record, immutable active manifest, or this index.
 
 ## Current architecture and policy
 
@@ -29,13 +30,15 @@ Draft or candidate v7.1.0 release notes, scopes, manifests, runbooks, compiler o
 - `docs/architecture/ADR-065-v650-governed-execution-intelligence.md`
 - `docs/adr/ADR-010-SEMANTIC-INTENT-SEPARATION-AND-OUTPUT-FIDELITY.md`
 - `docs/adr/ADR-011-REASONING-COHERENCE-AND-CONFIDENCE-DIMENSIONS.md`
+- `docs/adr/ADR-012-V711-FAST-INITIALIZATION.md`
 - `governance/release-policy.yaml`
 
 Immutable release scopes and prior ADRs may preserve pre-promotion or historical wording. Their architecture is incorporated only through the current authority record, active manifest, and this index.
 
 ## Current operations
 
-- `docs/runbooks/V710_PRODUCTION_OPERATOR_AND_RECOVERY.md`
+- `docs/runbooks/V711_PRODUCTION_OPERATOR_AND_RECOVERY.md`
+- `docs/runbooks/V711_FAST_INITIALIZATION_OPERATOR.md`
 - `docs/EXECUTION_ORCHESTRATION_STANDARD.md`
 - `docs/EXECUTION_RECONCILIATION_STANDARD.md`
 - `docs/operations/EXECUTION_RECONCILIATION_RUNBOOK.md`
