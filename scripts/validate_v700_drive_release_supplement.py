@@ -184,6 +184,20 @@ def validate_release_supplement(
         payload.get("candidate_checksum_declared_sha256"),
         "declared candidate SHA-256",
     )
+    checksum_text = payload.get("candidate_checksum_file_text")
+    if not isinstance(checksum_text, str) or not checksum_text:
+        _fail("candidate checksum file text is required")
+    if hashlib.sha256(checksum_text.encode("utf-8")).hexdigest() != file_sha[
+        checksum_id
+    ]:
+        _fail("candidate checksum file text hash does not match captured bytes")
+    checksum_parts = checksum_text.strip().split()
+    if (
+        len(checksum_parts) != 2
+        or checksum_parts[0] != declared_sha
+        or checksum_parts[1] != "Atlas_ROS_v5.0.0rc1_Candidate.zip"
+    ):
+        _fail("candidate checksum file text does not declare the expected package")
     if package_sha != declared_sha or package_sha != file_sha[package_id]:
         _fail("v5.0 candidate package checksum does not reconcile")
 
