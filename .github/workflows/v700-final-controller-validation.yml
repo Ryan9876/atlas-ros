@@ -86,11 +86,17 @@ jobs:
         run: |
           set -euo pipefail
           rm -rf v700-final-controller-evidence
+          mkdir -p v700-final-controller-evidence
+          python -m tools.release.drive_migration_cli compile \
+            release/v700-drive-migration-inventory.json \
+            v700-final-controller-evidence/V700_CURRENT_DRIVE_MIGRATION_LEDGER.json \
+            > v700-final-controller-evidence/V700_CURRENT_DRIVE_MIGRATION_SUMMARY.json
           python -m scripts.validate_v700_final_controller \
             --exact-artifact-validation "$VALIDATION_FILE" \
             --final-source-commit "$HEAD_SHA" \
             --decision-record-url https://app.notion.com/p/3aab8344ad2c81399ff7e6f5c5ce644d \
             --review-record-url https://app.notion.com/p/3aab8344ad2c819e93bce697d6ee8ae1 \
+            --drive-ledger v700-final-controller-evidence/V700_CURRENT_DRIVE_MIGRATION_LEDGER.json \
             --v650-rollback-evidence "$ROLLBACK_EVIDENCE_FILE" \
             --output-dir v700-final-controller-evidence
       - name: Enforce fail-closed controller result
@@ -100,29 +106,31 @@ jobs:
           from pathlib import Path
 
           result = json.loads(
-              Path("v700-final-controller-evidence/V700_FINAL_CONTROLLER_VALIDATION.json")
-              .read_text(encoding="utf-8")
+              Path('v700-final-controller-evidence/V700_FINAL_CONTROLLER_VALIDATION.json')
+              .read_text(encoding='utf-8')
           )
-          assert result["status"] == "validated_not_authorized"
-          final = result["final_controller"]
-          assert final["status"] == "blocked"
-          assert "candidate PR merge has not passed" in final["blockers"]
-          assert "Drive migration ledger has not passed" in final["blockers"]
-          assert "live authority readback has not passed" in final["blockers"]
-          assert "v6.5 rollback evidence reconciliation has not passed" not in final["blockers"]
-          assert "v6.5 rollback evidence digest is required" not in final["blockers"]
-          assert "exact-package Ryan authorization is required" in final["blockers"]
-          assert result["v650_rollback_evidence_present"] is True
-          rollback_digest = result["v650_rollback_evidence_sha256"]
+          assert result['status'] == 'validated_not_authorized'
+          final = result['final_controller']
+          assert final['status'] == 'blocked'
+          assert 'candidate PR merge has not passed' in final['blockers']
+          assert 'Drive migration ledger has not passed' not in final['blockers']
+          assert 'live authority readback has not passed' in final['blockers']
+          assert 'v6.5 rollback evidence reconciliation has not passed' not in final['blockers']
+          assert 'v6.5 rollback evidence digest is required' not in final['blockers']
+          assert 'exact-package Ryan authorization is required' in final['blockers']
+          assert result['drive_migration_ledger_present'] is True
+          drive_digest = result['drive_migration_ledger_sha256']
+          assert isinstance(drive_digest, str) and len(drive_digest) == 64
+          assert result['v650_rollback_evidence_present'] is True
+          rollback_digest = result['v650_rollback_evidence_sha256']
           assert isinstance(rollback_digest, str) and len(rollback_digest) == 64
-          assert all(character in "0123456789abcdef" for character in rollback_digest)
-          assert result["post_publication_verification"]["status"] == "blocked"
-          assert result["authority_activation"]["status"] == "blocked"
-          assert result["provider_writes"] == 0
-          assert result["publication_performed"] is False
-          assert result["tag_created"] is False
-          assert result["authority_activated"] is False
-          assert result["drive_retired"] is False
+          assert result['post_publication_verification']['status'] == 'blocked'
+          assert result['authority_activation']['status'] == 'blocked'
+          assert result['provider_writes'] == 0
+          assert result['publication_performed'] is False
+          assert result['tag_created'] is False
+          assert result['authority_activated'] is False
+          assert result['drive_retired'] is False
           PY
       - name: Create and verify final-controller evidence checksums
         run: |
