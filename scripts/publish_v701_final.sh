@@ -26,22 +26,28 @@ PY
 test "$version" = "7.0.1"
 test "$(python -c 'import atlas_ros; print(atlas_ros.__version__)')" = "$version"
 test "$(git rev-parse HEAD)" = "$SOURCE_COMMIT"
-gh api "repos/${GITHUB_REPOSITORY}/commits/${FINAL_SOURCE_COMMIT}" >/dev/null
 
 rm -rf final-artifact final-publication final-evidence release-readback rollback-v700 rollback-v650 verify-v701 verify-v700 verify-v650
 mkdir -p final-artifact final-publication final-evidence
+stage() { printf '%s\n' "$1" > final-evidence/STAGE.txt; }
+stage initialized
 
 artifact_zip="final-artifact.zip"
 gh api "repos/${GITHUB_REPOSITORY}/actions/artifacts/${FINAL_ARTIFACT_ID}/zip" > "$artifact_zip"
+stage artifact-downloaded
 echo "${FINAL_ARTIFACT_DIGEST#sha256:}  ${artifact_zip}" | sha256sum -c -
+stage artifact-digest-verified
 unzip -q "$artifact_zip" -d final-artifact
+stage artifact-unpacked
 
 publication_dir="$(find final-artifact -type d -name v701-publication -print -quit)"
 evidence_dir="$(find final-artifact -type d -name v701-evidence -print -quit)"
 test -n "$publication_dir"
 test -n "$evidence_dir"
+stage artifact-layout-verified
 (cd "$publication_dir" && sha256sum -c CHECKSUMS.sha256)
 (cd "$evidence_dir" && sha256sum -c EVIDENCE_CHECKSUMS.sha256)
+stage nested-checksums-verified
 
 python - "$publication_dir/FINAL_IDENTITY_CANDIDATE.json" "$evidence_dir/V701_FINAL_CONTROLLER_VALIDATION.json" <<'PY'
 import json, os, sys
@@ -67,10 +73,12 @@ assert controller['v700_restoration_passed'] is True
 assert controller['v650_restoration_passed'] is True
 assert controller['provider_writes'] == 0
 PY
+stage exact-identity-verified
 
 test "$(sha256sum "$publication_dir/atlas_ros-7.0.1.tar.gz" | awk '{print $1}')" = "$EXPECTED_SOURCE_SHA256"
 test "$(sha256sum "$publication_dir/atlas_ros-7.0.1-py3-none-any.whl" | awk '{print $1}')" = "$EXPECTED_WHEEL_SHA256"
 test "$(sha256sum "$publication_dir/RELEASE_MANIFEST_V701.md" | awk '{print $1}')" = "$EXPECTED_MANIFEST_SHA256"
+stage exact-files-verified
 cp "$publication_dir"/* final-publication/
 cp "$evidence_dir"/* final-evidence/ 2>/dev/null || true
 cp -R "$evidence_dir/staged-authority" final-evidence/
@@ -144,10 +152,12 @@ The release is not Active until independent publication readback and live GitHub
 '''
 (p / 'RELEASE_MANIFEST.md').write_text(manifest, encoding='utf-8')
 PY
+stage authorized-publication-set-built
 
 python -m venv verify-v701
 verify-v701/bin/python -m pip install --disable-pip-version-check final-publication/atlas_ros-7.0.1-py3-none-any.whl
 verify-v701/bin/python -c "import atlas_ros; assert atlas_ros.__version__ == '7.0.1'"
+stage v701-clean-install-passed
 
 gh release download v7.0.0 --repo "$GITHUB_REPOSITORY" --pattern 'atlas_ros-7.0.0*.whl' --dir rollback-v700
 gh release download "$ROLLBACK_TAG" --repo "$GITHUB_REPOSITORY" --pattern 'atlas_ros-6.5.0*.whl' --dir rollback-v650
@@ -157,8 +167,10 @@ verify-v700/bin/python -c "import atlas_ros; assert atlas_ros.__version__ == '7.
 python -m venv verify-v650
 verify-v650/bin/python -m pip install --disable-pip-version-check "$(find rollback-v650 -name '*.whl' -print -quit)"
 verify-v650/bin/python -c "import atlas_ros; assert atlas_ros.__version__ == '6.5.0'"
+stage rollback-restoration-passed
 
 (cd final-publication && find . -maxdepth 1 -type f ! -name CHECKSUMS.sha256 -print0 | sort -z | xargs -0 sha256sum > CHECKSUMS.sha256 && sha256sum -c CHECKSUMS.sha256)
+stage publication-checksums-passed
 
 python - <<'PY'
 import json, os
@@ -178,7 +190,9 @@ status = {
 }
 Path('final-evidence/PUBLICATION_CONTROLLER_STATUS.json').write_text(json.dumps(status, indent=2, sort_keys=True) + '\n', encoding='utf-8')
 PY
+stage controller-status-written
 (cd final-evidence && find . -type f ! -name PUBLICATION_EVIDENCE_CHECKSUMS.sha256 -print0 | sort -z | xargs -0 sha256sum > PUBLICATION_EVIDENCE_CHECKSUMS.sha256 && sha256sum -c PUBLICATION_EVIDENCE_CHECKSUMS.sha256)
+stage rehearsal-complete
 
 if [[ "$PUBLISH" == "true" ]]; then
   ! gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1
@@ -197,4 +211,5 @@ if [[ "$PUBLISH" == "true" ]]; then
   python -m venv release-readback/clean-install
   release-readback/clean-install/bin/python -m pip install --disable-pip-version-check release-readback/atlas_ros-7.0.1-py3-none-any.whl
   release-readback/clean-install/bin/python -c "import atlas_ros; assert atlas_ros.__version__ == '7.0.1'"
+  stage publication-readback-passed
 fi
