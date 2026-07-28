@@ -85,7 +85,7 @@ def test_chain_rejects_checksum_file_text_mismatch() -> None:
 
     with pytest.raises(
         DriveReleaseSupplementChainError,
-        match="checksum-file text does not reconcile",
+        match="checksum-file text hash does not match bytes",
     ):
         validate(supplements)
 
