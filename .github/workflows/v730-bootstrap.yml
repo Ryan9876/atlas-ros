@@ -37,7 +37,7 @@ jobs:
       - name: Verify and apply exact development payload
         run: |
           set -euo pipefail
-          base64 --decode .github/v730-bootstrap/payload.tar.gz.b64 > /tmp/v730-payload.tar.gz
+          base64 --decode --ignore-garbage .github/v730-bootstrap/payload.tar.gz.b64 > /tmp/v730-payload.tar.gz
           echo 'b8031a2b4b4718ac6c0f16f1d3aa689eefb2424558674f4aa795ed9b2f841e72  /tmp/v730-payload.tar.gz' | sha256sum -c -
           tar -xzf /tmp/v730-payload.tar.gz
           rm -rf .github/v730-bootstrap .github/workflows/v730-bootstrap.yml
