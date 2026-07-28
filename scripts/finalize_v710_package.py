@@ -15,14 +15,6 @@ _REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 if str(_REPOSITORY_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPOSITORY_ROOT))
 
-from atlas_ros.contracts.digests import sha256_digest
-from tools.release.authority_compiler import (
-    ActiveReleaseSpec,
-    AuthorityCompilationSpec,
-    RollbackReleaseSpec,
-    compile_authority,
-)
-
 VERSION = "7.1.0"
 MANIFEST_PATH = Path("release/RELEASE_MANIFEST_V710.md")
 V701_COMMIT = "f26f5154ea6cd4b431c5a2638c439d7de9282761"
@@ -48,6 +40,14 @@ def assemble(
     source_timestamp: str,
     installed_packages_path: Path,
 ) -> dict[str, object]:
+    from atlas_ros.contracts.digests import sha256_digest
+    from tools.release.authority_compiler import (
+        ActiveReleaseSpec,
+        AuthorityCompilationSpec,
+        RollbackReleaseSpec,
+        compile_authority,
+    )
+
     datetime.fromisoformat(source_timestamp.replace("Z", "+00:00"))
     manifest = repository_root / MANIFEST_PATH
     source = package_root / f"atlas_ros-{VERSION}.tar.gz"
