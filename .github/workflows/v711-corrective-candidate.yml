@@ -26,6 +26,7 @@ jobs:
     env:
       SOURCE_COMMIT: ${{ github.event.pull_request.head.sha || github.sha }}
       RELEASE_VERSION: 7.1.1
+      PYTHONPATH: .
     steps:
       - name: Check out exact candidate
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
