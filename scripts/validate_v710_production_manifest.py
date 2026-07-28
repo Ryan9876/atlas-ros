@@ -22,7 +22,10 @@ REQUIRED_TEXT = (
     "Atlas ROS v7.0.1 at `f26f5154ea6cd4b431c5a2638c439d7de9282761`",
     "Atlas ROS v6.5.0 at `bb6d6fea70d6824c9bc6a42e63ba36cc88029260`",
     "Atlas ROS v6.2.0 at `863d5ddf9ebd4723200166cf31c7acd93ebec54f`",
-    "Integration Inventory authority: https://app.notion.com/p/8ba4fafb5ce244ef9add3013aff3746b",
+    (
+        "Integration Inventory authority: "
+        "https://app.notion.com/p/8ba4fafb5ce244ef9add3013aff3746b"
+    ),
     "Required production integrations are exactly GitHub, Notion, and Todoist.",
     "Google Drive is optional, non-authoritative historical access",
     "Publication does not activate authority.",
@@ -57,13 +60,23 @@ def validate_manifest(root: Path, source_commit: str) -> dict[str, object]:
 
     missing = [text for text in REQUIRED_TEXT if text not in manifest]
     if missing:
-        raise ValueError("production manifest is missing required text: " + "; ".join(missing))
+        raise ValueError(
+            "production manifest is missing required text: " + "; ".join(missing)
+        )
     present = [text for text in PROHIBITED_TEXT if text in manifest]
     if present:
-        raise ValueError("production manifest contains candidate-only text: " + "; ".join(present))
+        raise ValueError(
+            "production manifest contains candidate-only text: " + "; ".join(present)
+        )
 
-    if "Draft candidate only" not in candidate or "Production authorized: `false`" not in candidate:
-        raise ValueError("historical candidate manifest no longer identifies itself as candidate evidence")
+    candidate_is_historical = (
+        "Draft candidate only" in candidate
+        and "Production authorized: `false`" in candidate
+    )
+    if not candidate_is_historical:
+        raise ValueError(
+            "historical candidate manifest no longer identifies itself as candidate evidence"
+        )
     if "version: 7.1.0" not in specification:
         raise ValueError("release specification does not identify version 7.1.0")
     if "candidate_only: true" not in specification:
@@ -91,8 +104,14 @@ def validate_manifest(root: Path, source_commit: str) -> dict[str, object]:
             "commit": "f26f5154ea6cd4b431c5a2638c439d7de9282761",
         },
         "historical_rollbacks": [
-            {"version": "6.5.0", "commit": "bb6d6fea70d6824c9bc6a42e63ba36cc88029260"},
-            {"version": "6.2.0", "commit": "863d5ddf9ebd4723200166cf31c7acd93ebec54f"},
+            {
+                "version": "6.5.0",
+                "commit": "bb6d6fea70d6824c9bc6a42e63ba36cc88029260",
+            },
+            {
+                "version": "6.2.0",
+                "commit": "863d5ddf9ebd4723200166cf31c7acd93ebec54f",
+            },
         ],
         "provider_writes": 0,
         "destructive_actions": 0,
