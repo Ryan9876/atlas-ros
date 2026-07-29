@@ -13,8 +13,8 @@ def test_status_is_lightweight_and_reports_no_writes(capsys: pytest.CaptureFixtu
     status(json_output=True)
     payload = json.loads(capsys.readouterr().out)
 
-    assert payload["version"] == "7.5.1"
-    assert payload["active_production_version"] == "7.5.0"
+    assert payload["version"] == "7.5.2"
+    assert payload["active_production_version"] == "7.5.1"
     assert payload["production_authority_changed"] is False
     assert payload["provider_writes"] is False
 
@@ -42,10 +42,10 @@ def test_runtime_verify_checks_only_installed_identity(
     payload = json.loads(capsys.readouterr().out)
 
     assert payload == {
-        "active_production_version": "7.5.0",
+        "active_production_version": "7.5.1",
         "scope": "installed_candidate_runtime_identity",
         "valid": True,
-        "version": "7.5.1",
+        "version": "7.5.2",
         "writes": False,
     }
 
