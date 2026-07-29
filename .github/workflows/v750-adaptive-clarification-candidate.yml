@@ -3,6 +3,9 @@ name: v7.5 adaptive clarification candidate
 on:
   pull_request:
     paths:
+      - "pyproject.toml"
+      - "src/atlas_ros/__init__.py"
+      - "src/atlas_ros/entry_points/main.py"
       - "src/atlas_ros/intent_learning_v750.py"
       - "src/atlas_ros/intent_learning_policy_v750.py"
       - "tests/test_v750_adaptive_clarification.py"
@@ -14,35 +17,70 @@ on:
       - ".github/workflows/v750-adaptive-clarification-candidate.yml"
   workflow_dispatch:
 
+concurrency:
+  group: v750-adaptive-clarification-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
+  actions: read
+
+env:
+  CANDIDATE_VERSION: 7.5.0
+  CANDIDATE_COMMIT: ${{ github.event.pull_request.head.sha || github.sha }}
+  GH_TOKEN: ${{ github.token }}
 
 jobs:
-  validate-v750-candidate:
+  full-validation:
     runs-on: ubuntu-24.04
+    timeout-minutes: 150
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+      - name: Checkout exact candidate
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
         with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          fetch-tags: true
           persist-credentials: false
+
+      - name: Bind source and restoration authority
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$CANDIDATE_COMMIT"
+          mkdir -p build dist clean-install restoration
+          git rev-parse HEAD > build/SOURCE_COMMIT.txt
+          git ls-tree -r --full-tree HEAD > build/SOURCE_TREE.txt
+          python - <<'PY' >> "$GITHUB_ENV"
+          import json
+          from pathlib import Path
+
+          authority = json.loads(Path("governance/AUTHORITY.json").read_text())
+          print(f"ACTIVE_VERSION={authority['active_release']['version']}")
+          print(f"ACTIVE_TAG={authority['active_release']['tag']}")
+          print(f"ACTIVE_COMMIT={authority['active_release']['immutable_commit']}")
+          print(f"ROLLBACK_VERSION={authority['immediate_rollback']['version']}")
+          print(f"ROLLBACK_TAG={authority['immediate_rollback']['tag']}")
+          print(f"ROLLBACK_COMMIT={authority['immediate_rollback']['immutable_commit']}")
+          PY
+
       - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
         with:
           python-version: "3.12.10"
-      - name: Install candidate dependencies
-        run: python -m pip install --disable-pip-version-check -e '.[ci]'
-      - name: Lint candidate files
-        run: >-
-          ruff check
-          src/atlas_ros/intent_learning_v750.py
-          src/atlas_ros/intent_learning_policy_v750.py
-          tests/test_v750_adaptive_clarification.py
-      - name: Type-check candidate files
-        run: >-
-          mypy
-          src/atlas_ros/intent_learning_v750.py
-          src/atlas_ros/intent_learning_policy_v750.py
-      - name: Run full branch-aware test suite
-        run: pytest
-      - name: Verify non-publishing and provider-write boundaries
+          cache: pip
+
+      - name: Install validation environment
+        run: python -m pip install --disable-pip-version-check -e '.[dev]'
+
+      - name: Run complete correctness gates
+        run: |
+          set -euo pipefail
+          ruff check .
+          mypy src/atlas_ros
+          python scripts/validate_architecture.py
+          python scripts/validate_devtools_boundary.py
+          pytest
+
+      - name: Validate adaptive clarification boundaries
         run: |
           python - <<'PY'
           from atlas_ros.intent_learning_policy_v750 import AdaptiveClarificationPolicyV750
@@ -69,15 +107,186 @@ jobs:
           assert decision is not None
           assert decision.provider_writes == 0
           assert decision.todoist_write_allowed is False
+          assert decision.preserve_capture is True
           PY
-      - name: Build package without publishing
-        run: python -m build
-      - name: Retain candidate evidence
+
+      - name: Scan source and audit locked dependencies
+        run: |
+          set -euo pipefail
+          python scripts/scan_candidate_secrets.py \
+            --root . --output build/V750_SECRET_SCAN.json
+          pip-audit --disable-pip --require-hashes --no-deps --timeout 15 \
+            --progress-spinner off --vulnerability-service pypi \
+            --requirement requirements.runtime.lock --format json \
+            --output build/V750_PIP_AUDIT_PYPI.json
+          pip-audit --disable-pip --require-hashes --no-deps --timeout 15 \
+            --progress-spinner off --vulnerability-service osv \
+            --requirement requirements.runtime.lock --format json \
+            --output build/V750_PIP_AUDIT_OSV.json
+          python scripts/evaluate_dependency_audit.py \
+            build/V750_PIP_AUDIT_PYPI.json build/V750_PIP_AUDIT_OSV.json
+
+      - name: Build exact package once
+        run: |
+          set -euo pipefail
+          rm -rf dist
+          python -m build
+          test -f dist/atlas_ros-7.5.0.tar.gz
+          test -f dist/atlas_ros-7.5.0-py3-none-any.whl
+          test "$(find dist -maxdepth 1 -type f | wc -l)" -eq 2
+          printf '1\n' > build/BUILD_COUNT.txt
+          sha256sum dist/* > build/CHECKSUMS.sha256
+
+      - name: Generate source manifest and SPDX SBOM
+        run: |
+          set -euo pipefail
+          git ls-files -z | sort -z | xargs -0 sha256sum > build/SOURCE_MANIFEST.sha256
+          python - <<'PY'
+          import json
+          import os
+          from datetime import UTC, datetime
+          from pathlib import Path
+
+          sbom = {
+              "spdxVersion": "SPDX-2.3",
+              "dataLicense": "CC0-1.0",
+              "SPDXID": "SPDXRef-DOCUMENT",
+              "name": "atlas-ros-7.5.0",
+              "documentNamespace": (
+                  "https://github.com/Ryan9876/atlas-ros/spdx/"
+                  + os.environ["CANDIDATE_COMMIT"]
+              ),
+              "creationInfo": {
+                  "created": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                  "creators": ["Tool: Atlas ROS v7.5 candidate workflow"],
+              },
+              "packages": [
+                  {
+                      "name": "atlas-ros",
+                      "SPDXID": "SPDXRef-Package-atlas-ros",
+                      "versionInfo": "7.5.0",
+                      "downloadLocation": "NOASSERTION",
+                      "filesAnalyzed": False,
+                      "licenseConcluded": "NOASSERTION",
+                      "licenseDeclared": "Proprietary",
+                      "supplier": "Person: Ryan Smith",
+                  }
+              ],
+              "relationships": [
+                  {
+                      "spdxElementId": "SPDXRef-DOCUMENT",
+                      "relationshipType": "DESCRIBES",
+                      "relatedSpdxElement": "SPDXRef-Package-atlas-ros",
+                  }
+              ],
+          }
+          Path("build/SBOM.spdx.json").write_text(
+              json.dumps(sbom, indent=2, sort_keys=True) + "\n"
+          )
+          PY
+          sha256sum build/SOURCE_MANIFEST.sha256 build/SBOM.spdx.json \
+            > build/EVIDENCE_CHECKSUMS.sha256
+
+      - name: Clean install exact candidate artifacts
+        run: |
+          set -euo pipefail
+          for kind in sdist wheel; do
+            python -m venv "clean-install/$kind"
+            if [ "$kind" = wheel ]; then
+              package=dist/atlas_ros-7.5.0-py3-none-any.whl
+            else
+              package=dist/atlas_ros-7.5.0.tar.gz
+            fi
+            "clean-install/$kind/bin/python" -m pip install \
+              --disable-pip-version-check "$package"
+            "clean-install/$kind/bin/python" -c \
+              "import atlas_ros; assert atlas_ros.__version__ == '7.5.0'"
+            "clean-install/$kind/bin/atlas" status --json \
+              > "build/${kind}-status.json"
+            "clean-install/$kind/bin/atlas" verify --json \
+              > "build/${kind}-verify.json"
+          done
+
+      - name: Restore Active and immediate rollback
+        run: |
+          set -euo pipefail
+          mkdir -p "restoration/active-${ACTIVE_VERSION}" \
+            "restoration/rollback-${ROLLBACK_VERSION}"
+          gh release download "$ACTIVE_TAG" --repo "$GITHUB_REPOSITORY" \
+            --dir "restoration/active-${ACTIVE_VERSION}"
+          gh release download "$ROLLBACK_TAG" --repo "$GITHUB_REPOSITORY" \
+            --dir "restoration/rollback-${ROLLBACK_VERSION}"
+          (cd "restoration/active-${ACTIVE_VERSION}" && sha256sum -c CHECKSUMS.sha256)
+          (cd "restoration/rollback-${ROLLBACK_VERSION}" && sha256sum -c CHECKSUMS.sha256)
+          active_wheel=$(find "restoration/active-${ACTIVE_VERSION}" -name '*.whl' -print -quit)
+          rollback_wheel=$(find "restoration/rollback-${ROLLBACK_VERSION}" -name '*.whl' -print -quit)
+          test -n "$active_wheel"
+          test -n "$rollback_wheel"
+          python -m venv restoration/active-clean
+          python -m venv restoration/rollback-clean
+          restoration/active-clean/bin/python -m pip install \
+            --disable-pip-version-check "$active_wheel"
+          restoration/rollback-clean/bin/python -m pip install \
+            --disable-pip-version-check "$rollback_wheel"
+          restoration/active-clean/bin/python -c \
+            "import atlas_ros; assert atlas_ros.__version__ == '${ACTIVE_VERSION}'"
+          restoration/rollback-clean/bin/python -c \
+            "import atlas_ros; assert atlas_ros.__version__ == '${ROLLBACK_VERSION}'"
+          restoration/active-clean/bin/atlas status --json \
+            > build/ACTIVE_RESTORATION.json
+          restoration/rollback-clean/bin/atlas status --json \
+            > build/ROLLBACK_RESTORATION.json
+
+      - name: Produce non-publishing validation receipts
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          authority = json.loads(Path("governance/AUTHORITY.json").read_text())
+          assert authority["active_release"]["version"] == os.environ["ACTIVE_VERSION"]
+          assert authority["active_release"]["immutable_commit"] == os.environ["ACTIVE_COMMIT"]
+          assert authority["immediate_rollback"]["version"] == os.environ["ROLLBACK_VERSION"]
+          assert authority["immediate_rollback"]["immutable_commit"] == os.environ["ROLLBACK_COMMIT"]
+          receipt = {
+              "schema_version": "v750-full-validation-v1",
+              "status": "passed",
+              "candidate_commit": os.environ["CANDIDATE_COMMIT"],
+              "candidate_version": os.environ["CANDIDATE_VERSION"],
+              "active_version_unchanged": os.environ["ACTIVE_VERSION"],
+              "rollback_version_verified": os.environ["ROLLBACK_VERSION"],
+              "build_count": 1,
+              "provider_writes": 0,
+              "todoist_writes": 0,
+              "authority_changes": 0,
+              "production_schema_migrations": 0,
+              "release_publications": 0,
+              "production_tags_created_or_moved": 0,
+              "integration_scope_expansions": 0,
+              "credential_actions": 0,
+              "messages_sent": 0,
+              "calendar_actions": 0,
+              "scheduled_actions": 0,
+              "deletions": 0,
+              "feature_enabled_by_default": False,
+          }
+          Path("build/V750_FULL_VALIDATION.json").write_text(
+              json.dumps(receipt, indent=2, sort_keys=True) + "\n"
+          )
+          PY
+          sha256sum build/V750_FULL_VALIDATION.json \
+            build/ACTIVE_RESTORATION.json build/ROLLBACK_RESTORATION.json \
+            >> build/EVIDENCE_CHECKSUMS.sha256
+
+      - name: Retain exact candidate evidence
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: atlas-v750-candidate-evidence
+          name: atlas-ros-v750-${{ env.CANDIDATE_COMMIT }}
           path: |
-            dist/*
+            dist/
+            build/
             release/V750_RELEASE_CANDIDATE_REVIEW.md
             release/RELEASE_MANIFEST_V750_DRAFT.md
           if-no-files-found: error
+          retention-days: 90
