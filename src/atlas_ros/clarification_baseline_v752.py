@@ -16,24 +16,32 @@ def recommend_thresholds(
 
     if not cases:
         return ("Collect a non-empty retained corpus before proposing acceptance thresholds.",)
-    report = build_report(feature_mode="shadow", snapshot_digest=cases[0].event.snapshot_digest, cases=cases)
+    report = build_report(
+        feature_mode="shadow",
+        snapshot_digest=cases[0].event.snapshot_digest,
+        cases=cases,
+    )
     metrics = report.metrics
     recommendations: list[str] = []
     if metrics.repeated_questions:
         recommendations.append(
-            f"Review repeated-question rate observed in {metrics.repeated_questions}/{metrics.total_cases} cases."
+            "Review repeated-question rate observed in "
+            f"{metrics.repeated_questions}/{metrics.total_cases} cases."
         )
     if metrics.no_material_change_questions:
         recommendations.append(
-            "Review questions that produced no material change before setting a clarification-frequency target."
+            "Review questions that produced no material change before setting a "
+            "clarification-frequency target."
         )
     if metrics.task_suppression_prevented or metrics.duplicate_task_creation_prevented:
         recommendations.append(
-            "Preserve consequence controls because observed questions prevented incorrect execution-path effects."
+            "Preserve consequence controls because observed questions prevented "
+            "incorrect execution-path effects."
         )
     if not recommendations:
         recommendations.append(
-            "Retain the observed baseline and gather additional representative cases before setting thresholds."
+            "Retain the observed baseline and gather additional representative cases "
+            "before setting thresholds."
         )
     return tuple(recommendations)
 
