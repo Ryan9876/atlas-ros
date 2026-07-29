@@ -1,0 +1,144 @@
+name: v7.3.0 targeted MyPy repair
+
+on:
+  push:
+    branches: [agent/v730-operational-awareness]
+    paths:
+      - '.github/workflows/v730-mypy-fix.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: v730-mypy-fix
+  cancel-in-progress: false
+
+jobs:
+  repair:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Check out canonical candidate branch
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          ref: agent/v730-operational-awareness
+          fetch-depth: 1
+          persist-credentials: true
+
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.12.10'
+          cache: pip
+
+      - name: Install pinned CI environment
+        run: python -m pip install --disable-pip-version-check -e '.[ci]'
+
+      - name: Apply exact typing repairs
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+
+          def replace_exact(path: str, old: str, new: str, *, count: int = 1) -> None:
+              target = Path(path)
+              text = target.read_text()
+              actual = text.count(old)
+              if actual != count:
+                  raise SystemExit(f"{path}: expected {count} exact matches, found {actual}")
+              target.write_text(text.replace(old, new, count))
+
+          replace_exact(
+              "src/atlas_ros/contracts/operational_awareness/base.py",
+              '        unsigned = cls.model_construct(**values, **{cls.digest_field: "0" * 64})\n',
+              '        payload = dict(values)\n'
+              '        payload[cls.digest_field] = "0" * 64\n'
+              '        unsigned = cls.model_construct(**payload)\n',
+          )
+          replace_exact(
+              "src/atlas_ros/contracts/operational_awareness/base.py",
+              '        return getattr(self, self.digest_field) == self.expected_digest()\n',
+              '        actual = getattr(self, self.digest_field)\n'
+              '        return isinstance(actual, str) and actual == self.expected_digest()\n',
+          )
+
+          graph_path = Path(
+              "src/atlas_ros/capabilities/operational_awareness/work_graph_hygiene/engine.py"
+          )
+          graph = graph_path.read_text()
+          old_common = (
+              '            common = {\n'
+              '                "affected_records": (record.record_ref,),\n'
+              '                "confidence": ConfidenceAssessment(\n'
+              '                    score=1.0, rationale="deterministic invariant evaluation"\n'
+              '                ),\n'
+              '                "protected_record_status": protected,\n'
+              '            }\n'
+          )
+          new_common = (
+              '            affected_records = (record.record_ref,)\n'
+              '            confidence = ConfidenceAssessment(\n'
+              '                score=1.0, rationale="deterministic invariant evaluation"\n'
+              '            )\n'
+          )
+          if graph.count(old_common) != 1:
+              raise SystemExit("work graph: typed common block did not match exactly once")
+          if graph.count('                        **common,\n') != 10:
+              raise SystemExit("work graph: expected 10 common keyword expansions")
+          graph = graph.replace(old_common, new_common, 1)
+          graph = graph.replace(
+              '                        **common,\n',
+              '                        affected_records=affected_records,\n'
+              '                        confidence=confidence,\n'
+              '                        protected_record_status=protected,\n',
+          )
+          graph_path.write_text(graph)
+
+          replace_exact(
+              "src/atlas_ros/capabilities/operational_awareness/commitments/engine.py",
+              '        elif overdue and estimate.effective_state != EffectiveWorkState.COMPLETED:\n',
+              '        elif overdue:\n',
+          )
+
+          awareness = Path("src/atlas_ros/entry_points/awareness.py")
+          text = awareness.read_text()
+          replacements = (
+              ('        service = ExecutionContextService(policy)\n',
+               '        context_service = ExecutionContextService(policy)\n'),
+              ('            service.build(snapshot, states, record_id=args.record_reference)\n',
+               '            context_service.build(snapshot, states, record_id=args.record_reference)\n'),
+              ('            else service.resume(snapshot, states, record_id=args.record_reference)\n',
+               '            else context_service.resume(snapshot, states, record_id=args.record_reference)\n'),
+              ('    service = WorkGraphHygieneService(policy)\n',
+               '    hygiene_service = WorkGraphHygieneService(policy)\n'),
+              ('    findings = service.scan(snapshot, states)\n',
+               '    findings = hygiene_service.scan(snapshot, states)\n'),
+              ('    _emit(service.propose(finding), output_format=args.format)\n',
+               '    _emit(hygiene_service.propose(finding), output_format=args.format)\n'),
+          )
+          for old, new in replacements:
+              if text.count(old) != 1:
+                  raise SystemExit(f"awareness CLI: expected one match for {old!r}")
+              text = text.replace(old, new, 1)
+          awareness.write_text(text)
+          PY
+
+      - name: Validate typing repairs
+        run: |
+          set -euo pipefail
+          ruff check \
+            src/atlas_ros/contracts/operational_awareness \
+            src/atlas_ros/capabilities/operational_awareness \
+            src/atlas_ros/entry_points/awareness.py
+          python scripts/validate_architecture.py
+          mypy src
+
+      - name: Commit source-only typing repairs
+        run: |
+          set -euo pipefail
+          git config user.name 'atlas-ros-bot'
+          git config user.email 'atlas-ros-bot@users.noreply.github.com'
+          git add src
+          git diff --cached --quiet && exit 0
+          git commit -m 'fix: resolve v7.3.0 typing defects'
+          git push origin HEAD:agent/v730-operational-awareness
