@@ -44,6 +44,7 @@ exclude = [
 [tool.pytest.ini_options]
 addopts = "-q --strict-markers --cov=atlas_ros --cov-branch --cov-report=term-missing --cov-fail-under=85"
 testpaths = ["tests"]
+pythonpath = ["."]
 
 [tool.coverage.run]
 branch = true
