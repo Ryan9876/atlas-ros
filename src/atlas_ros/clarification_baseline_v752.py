@@ -5,13 +5,14 @@ from __future__ import annotations
 import json
 import re
 from pathlib import Path
+from typing import Literal
 
 from pydantic import Field
 
 from atlas_ros.clarification_evaluation_v752 import (
-    ClarificationEventV1,
     ClarificationEvaluationCaseV1,
     ClarificationEvaluationReportV1,
+    ClarificationEventV1,
     ClarificationMetricsV1,
     ClarificationOutcomeV1,
     CounterfactualDecisionV1,
@@ -46,13 +47,13 @@ class ClarificationFixtureV1(StrictContract):
     counterfactual_differs: bool
     execution_path_effect: ExecutionPathEffect = "none"
     question_quality: QuestionQualityAssessmentV1 | None = None
-    outcome: ClarificationOutcomeV1 = ClarificationOutcomeV1()
+    outcome: ClarificationOutcomeV1 = Field(default_factory=ClarificationOutcomeV1)
 
 
 class ClarificationFixtureDocumentV1(StrictContract):
     """Versioned minimized fixture corpus used for deterministic baseline generation."""
 
-    schema_version: str = Field(pattern=r"^1\.0$")
+    schema_version: Literal["1.0"] = "1.0"
     cases: tuple[ClarificationFixtureV1, ...] = Field(min_length=12)
 
 
@@ -92,7 +93,10 @@ def validate_fixture_minimization(
         combined = "\n".join(values)
         if any(pattern.search(combined) for pattern in _FORBIDDEN_FIXTURE_PATTERNS):
             errors.append(f"{case.case_id}: fixture contains prohibited sensitive content")
-        if "accepted v7.5" not in case.provenance and "minimized synthetic" not in case.provenance:
+        if (
+            "accepted v7.5" not in case.provenance
+            and "minimized synthetic" not in case.provenance
+        ):
             errors.append(f"{case.case_id}: fixture provenance is not attributable")
         if case.question is None and case.question_quality is not None:
             errors.append(f"{case.case_id}: question quality requires a question")
@@ -238,16 +242,6 @@ def build_fixture_baseline_report(
 
 def contract_schemas() -> dict[str, dict[str, object]]:
     """Export the required versioned contract schemas for retained validation."""
-
-    from atlas_ros.clarification_evaluation_v752 import (
-        ClarificationEvaluationReportV1,
-        ClarificationEventV1,
-        ClarificationEvaluationCaseV1,
-        ClarificationMetricsV1,
-        ClarificationOutcomeV1,
-        CounterfactualDecisionV1,
-        QuestionQualityAssessmentV1,
-    )
 
     contracts = (
         ClarificationEventV1,
