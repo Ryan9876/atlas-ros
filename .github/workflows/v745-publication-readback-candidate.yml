@@ -34,15 +34,19 @@ jobs:
           test -f readback/v745/atlas_ros-7.4.5-py3-none-any.whl
           test -f readback/v745/CHECKSUMS.sha256
           test -f readback/v745/RELEASE_MANIFEST_V745.md
-          (cd readback/v745 && sha256sum -c CHECKSUMS.sha256)
           test "$(sha256sum readback/v745/atlas_ros-7.4.5.tar.gz | cut -d' ' -f1)" = "dc31dbdba07c63f16d7c1df7344ea4760b751cbf8a7f02f7441e1946afca9c15"
           test "$(sha256sum readback/v745/atlas_ros-7.4.5-py3-none-any.whl | cut -d' ' -f1)" = "bb718dcfa808add92eb612115f3040f1eb4da0490c766eb2603a2c37ac5c1be6"
+          grep -F "dc31dbdba07c63f16d7c1df7344ea4760b751cbf8a7f02f7441e1946afca9c15" readback/v745/CHECKSUMS.sha256
+          grep -F "bb718dcfa808add92eb612115f3040f1eb4da0490c766eb2603a2c37ac5c1be6" readback/v745/CHECKSUMS.sha256
           cmp release/RELEASE_MANIFEST_V745.md readback/v745/RELEASE_MANIFEST_V745.md
           gh release download v7.4.0 --repo "$GITHUB_REPOSITORY" --dir readback/v740
           test -f readback/v740/atlas_ros-7.4.0.tar.gz
           test -f readback/v740/atlas_ros-7.4.0-py3-none-any.whl
           test -f readback/v740/CHECKSUMS.sha256
-          (cd readback/v740 && sha256sum -c CHECKSUMS.sha256)
+          test "$(sha256sum readback/v740/atlas_ros-7.4.0.tar.gz | cut -d' ' -f1)" = "12d555568ad451d4f8316290b5b0a6d8b83289feba04aa7fccaa293d4d772ae7"
+          test "$(sha256sum readback/v740/atlas_ros-7.4.0-py3-none-any.whl | cut -d' ' -f1)" = "22fe5269a24454a42824838e49c1ec1d0c86521954c4e6947d98917e9450c882"
+          grep -F "12d555568ad451d4f8316290b5b0a6d8b83289feba04aa7fccaa293d4d772ae7" readback/v740/CHECKSUMS.sha256
+          grep -F "22fe5269a24454a42824838e49c1ec1d0c86521954c4e6947d98917e9450c882" readback/v740/CHECKSUMS.sha256
 
       - name: Clean-install v7.4.5 and rollback v7.4.0
         run: |
