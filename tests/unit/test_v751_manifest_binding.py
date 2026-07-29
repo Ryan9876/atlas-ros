@@ -1,7 +1,10 @@
+from __future__ import annotations
+
 from pathlib import Path
 
-from atlas_ros.kernel import bootstrap
 import pytest
+
+from atlas_ros.kernel import bootstrap
 
 
 _INVENTORY_DATA_SOURCE = "collection://46af021f-eb9a-4eba-b10c-4523e70df0c3"
