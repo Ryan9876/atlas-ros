@@ -1,0 +1,239 @@
+name: v7.6.0 authorized publication controller
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - release/V760_PUBLICATION_TRIGGER.json
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: v760-authorized-publication
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      TAG: v7.6.0
+      TARGET_COMMIT: ${{ github.sha }}
+      ARTIFACT_ID: '8739787363'
+      ARTIFACT_DIGEST: sha256:1b70f6d73b7aabea37247369544f7790d09949feaa1dad3a7932a3af4469c382
+      PACKAGE_SOURCE_COMMIT: 9454f229bc489890b308b083050260dd69995899
+      IMPLEMENTATION_MERGE: 758748bbc7d981ac45e6cf38622110693e89db18
+      SOURCE_SHA256: 45bbb603278a54d8385f5ac244a556e0d15aa1f1d6ce7716a3ee34aa85049db7
+      WHEEL_SHA256: 0aa3adc3f5cab33de15778e92211258fe6910ea9ca75191de5483e0d3c46a0b9
+      SBOM_SHA256: 63f832a34a4cfe37b03205358769530740231eac86d1539844e49eaf2d6d1cd8
+      SOURCE_MANIFEST_SHA256: 0b11225c44c27ae623af1b8fc80a51c08116001cb75124e0d44e4cb8ab360ef1
+      VALIDATION_SHA256: 2760f23872efe3068dfbc1c1c61e58d7e02000c58fecd2fb5b37ffd93ec84139
+      DRAFT_MANIFEST_SHA256: 044df67cd69a5dee361b70bafe6ccae0ace08e204abe343387d155b1f7fb335b
+      RELEASE_MANIFEST_SHA256: 765170fae76176163833d3055c07278ce45cbd7d9d4418329d0dea8f4f7a0b92
+      AUTHORIZATION_SHA256: 15b91f58ddd795a18b6dc5fc82af6136c1ab80013c1d2d7a9706f78a8a71d4c4
+      SCHEMA_PLAN_SHA256: 7059751eea962e7d8b83c4cfe2491206a500891943a6353de73b763a2eb869ed
+      SCHEMA_PLAN_DIGEST: 7d8f3c0a70aee998751a19e304ffc5559916c05935b03fe0726bea04f7c431d1
+      MIGRATION_INPUT_DIGEST: a1a6567da9371aad00ba8f5ed430cd6acbade0b35c4d5e53b6e4613a924d5335
+      MIGRATION_OUTPUT_DIGEST: 896836a00823a2321add076ca3682c43b0846b1c4dd3dfe66009e82f4f411810
+      MIGRATION_PROPOSAL_SHA256: 96e31105b205d99da85804a871feb87f4079d2118bcc1b612f17a0199049d517
+      FEATURE_POLICY_SHA256: 5ec9f7ecd7e871c2992437d0106f42fcfcd5af6226666daf46ab0eb2db3adab4
+      FEATURE_POLICY_DIGEST: dc2578c08a2d5eb15a333dda434a445a8802b788a721ca8f1185c3e3a9386ad9
+      DECISION_ID: V4D-57
+      REVIEW_ID: V4V-99
+    steps:
+      - name: Checkout exact publication transaction
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          ref: ${{ env.TARGET_COMMIT }}
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Verify prepublication authority and exact controls
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$TARGET_COMMIT"
+          test -f release/RELEASE_MANIFEST_V760.md
+          test -f release/V760_EXACT_PACKAGE_AUTHORIZATION.md
+          test -f release/V760_PUBLICATION_TRIGGER.json
+          test "$(sha256sum release/RELEASE_MANIFEST_V760.md | cut -d' ' -f1)" = "$RELEASE_MANIFEST_SHA256"
+          test "$(sha256sum release/V760_EXACT_PACKAGE_AUTHORIZATION.md | cut -d' ' -f1)" = "$AUTHORIZATION_SHA256"
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          authority = json.loads(Path('governance/AUTHORITY.json').read_text())
+          assert authority['active_release']['version'] == '7.5.2'
+          assert authority['active_release']['immutable_commit'] == '28f317f89f717bbf7c8df4832cea82aee26649f2'
+          assert authority['immediate_rollback']['version'] == '7.5.1'
+          assert authority['immediate_rollback']['immutable_commit'] == '379892900e1c82f84a6716f46a8180d83c836aa7'
+          trigger = json.loads(Path('release/V760_PUBLICATION_TRIGGER.json').read_text())
+          assert trigger == {
+              'artifact_id': 8739787363,
+              'artifact_sha256': '1b70f6d73b7aabea37247369544f7790d09949feaa1dad3a7932a3af4469c382',
+              'authorization_sha256': os.environ['AUTHORIZATION_SHA256'],
+              'decision_id': os.environ['DECISION_ID'],
+              'implementation_merge': os.environ['IMPLEMENTATION_MERGE'],
+              'package_source_commit': os.environ['PACKAGE_SOURCE_COMMIT'],
+              'release_manifest_sha256': os.environ['RELEASE_MANIFEST_SHA256'],
+              'review_id': os.environ['REVIEW_ID'],
+              'schema_version': 'v760-publication-trigger-v1',
+              'tag': 'v7.6.0',
+          }
+          manifest = Path('release/RELEASE_MANIFEST_V760.md').read_text()
+          authorization = Path('release/V760_EXACT_PACKAGE_AUTHORIZATION.md').read_text()
+          for required in (
+              os.environ['PACKAGE_SOURCE_COMMIT'], os.environ['IMPLEMENTATION_MERGE'],
+              os.environ['ARTIFACT_ID'], os.environ['ARTIFACT_DIGEST'].removeprefix('sha256:'),
+              os.environ['SOURCE_SHA256'], os.environ['WHEEL_SHA256'], os.environ['SBOM_SHA256'],
+              os.environ['SOURCE_MANIFEST_SHA256'], os.environ['VALIDATION_SHA256'],
+              os.environ['DRAFT_MANIFEST_SHA256'], os.environ['SCHEMA_PLAN_SHA256'],
+              os.environ['SCHEMA_PLAN_DIGEST'], os.environ['MIGRATION_INPUT_DIGEST'],
+              os.environ['MIGRATION_OUTPUT_DIGEST'], os.environ['FEATURE_POLICY_SHA256'],
+              os.environ['FEATURE_POLICY_DIGEST'], os.environ['DECISION_ID'], os.environ['REVIEW_ID'],
+              'collection://46af021f-eb9a-4eba-b10c-4523e70df0c3',
+          ):
+              assert required in manifest, required
+              assert required in authorization or required == 'collection://46af021f-eb9a-4eba-b10c-4523e70df0c3', required
+          PY
+
+      - name: Verify and download exact retained candidate artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$(gh api "/repos/${GITHUB_REPOSITORY}/actions/artifacts/${ARTIFACT_ID}" --jq .digest)" = "$ARTIFACT_DIGEST"
+          mkdir -p publication
+          gh api "/repos/${GITHUB_REPOSITORY}/actions/artifacts/${ARTIFACT_ID}/zip" > publication/candidate.zip
+          test "$(sha256sum publication/candidate.zip | cut -d' ' -f1)" = "${ARTIFACT_DIGEST#sha256:}"
+          unzip -q publication/candidate.zip -d publication/package
+          for required in \
+            dist/atlas_ros-7.6.0.tar.gz \
+            dist/atlas_ros-7.6.0-py3-none-any.whl \
+            build/CHECKSUMS.sha256 \
+            build/EVIDENCE_CHECKSUMS.sha256 \
+            build/NESTED_CHECKSUMS.sha256 \
+            build/SBOM.spdx.json \
+            build/SOURCE_MANIFEST.sha256 \
+            build/V760_VALIDATION_RECEIPT.json \
+            build/V760_PACKAGE_INDEX.json \
+            build/V760_SCHEMA_PLAN.json \
+            build/V760_MIGRATION_PROPOSAL.json \
+            build/V760_FEATURE_POLICY_TARGET.json \
+            build/V760_NON_PUBLISHING_CONTROLLER.json \
+            build/V760_ZERO_PROVIDER_WRITE_RECEIPT.json; do
+            test -f "publication/package/$required"
+          done
+          (
+            cd publication/package
+            sha256sum -c build/CHECKSUMS.sha256
+            sha256sum -c build/EVIDENCE_CHECKSUMS.sha256
+            sha256sum -c build/NESTED_CHECKSUMS.sha256
+          )
+          test "$(sha256sum publication/package/dist/atlas_ros-7.6.0.tar.gz | cut -d' ' -f1)" = "$SOURCE_SHA256"
+          test "$(sha256sum publication/package/dist/atlas_ros-7.6.0-py3-none-any.whl | cut -d' ' -f1)" = "$WHEEL_SHA256"
+          test "$(sha256sum publication/package/build/SBOM.spdx.json | cut -d' ' -f1)" = "$SBOM_SHA256"
+          test "$(sha256sum publication/package/build/SOURCE_MANIFEST.sha256 | cut -d' ' -f1)" = "$SOURCE_MANIFEST_SHA256"
+          test "$(sha256sum publication/package/build/V760_VALIDATION_RECEIPT.json | cut -d' ' -f1)" = "$VALIDATION_SHA256"
+          test "$(sha256sum publication/package/build/V760_SCHEMA_PLAN.json | cut -d' ' -f1)" = "$SCHEMA_PLAN_SHA256"
+          test "$(sha256sum publication/package/build/V760_MIGRATION_PROPOSAL.json | cut -d' ' -f1)" = "$MIGRATION_PROPOSAL_SHA256"
+          test "$(sha256sum publication/package/build/V760_FEATURE_POLICY_TARGET.json | cut -d' ' -f1)" = "$FEATURE_POLICY_SHA256"
+          test "$(sha256sum publication/package/build/V760_DRAFT_IMMUTABLE_MANIFEST.md | cut -d' ' -f1)" = "$DRAFT_MANIFEST_SHA256"
+          test "$(cat publication/package/build/BUILD_COUNT.txt)" = "1"
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          root = Path('publication/package/build')
+          receipt = json.loads((root / 'V760_VALIDATION_RECEIPT.json').read_text())
+          assert receipt['status'] == 'passed'
+          assert receipt['candidate_commit'] == os.environ['PACKAGE_SOURCE_COMMIT']
+          assert receipt['candidate_version'] == '7.6.0'
+          assert receipt['active_restoration_version'] == '7.5.2'
+          assert receipt['active_restoration_commit'] == '28f317f89f717bbf7c8df4832cea82aee26649f2'
+          assert receipt['rollback_restoration_version'] == '7.5.1'
+          assert receipt['rollback_restoration_commit'] == '379892900e1c82f84a6716f46a8180d83c836aa7'
+          assert receipt['schema_plan_sha256'] == os.environ['SCHEMA_PLAN_SHA256']
+          assert receipt['schema_plan_digest'] == os.environ['SCHEMA_PLAN_DIGEST']
+          assert receipt['migration_input_snapshot_digest'] == os.environ['MIGRATION_INPUT_DIGEST']
+          assert receipt['migration_output_digest'] == os.environ['MIGRATION_OUTPUT_DIGEST']
+          assert receipt['feature_policy_sha256'] == os.environ['FEATURE_POLICY_SHA256']
+          assert receipt['build_count'] == 1
+          assert receipt['provider_writes'] == 0
+          assert receipt['todoist_writes'] == 0
+          assert receipt['production_schema_migrations'] == 0
+          assert receipt['production_migration_records'] == 0
+
+          migration = json.loads((root / 'V760_MIGRATION_PROPOSAL.json').read_text())
+          assert migration['input_snapshot_digest'] == os.environ['MIGRATION_INPUT_DIGEST']
+          assert migration['proposed_output_digest'] == os.environ['MIGRATION_OUTPUT_DIGEST']
+          assert migration['create_count'] == 0
+          assert migration['update_count'] == 0
+          assert migration['skip_count'] == 13
+          assert migration['idempotent'] is True
+          assert migration['idempotency_proof']['duplicates_created'] == 0
+
+          schema = json.loads((root / 'V760_SCHEMA_PLAN.json').read_text())
+          assert schema['schema_plan_digest'] == os.environ['SCHEMA_PLAN_DIGEST']
+          assert len(schema['create_targets']) == 3
+          assert schema['modify_targets'] == []
+          assert schema['provider_write_count'] == 0
+
+          policy = json.loads((root / 'V760_FEATURE_POLICY_TARGET.json').read_text())
+          assert policy['feature_policy_digest'] == os.environ['FEATURE_POLICY_DIGEST']
+          assert policy['after_release_activation'] == 'disabled'
+          assert policy['after_schema_and_migration_readback'] == 'inspection'
+          assert policy['inference_enable_target'] == 'disabled_pending_separate_exact_authorization'
+          assert policy['forgetting_execution_enabled'] is False
+
+          controller = json.loads((root / 'V760_NON_PUBLISHING_CONTROLLER.json').read_text())
+          for field in (
+              'provider_writes', 'todoist_writes', 'authority_changes',
+              'production_schema_migrations', 'release_publications',
+              'production_tags_created_or_moved', 'integration_scope_expansions',
+              'credential_actions', 'messages_sent', 'calendar_actions',
+              'scheduled_actions', 'deletions',
+          ):
+              assert controller[field] == 0, field
+          zero = json.loads((root / 'V760_ZERO_PROVIDER_WRITE_RECEIPT.json').read_text())
+          for field in (
+              'provider_writes', 'todoist_writes', 'notion_writes',
+              'credential_actions', 'messages_sent', 'calendar_actions',
+              'scheduled_actions', 'deletions', 'forgetting_executions',
+          ):
+              assert zero[field] == 0, field
+          PY
+
+      - name: Create immutable tag and GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          git config user.name "Atlas ROS Release Bot"
+          git config user.email "atlas-ros-release@users.noreply.github.com"
+          if git rev-parse "$TAG" >/dev/null 2>&1; then
+            test "$(git rev-list -n 1 "$TAG")" = "$TARGET_COMMIT"
+          else
+            git tag -a "$TAG" "$TARGET_COMMIT" -m "Atlas ROS v7.6.0 immutable governed intent memory release"
+            git push origin "refs/tags/$TAG"
+          fi
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "Release already exists; refusing replacement."
+            exit 1
+          fi
+          cp release/RELEASE_MANIFEST_V760.md publication/package/RELEASE_MANIFEST_V760.md
+          cp release/V760_EXACT_PACKAGE_AUTHORIZATION.md publication/package/V760_EXACT_PACKAGE_AUTHORIZATION.md
+          gh release create "$TAG" \
+            --repo "$GITHUB_REPOSITORY" \
+            --verify-tag \
+            --target "$TARGET_COMMIT" \
+            --title "Atlas ROS v7.6.0" \
+            --notes-file release/RELEASE_MANIFEST_V760.md \
+            publication/package/dist/atlas_ros-7.6.0.tar.gz \
+            publication/package/dist/atlas_ros-7.6.0-py3-none-any.whl \
+            publication/package/build/* \
+            publication/package/RELEASE_MANIFEST_V760.md \
+            publication/package/V760_EXACT_PACKAGE_AUTHORIZATION.md
