@@ -9,8 +9,8 @@ from collections.abc import Sequence
 
 from atlas_ros import __version__
 
-CANDIDATE_VERSION = "7.5.2"
-ACTIVE_PRODUCTION_VERSION = "7.5.1"
+CANDIDATE_VERSION = "7.6.0"
+ACTIVE_PRODUCTION_VERSION = "7.5.2"
 
 
 class RuntimeCommandError(RuntimeError):

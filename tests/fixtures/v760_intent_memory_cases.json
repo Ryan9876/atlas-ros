@@ -1,0 +1,16 @@
+{
+  "schema_version": "1.0",
+  "cases": [
+    {"case_id": "anx-central-management", "scope": {"domain": "network", "project": "ANX"}, "expected": "separate from naming and discovery"},
+    {"case_id": "jira-customization-vs-integration", "scope": {"domain": "work-management", "project": "Jira"}, "expected": "related but separate"},
+    {"case_id": "true-completion-equivalent", "scope": {"domain": "network", "project": "ANX"}, "expected": "duplicate"},
+    {"case_id": "context-scope-isolation", "scope": {"domain": "network", "project": "ANX"}, "expected": "must not transfer"},
+    {"case_id": "ryan-correction", "scope": {"domain": "network", "project": "ANX"}, "expected": "corrected interpretation supersedes"},
+    {"case_id": "stale-evidence", "scope": {"domain": "network", "project": "ANX"}, "expected": "clarify"},
+    {"case_id": "contradictory-evidence", "scope": {"domain": "network", "project": "ANX"}, "expected": "clarify"},
+    {"case_id": "retired-evidence", "scope": {"domain": "network", "project": "ANX"}, "expected": "excluded"},
+    {"case_id": "forgotten-evidence", "scope": {"domain": "network", "project": "ANX"}, "expected": "excluded from active index"},
+    {"case_id": "current-instruction-override", "scope": {"domain": "network", "project": "ANX"}, "expected": "current instruction wins"},
+    {"case_id": "migration-replay", "scope": {"domain": "system", "project": "Atlas ROS"}, "expected": "same digest and no duplicates"}
+  ]
+}

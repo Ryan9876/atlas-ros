@@ -1,0 +1,37 @@
+{
+  "schema_version": "1.0",
+  "snapshot_id": "v760-initial-production-evidence-dry-run",
+  "sources": {
+    "universal_inbox": {
+      "data_source": "collection://7bc7d289-299f-4160-95c9-921ee15ce505",
+      "needs_clarification_count": 0
+    },
+    "review_records": {
+      "data_source": "collection://0881c279-46d0-4673-9477-616008bfe477",
+      "review_url": "https://app.notion.com/p/3acb8344ad2c81f596f3f4f3859b5347",
+      "review_id": "V4V-90",
+      "classification": "implementation_review_not_intent_evidence"
+    },
+    "v752_regression_corpus": {
+      "repository_path": "tests/fixtures/v752_clarification_cases.json",
+      "git_blob_sha": "8505f2ec03b5c5aa2e99720269da58c0f5aece90",
+      "record_count": 12,
+      "classification": "evaluation_fixture_not_production_intent_evidence"
+    }
+  },
+  "records": [
+    {"source_system": "notion-review-records", "source_record_id": "V4V-90", "source_type": "implementation_review", "source_reference": "https://app.notion.com/p/3acb8344ad2c81f596f3f4f3859b5347", "confirmed": false, "attributable": true, "speculative": false},
+    {"source_system": "github-v752-fixtures", "source_record_id": "anx-central-management", "source_type": "evaluation_fixture", "source_reference": "tests/fixtures/v752_clarification_cases.json#anx-central-management", "confirmed": false, "attributable": true, "speculative": true},
+    {"source_system": "github-v752-fixtures", "source_record_id": "jira-customization-vs-integration", "source_type": "evaluation_fixture", "source_reference": "tests/fixtures/v752_clarification_cases.json#jira-customization-vs-integration", "confirmed": false, "attributable": true, "speculative": true},
+    {"source_system": "github-v752-fixtures", "source_record_id": "true-completion-equivalent", "source_type": "evaluation_fixture", "source_reference": "tests/fixtures/v752_clarification_cases.json#true-completion-equivalent", "confirmed": false, "attributable": true, "speculative": true},
+    {"source_system": "github-v752-fixtures", "source_record_id": "paraphrased-duplicate", "source_type": "evaluation_fixture", "source_reference": "tests/fixtures/v752_clarification_cases.json#paraphrased-duplicate", "confirmed": false, "attributable": true, "speculative": true},
+    {"source_system": "github-v752-fixtures", "source_record_id": "high-consequence-ambiguity", "source_type": "evaluation_fixture", "source_reference": "tests/fixtures/v752_clarification_cases.json#high-consequence-ambiguity", "confirmed": false, "attributable": true, "speculative": true},
+    {"source_system": "github-v752-fixtures", "source_record_id": "strong-evidence-avoids-question", "source_type": "evaluation_fixture", "source_reference": "tests/fixtures/v752_clarification_cases.json#strong-evidence-avoids-question", "confirmed": false, "attributable": true, "speculative": true},
+    {"source_system": "github-v752-fixtures", "source_record_id": "context-change-reintroduces-question", "source_type": "evaluation_fixture", "source_reference": "tests/fixtures/v752_clarification_cases.json#context-change-reintroduces-question", "confirmed": false, "attributable": true, "speculative": true},
+    {"source_system": "github-v752-fixtures", "source_record_id": "stale-evidence", "source_type": "evaluation_fixture", "source_reference": "tests/fixtures/v752_clarification_cases.json#stale-evidence", "confirmed": false, "attributable": true, "speculative": true},
+    {"source_system": "github-v752-fixtures", "source_record_id": "contradictory-evidence", "source_type": "evaluation_fixture", "source_reference": "tests/fixtures/v752_clarification_cases.json#contradictory-evidence", "confirmed": false, "attributable": true, "speculative": true},
+    {"source_system": "github-v752-fixtures", "source_record_id": "user-correction", "source_type": "evaluation_fixture", "source_reference": "tests/fixtures/v752_clarification_cases.json#user-correction", "confirmed": false, "attributable": true, "speculative": true},
+    {"source_system": "github-v752-fixtures", "source_record_id": "no-material-change", "source_type": "evaluation_fixture", "source_reference": "tests/fixtures/v752_clarification_cases.json#no-material-change", "confirmed": false, "attributable": true, "speculative": true},
+    {"source_system": "github-v752-fixtures", "source_record_id": "duplicate-creation-prevented", "source_type": "evaluation_fixture", "source_reference": "tests/fixtures/v752_clarification_cases.json#duplicate-creation-prevented", "confirmed": false, "attributable": true, "speculative": true}
+  ]
+}
