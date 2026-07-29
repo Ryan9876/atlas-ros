@@ -62,7 +62,11 @@ def main() -> None:
     assert manifest_text == tagged_manifest
     assert sha256_digest(manifest_text) == MANIFEST_DIGEST
     assert PACKAGE_SOURCE_COMMIT in manifest_text
-    assert "Required production integrations remain exactly **GitHub, Notion, and Todoist**" in manifest_text
+    required_integrations_text = (
+        "Required production integrations remain exactly "
+        "**GitHub, Notion, and Todoist**"
+    )
+    assert required_integrations_text in manifest_text
     assert "Google Drive remains optional" in manifest_text
     assert "Acceptance Status" in manifest_text
     assert "Completion Evidence State" in manifest_text
@@ -92,7 +96,10 @@ def main() -> None:
     }
     output = root / "authority-activation-evidence/V730_AUTHORITY_ACTIVATION.json"
     output.parent.mkdir(parents=True, exist_ok=True)
-    output.write_text(json.dumps(evidence, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    output.write_text(
+        json.dumps(evidence, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
 
 
 if __name__ == "__main__":
