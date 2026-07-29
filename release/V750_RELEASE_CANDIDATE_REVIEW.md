@@ -34,6 +34,8 @@ Governed decision: https://app.notion.com/p/3acb8344ad2c81758df3e17da0276687
 
 Architecture/schema review: https://app.notion.com/p/3acb8344ad2c816fbfabd9350a039d58
 
+Exact-package promotion proposal: https://app.notion.com/p/3acb8344ad2c81488c7cf139e6861288
+
 ## Exact package identity
 
 - Version: `7.5.0`
@@ -67,6 +69,16 @@ The exact package passed:
 - checksum validation of published v7.4.5 and v7.4.0 release assets;
 - clean restoration installation for Active v7.4.5 and immediate rollback v7.4.0;
 - independent general repository CI.
+
+## Governed reviews
+
+- Implementation review: https://app.notion.com/p/3acb8344ad2c81f596f3f4f3859b5347
+- Security and privacy review: https://app.notion.com/p/3acb8344ad2c81f982f9e2f9c1be2ce1
+- Schema review: https://app.notion.com/p/3acb8344ad2c81b28d32d941951a706e
+- Test and validation evidence: https://app.notion.com/p/3acb8344ad2c8178b111d2cc8d6afdd8
+- Rollback and restoration review: https://app.notion.com/p/3acb8344ad2c8145a868fbbb689586fa
+- Provider-write review: https://app.notion.com/p/3acb8344ad2c81ddbfffda13251b1502
+- Release-candidate review: https://app.notion.com/p/3acb8344ad2c8113a401d8cec9e7decb
 
 ## Threat, privacy, and failure-mode review
 
