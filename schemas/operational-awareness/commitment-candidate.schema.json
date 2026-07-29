@@ -1,0 +1,241 @@
+{
+  "$defs": {
+    "CommitmentType": {
+      "enum": [
+        "ryan_owned_commitment",
+        "commitment_made_to_ryan",
+        "delegated_outcome",
+        "requested_decision",
+        "waiting_dependency",
+        "vendor_commitment",
+        "cross_functional_commitment",
+        "unconfirmed_conversational_commitment"
+      ],
+      "title": "CommitmentType",
+      "type": "string"
+    },
+    "ConfidenceAssessment": {
+      "properties": {
+        "missing_data": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/MissingDataIndicator"
+          },
+          "title": "Missing Data",
+          "type": "array"
+        },
+        "rationale": {
+          "title": "Rationale",
+          "type": "string"
+        },
+        "score": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Score"
+        }
+      },
+      "required": [
+        "score",
+        "rationale"
+      ],
+      "title": "ConfidenceAssessment",
+      "type": "object"
+    },
+    "MissingDataIndicator": {
+      "properties": {
+        "field_name": {
+          "title": "Field Name",
+          "type": "string"
+        },
+        "material": {
+          "default": false,
+          "title": "Material",
+          "type": "boolean"
+        },
+        "reason": {
+          "title": "Reason",
+          "type": "string"
+        }
+      },
+      "required": [
+        "field_name",
+        "reason"
+      ],
+      "title": "MissingDataIndicator",
+      "type": "object"
+    },
+    "ProvenanceRecord": {
+      "properties": {
+        "observed_at": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Observed At"
+        },
+        "origin": {
+          "$ref": "#/$defs/ValueOrigin"
+        },
+        "schema_version": {
+          "default": "advisory-v1",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "source_ref": {
+          "title": "Source Ref",
+          "type": "string"
+        }
+      },
+      "required": [
+        "source_ref",
+        "origin"
+      ],
+      "title": "ProvenanceRecord",
+      "type": "object"
+    },
+    "ValueOrigin": {
+      "enum": [
+        "observed",
+        "inferred",
+        "configured",
+        "simulated",
+        "unknown"
+      ],
+      "title": "ValueOrigin",
+      "type": "string"
+    }
+  },
+  "$id": "https://github.com/Ryan9876/atlas-ros/schemas/operational-awareness/commitment-candidate.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "accountable_party": {
+      "anyOf": [
+        {
+          "maxLength": 300,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Accountable Party"
+    },
+    "ambiguity": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Ambiguity",
+      "type": "array"
+    },
+    "candidate_digest": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Candidate Digest",
+      "type": "string"
+    },
+    "candidate_id": {
+      "maxLength": 512,
+      "minLength": 1,
+      "title": "Candidate Id",
+      "type": "string"
+    },
+    "confidence": {
+      "$ref": "#/$defs/ConfidenceAssessment"
+    },
+    "contract_id": {
+      "const": "atlas.commitment-candidate",
+      "default": "atlas.commitment-candidate",
+      "title": "Contract Id",
+      "type": "string"
+    },
+    "obligated_party": {
+      "anyOf": [
+        {
+          "maxLength": 300,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Obligated Party"
+    },
+    "original_source": {
+      "maxLength": 2000,
+      "minLength": 1,
+      "title": "Original Source",
+      "type": "string"
+    },
+    "proposed_checkpoint": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Proposed Checkpoint"
+    },
+    "proposed_commitment_type": {
+      "$ref": "#/$defs/CommitmentType"
+    },
+    "proposed_due_date": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Proposed Due Date"
+    },
+    "provenance": {
+      "items": {
+        "$ref": "#/$defs/ProvenanceRecord"
+      },
+      "title": "Provenance",
+      "type": "array"
+    },
+    "requested_outcome": {
+      "maxLength": 5000,
+      "minLength": 1,
+      "title": "Requested Outcome",
+      "type": "string"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    }
+  },
+  "required": [
+    "candidate_id",
+    "original_source",
+    "proposed_commitment_type",
+    "requested_outcome",
+    "confidence",
+    "provenance",
+    "candidate_digest"
+  ],
+  "title": "CommitmentCandidateV1",
+  "type": "object"
+}

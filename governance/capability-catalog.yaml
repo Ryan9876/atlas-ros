@@ -1,76 +1,153 @@
-schema_version: "1.0"
+schema_version: '1.0'
 capabilities:
-  - id: atlas.input-processing
-    package: capabilities/input_processing
-    owner: Atlas ROS Core
-    writes_providers: false
-    inputs: [CaptureEnvelope]
-    outputs: [IntentGraph]
-  - id: atlas.classification
-    package: capabilities/classification
-    owner: Atlas ROS Core
-    writes_providers: false
-  - id: atlas.knowledge-composition
-    package: capabilities/knowledge_composition
-    owner: Atlas ROS Core
-    writes_providers: false
-  - id: atlas.management-reasoning
-    package: capabilities/management_reasoning
-    owner: Atlas ROS Core
-    writes_providers: false
-  - id: atlas.management-structure
-    package: capabilities/management_structure
-    owner: Atlas ROS Core
-    writes_providers: false
-  - id: atlas.record-routing
-    package: capabilities/record_routing
-    owner: Atlas ROS Core
-    writes_providers: false
-  - id: atlas.execution-planning
-    package: capabilities/execution_planning
-    owner: Atlas ROS Core
-    writes_providers: false
-    inputs: [IntentGraph, PlannedProviderOperation]
-    outputs: [ProposedExecutionPlan]
-    sole_planning_authority: true
-  - id: atlas.framework-composition
-    package: capabilities/framework_composition
-    owner: Atlas ROS Core
-    writes_providers: false
-  - id: atlas.minimum-effective-path
-    package: capabilities/minimum_effective_path
-    owner: Atlas ROS Core
-    writes_providers: false
-  - id: atlas.execution-intelligence
-    package: capabilities/execution_intelligence
-    owner: Atlas ROS Core
-    writes_providers: false
-    advisory_only: true
-  - id: atlas.execution-presentation
-    package: capabilities/execution_presentation
-    owner: Atlas ROS Core
-    writes_providers: false
-  - id: atlas.scenario-intelligence
-    package: capabilities/scenario_intelligence
-    owner: Atlas ROS Core
-    writes_providers: false
-    advisory_only: true
-  - id: atlas.decision-support
-    package: capabilities/decision_support
-    owner: Atlas ROS Core
-    writes_providers: false
-  - id: atlas.reconciliation
-    package: capabilities/reconciliation
-    owner: Atlas ROS Core
-    writes_providers: false
-    inputs: [ProposedExecutionPlan, ExecutionTransactionReceipt]
-    outputs: [ReconciliationResult]
-    may_create_execution_intent: false
-  - id: atlas.historical-cleanup-planning
-    package: capabilities/historical_cleanup
-    owner: Atlas ROS Governance
-    writes_providers: false
-    inputs: [HistoricalInventory]
-    outputs: [HistoricalCleanupPlan]
-    advisory_only: false
-    may_create_execution_intent: false
+- id: atlas.input-processing
+  package: capabilities/input_processing
+  owner: Atlas ROS Core
+  writes_providers: false
+  inputs:
+  - CaptureEnvelope
+  outputs:
+  - IntentGraph
+- id: atlas.classification
+  package: capabilities/classification
+  owner: Atlas ROS Core
+  writes_providers: false
+- id: atlas.knowledge-composition
+  package: capabilities/knowledge_composition
+  owner: Atlas ROS Core
+  writes_providers: false
+- id: atlas.management-reasoning
+  package: capabilities/management_reasoning
+  owner: Atlas ROS Core
+  writes_providers: false
+- id: atlas.management-structure
+  package: capabilities/management_structure
+  owner: Atlas ROS Core
+  writes_providers: false
+- id: atlas.record-routing
+  package: capabilities/record_routing
+  owner: Atlas ROS Core
+  writes_providers: false
+- id: atlas.execution-planning
+  package: capabilities/execution_planning
+  owner: Atlas ROS Core
+  writes_providers: false
+  inputs:
+  - IntentGraph
+  - PlannedProviderOperation
+  outputs:
+  - ProposedExecutionPlan
+  sole_planning_authority: true
+- id: atlas.framework-composition
+  package: capabilities/framework_composition
+  owner: Atlas ROS Core
+  writes_providers: false
+- id: atlas.minimum-effective-path
+  package: capabilities/minimum_effective_path
+  owner: Atlas ROS Core
+  writes_providers: false
+- id: atlas.execution-intelligence
+  package: capabilities/execution_intelligence
+  owner: Atlas ROS Core
+  writes_providers: false
+  advisory_only: true
+- id: atlas.execution-presentation
+  package: capabilities/execution_presentation
+  owner: Atlas ROS Core
+  writes_providers: false
+- id: atlas.scenario-intelligence
+  package: capabilities/scenario_intelligence
+  owner: Atlas ROS Core
+  writes_providers: false
+  advisory_only: true
+- id: atlas.decision-support
+  package: capabilities/decision_support
+  owner: Atlas ROS Core
+  writes_providers: false
+- id: atlas.reconciliation
+  package: capabilities/reconciliation
+  owner: Atlas ROS Core
+  writes_providers: false
+  inputs:
+  - ProposedExecutionPlan
+  - ExecutionTransactionReceipt
+  outputs:
+  - ReconciliationResult
+  may_create_execution_intent: false
+- id: atlas.historical-cleanup-planning
+  package: capabilities/historical_cleanup
+  owner: Atlas ROS Governance
+  writes_providers: false
+  inputs:
+  - HistoricalInventory
+  outputs:
+  - HistoricalCleanupPlan
+  advisory_only: false
+  may_create_execution_intent: false
+- id: atlas.work-state-intelligence
+  package: capabilities/operational_awareness/work_state
+  owner: Operational Awareness
+  writes_providers: false
+  inputs:
+  - OperationalSnapshotV1
+  outputs:
+  - WorkStateEstimateV1
+  advisory_only: true
+- id: atlas.commitment-intelligence
+  package: capabilities/operational_awareness/commitments
+  owner: Operational Awareness
+  writes_providers: false
+  inputs:
+  - OperationalSnapshotV1
+  - WorkStateEstimateV1
+  outputs:
+  - CommitmentCandidateV1
+  - CommitmentAssessmentV1
+  advisory_only: true
+- id: atlas.exception-operating-brief
+  package: capabilities/operational_awareness/operating_brief
+  owner: Operational Awareness
+  writes_providers: false
+  inputs:
+  - OperationalSnapshotV1
+  - WorkStateEstimateV1
+  - CommitmentAssessmentV1
+  outputs:
+  - OperatingBriefV1
+  advisory_only: true
+- id: atlas.execution-context
+  package: capabilities/operational_awareness/execution_context
+  owner: Operational Awareness
+  writes_providers: false
+  inputs:
+  - OperationalSnapshotV1
+  - WorkStateEstimateV1
+  outputs:
+  - ExecutionContextPackV1
+  - ResumptionPointV1
+  advisory_only: true
+- id: atlas.work-graph-hygiene
+  package: capabilities/operational_awareness/work_graph_hygiene
+  owner: Operational Awareness
+  writes_providers: false
+  inputs:
+  - OperationalSnapshotV1
+  - WorkStateEstimateV1
+  outputs:
+  - WorkGraphSnapshotV1
+  - HygieneFindingV1
+  - RepairProposalV1
+  advisory_only: true
+  may_create_execution_intent: false
+- id: atlas.command-lifecycle
+  package: capabilities/operational_awareness/command_lifecycle
+  owner: Operational Awareness
+  writes_providers: false
+  inputs:
+  - CommandSourceRefV1
+  - OperationalSnapshotV1
+  outputs:
+  - CommandInterpretationV1
+  - TodoistLifecyclePlanV1
+  explicit_intent_required: true
+  authorization_required: true

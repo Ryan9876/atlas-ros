@@ -1,0 +1,9 @@
+schema_version: '1.0'
+policies:
+- id: atlas.operational-awareness.v1
+  path: src/atlas_ros/data/operational-awareness.yaml
+  schema: schemas/policy/operational-awareness-policy-v1.schema.json
+  compiler: atlas_ros.policy.operational_awareness.load_operational_awareness_policy
+  digest_bound: true
+  fail_closed: true
+  environment_authority: false

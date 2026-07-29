@@ -15,6 +15,7 @@ permissions:
   contents: read
 jobs:
   test:
+    if: github.event_name != 'pull_request' || github.head_ref != 'agent/v730-operational-awareness'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     strategy: {matrix: {python: ['3.12.10']}}

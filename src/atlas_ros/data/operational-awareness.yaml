@@ -1,0 +1,66 @@
+schema_version: "1.0"
+policy_id: atlas.operational-awareness.v1
+lifecycle: active
+state_mappings:
+  not_started: not_started
+  ready: ready
+  active: active
+  in_progress: active
+  waiting: waiting
+  blocked: blocked
+  delegated: delegated
+  review: review
+  awaiting_validation: awaiting_validation
+  awaiting_decision: awaiting_decision
+  technically_complete: technically_complete
+  complete: completed
+  completed: completed
+  cancelled: cancelled
+authority_precedence:
+  - notion
+  - todoist
+  - github
+  - sqlite
+freshness_days:
+  current: 7
+  aging: 21
+  stale: 45
+confidence:
+  base: 1.0
+  missing_material_penalty: 0.25
+  contradiction_penalty: 0.35
+  stale_penalty: 0.2
+  unverified_penalty: 0.15
+completion:
+  require_definition_of_done: true
+  require_completion_evidence: true
+  require_closed_children: true
+  require_approval_when_declared: true
+brief:
+  item_budget: 10
+  critical_priority: 1
+  deduplicate_by_record: true
+context:
+  evidence_limit: 20
+  stale_warning_days: 45
+hygiene:
+  protected_record_types:
+    - decision_record
+    - review_record
+    - provider_transaction_receipt
+  max_active_delegated_checkpoints: 1
+command:
+  allowed_commands:
+    - delegate
+    - update
+    - waiting-on
+    - blocked
+    - received
+    - approved
+    - complete
+    - cancel
+  max_object_count: 8
+  missing_checkpoint_behavior: undated_follow_up
+  preserve_parent_outcome: true
+  require_readback: true
+  replay_safe: true

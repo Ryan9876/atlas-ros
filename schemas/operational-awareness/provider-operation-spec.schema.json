@@ -1,0 +1,61 @@
+{
+  "$id": "https://github.com/Ryan9876/atlas-ros/schemas/operational-awareness/provider-operation-spec.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "action": {
+      "title": "Action",
+      "type": "string"
+    },
+    "contract_id": {
+      "const": "atlas.provider-operation-spec",
+      "default": "atlas.provider-operation-spec",
+      "title": "Contract Id",
+      "type": "string"
+    },
+    "expected_readback": {
+      "additionalProperties": true,
+      "title": "Expected Readback",
+      "type": "object"
+    },
+    "idempotency_key": {
+      "title": "Idempotency Key",
+      "type": "string"
+    },
+    "operation_digest": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Operation Digest",
+      "type": "string"
+    },
+    "payload": {
+      "additionalProperties": true,
+      "title": "Payload",
+      "type": "object"
+    },
+    "provider": {
+      "title": "Provider",
+      "type": "string"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "target": {
+      "title": "Target",
+      "type": "string"
+    }
+  },
+  "required": [
+    "provider",
+    "action",
+    "target",
+    "payload",
+    "idempotency_key",
+    "expected_readback",
+    "operation_digest"
+  ],
+  "title": "ProviderOperationSpecV1",
+  "type": "object"
+}

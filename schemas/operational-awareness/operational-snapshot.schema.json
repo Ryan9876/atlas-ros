@@ -1,0 +1,781 @@
+{
+  "$defs": {
+    "AcceptanceState": {
+      "enum": [
+        "unconfirmed",
+        "accepted",
+        "declined",
+        "superseded",
+        "not_required"
+      ],
+      "title": "AcceptanceState",
+      "type": "string"
+    },
+    "AuthoritativeSystem": {
+      "enum": [
+        "github",
+        "notion",
+        "todoist",
+        "sqlite",
+        "other"
+      ],
+      "title": "AuthoritativeSystem",
+      "type": "string"
+    },
+    "AuthorityLevel": {
+      "enum": [
+        "canonical",
+        "authoritative_dynamic",
+        "execution",
+        "supporting",
+        "temporary"
+      ],
+      "title": "AuthorityLevel",
+      "type": "string"
+    },
+    "EvidenceConflictV1": {
+      "additionalProperties": false,
+      "properties": {
+        "affected_field": {
+          "maxLength": 500,
+          "minLength": 1,
+          "title": "Affected Field",
+          "type": "string"
+        },
+        "authority_comparison": {
+          "maxLength": 2000,
+          "minLength": 1,
+          "title": "Authority Comparison",
+          "type": "string"
+        },
+        "conflict_digest": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Conflict Digest",
+          "type": "string"
+        },
+        "conflicting_observations": {
+          "items": {
+            "$ref": "#/$defs/OperationalEvidenceV1"
+          },
+          "minItems": 2,
+          "title": "Conflicting Observations",
+          "type": "array"
+        },
+        "contract_id": {
+          "const": "atlas.evidence-conflict",
+          "default": "atlas.evidence-conflict",
+          "title": "Contract Id",
+          "type": "string"
+        },
+        "materiality": {
+          "$ref": "#/$defs/Materiality"
+        },
+        "required_verification_or_decision": {
+          "maxLength": 2000,
+          "minLength": 1,
+          "title": "Required Verification Or Decision",
+          "type": "string"
+        },
+        "safe_resolution": {
+          "anyOf": [
+            {
+              "maxLength": 2000,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Safe Resolution"
+        },
+        "schema_version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "conflicting_observations",
+        "affected_field",
+        "authority_comparison",
+        "materiality",
+        "required_verification_or_decision",
+        "conflict_digest"
+      ],
+      "title": "EvidenceConflictV1",
+      "type": "object"
+    },
+    "FreshnessAssessmentV1": {
+      "additionalProperties": false,
+      "properties": {
+        "age_days": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Age Days"
+        },
+        "assessment_digest": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Assessment Digest",
+          "type": "string"
+        },
+        "contract_id": {
+          "const": "atlas.freshness-assessment",
+          "default": "atlas.freshness-assessment",
+          "title": "Contract Id",
+          "type": "string"
+        },
+        "evaluated_at": {
+          "title": "Evaluated At",
+          "type": "string"
+        },
+        "rationale": {
+          "maxLength": 2000,
+          "minLength": 1,
+          "title": "Rationale",
+          "type": "string"
+        },
+        "schema_version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "source_time": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Source Time"
+        },
+        "state": {
+          "$ref": "#/$defs/FreshnessState"
+        },
+        "threshold_days": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Threshold Days"
+        }
+      },
+      "required": [
+        "state",
+        "evaluated_at",
+        "rationale",
+        "assessment_digest"
+      ],
+      "title": "FreshnessAssessmentV1",
+      "type": "object"
+    },
+    "FreshnessState": {
+      "enum": [
+        "current",
+        "aging",
+        "stale",
+        "contradicted",
+        "unverifiable"
+      ],
+      "title": "FreshnessState",
+      "type": "string"
+    },
+    "Materiality": {
+      "enum": [
+        "low",
+        "medium",
+        "high",
+        "critical"
+      ],
+      "title": "Materiality",
+      "type": "string"
+    },
+    "NormalizedOperationalRecordV1": {
+      "additionalProperties": false,
+      "properties": {
+        "acceptance_status": {
+          "$ref": "#/$defs/AcceptanceState",
+          "default": "not_required"
+        },
+        "accountable_party": {
+          "anyOf": [
+            {
+              "maxLength": 300,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Accountable Party"
+        },
+        "approval_received": {
+          "default": false,
+          "title": "Approval Received",
+          "type": "boolean"
+        },
+        "approval_required": {
+          "default": false,
+          "title": "Approval Required",
+          "type": "boolean"
+        },
+        "blockers": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Blockers",
+          "type": "array"
+        },
+        "cancelled": {
+          "default": false,
+          "title": "Cancelled",
+          "type": "boolean"
+        },
+        "checkpoint": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Checkpoint"
+        },
+        "child_ids": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Child Ids",
+          "type": "array"
+        },
+        "completed": {
+          "default": false,
+          "title": "Completed",
+          "type": "boolean"
+        },
+        "completion_evidence": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Completion Evidence",
+          "type": "array"
+        },
+        "contract_id": {
+          "const": "atlas.normalized-operational-record",
+          "default": "atlas.normalized-operational-record",
+          "title": "Contract Id",
+          "type": "string"
+        },
+        "definition_of_done": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Definition Of Done",
+          "type": "array"
+        },
+        "delegated": {
+          "default": false,
+          "title": "Delegated",
+          "type": "boolean"
+        },
+        "dependencies": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Dependencies",
+          "type": "array"
+        },
+        "due_date": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Due Date"
+        },
+        "expected_outcome": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Expected Outcome"
+        },
+        "extra": {
+          "additionalProperties": true,
+          "title": "Extra",
+          "type": "object"
+        },
+        "observed_state": {
+          "default": "",
+          "maxLength": 200,
+          "title": "Observed State",
+          "type": "string"
+        },
+        "owner": {
+          "anyOf": [
+            {
+              "maxLength": 300,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Owner"
+        },
+        "priority": {
+          "default": 4,
+          "maximum": 4,
+          "minimum": 1,
+          "title": "Priority",
+          "type": "integer"
+        },
+        "protected_history": {
+          "default": false,
+          "title": "Protected History",
+          "type": "boolean"
+        },
+        "received_evidence": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Received Evidence",
+          "type": "array"
+        },
+        "record_digest": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Record Digest",
+          "type": "string"
+        },
+        "record_ref": {
+          "$ref": "#/$defs/OperationalRecordRefV1"
+        },
+        "responsible_party": {
+          "anyOf": [
+            {
+              "maxLength": 300,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Responsible Party"
+        },
+        "schema_version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "technically_complete": {
+          "default": false,
+          "title": "Technically Complete",
+          "type": "boolean"
+        },
+        "title": {
+          "maxLength": 1000,
+          "minLength": 1,
+          "title": "Title",
+          "type": "string"
+        },
+        "todoist_task_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Todoist Task Id"
+        },
+        "updated_at": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Updated At"
+        }
+      },
+      "required": [
+        "record_ref",
+        "title",
+        "record_digest"
+      ],
+      "title": "NormalizedOperationalRecordV1",
+      "type": "object"
+    },
+    "OperationalEvidenceV1": {
+      "additionalProperties": false,
+      "properties": {
+        "authority_level": {
+          "$ref": "#/$defs/AuthorityLevel"
+        },
+        "contract_id": {
+          "const": "atlas.operational-evidence",
+          "default": "atlas.operational-evidence",
+          "title": "Contract Id",
+          "type": "string"
+        },
+        "evidence_digest": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Evidence Digest",
+          "type": "string"
+        },
+        "evidence_id": {
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Evidence Id",
+          "type": "string"
+        },
+        "freshness": {
+          "$ref": "#/$defs/FreshnessAssessmentV1"
+        },
+        "observation_time": {
+          "title": "Observation Time",
+          "type": "string"
+        },
+        "observed_fact": {
+          "maxLength": 500,
+          "minLength": 1,
+          "title": "Observed Fact",
+          "type": "string"
+        },
+        "observed_value": {
+          "title": "Observed Value"
+        },
+        "provenance": {
+          "items": {
+            "$ref": "#/$defs/ProvenanceRecord"
+          },
+          "title": "Provenance",
+          "type": "array"
+        },
+        "record_reference": {
+          "$ref": "#/$defs/OperationalRecordRefV1"
+        },
+        "redaction_state": {
+          "default": "not_redacted",
+          "maxLength": 100,
+          "title": "Redaction State",
+          "type": "string"
+        },
+        "schema_version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "source_time": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Source Time"
+        },
+        "value_origin": {
+          "$ref": "#/$defs/ValueOrigin"
+        }
+      },
+      "required": [
+        "evidence_id",
+        "record_reference",
+        "observed_fact",
+        "observed_value",
+        "observation_time",
+        "value_origin",
+        "authority_level",
+        "freshness",
+        "provenance",
+        "evidence_digest"
+      ],
+      "title": "OperationalEvidenceV1",
+      "type": "object"
+    },
+    "OperationalRecordRefV1": {
+      "additionalProperties": false,
+      "properties": {
+        "authoritative_system": {
+          "$ref": "#/$defs/AuthoritativeSystem"
+        },
+        "canonical_record_id": {
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Canonical Record Id",
+          "type": "string"
+        },
+        "canonical_url": {
+          "anyOf": [
+            {
+              "maxLength": 2000,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Canonical Url"
+        },
+        "contract_id": {
+          "const": "atlas.operational-record-ref",
+          "default": "atlas.operational-record-ref",
+          "title": "Contract Id",
+          "type": "string"
+        },
+        "parent_record_id": {
+          "anyOf": [
+            {
+              "maxLength": 512,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Parent Record Id"
+        },
+        "record_type": {
+          "$ref": "#/$defs/OperationalRecordType"
+        },
+        "schema_version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "source_digest": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Source Digest",
+          "type": "string"
+        },
+        "source_revision": {
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Source Revision",
+          "type": "string"
+        }
+      },
+      "required": [
+        "record_type",
+        "canonical_record_id",
+        "authoritative_system",
+        "source_revision",
+        "source_digest"
+      ],
+      "title": "OperationalRecordRefV1",
+      "type": "object"
+    },
+    "OperationalRecordType": {
+      "enum": [
+        "action_record",
+        "execution_step",
+        "delegated_work",
+        "portfolio_project",
+        "risk_or_blocker",
+        "todoist_task",
+        "provider_transaction_receipt",
+        "decision_record",
+        "review_record"
+      ],
+      "title": "OperationalRecordType",
+      "type": "string"
+    },
+    "ProvenanceRecord": {
+      "properties": {
+        "observed_at": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Observed At"
+        },
+        "origin": {
+          "$ref": "#/$defs/ValueOrigin"
+        },
+        "schema_version": {
+          "default": "advisory-v1",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "source_ref": {
+          "title": "Source Ref",
+          "type": "string"
+        }
+      },
+      "required": [
+        "source_ref",
+        "origin"
+      ],
+      "title": "ProvenanceRecord",
+      "type": "object"
+    },
+    "ValueOrigin": {
+      "enum": [
+        "observed",
+        "inferred",
+        "configured",
+        "simulated",
+        "unknown"
+      ],
+      "title": "ValueOrigin",
+      "type": "string"
+    }
+  },
+  "$id": "https://github.com/Ryan9876/atlas-ros/schemas/operational-awareness/operational-snapshot.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "authority_identities": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Authority Identities",
+      "type": "array"
+    },
+    "contract_id": {
+      "const": "atlas.operational-snapshot",
+      "default": "atlas.operational-snapshot",
+      "title": "Contract Id",
+      "type": "string"
+    },
+    "contradictions": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/EvidenceConflictV1"
+      },
+      "title": "Contradictions",
+      "type": "array"
+    },
+    "generated_time": {
+      "title": "Generated Time",
+      "type": "string"
+    },
+    "missing_sources": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Missing Sources",
+      "type": "array"
+    },
+    "normalized_records": {
+      "items": {
+        "$ref": "#/$defs/NormalizedOperationalRecordV1"
+      },
+      "title": "Normalized Records",
+      "type": "array"
+    },
+    "policy_registry_digest": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Policy Registry Digest",
+      "type": "string"
+    },
+    "replay_id": {
+      "maxLength": 512,
+      "minLength": 1,
+      "title": "Replay Id",
+      "type": "string"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "scope": {
+      "maxLength": 500,
+      "minLength": 1,
+      "title": "Scope",
+      "type": "string"
+    },
+    "snapshot_digest": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Snapshot Digest",
+      "type": "string"
+    },
+    "snapshot_id": {
+      "maxLength": 512,
+      "minLength": 1,
+      "title": "Snapshot Id",
+      "type": "string"
+    },
+    "source_record_digests": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Source Record Digests",
+      "type": "array"
+    }
+  },
+  "required": [
+    "snapshot_id",
+    "scope",
+    "generated_time",
+    "authority_identities",
+    "policy_registry_digest",
+    "source_record_digests",
+    "normalized_records",
+    "snapshot_digest",
+    "replay_id"
+  ],
+  "title": "OperationalSnapshotV1",
+  "type": "object"
+}

@@ -1,0 +1,99 @@
+{
+  "$id": "https://github.com/Ryan9876/atlas-ros/schemas/operational-awareness/command-execution-receipt.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "authorization_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Authorization Id"
+    },
+    "canonical_plan_digest": {
+      "anyOf": [
+        {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Canonical Plan Digest"
+    },
+    "command_digest": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Command Digest",
+      "type": "string"
+    },
+    "completion_state": {
+      "default": "planned_not_executed",
+      "title": "Completion State",
+      "type": "string"
+    },
+    "contract_id": {
+      "const": "atlas.command-execution-receipt",
+      "default": "atlas.command-execution-receipt",
+      "title": "Contract Id",
+      "type": "string"
+    },
+    "interpretation_digest": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Interpretation Digest",
+      "type": "string"
+    },
+    "lifecycle_plan_digest": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Lifecycle Plan Digest",
+      "type": "string"
+    },
+    "operation_identities": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Operation Identities",
+      "type": "array"
+    },
+    "provider_write_count": {
+      "default": 0,
+      "minimum": 0,
+      "title": "Provider Write Count",
+      "type": "integer"
+    },
+    "readback_digests": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Readback Digests",
+      "type": "array"
+    },
+    "receipt_digest": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Receipt Digest",
+      "type": "string"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    }
+  },
+  "required": [
+    "command_digest",
+    "interpretation_digest",
+    "lifecycle_plan_digest",
+    "receipt_digest"
+  ],
+  "title": "CommandExecutionReceiptV1",
+  "type": "object"
+}

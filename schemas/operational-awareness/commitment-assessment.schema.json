@@ -1,0 +1,682 @@
+{
+  "$defs": {
+    "AcceptanceState": {
+      "enum": [
+        "unconfirmed",
+        "accepted",
+        "declined",
+        "superseded",
+        "not_required"
+      ],
+      "title": "AcceptanceState",
+      "type": "string"
+    },
+    "AuthoritativeSystem": {
+      "enum": [
+        "github",
+        "notion",
+        "todoist",
+        "sqlite",
+        "other"
+      ],
+      "title": "AuthoritativeSystem",
+      "type": "string"
+    },
+    "AuthorityLevel": {
+      "enum": [
+        "canonical",
+        "authoritative_dynamic",
+        "execution",
+        "supporting",
+        "temporary"
+      ],
+      "title": "AuthorityLevel",
+      "type": "string"
+    },
+    "CommitmentType": {
+      "enum": [
+        "ryan_owned_commitment",
+        "commitment_made_to_ryan",
+        "delegated_outcome",
+        "requested_decision",
+        "waiting_dependency",
+        "vendor_commitment",
+        "cross_functional_commitment",
+        "unconfirmed_conversational_commitment"
+      ],
+      "title": "CommitmentType",
+      "type": "string"
+    },
+    "ConfidenceAssessment": {
+      "properties": {
+        "missing_data": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/MissingDataIndicator"
+          },
+          "title": "Missing Data",
+          "type": "array"
+        },
+        "rationale": {
+          "title": "Rationale",
+          "type": "string"
+        },
+        "score": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Score"
+        }
+      },
+      "required": [
+        "score",
+        "rationale"
+      ],
+      "title": "ConfidenceAssessment",
+      "type": "object"
+    },
+    "EffectiveWorkState": {
+      "enum": [
+        "not_started",
+        "ready",
+        "active",
+        "waiting",
+        "blocked",
+        "delegated",
+        "review",
+        "awaiting_validation",
+        "awaiting_decision",
+        "technically_complete",
+        "completed",
+        "cancelled"
+      ],
+      "title": "EffectiveWorkState",
+      "type": "string"
+    },
+    "FollowUpDisposition": {
+      "enum": [
+        "no_follow_up_needed",
+        "follow_up_premature",
+        "follow_up_appropriate",
+        "deadline_at_risk",
+        "escalation_consideration",
+        "verification_required",
+        "completed"
+      ],
+      "title": "FollowUpDisposition",
+      "type": "string"
+    },
+    "FreshnessAssessmentV1": {
+      "additionalProperties": false,
+      "properties": {
+        "age_days": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Age Days"
+        },
+        "assessment_digest": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Assessment Digest",
+          "type": "string"
+        },
+        "contract_id": {
+          "const": "atlas.freshness-assessment",
+          "default": "atlas.freshness-assessment",
+          "title": "Contract Id",
+          "type": "string"
+        },
+        "evaluated_at": {
+          "title": "Evaluated At",
+          "type": "string"
+        },
+        "rationale": {
+          "maxLength": 2000,
+          "minLength": 1,
+          "title": "Rationale",
+          "type": "string"
+        },
+        "schema_version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "source_time": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Source Time"
+        },
+        "state": {
+          "$ref": "#/$defs/FreshnessState"
+        },
+        "threshold_days": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Threshold Days"
+        }
+      },
+      "required": [
+        "state",
+        "evaluated_at",
+        "rationale",
+        "assessment_digest"
+      ],
+      "title": "FreshnessAssessmentV1",
+      "type": "object"
+    },
+    "FreshnessState": {
+      "enum": [
+        "current",
+        "aging",
+        "stale",
+        "contradicted",
+        "unverifiable"
+      ],
+      "title": "FreshnessState",
+      "type": "string"
+    },
+    "MissingDataIndicator": {
+      "properties": {
+        "field_name": {
+          "title": "Field Name",
+          "type": "string"
+        },
+        "material": {
+          "default": false,
+          "title": "Material",
+          "type": "boolean"
+        },
+        "reason": {
+          "title": "Reason",
+          "type": "string"
+        }
+      },
+      "required": [
+        "field_name",
+        "reason"
+      ],
+      "title": "MissingDataIndicator",
+      "type": "object"
+    },
+    "OperationalEvidenceV1": {
+      "additionalProperties": false,
+      "properties": {
+        "authority_level": {
+          "$ref": "#/$defs/AuthorityLevel"
+        },
+        "contract_id": {
+          "const": "atlas.operational-evidence",
+          "default": "atlas.operational-evidence",
+          "title": "Contract Id",
+          "type": "string"
+        },
+        "evidence_digest": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Evidence Digest",
+          "type": "string"
+        },
+        "evidence_id": {
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Evidence Id",
+          "type": "string"
+        },
+        "freshness": {
+          "$ref": "#/$defs/FreshnessAssessmentV1"
+        },
+        "observation_time": {
+          "title": "Observation Time",
+          "type": "string"
+        },
+        "observed_fact": {
+          "maxLength": 500,
+          "minLength": 1,
+          "title": "Observed Fact",
+          "type": "string"
+        },
+        "observed_value": {
+          "title": "Observed Value"
+        },
+        "provenance": {
+          "items": {
+            "$ref": "#/$defs/ProvenanceRecord"
+          },
+          "title": "Provenance",
+          "type": "array"
+        },
+        "record_reference": {
+          "$ref": "#/$defs/OperationalRecordRefV1"
+        },
+        "redaction_state": {
+          "default": "not_redacted",
+          "maxLength": 100,
+          "title": "Redaction State",
+          "type": "string"
+        },
+        "schema_version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "source_time": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Source Time"
+        },
+        "value_origin": {
+          "$ref": "#/$defs/ValueOrigin"
+        }
+      },
+      "required": [
+        "evidence_id",
+        "record_reference",
+        "observed_fact",
+        "observed_value",
+        "observation_time",
+        "value_origin",
+        "authority_level",
+        "freshness",
+        "provenance",
+        "evidence_digest"
+      ],
+      "title": "OperationalEvidenceV1",
+      "type": "object"
+    },
+    "OperationalRecordRefV1": {
+      "additionalProperties": false,
+      "properties": {
+        "authoritative_system": {
+          "$ref": "#/$defs/AuthoritativeSystem"
+        },
+        "canonical_record_id": {
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Canonical Record Id",
+          "type": "string"
+        },
+        "canonical_url": {
+          "anyOf": [
+            {
+              "maxLength": 2000,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Canonical Url"
+        },
+        "contract_id": {
+          "const": "atlas.operational-record-ref",
+          "default": "atlas.operational-record-ref",
+          "title": "Contract Id",
+          "type": "string"
+        },
+        "parent_record_id": {
+          "anyOf": [
+            {
+              "maxLength": 512,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Parent Record Id"
+        },
+        "record_type": {
+          "$ref": "#/$defs/OperationalRecordType"
+        },
+        "schema_version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "source_digest": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Source Digest",
+          "type": "string"
+        },
+        "source_revision": {
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Source Revision",
+          "type": "string"
+        }
+      },
+      "required": [
+        "record_type",
+        "canonical_record_id",
+        "authoritative_system",
+        "source_revision",
+        "source_digest"
+      ],
+      "title": "OperationalRecordRefV1",
+      "type": "object"
+    },
+    "OperationalRecordType": {
+      "enum": [
+        "action_record",
+        "execution_step",
+        "delegated_work",
+        "portfolio_project",
+        "risk_or_blocker",
+        "todoist_task",
+        "provider_transaction_receipt",
+        "decision_record",
+        "review_record"
+      ],
+      "title": "OperationalRecordType",
+      "type": "string"
+    },
+    "ProvenanceRecord": {
+      "properties": {
+        "observed_at": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Observed At"
+        },
+        "origin": {
+          "$ref": "#/$defs/ValueOrigin"
+        },
+        "schema_version": {
+          "default": "advisory-v1",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "source_ref": {
+          "title": "Source Ref",
+          "type": "string"
+        }
+      },
+      "required": [
+        "source_ref",
+        "origin"
+      ],
+      "title": "ProvenanceRecord",
+      "type": "object"
+    },
+    "ValueOrigin": {
+      "enum": [
+        "observed",
+        "inferred",
+        "configured",
+        "simulated",
+        "unknown"
+      ],
+      "title": "ValueOrigin",
+      "type": "string"
+    }
+  },
+  "$id": "https://github.com/Ryan9876/atlas-ros/schemas/operational-awareness/commitment-assessment.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "acceptance_status": {
+      "$ref": "#/$defs/AcceptanceState"
+    },
+    "accountable_party": {
+      "anyOf": [
+        {
+          "maxLength": 300,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Accountable Party"
+    },
+    "active_blockers": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Active Blockers",
+      "type": "array"
+    },
+    "assessment_digest": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Assessment Digest",
+      "type": "string"
+    },
+    "assigned_date": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Assigned Date"
+    },
+    "commitment_id": {
+      "maxLength": 512,
+      "minLength": 1,
+      "title": "Commitment Id",
+      "type": "string"
+    },
+    "commitment_type": {
+      "$ref": "#/$defs/CommitmentType"
+    },
+    "completion_criteria": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Completion Criteria",
+      "type": "array"
+    },
+    "confidence": {
+      "$ref": "#/$defs/ConfidenceAssessment"
+    },
+    "contract_id": {
+      "const": "atlas.commitment-assessment",
+      "default": "atlas.commitment-assessment",
+      "title": "Contract Id",
+      "type": "string"
+    },
+    "delivery_due_date": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Delivery Due Date"
+    },
+    "delivery_status": {
+      "$ref": "#/$defs/EffectiveWorkState"
+    },
+    "escalation_disposition": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Escalation Disposition"
+    },
+    "expected_evidence": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Expected Evidence",
+      "type": "array"
+    },
+    "expected_outcome": {
+      "maxLength": 5000,
+      "minLength": 1,
+      "title": "Expected Outcome",
+      "type": "string"
+    },
+    "follow_up_disposition": {
+      "$ref": "#/$defs/FollowUpDisposition"
+    },
+    "freshness": {
+      "$ref": "#/$defs/FreshnessAssessmentV1"
+    },
+    "last_meaningful_update": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Last Meaningful Update"
+    },
+    "last_verified_time": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Last Verified Time"
+    },
+    "next_checkpoint": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Next Checkpoint"
+    },
+    "provenance": {
+      "items": {
+        "$ref": "#/$defs/ProvenanceRecord"
+      },
+      "title": "Provenance",
+      "type": "array"
+    },
+    "received_evidence": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/OperationalEvidenceV1"
+      },
+      "title": "Received Evidence",
+      "type": "array"
+    },
+    "related_action_record": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/OperationalRecordRefV1"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "related_portfolio_project": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/OperationalRecordRefV1"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "responsible_party": {
+      "anyOf": [
+        {
+          "maxLength": 300,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Responsible Party"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    }
+  },
+  "required": [
+    "commitment_id",
+    "commitment_type",
+    "acceptance_status",
+    "delivery_status",
+    "expected_outcome",
+    "follow_up_disposition",
+    "confidence",
+    "freshness",
+    "provenance",
+    "assessment_digest"
+  ],
+  "title": "CommitmentAssessmentV1",
+  "type": "object"
+}

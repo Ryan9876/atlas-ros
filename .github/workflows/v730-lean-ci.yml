@@ -1,0 +1,121 @@
+name: v7.3.0 lean candidate CI
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - 'src/atlas_ros/contracts/operational_awareness/**'
+      - 'src/atlas_ros/capabilities/operational_awareness/**'
+      - 'src/atlas_ros/application/operational_awareness.py'
+      - 'src/atlas_ros/application/command_lifecycle.py'
+      - 'src/atlas_ros/planning/operational_awareness.py'
+      - 'src/atlas_ros/ports/**'
+      - 'src/atlas_ros/adapters/*operational_state.py'
+      - 'src/atlas_ros/adapters/todoist_command_source.py'
+      - 'src/atlas_ros/entry_points/awareness.py'
+      - 'src/atlas_ros/entry_points/lifecycle.py'
+      - 'src/atlas_ros/entry_points/main.py'
+      - 'src/atlas_ros/policy/operational_awareness.py'
+      - 'src/atlas_ros/data/operational-awareness.yaml'
+      - 'schemas/operational-awareness/**'
+      - 'schemas/policy/operational-awareness-policy-v1.schema.json'
+      - 'governance/architecture.yaml'
+      - 'governance/capability-catalog.yaml'
+      - 'governance/contract-catalog.yaml'
+      - 'governance/policy-catalog.yaml'
+      - 'release/v730-*'
+      - 'release/RELEASE_MANIFEST_V730_CANDIDATE.md'
+      - 'scripts/*v730*'
+      - 'tests/unit/test_v730_*'
+      - 'tests/fixtures/operational-awareness/**'
+      - '.github/workflows/v730-lean-ci.yml'
+      - '.github/workflows/v730-full-validation.yml'
+      - '.github/workflows/ci.yml'
+      - 'pyproject.toml'
+  workflow_dispatch:
+
+concurrency:
+  group: v730-lean-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  focused-validation:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.head_ref == 'agent/v730-operational-awareness'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Shallow checkout candidate
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.12.10'
+          cache: pip
+
+      - name: Install pinned CI environment
+        run: python -m pip install --disable-pip-version-check -e '.[ci]'
+
+      - name: Focused lint, architecture, and typing
+        run: |
+          set -euo pipefail
+          ruff check \
+            src/atlas_ros/contracts/operational_awareness \
+            src/atlas_ros/capabilities/operational_awareness \
+            src/atlas_ros/application/operational_awareness.py \
+            src/atlas_ros/application/command_lifecycle.py \
+            src/atlas_ros/planning/operational_awareness.py \
+            src/atlas_ros/ports/operational_state.py \
+            src/atlas_ros/ports/command_intake.py \
+            src/atlas_ros/ports/provider_readback.py \
+            src/atlas_ros/ports/lifecycle_planning.py \
+            src/atlas_ros/adapters/notion_operational_state.py \
+            src/atlas_ros/adapters/todoist_operational_state.py \
+            src/atlas_ros/adapters/todoist_command_source.py \
+            src/atlas_ros/entry_points/awareness.py \
+            src/atlas_ros/entry_points/lifecycle.py \
+            src/atlas_ros/policy/operational_awareness.py \
+            scripts/validate_v730_notion_migration.py \
+            scripts/benchmark_v730_operational_awareness.py \
+            scripts/finalize_v730_package.py \
+            scripts/validate_v730_candidate.py \
+            tests/unit/test_v730_operational_awareness.py \
+            tests/unit/test_v730_release_controls.py
+          python scripts/validate_architecture.py
+          mypy src
+
+      - name: Contract, policy, migration, and focused tests
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from atlas_ros.contracts.schemas import validate_contract_schemas
+          findings = validate_contract_schemas()
+          assert not findings, findings
+          PY
+          python scripts/validate_v730_notion_migration.py \
+            --output lean-evidence/migration-validation.json
+          pytest -q -o addopts='' \
+            tests/unit/test_v730_operational_awareness.py \
+            tests/unit/test_v730_release_controls.py
+          python scripts/benchmark_v730_operational_awareness.py \
+            --records 100 --iterations 5 \
+            --output lean-evidence/performance.json
+
+      - name: Retain lean evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: v730-lean-evidence-${{ github.event.pull_request.head.sha || github.sha }}
+          path: lean-evidence/
+          if-no-files-found: warn
+          retention-days: 7
