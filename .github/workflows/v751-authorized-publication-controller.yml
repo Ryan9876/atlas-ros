@@ -1,0 +1,119 @@
+name: v7.5.1 authorized publication controller
+
+on:
+  pull_request:
+    branches: [main]
+    types: [closed]
+    paths:
+      - release/RELEASE_MANIFEST_V751.md
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: v751-authorized-publication
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      TAG: v7.5.1
+      TARGET_COMMIT: ${{ github.event.pull_request.merge_commit_sha }}
+      ARTIFACT_ID: '8731263498'
+      ARTIFACT_DIGEST: sha256:85553c69b70b15bcd324b135169fb0253ea585b91ad0b48920dddbf01eb523a4
+      SOURCE_SHA256: 6b724fff14c7db134c03d8ec7f23781c0074e838f1c4a6d29caeacdfc7486f77
+      WHEEL_SHA256: dd3ec561121c3c84e2b15be26a2998670524e5d2ef906a9f49a66410f4a9a997
+      VALIDATION_SHA256: e6cfb46e4f5f3beed6c793ac69c3c47f54c7a32a4447374c00c9397a3f2db36a
+    steps:
+      - name: Checkout exact manifest merge commit
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          ref: ${{ env.TARGET_COMMIT }}
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Verify prepublication authority and exact manifest
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$TARGET_COMMIT"
+          test -f release/RELEASE_MANIFEST_V751.md
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          authority = json.loads(Path('governance/AUTHORITY.json').read_text())
+          assert authority['active_release']['version'] == '7.5.0'
+          assert authority['active_release']['immutable_commit'] == 'f2a14c1e401debe77040d0db836e343be6f337e3'
+          assert authority['immediate_rollback']['version'] == '7.4.5'
+          assert authority['immediate_rollback']['immutable_commit'] == '88ccec11df6695b91fc2cc703105c42cd21e9f01'
+          manifest = Path('release/RELEASE_MANIFEST_V751.md').read_text()
+          for required in (
+              '39ba3c6d6e3ebc4b0e217cc59bbd9cdbc8054a7c',
+              '8731263498',
+              '85553c69b70b15bcd324b135169fb0253ea585b91ad0b48920dddbf01eb523a4',
+              '6b724fff14c7db134c03d8ec7f23781c0074e838f1c4a6d29caeacdfc7486f77',
+              'dd3ec561121c3c84e2b15be26a2998670524e5d2ef906a9f49a66410f4a9a997',
+              'collection://46af021f-eb9a-4eba-b10c-4523e70df0c3',
+              'V4D-55',
+              'V4V-97',
+          ):
+              assert required in manifest
+          PY
+
+      - name: Verify and download exact retained candidate artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$(gh api "/repos/${GITHUB_REPOSITORY}/actions/artifacts/${ARTIFACT_ID}" --jq .digest)" = "$ARTIFACT_DIGEST"
+          mkdir -p publication
+          gh api "/repos/${GITHUB_REPOSITORY}/actions/artifacts/${ARTIFACT_ID}/zip" > publication/candidate.zip
+          unzip -q publication/candidate.zip -d publication/package
+          test -f publication/package/dist/atlas_ros-7.5.1.tar.gz
+          test -f publication/package/dist/atlas_ros-7.5.1-py3-none-any.whl
+          test -f publication/package/build/CHECKSUMS.sha256
+          test -f publication/package/build/V751_FULL_VALIDATION.json
+          (cd publication/package && sha256sum -c build/CHECKSUMS.sha256)
+          test "$(sha256sum publication/package/dist/atlas_ros-7.5.1.tar.gz | cut -d' ' -f1)" = "$SOURCE_SHA256"
+          test "$(sha256sum publication/package/dist/atlas_ros-7.5.1-py3-none-any.whl | cut -d' ' -f1)" = "$WHEEL_SHA256"
+          test "$(sha256sum publication/package/build/V751_FULL_VALIDATION.json | cut -d' ' -f1)" = "$VALIDATION_SHA256"
+          test "$(cat publication/package/build/BUILD_COUNT.txt)" = "1"
+
+      - name: Create immutable tag and GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          git config user.name "Atlas ROS Release Bot"
+          git config user.email "atlas-ros-release@users.noreply.github.com"
+          if git rev-parse "$TAG" >/dev/null 2>&1; then
+            test "$(git rev-list -n 1 "$TAG")" = "$TARGET_COMMIT"
+          else
+            git tag -a "$TAG" "$TARGET_COMMIT" -m "Atlas ROS v7.5.1 immutable corrective release"
+            git push origin "refs/tags/$TAG"
+          fi
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "Release already exists; refusing replacement."
+            exit 1
+          fi
+          cp release/RELEASE_MANIFEST_V751.md publication/package/RELEASE_MANIFEST_V751.md
+          gh release create "$TAG" \
+            --repo "$GITHUB_REPOSITORY" \
+            --verify-tag \
+            --target "$TARGET_COMMIT" \
+            --title "Atlas ROS v7.5.1" \
+            --notes-file release/RELEASE_MANIFEST_V751.md \
+            publication/package/dist/atlas_ros-7.5.1.tar.gz \
+            publication/package/dist/atlas_ros-7.5.1-py3-none-any.whl \
+            publication/package/build/CHECKSUMS.sha256 \
+            publication/package/build/EVIDENCE_CHECKSUMS.sha256 \
+            publication/package/build/SBOM.spdx.json \
+            publication/package/build/SOURCE_MANIFEST.sha256 \
+            publication/package/build/V751_FULL_VALIDATION.json \
+            publication/package/build/ACTIVE_RESTORATION.json \
+            publication/package/build/ROLLBACK_RESTORATION.json \
+            publication/package/RELEASE_MANIFEST_V751.md
