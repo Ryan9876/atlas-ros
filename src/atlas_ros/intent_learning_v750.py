@@ -196,12 +196,13 @@ def decide_relationship(
         )
 
     candidate_interpretations = _candidate_interpretations(capture)
+    completion_boundary_unresolved = proposed_completion is None
     uncertainty_is_material = (
-        proposed_completion is None
+        completion_boundary_unresolved
         or consequence.consequential
         or not consequence.reversible
         or familiarity.contextual_score < 0.72
-        or len(candidate_interpretations) > 1
+        or (completion_boundary_unresolved and len(candidate_interpretations) > 1)
     )
     if records and uncertainty_is_material:
         context = ", ".join(record.title for record in records[:3])
