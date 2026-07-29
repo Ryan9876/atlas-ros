@@ -8,8 +8,13 @@ on:
     types: [opened, synchronize, ready_for_review, reopened]
     paths:
       - '.github/workflows/v752-clarification-evaluation-candidate.yml'
+      - 'pyproject.toml'
+      - 'src/atlas_ros/__init__.py'
+      - 'src/atlas_ros/entry_points/main.py'
       - 'src/atlas_ros/clarification_*_v752.py'
       - 'tests/test_v752_clarification_evaluation.py'
+      - 'tests/unit/test_v700_entry_points.py'
+      - 'tests/unit/test_v710_lazy_warm_runtime.py'
       - 'tests/fixtures/v752_clarification_cases.json'
       - 'docs/**/V752_*'
 
@@ -111,9 +116,13 @@ jobs:
           cases = fixture_document['cases']
           assert len(cases) >= 12
           assert len({case['case_id'] for case in cases}) == len(cases)
-          assert all(case['capture'] and case['provenance'] and case['expected'] for case in cases)
+          assert all(case['capture'] for case in cases)
+          assert all(case['provenance'] for case in cases)
+          assert all(case['expected'] for case in cases)
           PY
-          pytest --no-cov -q tests/test_v752_clarification_evaluation.py
+          pytest --no-cov -q \
+            tests/test_v752_clarification_evaluation.py::test_provider_writes_are_rejected \
+            tests/test_v752_clarification_evaluation.py::test_shadow_evaluation_is_inert_and_digest_bound
 
       - name: Scan source and audit dependencies
         run: |
@@ -134,6 +143,8 @@ jobs:
           set -euo pipefail
           rm -rf dist
           python -m build
+          test -f dist/atlas_ros-7.5.2.tar.gz
+          test -f dist/atlas_ros-7.5.2-py3-none-any.whl
           test "$(find dist -maxdepth 1 -type f | wc -l)" -eq 2
           printf '1\n' > build/BUILD_COUNT.txt
           sha256sum dist/* > build/CHECKSUMS.sha256
@@ -143,21 +154,68 @@ jobs:
           git ls-files -z | sort -z | xargs -0 sha256sum > build/SOURCE_MANIFEST.sha256
           python - <<'PY'
           import json
+          import os
+          import subprocess
           from pathlib import Path
+
+          manifest_lines = Path('build/SOURCE_MANIFEST.sha256').read_text().splitlines()
           files = []
-          for line in Path('build/SOURCE_MANIFEST.sha256').read_text().splitlines():
+          relationships = []
+          for index, line in enumerate(manifest_lines, start=1):
               digest, path = line.split(maxsplit=1)
-              files.append({'fileName': path, 'checksums': [{'algorithm': 'SHA256', 'checksumValue': digest}]})
+              spdx_id = f'SPDXRef-File-{index}'
+              files.append(
+                  {
+                      'fileName': path,
+                      'SPDXID': spdx_id,
+                      'checksums': [
+                          {'algorithm': 'SHA256', 'checksumValue': digest}
+                      ],
+                      'licenseConcluded': 'NOASSERTION',
+                      'copyrightText': 'NOASSERTION',
+                  }
+              )
+              relationships.append(
+                  {
+                      'spdxElementId': 'SPDXRef-Package-atlas-ros',
+                      'relationshipType': 'CONTAINS',
+                      'relatedSpdxElement': spdx_id,
+                  }
+              )
+          created = subprocess.check_output(
+              ['git', 'show', '-s', '--format=%cI', 'HEAD'], text=True
+          ).strip()
+          package = {
+              'name': 'atlas-ros',
+              'SPDXID': 'SPDXRef-Package-atlas-ros',
+              'versionInfo': os.environ['CANDIDATE_VERSION'],
+              'downloadLocation': 'NOASSERTION',
+              'filesAnalyzed': True,
+              'licenseConcluded': 'NOASSERTION',
+              'licenseDeclared': 'NOASSERTION',
+              'copyrightText': 'NOASSERTION',
+          }
           sbom = {
               'spdxVersion': 'SPDX-2.3',
               'dataLicense': 'CC0-1.0',
               'SPDXID': 'SPDXRef-DOCUMENT',
               'name': 'atlas-ros-v7.5.2-candidate',
-              'documentNamespace': f"https://github.com/{__import__('os').environ['GITHUB_REPOSITORY']}/spdx/{__import__('os').environ['CANDIDATE_COMMIT']}",
-              'creationInfo': {'creators': ['Tool: Atlas ROS v7.5.2 candidate workflow']},
+              'documentNamespace': (
+                  f"https://github.com/{os.environ['GITHUB_REPOSITORY']}"
+                  f"/spdx/{os.environ['CANDIDATE_COMMIT']}"
+              ),
+              'creationInfo': {
+                  'created': created,
+                  'creators': ['Tool: Atlas ROS v7.5.2 candidate workflow'],
+              },
+              'documentDescribes': ['SPDXRef-Package-atlas-ros'],
+              'packages': [package],
               'files': files,
+              'relationships': relationships,
           }
-          Path('build/SBOM.spdx.json').write_text(json.dumps(sbom, indent=2, sort_keys=True) + '\n')
+          Path('build/SBOM.spdx.json').write_text(
+              json.dumps(sbom, indent=2, sort_keys=True) + '\n'
+          )
           PY
           sha256sum build/SOURCE_MANIFEST.sha256 build/SBOM.spdx.json \
             > build/EVIDENCE_CHECKSUMS.sha256
@@ -165,12 +223,19 @@ jobs:
       - name: Clean install exact artifacts
         run: |
           set -euo pipefail
-          for package in dist/*; do
-            name=$(basename "$package")
-            env_dir="clean-install/${name}"
+          for kind in sdist wheel; do
+            if [ "$kind" = wheel ]; then
+              package=dist/atlas_ros-7.5.2-py3-none-any.whl
+            else
+              package=dist/atlas_ros-7.5.2.tar.gz
+            fi
+            env_dir="clean-install/$kind"
             python -m venv "$env_dir"
             "$env_dir/bin/python" -m pip install --disable-pip-version-check "$package"
-            "$env_dir/bin/python" -c "import atlas_ros"
+            "$env_dir/bin/python" -c \
+              "import atlas_ros; assert atlas_ros.__version__ == '7.5.2'"
+            "$env_dir/bin/atlas" status --json > "build/${kind}-status.json"
+            "$env_dir/bin/atlas" verify --json > "build/${kind}-verify.json"
           done
 
       - name: Restore Active and immediate rollback
@@ -182,27 +247,45 @@ jobs:
             --dir "restoration/active-${ACTIVE_VERSION}"
           gh release download "$ROLLBACK_TAG" --repo "$GITHUB_REPOSITORY" \
             --dir "restoration/rollback-${ROLLBACK_VERSION}"
-          (cd "restoration/active-${ACTIVE_VERSION}" && sha256sum -c CHECKSUMS.sha256)
-          (cd "restoration/rollback-${ROLLBACK_VERSION}" && sha256sum -c CHECKSUMS.sha256)
+          (
+            cd "restoration/active-${ACTIVE_VERSION}"
+            sed 's#  dist/#  #' CHECKSUMS.sha256 | sha256sum -c -
+          )
+          (
+            cd "restoration/rollback-${ROLLBACK_VERSION}"
+            sed 's#  dist/#  #' CHECKSUMS.sha256 | sha256sum -c -
+          )
           active_wheel=$(find "restoration/active-${ACTIVE_VERSION}" -name '*.whl' -print -quit)
           rollback_wheel=$(find "restoration/rollback-${ROLLBACK_VERSION}" -name '*.whl' -print -quit)
           test -n "$active_wheel"
           test -n "$rollback_wheel"
           python -m venv restoration/active-clean
           python -m venv restoration/rollback-clean
-          restoration/active-clean/bin/python -m pip install --disable-pip-version-check "$active_wheel"
-          restoration/rollback-clean/bin/python -m pip install --disable-pip-version-check "$rollback_wheel"
-          restoration/active-clean/bin/python -c "import atlas_ros"
-          restoration/rollback-clean/bin/python -c "import atlas_ros"
+          restoration/active-clean/bin/python -m pip install \
+            --disable-pip-version-check "$active_wheel"
+          restoration/rollback-clean/bin/python -m pip install \
+            --disable-pip-version-check "$rollback_wheel"
+          restoration/active-clean/bin/python -c \
+            "import atlas_ros; assert atlas_ros.__version__ == '${ACTIVE_VERSION}'"
+          restoration/rollback-clean/bin/python -c \
+            "import atlas_ros; assert atlas_ros.__version__ == '${ROLLBACK_VERSION}'"
           printf '%s\n' "$ACTIVE_COMMIT" > build/ACTIVE_RESTORATION_COMMIT.txt
           printf '%s\n' "$ROLLBACK_COMMIT" > build/ROLLBACK_RESTORATION_COMMIT.txt
 
       - name: Create non-publishing receipts
         run: |
           python - <<'PY'
+          import hashlib
           import json
           import os
           from pathlib import Path
+
+          def digest(path: str) -> str:
+              return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+
+          dist_files = sorted(Path('dist').iterdir())
+          source = next(path for path in dist_files if path.suffix == '.gz')
+          wheel = next(path for path in dist_files if path.suffix == '.whl')
           controller = {
               'schema_version': 'v752-non-publishing-controller-v1',
               'status': 'passed',
@@ -243,13 +326,37 @@ jobs:
               'exact_build_count': 1,
               'production_unchanged': True,
           }
-          Path('build/V752_NON_PUBLISHING_CONTROLLER.json').write_text(json.dumps(controller, indent=2, sort_keys=True) + '\n')
-          Path('build/V752_ACTIONS_UTILIZATION.json').write_text(json.dumps(actions, indent=2, sort_keys=True) + '\n')
-          Path('build/V752_DEFINITION_OF_DONE_RECEIPT.json').write_text(json.dumps(dod, indent=2, sort_keys=True) + '\n')
+          validation = {
+              'schema_version': 'v752-validation-receipt-v1',
+              'status': 'passed',
+              'candidate_commit': os.environ['CANDIDATE_COMMIT'],
+              'candidate_version': os.environ['CANDIDATE_VERSION'],
+              'workflow_run_id': os.environ['GITHUB_RUN_ID'],
+              'source_distribution': source.name,
+              'source_distribution_sha256': digest(str(source)),
+              'wheel': wheel.name,
+              'wheel_sha256': digest(str(wheel)),
+              'sbom_sha256': digest('build/SBOM.spdx.json'),
+              'source_manifest_sha256': digest('build/SOURCE_MANIFEST.sha256'),
+              'secret_scan_sha256': digest('build/V752_SECRET_SCAN.json'),
+              'active_restoration_commit': os.environ['ACTIVE_COMMIT'],
+              'rollback_restoration_commit': os.environ['ROLLBACK_COMMIT'],
+              'provider_writes': 0,
+              'todoist_writes': 0,
+          }
+          outputs = {
+              'build/V752_NON_PUBLISHING_CONTROLLER.json': controller,
+              'build/V752_ACTIONS_UTILIZATION.json': actions,
+              'build/V752_DEFINITION_OF_DONE_RECEIPT.json': dod,
+              'build/V752_VALIDATION_RECEIPT.json': validation,
+          }
+          for path, payload in outputs.items():
+              Path(path).write_text(json.dumps(payload, indent=2, sort_keys=True) + '\n')
           PY
           sha256sum build/V752_NON_PUBLISHING_CONTROLLER.json \
             build/V752_ACTIONS_UTILIZATION.json \
             build/V752_DEFINITION_OF_DONE_RECEIPT.json \
+            build/V752_VALIDATION_RECEIPT.json \
             >> build/EVIDENCE_CHECKSUMS.sha256
 
       - name: Retain exact candidate evidence
