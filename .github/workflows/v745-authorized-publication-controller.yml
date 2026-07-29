@@ -1,0 +1,107 @@
+name: v7.4.5 authorized publication controller
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - release/RELEASE_MANIFEST_V745.md
+      - .github/workflows/v745-authorized-publication-controller.yml
+      - .github/workflows/v745-independent-publication-readback.yml
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: v745-authorized-publication
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      TAG: v7.4.5
+      ARTIFACT_ID: '8722777483'
+      ARTIFACT_DIGEST: 79f0444480e450f0ac205992572ad97f339691042dead1ba9b4704db86eef071
+      SOURCE_SHA256: dc31dbdba07c63f16d7c1df7344ea4760b751cbf8a7f02f7441e1946afca9c15
+      WHEEL_SHA256: bb718dcfa808add92eb612115f3040f1eb4da0490c766eb2603a2c37ac5c1be6
+    steps:
+      - name: Checkout exact manifest commit
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Verify prepublication authority and exact manifest
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test -f release/RELEASE_MANIFEST_V745.md
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          authority = json.loads(Path('governance/AUTHORITY.json').read_text())
+          assert authority['active_release']['version'] == '7.4.0'
+          assert authority['active_release']['immutable_commit'] == '6d48b93c195b7b1761df561760d04aea67d28a55'
+          assert authority['immediate_rollback']['version'] == '7.3.0'
+          manifest = Path('release/RELEASE_MANIFEST_V745.md').read_text()
+          for required in (
+              '0eb3f0108a752b4209a0e4976425efea351d866b',
+              '8722777483',
+              'dc31dbdba07c63f16d7c1df7344ea4760b751cbf8a7f02f7441e1946afca9c15',
+              'bb718dcfa808add92eb612115f3040f1eb4da0490c766eb2603a2c37ac5c1be6',
+          ):
+              assert required in manifest
+          PY
+
+      - name: Download exact retained candidate artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p publication
+          gh api "/repos/${GITHUB_REPOSITORY}/actions/artifacts/${ARTIFACT_ID}/zip" > publication/candidate.zip
+          unzip -q publication/candidate.zip -d publication/package
+          test -f publication/package/dist/atlas_ros-7.4.5.tar.gz
+          test -f publication/package/dist/atlas_ros-7.4.5-py3-none-any.whl
+          test -f publication/package/build/CHECKSUMS.sha256
+          (cd publication/package && sha256sum -c build/CHECKSUMS.sha256)
+          test "$(sha256sum publication/package/dist/atlas_ros-7.4.5.tar.gz | cut -d' ' -f1)" = "$SOURCE_SHA256"
+          test "$(sha256sum publication/package/dist/atlas_ros-7.4.5-py3-none-any.whl | cut -d' ' -f1)" = "$WHEEL_SHA256"
+          test "$(cat publication/package/build/BUILD_COUNT.txt)" = "1"
+
+      - name: Create immutable tag and GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if git rev-parse "$TAG" >/dev/null 2>&1; then
+            test "$(git rev-list -n 1 "$TAG")" = "$GITHUB_SHA"
+          else
+            git tag -a "$TAG" "$GITHUB_SHA" -m "Atlas ROS v7.4.5 immutable release"
+            git push origin "refs/tags/$TAG"
+          fi
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "Release already exists; refusing replacement."
+            exit 1
+          fi
+          cp release/RELEASE_MANIFEST_V745.md publication/package/RELEASE_MANIFEST_V745.md
+          gh release create "$TAG" \
+            --repo "$GITHUB_REPOSITORY" \
+            --verify-tag \
+            --title "Atlas ROS v7.4.5" \
+            --notes-file release/RELEASE_MANIFEST_V745.md \
+            publication/package/dist/atlas_ros-7.4.5.tar.gz \
+            publication/package/dist/atlas_ros-7.4.5-py3-none-any.whl \
+            publication/package/build/CHECKSUMS.sha256 \
+            publication/package/build/EVIDENCE_CHECKSUMS.sha256 \
+            publication/package/build/SBOM.spdx.json \
+            publication/package/build/SOURCE_MANIFEST.sha256 \
+            publication/package/build/V745_CANDIDATE_EVIDENCE.json \
+            publication/package/build/V745_DEFINITION_OF_DONE_RECEIPT.json \
+            publication/package/build/V745_PERFORMANCE_VALIDATION.json \
+            publication/package/build/V745_ACTIONS_UTILIZATION.json \
+            publication/package/build/VERIFIED_RUNTIME_BUNDLE.sha256 \
+            publication/package/RELEASE_MANIFEST_V745.md
