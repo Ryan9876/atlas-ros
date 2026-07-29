@@ -1,27 +1,10 @@
-from __future__ import annotations
-
-from atlas_ros.clarification_evaluation_v752 import (
-    ClarificationEventV1,
-    ClarificationEvaluationPolicyV752,
-    ClarificationOutcomeV1,
-    CounterfactualDecisionV1,
-    QuestionQualityAssessmentV1,
-    build_report,
-)
+from atlas_ros import clarification_evaluation_v752 as evaluation
+from atlas_ros import intent_learning_v750 as intent
 from atlas_ros.contracts.digests import sha256_digest
-from atlas_ros.intent_learning_v750 import (
-    ClarificationDecisionV1,
-    ClarificationStatus,
-    ConsequenceAssessmentV1,
-    ContextFamiliarityV1,
-    EvidenceLevel,
-    RelationshipClassification,
-    decide_relationship,
-)
 
 
-def familiarity() -> ContextFamiliarityV1:
-    return ContextFamiliarityV1(
+def familiarity() -> intent.ContextFamiliarityV1:
+    return intent.ContextFamiliarityV1(
         user=0.8,
         domain=0.7,
         project=0.7,
@@ -31,19 +14,24 @@ def familiarity() -> ContextFamiliarityV1:
     )
 
 
-def predecessor() -> ClarificationDecisionV1:
-    return decide_relationship(
+def predecessor() -> intent.ClarificationDecisionV1:
+    return intent.decide_relationship(
         capture="Centrally manage ANX customer devices",
         proposed_completion=None,
         related_records=(),
         familiarity=familiarity(),
-        consequence=ConsequenceAssessmentV1(production=True, architecture=True),
+        consequence=intent.ConsequenceAssessmentV1(
+            production=True,
+            architecture=True,
+        ),
     )
 
 
-def event_for(decision: ClarificationDecisionV1) -> ClarificationEventV1:
+def event_for(
+    decision: intent.ClarificationDecisionV1,
+) -> evaluation.ClarificationEventV1:
     decision_digest = sha256_digest(decision.model_dump(mode="json"))
-    return ClarificationEventV1(
+    return evaluation.ClarificationEventV1(
         operation_id="op-v752-1",
         correlation_id="workspace-redacted:1",
         snapshot_digest="a" * 64,
@@ -64,13 +52,13 @@ def event_for(decision: ClarificationDecisionV1) -> ClarificationEventV1:
         final_confirmed_interpretation=(
             "separate centralized configuration outcome"
         ),
-        final_classification=RelationshipClassification.DISTINCT_OUTCOME.value,
+        final_classification=intent.RelationshipClassification.DISTINCT_OUTCOME.value,
         execution_path_effect="suppression_prevented",
     )
 
 
-def quality() -> QuestionQualityAssessmentV1:
-    return QuestionQualityAssessmentV1(
+def quality() -> evaluation.QuestionQualityAssessmentV1:
+    return evaluation.QuestionQualityAssessmentV1(
         demonstrates_understanding=True,
         identifies_material_ambiguity=True,
         one_focused_question=True,
@@ -85,18 +73,18 @@ def quality() -> QuestionQualityAssessmentV1:
 
 def test_disabled_policy_is_equivalent_to_predecessor() -> None:
     decision = predecessor()
-    assert decision.clarification_status is ClarificationStatus.REQUIRED
-    result = ClarificationEvaluationPolicyV752().evaluate(
+    assert decision.clarification_status is intent.ClarificationStatus.REQUIRED
+    result = evaluation.ClarificationEvaluationPolicyV752().evaluate(
         event=event_for(decision),
         predecessor_decision=decision,
-        counterfactual=CounterfactualDecisionV1(
+        counterfactual=evaluation.CounterfactualDecisionV1(
             likely_classification=(
-                RelationshipClassification.PARAPHRASED_DUPLICATE.value
+                intent.RelationshipClassification.PARAPHRASED_DUPLICATE.value
             ),
             differs_from_confirmed=True,
         ),
         question_quality=quality(),
-        outcome=ClarificationOutcomeV1(),
+        outcome=evaluation.ClarificationOutcomeV1(),
         case_id="disabled",
     )
     assert result is None
@@ -106,12 +94,12 @@ def test_disabled_policy_is_equivalent_to_predecessor() -> None:
 
 def test_shadow_evaluation_is_inert_and_digest_bound() -> None:
     decision = predecessor()
-    case = ClarificationEvaluationPolicyV752(mode="shadow").evaluate(
+    case = evaluation.ClarificationEvaluationPolicyV752(mode="shadow").evaluate(
         event=event_for(decision),
         predecessor_decision=decision,
-        counterfactual=CounterfactualDecisionV1(
+        counterfactual=evaluation.CounterfactualDecisionV1(
             likely_classification=(
-                RelationshipClassification.PARAPHRASED_DUPLICATE.value
+                intent.RelationshipClassification.PARAPHRASED_DUPLICATE.value
             ),
             differs_from_confirmed=True,
             confidence_basis=(
@@ -120,7 +108,7 @@ def test_shadow_evaluation_is_inert_and_digest_bound() -> None:
             ),
         ),
         question_quality=quality(),
-        outcome=ClarificationOutcomeV1(
+        outcome=evaluation.ClarificationOutcomeV1(
             corrected_by_user=True,
             resolved_with_one_question=True,
             material_change=True,
@@ -139,13 +127,15 @@ def test_shadow_evaluation_is_inert_and_digest_bound() -> None:
 
 def test_identical_inputs_produce_identical_report_digest() -> None:
     decision = predecessor()
-    policy = ClarificationEvaluationPolicyV752(mode="shadow")
+    policy = evaluation.ClarificationEvaluationPolicyV752(mode="shadow")
     event = event_for(decision)
-    counterfactual = CounterfactualDecisionV1(
-        likely_classification=RelationshipClassification.PARAPHRASED_DUPLICATE.value,
+    counterfactual = evaluation.CounterfactualDecisionV1(
+        likely_classification=(
+            intent.RelationshipClassification.PARAPHRASED_DUPLICATE.value
+        ),
         differs_from_confirmed=True,
     )
-    outcome = ClarificationOutcomeV1(
+    outcome = evaluation.ClarificationOutcomeV1(
         resolved_with_one_question=True,
         material_change=True,
         task_suppression_prevented=True,
@@ -167,12 +157,12 @@ def test_identical_inputs_produce_identical_report_digest() -> None:
         case_id="deterministic",
     )
     assert first_case is not None and second_case is not None
-    first = build_report(
+    first = evaluation.build_report(
         feature_mode="shadow",
         snapshot_digest="a" * 64,
         cases=(first_case,),
     )
-    second = build_report(
+    second = evaluation.build_report(
         feature_mode="shadow",
         snapshot_digest="a" * 64,
         cases=(second_case,),
@@ -185,7 +175,7 @@ def test_identical_inputs_produce_identical_report_digest() -> None:
 def test_provider_writes_are_rejected() -> None:
     decision = predecessor()
     try:
-        ClarificationEventV1(
+        evaluation.ClarificationEventV1(
             operation_id="op",
             correlation_id="redacted",
             snapshot_digest="a" * 64,
@@ -193,7 +183,7 @@ def test_provider_writes_are_rejected() -> None:
             initial_decision_digest=sha256_digest(
                 decision.model_dump(mode="json")
             ),
-            evidence_level=EvidenceLevel.MINIMAL.value,
+            evidence_level=intent.EvidenceLevel.MINIMAL.value,
             familiarity_digest="b" * 64,
             consequence_digest="c" * 64,
             provider_write_count=1,
