@@ -9,7 +9,7 @@ on:
         type: string
   pull_request:
     branches: [main]
-    types: [opened, synchronize, reopened]
+    types: [opened, synchronize, reopened, labeled]
     paths:
       - '.github/workflows/v761-user-communication-candidate.yml'
       - 'pyproject.toml'
@@ -37,7 +37,7 @@ env:
 
 jobs:
   lean:
-    if: github.event_name == 'pull_request'
+    if: github.event_name == 'pull_request' && github.event.action != 'labeled'
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
@@ -57,16 +57,21 @@ jobs:
       - run: python scripts/build_v761_communication_evidence.py --output-directory build/lean-v761-evidence
 
   full-candidate:
-    if: github.event_name == 'workflow_dispatch'
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'pull_request' &&
+       github.event.action == 'labeled' &&
+       github.event.label.name == 'enhancement' &&
+       github.event.pull_request.head.ref == 'agent/v761-user-communication')
     runs-on: ubuntu-24.04
     timeout-minutes: 150
     env:
-      CANDIDATE_COMMIT: ${{ inputs.candidate_commit }}
+      CANDIDATE_COMMIT: ${{ inputs.candidate_commit || github.event.pull_request.head.sha }}
       GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
         with:
-          ref: ${{ inputs.candidate_commit }}
+          ref: ${{ inputs.candidate_commit || github.event.pull_request.head.sha }}
           fetch-depth: 0
           fetch-tags: true
           persist-credentials: false
