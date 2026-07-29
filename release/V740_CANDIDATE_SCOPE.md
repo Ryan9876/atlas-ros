@@ -11,6 +11,7 @@ Status: non-publishing development candidate only.
 - Add development-tooling runtime isolation checks.
 - Run change-impact analysis in shadow mode only.
 - Preserve complete candidate validation and manual fallback.
+- Run the complete non-publishing candidate workflow only after branch CI passes and the PR is ready for review.
 
 ## Explicit exclusions
 
