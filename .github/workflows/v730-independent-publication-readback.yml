@@ -1,0 +1,143 @@
+name: v730-independent-publication-readback
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, ready_for_review, reopened]
+
+concurrency:
+  group: v730-publication-readback-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  verify-published-release:
+    if: github.head_ref == 'release/v730-publication-readback'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      RELEASE_TAG: v7.3.0
+      EXPECTED_TAG_TARGET: 51fdeefda8330c8e11bd74336d5f6a569a78e789
+      PACKAGE_SOURCE_COMMIT: 3082a8c4b4124167b5b5219a943a519fdfd63779
+      EXPECTED_SOURCE_SHA256: 6e152ca6f5c1cd1644937ed9eea6582966f18bb3e558ec6c851fa2c7a6c6306e
+      EXPECTED_WHEEL_SHA256: 5be3ea8af13e70d7bf2e2fa54fc07532d8182c90ee1121e3a881c4214f7a3890
+      EXPECTED_SBOM_SHA256: 3c7c729cbeeeeff322d5940aeed0d3ef5c501e88b1094f2947f33185e281bc99
+      EXPECTED_SOURCE_MANIFEST_SHA256: 58858c92825cdca7c48d91b358953392a5e8da451b4fa4555dc1aacde97b9180
+      ROLLBACK_TAG: v7.1.1
+    steps:
+      - name: Full-history checkout for immutable lineage
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          fetch-tags: true
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.12.10'
+
+      - name: Download release and verify immutable identity
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p readback/assets readback/rollback
+          gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" \
+            --json tagName,targetCommitish,isDraft,isPrerelease,url \
+            > readback/release.json
+          gh release download "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" \
+            --dir readback/assets
+          git fetch --tags --force
+          test "$(git rev-list -n 1 "$RELEASE_TAG")" = "$EXPECTED_TAG_TARGET"
+          git show "$RELEASE_TAG:release/RELEASE_MANIFEST_V730.md" \
+            > readback/tagged-manifest.md
+          cmp readback/tagged-manifest.md readback/assets/RELEASE_MANIFEST_V730.md
+          (cd readback/assets && sha256sum -c CHECKSUMS.sha256)
+          echo "$EXPECTED_SOURCE_SHA256  readback/assets/atlas_ros-7.3.0.tar.gz" | sha256sum -c -
+          echo "$EXPECTED_WHEEL_SHA256  readback/assets/atlas_ros-7.3.0-py3-none-any.whl" | sha256sum -c -
+          echo "$EXPECTED_SBOM_SHA256  readback/assets/SBOM.spdx.json" | sha256sum -c -
+          echo "$EXPECTED_SOURCE_MANIFEST_SHA256  readback/assets/SOURCE_MANIFEST_FINAL.json" | sha256sum -c -
+
+      - name: Clean-install the published package
+        run: |
+          set -euo pipefail
+          python -m venv published-clean
+          published-clean/bin/python -m pip install --disable-pip-version-check \
+            readback/assets/atlas_ros-7.3.0-py3-none-any.whl
+          published-clean/bin/python -c \
+            "import atlas_ros; assert atlas_ros.__version__ == '7.3.0'"
+          published-clean/bin/atlas status --json > readback/status.json
+          published-clean/bin/atlas verify --json > readback/verify.json
+
+      - name: Restore and verify immediate rollback
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh release download "$ROLLBACK_TAG" --repo "$GITHUB_REPOSITORY" \
+            --dir readback/rollback
+          (cd readback/rollback && sha256sum -c CHECKSUMS.sha256)
+          rollback_wheel=$(find readback/rollback -name 'atlas_ros-7.1.1*.whl' -print -quit)
+          test -n "$rollback_wheel"
+          python -m venv rollback-clean
+          rollback-clean/bin/python -m pip install --disable-pip-version-check "$rollback_wheel"
+          rollback-clean/bin/python -c \
+            "import atlas_ros; assert atlas_ros.__version__ == '7.1.1'"
+          rollback-clean/bin/atlas status --json > readback/rollback-status.json
+
+      - name: Produce independent readback receipt
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import hashlib
+          import json
+          import os
+          from pathlib import Path
+
+          release = json.loads(Path('readback/release.json').read_text(encoding='utf-8'))
+          assert release['tagName'] == os.environ['RELEASE_TAG']
+          assert release['targetCommitish'] == os.environ['EXPECTED_TAG_TARGET']
+          assert release['isDraft'] is False
+          assert release['isPrerelease'] is False
+          manifest = Path('readback/assets/RELEASE_MANIFEST_V730.md').read_text(encoding='utf-8')
+          canonical = json.dumps(
+              manifest,
+              sort_keys=True,
+              separators=(',', ':'),
+              ensure_ascii=False,
+              allow_nan=False,
+          ).encode('utf-8')
+          receipt = {
+              'schema_version': '1.0',
+              'status': 'passed',
+              'release_version': '7.3.0',
+              'tag': os.environ['RELEASE_TAG'],
+              'tag_target': os.environ['EXPECTED_TAG_TARGET'],
+              'package_source_commit': os.environ['PACKAGE_SOURCE_COMMIT'],
+              'manifest_raw_sha256': hashlib.sha256(manifest.encode('utf-8')).hexdigest(),
+              'manifest_canonical_sha256': hashlib.sha256(canonical).hexdigest(),
+              'source_sha256': os.environ['EXPECTED_SOURCE_SHA256'],
+              'wheel_sha256': os.environ['EXPECTED_WHEEL_SHA256'],
+              'immediate_rollback': '7.1.1',
+              'provider_writes': 0,
+              'authority_activated': False,
+              'notion_schema_changed': False,
+          }
+          Path('readback/INDEPENDENT_PUBLICATION_READBACK.json').write_text(
+              json.dumps(receipt, indent=2, sort_keys=True) + '\n',
+              encoding='utf-8',
+          )
+          PY
+
+      - name: Retain independent publication evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: atlas-ros-v730-independent-publication-readback-${{ github.event.pull_request.head.sha }}
+          path: readback/
+          if-no-files-found: error
+          retention-days: 90
