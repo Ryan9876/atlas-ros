@@ -1,0 +1,334 @@
+name: v7.3.0 full non-publishing candidate validation
+
+on:
+  pull_request:
+    branches: [main]
+    types: [ready_for_review]
+  workflow_dispatch:
+
+concurrency:
+  group: v730-full-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  validate-and-build-once:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.head_ref == 'agent/v730-operational-awareness'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      SOURCE_COMMIT: ${{ github.event.pull_request.head.sha || github.sha }}
+      RELEASE_VERSION: 7.3.0
+    steps:
+      - name: Full-history checkout of frozen candidate
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          fetch-tags: true
+          persist-credentials: false
+
+      - name: Bind frozen source identity
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$SOURCE_COMMIT"
+          mkdir -p build-once
+          git rev-parse HEAD > build-once/SOURCE_COMMIT.txt
+          git show -s --format=%cI HEAD > build-once/SOURCE_TIMESTAMP.txt
+          git ls-tree -r --full-tree HEAD > build-once/SOURCE_TREE.txt
+
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.12.10'
+          cache: pip
+
+      - name: Install pinned validation environment
+        run: python -m pip install --disable-pip-version-check -e '.[dev]'
+
+      - name: Run complete correctness gates
+        run: |
+          set -euo pipefail
+          ruff check .
+          python scripts/validate_architecture.py
+          python scripts/validate_legacy_isolation.py
+          python scripts/validate_dependency_lock.py requirements.runtime.lock
+          python scripts/validate_vulnerability_exceptions.py
+          mypy src
+          pytest \
+            --junitxml=build-once/pytest.xml \
+            --cov-report=json:build-once/coverage.json
+          python scripts/evaluate_execution_planning.py \
+            --dataset benchmarks/execution-planning-v1.json \
+            --output build-once/execution-planning.json
+          python scripts/validate_v730_notion_migration.py \
+            --output build-once/migration-validation.json
+          python scripts/benchmark_v730_operational_awareness.py \
+            --records 250 --iterations 15 \
+            --output build-once/performance.json
+
+      - name: Validate command, replay, schema, and zero-write safety
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from atlas_ros.contracts.schemas import validate_contract_schemas
+          findings = validate_contract_schemas()
+          assert not findings, findings
+          scenarios = json.loads(Path('tests/fixtures/operational-awareness/v730-scenarios.json').read_text())
+          assert len(scenarios['scenarios']) >= 51
+          assert scenarios['provider_writes'] == 0
+          summary = {
+              'schema_version': '1.0',
+              'status': 'passed',
+              'mandatory_gates': 'source_complete',
+              'scenario_count': len(scenarios['scenarios']),
+              'provider_writes': 0,
+              'live_notion_schema_migrations': 0,
+              'messages_sent': 0,
+              'calendar_actions': 0,
+              'scheduled_actions': 0,
+              'deletions': 0,
+              'credential_actions': 0,
+              'integration_scope_expansions': 0,
+              'reconciliation_created_intent': 0,
+              'adapter_planning': 0,
+              'adapter_authorization': 0,
+          }
+          Path('build-once/validation-summary.json').write_text(
+              json.dumps(summary, indent=2, sort_keys=True) + '\n'
+          )
+          PY
+
+      - name: Scan exact source for secrets
+        run: |
+          set -euo pipefail
+          python scripts/scan_candidate_secrets.py \
+            --root . --output build-once/secret-scan.json
+
+      - name: Audit locked runtime dependencies with PyPI and OSV
+        run: |
+          set -euo pipefail
+          pip-audit --disable-pip --require-hashes --no-deps --timeout 15 \
+            --progress-spinner off --vulnerability-service pypi \
+            --requirement requirements.runtime.lock --format json \
+            --output build-once/pip-audit-pypi.json
+          pip-audit --disable-pip --require-hashes --no-deps --timeout 15 \
+            --progress-spinner off --vulnerability-service osv \
+            --requirement requirements.runtime.lock --format json \
+            --output build-once/pip-audit-osv.json
+          python scripts/evaluate_dependency_audit.py \
+            build-once/pip-audit-pypi.json build-once/pip-audit-osv.json
+
+      - name: Build frozen candidate exactly once
+        run: |
+          set -euo pipefail
+          rm -rf dist build
+          python -m build
+          test -f "dist/atlas_ros-${RELEASE_VERSION}.tar.gz"
+          test -f "dist/atlas_ros-${RELEASE_VERSION}-py3-none-any.whl"
+          cp dist/* build-once/
+          printf '1\n' > build-once/BUILD_COUNT.txt
+
+      - name: Upload exact build-once inputs
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: v730-build-once-${{ github.event.pull_request.head.sha || github.sha }}
+          path: build-once/
+          if-no-files-found: error
+          retention-days: 7
+
+  clean-install:
+    needs: validate-and-build-once
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        package: [sdist, wheel]
+    steps:
+      - name: Download exact build-once artifacts
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: v730-build-once-${{ github.event.pull_request.head.sha || github.sha }}
+          path: exact-build
+
+      - name: Set up clean Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.12.10'
+
+      - name: Clean install exact package
+        env:
+          PACKAGE_KIND: ${{ matrix.package }}
+        run: |
+          set -euo pipefail
+          python -m venv clean
+          if [ "$PACKAGE_KIND" = wheel ]; then
+            package=$(find exact-build -name 'atlas_ros-7.3.0-py3-none-any.whl' -print -quit)
+          else
+            package=$(find exact-build -name 'atlas_ros-7.3.0.tar.gz' -print -quit)
+          fi
+          test -n "$package"
+          clean/bin/python -m pip install --disable-pip-version-check "$package"
+          clean/bin/python -c "import atlas_ros; assert atlas_ros.__version__ == '7.3.0'"
+          mkdir -p clean-evidence
+          clean/bin/atlas status --json > clean-evidence/status.json
+          clean/bin/atlas verify --json > clean-evidence/verify.json
+          clean/bin/atlas awareness --help > clean-evidence/awareness-help.txt
+          clean/bin/atlas lifecycle --help > clean-evidence/lifecycle-help.txt
+          clean/bin/python -m pip list --format=json > clean-evidence/installed-packages.json
+          printf '%s\n' "$PACKAGE_KIND" > clean-evidence/package-kind.txt
+
+      - name: Retain clean-install readback
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: v730-clean-${{ matrix.package }}-${{ github.event.pull_request.head.sha || github.sha }}
+          path: clean-evidence/
+          if-no-files-found: error
+          retention-days: 7
+
+  exact-package-and-restoration:
+    needs: [validate-and-build-once, clean-install]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      SOURCE_COMMIT: ${{ github.event.pull_request.head.sha || github.sha }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Full-history checkout for lineage and rollback
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          fetch-tags: true
+          persist-credentials: false
+
+      - name: Download exact build and clean-install evidence
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          pattern: v730-*
+          path: downloaded
+          merge-multiple: false
+
+      - name: Set up validation Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.12.10'
+          cache: pip
+
+      - name: Install exact candidate without rebuilding
+        run: |
+          set -euo pipefail
+          build_dir=$(find downloaded -maxdepth 1 -type d -name 'v730-build-once-*' -print -quit)
+          test -n "$build_dir"
+          test "$(cat "$build_dir/BUILD_COUNT.txt")" = 1
+          candidate_wheel=$(find "$build_dir" -name 'atlas_ros-7.3.0-py3-none-any.whl' -print -quit)
+          python -m venv candidate
+          candidate/bin/python -m pip install --disable-pip-version-check "$candidate_wheel"
+          candidate/bin/python -c "import atlas_ros; assert atlas_ros.__version__ == '7.3.0'"
+          candidate/bin/python -m pip list --format=json > "$build_dir/INSTALLED_PACKAGES.json"
+
+      - name: Restore active v7.1.1 and immediate rollback v7.1.0
+        run: |
+          set -euo pipefail
+          mkdir -p restoration/active-v711 restoration/rollback-v710
+          gh release download v7.1.1 --repo "$GITHUB_REPOSITORY" --dir restoration/active-v711
+          gh release download v7.1.0 --repo "$GITHUB_REPOSITORY" --dir restoration/rollback-v710
+          (cd restoration/active-v711 && sha256sum -c CHECKSUMS.sha256)
+          (cd restoration/rollback-v710 && sha256sum -c CHECKSUMS.sha256)
+          active_wheel=$(find restoration/active-v711 -name 'atlas_ros-7.1.1*.whl' -print -quit)
+          rollback_wheel=$(find restoration/rollback-v710 -name 'atlas_ros-7.1.0*.whl' -print -quit)
+          test -n "$active_wheel"
+          test -n "$rollback_wheel"
+          python -m venv active-clean
+          python -m venv rollback-clean
+          active-clean/bin/python -m pip install --disable-pip-version-check "$active_wheel"
+          rollback-clean/bin/python -m pip install --disable-pip-version-check "$rollback_wheel"
+          active-clean/bin/python -c "import atlas_ros; assert atlas_ros.__version__ == '7.1.1'"
+          rollback-clean/bin/python -c "import atlas_ros; assert atlas_ros.__version__ == '7.1.0'"
+          active-clean/bin/atlas status --json > restoration/active-v711-status.json
+          rollback-clean/bin/atlas status --json > restoration/rollback-v710-status.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          result = {
+              'schema_version': '1.0',
+              'status': 'passed',
+              'active_release_restored': '7.1.1',
+              'immediate_rollback_restored': '7.1.0',
+              'provider_writes': 0,
+              'authority_changes': 0,
+          }
+          Path('restoration/restoration-result.json').write_text(
+              json.dumps(result, indent=2, sort_keys=True) + '\n'
+          )
+          PY
+
+      - name: Assemble exact non-publishing package
+        run: |
+          set -euo pipefail
+          build_dir=$(find downloaded -maxdepth 1 -type d -name 'v730-build-once-*' -print -quit)
+          mkdir -p final-package
+          cp -a "$build_dir"/. final-package/
+          mkdir -p final-package/clean-install-evidence
+          cp -a downloaded/v730-clean-* final-package/clean-install-evidence/
+          cp -a restoration final-package/restoration
+          python scripts/finalize_v730_package.py \
+            --package-root final-package \
+            --source-commit "$SOURCE_COMMIT" \
+            --source-timestamp "$(cat final-package/SOURCE_TIMESTAMP.txt)" \
+            --installed-packages final-package/INSTALLED_PACKAGES.json \
+            --performance final-package/performance.json \
+            --migration-receipt final-package/migration-validation.json \
+            --validation-summary final-package/validation-summary.json \
+            > final-package/finalization-output.json
+          (cd final-package && \
+            find . -type f ! -name SHA256SUMS -print0 | sort -z | \
+            xargs -0 sha256sum > SHA256SUMS)
+          (cd final-package && sha256sum -c SHA256SUMS)
+          python scripts/validate_v730_candidate.py \
+            --package-root final-package \
+            --source-commit "$SOURCE_COMMIT" \
+            --output exact-validation/EXACT_CANDIDATE_VALIDATION.json
+
+      - name: Prove final controller remains non-publishing
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          identity = json.loads(Path('final-package/FINAL_PACKAGE_IDENTITY.json').read_text())
+          live = json.loads(Path('governance/AUTHORITY.json').read_text())
+          assert identity['status'] == 'implementation_ready_for_ryan_promotion_review'
+          assert identity['provider_writes'] == 0
+          assert identity['production_promotion_authorized'] is False
+          assert identity['final_tag_created'] is False
+          assert identity['final_release_published'] is False
+          assert identity['authority_activated'] is False
+          assert identity['production_notion_schema_changed'] is False
+          assert identity['todoist_tasks_created'] == 0
+          assert identity['messages_sent'] == 0
+          assert identity['scheduled_operations'] == 0
+          assert identity['records_deleted'] == 0
+          assert identity['credentials_changed'] is False
+          assert identity['integration_scope_expanded'] is False
+          assert live['active_release']['version'] == '7.1.1'
+          assert live['immediate_rollback']['version'] == '7.1.0'
+          PY
+
+      - name: Retain exact promotion-review package
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: atlas-ros-v730-promotion-review-${{ github.event.pull_request.head.sha || github.sha }}
+          path: |
+            final-package/
+            exact-validation/
+          if-no-files-found: error
+          retention-days: 90

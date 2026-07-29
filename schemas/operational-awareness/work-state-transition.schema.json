@@ -1,0 +1,511 @@
+{
+  "$defs": {
+    "AtlasCommandType": {
+      "enum": [
+        "delegate",
+        "update",
+        "waiting-on",
+        "blocked",
+        "received",
+        "approved",
+        "complete",
+        "cancel"
+      ],
+      "title": "AtlasCommandType",
+      "type": "string"
+    },
+    "AtlasCommandV1": {
+      "additionalProperties": false,
+      "properties": {
+        "command_digest": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Command Digest",
+          "type": "string"
+        },
+        "command_type": {
+          "$ref": "#/$defs/AtlasCommandType"
+        },
+        "contract_id": {
+          "const": "atlas.command",
+          "default": "atlas.command",
+          "title": "Contract Id",
+          "type": "string"
+        },
+        "fields": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "Fields",
+          "type": "object"
+        },
+        "idempotency_identity": {
+          "title": "Idempotency Identity",
+          "type": "string"
+        },
+        "schema_version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "source": {
+          "$ref": "#/$defs/CommandSourceRefV1"
+        },
+        "subject": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Subject"
+        }
+      },
+      "required": [
+        "command_type",
+        "source",
+        "command_digest",
+        "idempotency_identity"
+      ],
+      "title": "AtlasCommandV1",
+      "type": "object"
+    },
+    "AuthoritativeSystem": {
+      "enum": [
+        "github",
+        "notion",
+        "todoist",
+        "sqlite",
+        "other"
+      ],
+      "title": "AuthoritativeSystem",
+      "type": "string"
+    },
+    "CommandInterpretationV1": {
+      "additionalProperties": false,
+      "properties": {
+        "accountable_party": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Accountable Party"
+        },
+        "affected_notion_record": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/OperationalRecordRefV1"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "ambiguity": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Ambiguity",
+          "type": "array"
+        },
+        "blockers": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Blockers",
+          "type": "array"
+        },
+        "command": {
+          "$ref": "#/$defs/AtlasCommandV1"
+        },
+        "completion_criteria": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Completion Criteria",
+          "type": "array"
+        },
+        "confidence": {
+          "$ref": "#/$defs/ConfidenceAssessment"
+        },
+        "contract_id": {
+          "const": "atlas.command-interpretation",
+          "default": "atlas.command-interpretation",
+          "title": "Contract Id",
+          "type": "string"
+        },
+        "expected_outcome": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Expected Outcome"
+        },
+        "interpretation_digest": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Interpretation Digest",
+          "type": "string"
+        },
+        "next_checkpoint": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Next Checkpoint"
+        },
+        "next_ryan_owned_action": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Next Ryan Owned Action"
+        },
+        "parent_outcome": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/OperationalRecordRefV1"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "responsible_party": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Responsible Party"
+        },
+        "schema_version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "command",
+        "confidence",
+        "interpretation_digest"
+      ],
+      "title": "CommandInterpretationV1",
+      "type": "object"
+    },
+    "CommandSourceRefV1": {
+      "additionalProperties": false,
+      "properties": {
+        "contract_id": {
+          "const": "atlas.command-source-ref",
+          "default": "atlas.command-source-ref",
+          "title": "Contract Id",
+          "type": "string"
+        },
+        "parent_task_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Parent Task Id"
+        },
+        "schema_version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "source_command_text": {
+          "title": "Source Command Text",
+          "type": "string"
+        },
+        "source_digest": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Source Digest",
+          "type": "string"
+        },
+        "source_provider": {
+          "$ref": "#/$defs/AuthoritativeSystem"
+        },
+        "source_task_id": {
+          "title": "Source Task Id",
+          "type": "string"
+        },
+        "source_task_revision": {
+          "title": "Source Task Revision",
+          "type": "string"
+        }
+      },
+      "required": [
+        "source_provider",
+        "source_task_id",
+        "source_task_revision",
+        "source_command_text",
+        "source_digest"
+      ],
+      "title": "CommandSourceRefV1",
+      "type": "object"
+    },
+    "ConfidenceAssessment": {
+      "properties": {
+        "missing_data": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/MissingDataIndicator"
+          },
+          "title": "Missing Data",
+          "type": "array"
+        },
+        "rationale": {
+          "title": "Rationale",
+          "type": "string"
+        },
+        "score": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Score"
+        }
+      },
+      "required": [
+        "score",
+        "rationale"
+      ],
+      "title": "ConfidenceAssessment",
+      "type": "object"
+    },
+    "EffectiveWorkState": {
+      "enum": [
+        "not_started",
+        "ready",
+        "active",
+        "waiting",
+        "blocked",
+        "delegated",
+        "review",
+        "awaiting_validation",
+        "awaiting_decision",
+        "technically_complete",
+        "completed",
+        "cancelled"
+      ],
+      "title": "EffectiveWorkState",
+      "type": "string"
+    },
+    "MissingDataIndicator": {
+      "properties": {
+        "field_name": {
+          "title": "Field Name",
+          "type": "string"
+        },
+        "material": {
+          "default": false,
+          "title": "Material",
+          "type": "boolean"
+        },
+        "reason": {
+          "title": "Reason",
+          "type": "string"
+        }
+      },
+      "required": [
+        "field_name",
+        "reason"
+      ],
+      "title": "MissingDataIndicator",
+      "type": "object"
+    },
+    "OperationalRecordRefV1": {
+      "additionalProperties": false,
+      "properties": {
+        "authoritative_system": {
+          "$ref": "#/$defs/AuthoritativeSystem"
+        },
+        "canonical_record_id": {
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Canonical Record Id",
+          "type": "string"
+        },
+        "canonical_url": {
+          "anyOf": [
+            {
+              "maxLength": 2000,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Canonical Url"
+        },
+        "contract_id": {
+          "const": "atlas.operational-record-ref",
+          "default": "atlas.operational-record-ref",
+          "title": "Contract Id",
+          "type": "string"
+        },
+        "parent_record_id": {
+          "anyOf": [
+            {
+              "maxLength": 512,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Parent Record Id"
+        },
+        "record_type": {
+          "$ref": "#/$defs/OperationalRecordType"
+        },
+        "schema_version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "source_digest": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Source Digest",
+          "type": "string"
+        },
+        "source_revision": {
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Source Revision",
+          "type": "string"
+        }
+      },
+      "required": [
+        "record_type",
+        "canonical_record_id",
+        "authoritative_system",
+        "source_revision",
+        "source_digest"
+      ],
+      "title": "OperationalRecordRefV1",
+      "type": "object"
+    },
+    "OperationalRecordType": {
+      "enum": [
+        "action_record",
+        "execution_step",
+        "delegated_work",
+        "portfolio_project",
+        "risk_or_blocker",
+        "todoist_task",
+        "provider_transaction_receipt",
+        "decision_record",
+        "review_record"
+      ],
+      "title": "OperationalRecordType",
+      "type": "string"
+    }
+  },
+  "$id": "https://github.com/Ryan9876/atlas-ros/schemas/operational-awareness/work-state-transition.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "command_type": {
+      "$ref": "#/$defs/AtlasCommandType"
+    },
+    "contract_id": {
+      "const": "atlas.work-state-transition",
+      "default": "atlas.work-state-transition",
+      "title": "Contract Id",
+      "type": "string"
+    },
+    "evidence": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Evidence",
+      "type": "array"
+    },
+    "interpretation": {
+      "$ref": "#/$defs/CommandInterpretationV1"
+    },
+    "previous_state": {
+      "$ref": "#/$defs/EffectiveWorkState"
+    },
+    "reason": {
+      "title": "Reason",
+      "type": "string"
+    },
+    "resulting_state": {
+      "$ref": "#/$defs/EffectiveWorkState"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "target_record": {
+      "$ref": "#/$defs/OperationalRecordRefV1"
+    },
+    "transition_digest": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Transition Digest",
+      "type": "string"
+    }
+  },
+  "required": [
+    "interpretation",
+    "target_record",
+    "command_type",
+    "previous_state",
+    "resulting_state",
+    "reason",
+    "evidence",
+    "transition_digest"
+  ],
+  "title": "WorkStateTransitionV1",
+  "type": "object"
+}

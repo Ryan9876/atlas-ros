@@ -1,0 +1,73 @@
+{
+  "$defs": {
+    "AuthoritativeSystem": {
+      "enum": [
+        "github",
+        "notion",
+        "todoist",
+        "sqlite",
+        "other"
+      ],
+      "title": "AuthoritativeSystem",
+      "type": "string"
+    }
+  },
+  "$id": "https://github.com/Ryan9876/atlas-ros/schemas/operational-awareness/command-source-ref.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "contract_id": {
+      "const": "atlas.command-source-ref",
+      "default": "atlas.command-source-ref",
+      "title": "Contract Id",
+      "type": "string"
+    },
+    "parent_task_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Parent Task Id"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "source_command_text": {
+      "title": "Source Command Text",
+      "type": "string"
+    },
+    "source_digest": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Source Digest",
+      "type": "string"
+    },
+    "source_provider": {
+      "$ref": "#/$defs/AuthoritativeSystem"
+    },
+    "source_task_id": {
+      "title": "Source Task Id",
+      "type": "string"
+    },
+    "source_task_revision": {
+      "title": "Source Task Revision",
+      "type": "string"
+    }
+  },
+  "required": [
+    "source_provider",
+    "source_task_id",
+    "source_task_revision",
+    "source_command_text",
+    "source_digest"
+  ],
+  "title": "CommandSourceRefV1",
+  "type": "object"
+}

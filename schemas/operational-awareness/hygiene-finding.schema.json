@@ -1,0 +1,263 @@
+{
+  "$defs": {
+    "AuthoritativeSystem": {
+      "enum": [
+        "github",
+        "notion",
+        "todoist",
+        "sqlite",
+        "other"
+      ],
+      "title": "AuthoritativeSystem",
+      "type": "string"
+    },
+    "ConfidenceAssessment": {
+      "properties": {
+        "missing_data": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/MissingDataIndicator"
+          },
+          "title": "Missing Data",
+          "type": "array"
+        },
+        "rationale": {
+          "title": "Rationale",
+          "type": "string"
+        },
+        "score": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Score"
+        }
+      },
+      "required": [
+        "score",
+        "rationale"
+      ],
+      "title": "ConfidenceAssessment",
+      "type": "object"
+    },
+    "HygieneSeverity": {
+      "enum": [
+        "info",
+        "warning",
+        "high",
+        "critical"
+      ],
+      "title": "HygieneSeverity",
+      "type": "string"
+    },
+    "MissingDataIndicator": {
+      "properties": {
+        "field_name": {
+          "title": "Field Name",
+          "type": "string"
+        },
+        "material": {
+          "default": false,
+          "title": "Material",
+          "type": "boolean"
+        },
+        "reason": {
+          "title": "Reason",
+          "type": "string"
+        }
+      },
+      "required": [
+        "field_name",
+        "reason"
+      ],
+      "title": "MissingDataIndicator",
+      "type": "object"
+    },
+    "OperationalRecordRefV1": {
+      "additionalProperties": false,
+      "properties": {
+        "authoritative_system": {
+          "$ref": "#/$defs/AuthoritativeSystem"
+        },
+        "canonical_record_id": {
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Canonical Record Id",
+          "type": "string"
+        },
+        "canonical_url": {
+          "anyOf": [
+            {
+              "maxLength": 2000,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Canonical Url"
+        },
+        "contract_id": {
+          "const": "atlas.operational-record-ref",
+          "default": "atlas.operational-record-ref",
+          "title": "Contract Id",
+          "type": "string"
+        },
+        "parent_record_id": {
+          "anyOf": [
+            {
+              "maxLength": 512,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Parent Record Id"
+        },
+        "record_type": {
+          "$ref": "#/$defs/OperationalRecordType"
+        },
+        "schema_version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "source_digest": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Source Digest",
+          "type": "string"
+        },
+        "source_revision": {
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Source Revision",
+          "type": "string"
+        }
+      },
+      "required": [
+        "record_type",
+        "canonical_record_id",
+        "authoritative_system",
+        "source_revision",
+        "source_digest"
+      ],
+      "title": "OperationalRecordRefV1",
+      "type": "object"
+    },
+    "OperationalRecordType": {
+      "enum": [
+        "action_record",
+        "execution_step",
+        "delegated_work",
+        "portfolio_project",
+        "risk_or_blocker",
+        "todoist_task",
+        "provider_transaction_receipt",
+        "decision_record",
+        "review_record"
+      ],
+      "title": "OperationalRecordType",
+      "type": "string"
+    },
+    "RepairClass": {
+      "enum": [
+        "no_repair_required",
+        "informational",
+        "attended_batch_repair_eligible",
+        "individual_review_required",
+        "ryan_decision_required",
+        "prohibited_or_protected"
+      ],
+      "title": "RepairClass",
+      "type": "string"
+    }
+  },
+  "$id": "https://github.com/Ryan9876/atlas-ros/schemas/operational-awareness/hygiene-finding.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "affected_records": {
+      "items": {
+        "$ref": "#/$defs/OperationalRecordRefV1"
+      },
+      "title": "Affected Records",
+      "type": "array"
+    },
+    "confidence": {
+      "$ref": "#/$defs/ConfidenceAssessment"
+    },
+    "contract_id": {
+      "const": "atlas.hygiene-finding",
+      "default": "atlas.hygiene-finding",
+      "title": "Contract Id",
+      "type": "string"
+    },
+    "downstream_impact": {
+      "title": "Downstream Impact",
+      "type": "string"
+    },
+    "evidence": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Evidence",
+      "type": "array"
+    },
+    "finding_digest": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Finding Digest",
+      "type": "string"
+    },
+    "finding_id": {
+      "title": "Finding Id",
+      "type": "string"
+    },
+    "proposed_disposition": {
+      "title": "Proposed Disposition",
+      "type": "string"
+    },
+    "protected_record_status": {
+      "title": "Protected Record Status",
+      "type": "boolean"
+    },
+    "repair_eligibility": {
+      "$ref": "#/$defs/RepairClass"
+    },
+    "rule_id": {
+      "title": "Rule Id",
+      "type": "string"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "severity": {
+      "$ref": "#/$defs/HygieneSeverity"
+    }
+  },
+  "required": [
+    "finding_id",
+    "rule_id",
+    "affected_records",
+    "evidence",
+    "severity",
+    "confidence",
+    "downstream_impact",
+    "proposed_disposition",
+    "repair_eligibility",
+    "protected_record_status",
+    "finding_digest"
+  ],
+  "title": "HygieneFindingV1",
+  "type": "object"
+}

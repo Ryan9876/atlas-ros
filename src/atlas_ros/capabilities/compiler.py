@@ -91,6 +91,8 @@ def _compile_entry(raw: Any) -> tuple[CapabilityDescriptor, dict[str, Any]]:
         "sole_planning_authority",
         "advisory_only",
         "may_create_execution_intent",
+        "explicit_intent_required",
+        "authorization_required",
     }
     required = {"id", "package", "owner", "writes_providers"}
     if not required.issubset(payload) or not set(payload).issubset(allowed):
@@ -119,6 +121,12 @@ def _compile_entry(raw: Any) -> tuple[CapabilityDescriptor, dict[str, Any]]:
     may_create_execution_intent = _nullable_bool(
         payload, "may_create_execution_intent", capability_id
     )
+    explicit_intent_required = _optional_bool(
+        payload, "explicit_intent_required", capability_id, default=False
+    )
+    authorization_required = _optional_bool(
+        payload, "authorization_required", capability_id, default=False
+    )
     canonical: dict[str, Any] = {
         "id": capability_id,
         "package": package,
@@ -135,6 +143,10 @@ def _compile_entry(raw: Any) -> tuple[CapabilityDescriptor, dict[str, Any]]:
         canonical["advisory_only"] = True
     if may_create_execution_intent is not None:
         canonical["may_create_execution_intent"] = may_create_execution_intent
+    if explicit_intent_required:
+        canonical["explicit_intent_required"] = True
+    if authorization_required:
+        canonical["authorization_required"] = True
 
     descriptor = CapabilityDescriptor(
         capability_id=capability_id,
@@ -146,6 +158,8 @@ def _compile_entry(raw: Any) -> tuple[CapabilityDescriptor, dict[str, Any]]:
         sole_planning_authority=sole_planning_authority,
         advisory_only=advisory_only,
         may_create_execution_intent=may_create_execution_intent,
+        explicit_intent_required=explicit_intent_required,
+        authorization_required=authorization_required,
         digest=sha256_digest(canonical),
     )
     return descriptor, canonical

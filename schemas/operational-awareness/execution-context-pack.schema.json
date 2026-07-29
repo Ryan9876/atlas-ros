@@ -1,0 +1,568 @@
+{
+  "$defs": {
+    "AuthoritativeSystem": {
+      "enum": [
+        "github",
+        "notion",
+        "todoist",
+        "sqlite",
+        "other"
+      ],
+      "title": "AuthoritativeSystem",
+      "type": "string"
+    },
+    "ConfidenceAssessment": {
+      "properties": {
+        "missing_data": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/MissingDataIndicator"
+          },
+          "title": "Missing Data",
+          "type": "array"
+        },
+        "rationale": {
+          "title": "Rationale",
+          "type": "string"
+        },
+        "score": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Score"
+        }
+      },
+      "required": [
+        "score",
+        "rationale"
+      ],
+      "title": "ConfidenceAssessment",
+      "type": "object"
+    },
+    "EffectiveWorkState": {
+      "enum": [
+        "not_started",
+        "ready",
+        "active",
+        "waiting",
+        "blocked",
+        "delegated",
+        "review",
+        "awaiting_validation",
+        "awaiting_decision",
+        "technically_complete",
+        "completed",
+        "cancelled"
+      ],
+      "title": "EffectiveWorkState",
+      "type": "string"
+    },
+    "FreshnessAssessmentV1": {
+      "additionalProperties": false,
+      "properties": {
+        "age_days": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Age Days"
+        },
+        "assessment_digest": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Assessment Digest",
+          "type": "string"
+        },
+        "contract_id": {
+          "const": "atlas.freshness-assessment",
+          "default": "atlas.freshness-assessment",
+          "title": "Contract Id",
+          "type": "string"
+        },
+        "evaluated_at": {
+          "title": "Evaluated At",
+          "type": "string"
+        },
+        "rationale": {
+          "maxLength": 2000,
+          "minLength": 1,
+          "title": "Rationale",
+          "type": "string"
+        },
+        "schema_version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "source_time": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Source Time"
+        },
+        "state": {
+          "$ref": "#/$defs/FreshnessState"
+        },
+        "threshold_days": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Threshold Days"
+        }
+      },
+      "required": [
+        "state",
+        "evaluated_at",
+        "rationale",
+        "assessment_digest"
+      ],
+      "title": "FreshnessAssessmentV1",
+      "type": "object"
+    },
+    "FreshnessState": {
+      "enum": [
+        "current",
+        "aging",
+        "stale",
+        "contradicted",
+        "unverifiable"
+      ],
+      "title": "FreshnessState",
+      "type": "string"
+    },
+    "MissingDataIndicator": {
+      "properties": {
+        "field_name": {
+          "title": "Field Name",
+          "type": "string"
+        },
+        "material": {
+          "default": false,
+          "title": "Material",
+          "type": "boolean"
+        },
+        "reason": {
+          "title": "Reason",
+          "type": "string"
+        }
+      },
+      "required": [
+        "field_name",
+        "reason"
+      ],
+      "title": "MissingDataIndicator",
+      "type": "object"
+    },
+    "OperationalRecordRefV1": {
+      "additionalProperties": false,
+      "properties": {
+        "authoritative_system": {
+          "$ref": "#/$defs/AuthoritativeSystem"
+        },
+        "canonical_record_id": {
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Canonical Record Id",
+          "type": "string"
+        },
+        "canonical_url": {
+          "anyOf": [
+            {
+              "maxLength": 2000,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Canonical Url"
+        },
+        "contract_id": {
+          "const": "atlas.operational-record-ref",
+          "default": "atlas.operational-record-ref",
+          "title": "Contract Id",
+          "type": "string"
+        },
+        "parent_record_id": {
+          "anyOf": [
+            {
+              "maxLength": 512,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Parent Record Id"
+        },
+        "record_type": {
+          "$ref": "#/$defs/OperationalRecordType"
+        },
+        "schema_version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "source_digest": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Source Digest",
+          "type": "string"
+        },
+        "source_revision": {
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Source Revision",
+          "type": "string"
+        }
+      },
+      "required": [
+        "record_type",
+        "canonical_record_id",
+        "authoritative_system",
+        "source_revision",
+        "source_digest"
+      ],
+      "title": "OperationalRecordRefV1",
+      "type": "object"
+    },
+    "OperationalRecordType": {
+      "enum": [
+        "action_record",
+        "execution_step",
+        "delegated_work",
+        "portfolio_project",
+        "risk_or_blocker",
+        "todoist_task",
+        "provider_transaction_receipt",
+        "decision_record",
+        "review_record"
+      ],
+      "title": "OperationalRecordType",
+      "type": "string"
+    },
+    "ResumptionPointV1": {
+      "additionalProperties": false,
+      "properties": {
+        "conclusion_reached": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Conclusion Reached"
+        },
+        "confidence": {
+          "$ref": "#/$defs/ConfidenceAssessment"
+        },
+        "contract_id": {
+          "const": "atlas.resumption-point",
+          "default": "atlas.resumption-point",
+          "title": "Contract Id",
+          "type": "string"
+        },
+        "generated_time": {
+          "title": "Generated Time",
+          "type": "string"
+        },
+        "last_confirmed_action": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Last Confirmed Action"
+        },
+        "minimum_verification_required": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Minimum Verification Required"
+        },
+        "next_concrete_action": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Next Concrete Action"
+        },
+        "resumption_digest": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Resumption Digest",
+          "type": "string"
+        },
+        "schema_version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "source_evidence": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Source Evidence",
+          "type": "array"
+        },
+        "unknown_reason": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Unknown Reason"
+        },
+        "unresolved_question": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Unresolved Question"
+        },
+        "where_execution_stopped": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Where Execution Stopped"
+        }
+      },
+      "required": [
+        "confidence",
+        "generated_time",
+        "resumption_digest"
+      ],
+      "title": "ResumptionPointV1",
+      "type": "object"
+    }
+  },
+  "$id": "https://github.com/Ryan9876/atlas-ros/schemas/operational-awareness/execution-context-pack.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "completed_work": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Completed Work",
+      "type": "array"
+    },
+    "confidence": {
+      "$ref": "#/$defs/ConfidenceAssessment"
+    },
+    "context_digest": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Context Digest",
+      "type": "string"
+    },
+    "contract_id": {
+      "const": "atlas.execution-context-pack",
+      "default": "atlas.execution-context-pack",
+      "title": "Contract Id",
+      "type": "string"
+    },
+    "current_blocker_or_dependency": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Current Blocker Or Dependency",
+      "type": "array"
+    },
+    "delegated_work": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Delegated Work",
+      "type": "array"
+    },
+    "desired_outcome": {
+      "title": "Desired Outcome",
+      "type": "string"
+    },
+    "effective_work_state": {
+      "$ref": "#/$defs/EffectiveWorkState"
+    },
+    "freshness": {
+      "$ref": "#/$defs/FreshnessAssessmentV1"
+    },
+    "most_recent_material_change": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Most Recent Material Change"
+    },
+    "prior_decisions": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Prior Decisions",
+      "type": "array"
+    },
+    "recommended_next_action": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Recommended Next Action"
+    },
+    "redaction_warning": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Redaction Warning"
+    },
+    "relevant_records_and_evidence": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Relevant Records And Evidence",
+      "type": "array"
+    },
+    "remaining_work": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Remaining Work",
+      "type": "array"
+    },
+    "resumption_point": {
+      "$ref": "#/$defs/ResumptionPointV1"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "stakeholders": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Stakeholders",
+      "type": "array"
+    },
+    "stale_context_warning": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Stale Context Warning"
+    },
+    "target_work_item": {
+      "$ref": "#/$defs/OperationalRecordRefV1"
+    },
+    "unresolved_questions": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Unresolved Questions",
+      "type": "array"
+    },
+    "why_it_matters": {
+      "title": "Why It Matters",
+      "type": "string"
+    }
+  },
+  "required": [
+    "target_work_item",
+    "desired_outcome",
+    "why_it_matters",
+    "effective_work_state",
+    "confidence",
+    "freshness",
+    "resumption_point",
+    "context_digest"
+  ],
+  "title": "ExecutionContextPackV1",
+  "type": "object"
+}

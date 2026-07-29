@@ -1,0 +1,313 @@
+{
+  "schema_version": "v730-evaluation-scenarios-1.0",
+  "scenario_count": 51,
+  "scenarios": [
+    {
+      "id": 1,
+      "name": "Active Action Record with current Todoist progress",
+      "deterministic": true,
+      "live_provider_writes": 0
+    },
+    {
+      "id": 2,
+      "name": "Completed child step with incomplete parent outcome",
+      "deterministic": true,
+      "live_provider_writes": 0
+    },
+    {
+      "id": 3,
+      "name": "Technically complete work awaiting approval",
+      "deterministic": true,
+      "live_provider_writes": 0
+    },
+    {
+      "id": 4,
+      "name": "Conflicting Notion and Todoist completion state",
+      "deterministic": true,
+      "live_provider_writes": 0
+    },
+    {
+      "id": 5,
+      "name": "Delegated work overdue without a recent update",
+      "deterministic": true,
+      "live_provider_writes": 0
+    },
+    {
+      "id": 6,
+      "name": "Delegated work awaiting an agreed checkpoint",
+      "deterministic": true,
+      "live_provider_writes": 0
+    },
+    {
+      "id": 7,
+      "name": "Vendor commitment without acceptance evidence",
+      "deterministic": true,
+      "live_provider_writes": 0
+    },
+    {
+      "id": 8,
+      "name": "Ryan-owned commitment from explicit language",
+      "deterministic": true,
+      "live_provider_writes": 0
+    },
+    {
+      "id": 9,
+      "name": "Ambiguous commitment remaining a candidate",
+      "deterministic": true,
+      "live_provider_writes": 0
+    },
+    {
+      "id": 10,
+      "name": "Blocked work with a valid blocker",
+      "deterministic": true,
+      "live_provider_writes": 0
+    },
+    {
+      "id": 11,
+      "name": "Blocked status without blocker evidence",
+      "deterministic": true,
+      "live_provider_writes": 0
+    },
+    {
+      "id": 12,
+      "name": "Stale high-priority work",
+      "deterministic": true,
+      "live_provider_writes": 0
+    },
+    {
+      "id": 13,
+      "name": "Duplicate task representations",
+      "deterministic": true,
+      "live_provider_writes": 0
+    },
+    {
+      "id": 14,
+      "name": "Cancelled project with open children",
+      "deterministic": true,
+      "live_provider_writes": 0
+    },
+    {
+      "id": 15,
+      "name": "Completed outcome still represented as active",
+      "deterministic": true,
+      "live_provider_writes": 0
+    },
+    {
+      "id": 16,
+      "name": "Interrupted work with a verifiable resumption point",
+      "deterministic": true,
+      "live_provider_writes": 0
+    },
+    {
+      "id": 17,
+      "name": "Interrupted work with insufficient resumption evidence",
+      "deterministic": true,
+      "live_provider_writes": 0
+    },
+    {
+      "id": 18,
+      "name": "Brief output exceeding the configured item budget",
+      "deterministic": true,
+      "live_provider_writes": 0
+    },
+    {
+      "id": 19,
+      "name": "Protected historical record excluded from repair",
+      "deterministic": true,
+      "live_provider_writes": 0
+    },
+    {
+      "id": 20,
+      "name": "Repair proposal passed into planning without direct execution",
+      "deterministic": true,
+      "live_provider_writes": 0
+    },
+    {
+      "id": 21,
+      "name": "Delegating from a completed subtask",
+      "deterministic": true,
+      "live_provider_writes": 0
+    },
+    {
+      "id": 22,
+      "name": "Resolving the correct parent",
+      "deterministic": true,
+      "live_provider_writes": 0
+    },
+    {
+      "id": 23,
+      "name": "Preserving the parent task",
+      "deterministic": true,
+      "live_provider_writes": 0
+    },
+    {
+      "id": 24,
+      "name": "Creating the follow-up beneath the parent",
+      "deterministic": true,
+      "live_provider_writes": 0
+    },
+    {
+      "id": 25,
+      "name": "Reprocessing the same command without duplication",
+      "deterministic": true,
+      "live_provider_writes": 0
+    },
+    {
+      "id": 26,
+      "name": "Updating the existing checkpoint date",
+      "deterministic": true,
+      "live_provider_writes": 0
+    },
+    {
+      "id": 27,
+      "name": "Changing Assigned to In Progress",
+      "deterministic": true,
+      "live_provider_writes": 0
+    },
+    {
+      "id": 28,
+      "name": "Moving follow-up to Review when work is received",
+      "deterministic": true,
+      "live_provider_writes": 0
+    },
+    {
+      "id": 29,
+      "name": "Moving Review to implementation after approval",
+      "deterministic": true,
+      "live_provider_writes": 0
+    },
+    {
+      "id": 30,
+      "name": "Closing the parent only when Definition of Done is satisfied",
+      "deterministic": true,
+      "live_provider_writes": 0
+    },
+    {
+      "id": 31,
+      "name": "Rejecting an ambiguous parent",
+      "deterministic": true,
+      "live_provider_writes": 0
+    },
+    {
+      "id": 32,
+      "name": "Rejecting an unresolved assignee when identity resolution is required",
+      "deterministic": true,
+      "live_provider_writes": 0
+    },
+    {
+      "id": 33,
+      "name": "Handling a missing follow-up date under policy",
+      "deterministic": true,
+      "live_provider_writes": 0
+    },
+    {
+      "id": 34,
+      "name": "Handling Notion success followed by Todoist failure",
+      "deterministic": true,
+      "live_provider_writes": 0
+    },
+    {
+      "id": 35,
+      "name": "Handling Todoist success with uncertain readback",
+      "deterministic": true,
+      "live_provider_writes": 0
+    },
+    {
+      "id": 36,
+      "name": "Resuming a partially applied transaction",
+      "deterministic": true,
+      "live_provider_writes": 0
+    },
+    {
+      "id": 37,
+      "name": "Preventing multiple active checkpoints",
+      "deterministic": true,
+      "live_provider_writes": 0
+    },
+    {
+      "id": 38,
+      "name": "Preserving completed historical subtasks",
+      "deterministic": true,
+      "live_provider_writes": 0
+    },
+    {
+      "id": 39,
+      "name": "Cancelling or superseding delegated work",
+      "deterministic": true,
+      "live_provider_writes": 0
+    },
+    {
+      "id": 40,
+      "name": "Detecting manual Todoist changes conflicting with Notion",
+      "deterministic": true,
+      "live_provider_writes": 0
+    },
+    {
+      "id": 41,
+      "name": "Proving reconciliation creates no successor intent",
+      "deterministic": true,
+      "live_provider_writes": 0
+    },
+    {
+      "id": 42,
+      "name": "Proving adapters do not interpret commands",
+      "deterministic": true,
+      "live_provider_writes": 0
+    },
+    {
+      "id": 43,
+      "name": "Proving candidate validation performs zero live writes",
+      "deterministic": true,
+      "live_provider_writes": 0
+    },
+    {
+      "id": 44,
+      "name": "Path-filter selection includes all required tests",
+      "deterministic": true,
+      "live_provider_writes": 0
+    },
+    {
+      "id": 45,
+      "name": "Unrelated paths do not trigger specialized workflows",
+      "deterministic": true,
+      "live_provider_writes": 0
+    },
+    {
+      "id": 46,
+      "name": "Stale branch runs are cancelled",
+      "deterministic": true,
+      "live_provider_writes": 0
+    },
+    {
+      "id": 47,
+      "name": "The frozen candidate is built once",
+      "deterministic": true,
+      "live_provider_writes": 0
+    },
+    {
+      "id": 48,
+      "name": "Downstream jobs reuse exact artifacts",
+      "deterministic": true,
+      "live_provider_writes": 0
+    },
+    {
+      "id": 49,
+      "name": "Candidate source changes invalidate the frozen identity",
+      "deterministic": true,
+      "live_provider_writes": 0
+    },
+    {
+      "id": 50,
+      "name": "Shallow checkout is used only where safe",
+      "deterministic": true,
+      "live_provider_writes": 0
+    },
+    {
+      "id": 51,
+      "name": "Full-history jobs remain available for release and rollback validation",
+      "deterministic": true,
+      "live_provider_writes": 0
+    }
+  ],
+  "provider_writes": 0
+}

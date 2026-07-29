@@ -1,0 +1,52 @@
+{
+  "$id": "https://github.com/Ryan9876/atlas-ros/schemas/operational-awareness/awareness-stage-receipt.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "contract_id": {
+      "const": "atlas.awareness-stage-receipt",
+      "default": "atlas.awareness-stage-receipt",
+      "title": "Contract Id",
+      "type": "string"
+    },
+    "input_digest": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Input Digest",
+      "type": "string"
+    },
+    "output_digest": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Output Digest",
+      "type": "string"
+    },
+    "provider_writes": {
+      "default": 0,
+      "minimum": 0,
+      "title": "Provider Writes",
+      "type": "integer"
+    },
+    "receipt_digest": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Receipt Digest",
+      "type": "string"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "stage": {
+      "title": "Stage",
+      "type": "string"
+    }
+  },
+  "required": [
+    "stage",
+    "input_digest",
+    "output_digest",
+    "receipt_digest"
+  ],
+  "title": "AwarenessStageReceiptV1",
+  "type": "object"
+}

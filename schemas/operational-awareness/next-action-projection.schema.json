@@ -1,0 +1,185 @@
+{
+  "$defs": {
+    "AuthoritativeSystem": {
+      "enum": [
+        "github",
+        "notion",
+        "todoist",
+        "sqlite",
+        "other"
+      ],
+      "title": "AuthoritativeSystem",
+      "type": "string"
+    },
+    "OperationalRecordRefV1": {
+      "additionalProperties": false,
+      "properties": {
+        "authoritative_system": {
+          "$ref": "#/$defs/AuthoritativeSystem"
+        },
+        "canonical_record_id": {
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Canonical Record Id",
+          "type": "string"
+        },
+        "canonical_url": {
+          "anyOf": [
+            {
+              "maxLength": 2000,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Canonical Url"
+        },
+        "contract_id": {
+          "const": "atlas.operational-record-ref",
+          "default": "atlas.operational-record-ref",
+          "title": "Contract Id",
+          "type": "string"
+        },
+        "parent_record_id": {
+          "anyOf": [
+            {
+              "maxLength": 512,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Parent Record Id"
+        },
+        "record_type": {
+          "$ref": "#/$defs/OperationalRecordType"
+        },
+        "schema_version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "source_digest": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Source Digest",
+          "type": "string"
+        },
+        "source_revision": {
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Source Revision",
+          "type": "string"
+        }
+      },
+      "required": [
+        "record_type",
+        "canonical_record_id",
+        "authoritative_system",
+        "source_revision",
+        "source_digest"
+      ],
+      "title": "OperationalRecordRefV1",
+      "type": "object"
+    },
+    "OperationalRecordType": {
+      "enum": [
+        "action_record",
+        "execution_step",
+        "delegated_work",
+        "portfolio_project",
+        "risk_or_blocker",
+        "todoist_task",
+        "provider_transaction_receipt",
+        "decision_record",
+        "review_record"
+      ],
+      "title": "OperationalRecordType",
+      "type": "string"
+    }
+  },
+  "$id": "https://github.com/Ryan9876/atlas-ros/schemas/operational-awareness/next-action-projection.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "action_title": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Action Title"
+    },
+    "active_checkpoint_count_after": {
+      "maximum": 8,
+      "minimum": 0,
+      "title": "Active Checkpoint Count After",
+      "type": "integer"
+    },
+    "contract_id": {
+      "const": "atlas.next-action-projection",
+      "default": "atlas.next-action-projection",
+      "title": "Contract Id",
+      "type": "string"
+    },
+    "due_date_or_checkpoint": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Due Date Or Checkpoint"
+    },
+    "parent_outcome": {
+      "$ref": "#/$defs/OperationalRecordRefV1"
+    },
+    "preserves_parent": {
+      "default": true,
+      "title": "Preserves Parent",
+      "type": "boolean"
+    },
+    "projection_digest": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Projection Digest",
+      "type": "string"
+    },
+    "reason": {
+      "title": "Reason",
+      "type": "string"
+    },
+    "replaces_task_ids": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Replaces Task Ids",
+      "type": "array"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    }
+  },
+  "required": [
+    "parent_outcome",
+    "action_title",
+    "due_date_or_checkpoint",
+    "reason",
+    "active_checkpoint_count_after",
+    "projection_digest"
+  ],
+  "title": "NextActionProjectionV1",
+  "type": "object"
+}

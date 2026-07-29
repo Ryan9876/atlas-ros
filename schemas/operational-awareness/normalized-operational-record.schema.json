@@ -1,0 +1,358 @@
+{
+  "$defs": {
+    "AcceptanceState": {
+      "enum": [
+        "unconfirmed",
+        "accepted",
+        "declined",
+        "superseded",
+        "not_required"
+      ],
+      "title": "AcceptanceState",
+      "type": "string"
+    },
+    "AuthoritativeSystem": {
+      "enum": [
+        "github",
+        "notion",
+        "todoist",
+        "sqlite",
+        "other"
+      ],
+      "title": "AuthoritativeSystem",
+      "type": "string"
+    },
+    "OperationalRecordRefV1": {
+      "additionalProperties": false,
+      "properties": {
+        "authoritative_system": {
+          "$ref": "#/$defs/AuthoritativeSystem"
+        },
+        "canonical_record_id": {
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Canonical Record Id",
+          "type": "string"
+        },
+        "canonical_url": {
+          "anyOf": [
+            {
+              "maxLength": 2000,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Canonical Url"
+        },
+        "contract_id": {
+          "const": "atlas.operational-record-ref",
+          "default": "atlas.operational-record-ref",
+          "title": "Contract Id",
+          "type": "string"
+        },
+        "parent_record_id": {
+          "anyOf": [
+            {
+              "maxLength": 512,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Parent Record Id"
+        },
+        "record_type": {
+          "$ref": "#/$defs/OperationalRecordType"
+        },
+        "schema_version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "source_digest": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Source Digest",
+          "type": "string"
+        },
+        "source_revision": {
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Source Revision",
+          "type": "string"
+        }
+      },
+      "required": [
+        "record_type",
+        "canonical_record_id",
+        "authoritative_system",
+        "source_revision",
+        "source_digest"
+      ],
+      "title": "OperationalRecordRefV1",
+      "type": "object"
+    },
+    "OperationalRecordType": {
+      "enum": [
+        "action_record",
+        "execution_step",
+        "delegated_work",
+        "portfolio_project",
+        "risk_or_blocker",
+        "todoist_task",
+        "provider_transaction_receipt",
+        "decision_record",
+        "review_record"
+      ],
+      "title": "OperationalRecordType",
+      "type": "string"
+    }
+  },
+  "$id": "https://github.com/Ryan9876/atlas-ros/schemas/operational-awareness/normalized-operational-record.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "acceptance_status": {
+      "$ref": "#/$defs/AcceptanceState",
+      "default": "not_required"
+    },
+    "accountable_party": {
+      "anyOf": [
+        {
+          "maxLength": 300,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Accountable Party"
+    },
+    "approval_received": {
+      "default": false,
+      "title": "Approval Received",
+      "type": "boolean"
+    },
+    "approval_required": {
+      "default": false,
+      "title": "Approval Required",
+      "type": "boolean"
+    },
+    "blockers": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Blockers",
+      "type": "array"
+    },
+    "cancelled": {
+      "default": false,
+      "title": "Cancelled",
+      "type": "boolean"
+    },
+    "checkpoint": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Checkpoint"
+    },
+    "child_ids": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Child Ids",
+      "type": "array"
+    },
+    "completed": {
+      "default": false,
+      "title": "Completed",
+      "type": "boolean"
+    },
+    "completion_evidence": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Completion Evidence",
+      "type": "array"
+    },
+    "contract_id": {
+      "const": "atlas.normalized-operational-record",
+      "default": "atlas.normalized-operational-record",
+      "title": "Contract Id",
+      "type": "string"
+    },
+    "definition_of_done": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Definition Of Done",
+      "type": "array"
+    },
+    "delegated": {
+      "default": false,
+      "title": "Delegated",
+      "type": "boolean"
+    },
+    "dependencies": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Dependencies",
+      "type": "array"
+    },
+    "due_date": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Due Date"
+    },
+    "expected_outcome": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Expected Outcome"
+    },
+    "extra": {
+      "additionalProperties": true,
+      "title": "Extra",
+      "type": "object"
+    },
+    "observed_state": {
+      "default": "",
+      "maxLength": 200,
+      "title": "Observed State",
+      "type": "string"
+    },
+    "owner": {
+      "anyOf": [
+        {
+          "maxLength": 300,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Owner"
+    },
+    "priority": {
+      "default": 4,
+      "maximum": 4,
+      "minimum": 1,
+      "title": "Priority",
+      "type": "integer"
+    },
+    "protected_history": {
+      "default": false,
+      "title": "Protected History",
+      "type": "boolean"
+    },
+    "received_evidence": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Received Evidence",
+      "type": "array"
+    },
+    "record_digest": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Record Digest",
+      "type": "string"
+    },
+    "record_ref": {
+      "$ref": "#/$defs/OperationalRecordRefV1"
+    },
+    "responsible_party": {
+      "anyOf": [
+        {
+          "maxLength": 300,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Responsible Party"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "technically_complete": {
+      "default": false,
+      "title": "Technically Complete",
+      "type": "boolean"
+    },
+    "title": {
+      "maxLength": 1000,
+      "minLength": 1,
+      "title": "Title",
+      "type": "string"
+    },
+    "todoist_task_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Todoist Task Id"
+    },
+    "updated_at": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Updated At"
+    }
+  },
+  "required": [
+    "record_ref",
+    "title",
+    "record_digest"
+  ],
+  "title": "NormalizedOperationalRecordV1",
+  "type": "object"
+}
