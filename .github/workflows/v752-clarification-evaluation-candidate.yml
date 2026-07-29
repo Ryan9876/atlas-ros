@@ -104,11 +104,16 @@ jobs:
           python - <<'PY'
           import json
           from pathlib import Path
-          fixtures = json.loads(Path('tests/fixtures/v752_clarification_cases.json').read_text())
-          assert len(fixtures) >= 12
-          assert all(case['provider_write_count'] == 0 for case in fixtures)
-          assert all(case['todoist_write_count'] == 0 for case in fixtures)
+          fixture_document = json.loads(
+              Path('tests/fixtures/v752_clarification_cases.json').read_text()
+          )
+          assert fixture_document['schema_version'] == '1.0'
+          cases = fixture_document['cases']
+          assert len(cases) >= 12
+          assert len({case['case_id'] for case in cases}) == len(cases)
+          assert all(case['capture'] and case['provenance'] and case['expected'] for case in cases)
           PY
+          pytest --no-cov -q tests/test_v752_clarification_evaluation.py
 
       - name: Scan source and audit dependencies
         run: |
