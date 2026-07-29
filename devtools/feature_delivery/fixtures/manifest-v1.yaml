@@ -1,0 +1,12 @@
+schema_version: fixture-manifest-v1
+categories:
+  canonical:
+    purpose: expected normal operating cases
+  adversarial:
+    purpose: malformed contradictory incomplete duplicate stale and failure cases
+  sanitized-production-derived:
+    purpose: representative edge cases stripped of sensitive information
+requirements:
+  deterministic: true
+  canonical_only_prohibited: true
+  provider_neutral_where_possible: true
