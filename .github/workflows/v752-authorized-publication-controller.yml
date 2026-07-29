@@ -1,11 +1,10 @@
 name: v7.5.2 authorized publication controller
 
 on:
-  pull_request:
+  push:
     branches: [main]
-    types: [closed]
     paths:
-      - release/RELEASE_MANIFEST_V752.md
+      - release/V752_PUBLICATION_TRIGGER.json
 
 permissions:
   contents: write
@@ -17,12 +16,11 @@ concurrency:
 
 jobs:
   publish:
-    if: github.event.pull_request.merged == true
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     env:
       TAG: v7.5.2
-      TARGET_COMMIT: ${{ github.event.pull_request.merge_commit_sha }}
+      TARGET_COMMIT: ${{ github.sha }}
       ARTIFACT_ID: '8736952867'
       ARTIFACT_DIGEST: sha256:e8d5eb816d332874daf214b4e326952d958f2ab7820d46039057dda9149456ee
       PACKAGE_SOURCE_COMMIT: b9ff553e7c53d735b91e6d535f8daafa28f97076
@@ -32,18 +30,19 @@ jobs:
       SOURCE_MANIFEST_SHA256: 90da5a0fd71ad10305235f3d5955fb297cf25a349db2cb6132b9f4a27c8b14f8
       VALIDATION_SHA256: d021e51abae05e7bab3c1350925fe1547df69926b714affdfbe15123db8dc92d
     steps:
-      - name: Checkout exact manifest merge commit
+      - name: Checkout exact publication transaction
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
         with:
           ref: ${{ env.TARGET_COMMIT }}
           fetch-depth: 0
           persist-credentials: true
 
-      - name: Verify prepublication authority and exact manifest
+      - name: Verify prepublication authority, trigger, and exact manifest
         run: |
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "$TARGET_COMMIT"
           test -f release/RELEASE_MANIFEST_V752.md
+          test -f release/V752_PUBLICATION_TRIGGER.json
           python - <<'PY'
           import json
           from pathlib import Path
@@ -53,6 +52,16 @@ jobs:
           assert authority['active_release']['immutable_commit'] == '379892900e1c82f84a6716f46a8180d83c836aa7'
           assert authority['immediate_rollback']['version'] == '7.5.0'
           assert authority['immediate_rollback']['immutable_commit'] == 'f2a14c1e401debe77040d0db836e343be6f337e3'
+          trigger = json.loads(Path('release/V752_PUBLICATION_TRIGGER.json').read_text())
+          assert trigger == {
+              'artifact_id': 8736952867,
+              'artifact_sha256': 'e8d5eb816d332874daf214b4e326952d958f2ab7820d46039057dda9149456ee',
+              'decision_id': 'V4D-56',
+              'package_source_commit': 'b9ff553e7c53d735b91e6d535f8daafa28f97076',
+              'review_id': 'V4V-98',
+              'schema_version': 'v752-publication-trigger-v1',
+              'tag': 'v7.5.2',
+          }
           manifest = Path('release/RELEASE_MANIFEST_V752.md').read_text()
           for required in (
               'b9ff553e7c53d735b91e6d535f8daafa28f97076',
