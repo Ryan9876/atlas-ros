@@ -73,7 +73,7 @@ def quality() -> evaluation.QuestionQualityAssessmentV1:
 
 def test_disabled_policy_is_equivalent_to_predecessor() -> None:
     decision = predecessor()
-    assert decision.clarification_status is intent.ClarificationStatus.REQUIRED
+    assert decision.clarification_status is intent.ClarificationStatus.NOT_REQUIRED
     result = evaluation.ClarificationEvaluationPolicyV752().evaluate(
         event=event_for(decision),
         predecessor_decision=decision,
