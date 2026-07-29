@@ -3,8 +3,8 @@
 from .base import (
     AcceptanceState,
     AtlasCommandType,
-    AuthorityLevel,
     AuthoritativeSystem,
+    AuthorityLevel,
     CommitmentType,
     EffectiveWorkState,
     FollowUpDisposition,

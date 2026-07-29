@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
@@ -24,8 +24,8 @@ from atlas_ros.contracts.advisory_v1 import ProvenanceRecord, ValueOrigin
 from atlas_ros.contracts.operational_awareness import (
     AcceptanceState,
     AtlasCommandType,
-    AuthorityLevel,
     AuthoritativeSystem,
+    AuthorityLevel,
     EvidenceConflictV1,
     FreshnessAssessmentV1,
     FreshnessState,

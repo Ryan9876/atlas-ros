@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime
 
 from atlas_ros.contracts.advisory_v1 import ConfidenceAssessment
 from atlas_ros.contracts.operational_awareness import (
