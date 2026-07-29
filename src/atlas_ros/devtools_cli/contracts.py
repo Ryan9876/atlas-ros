@@ -29,7 +29,7 @@ class AuthorityDeclaration(BaseModel):
     promotion: str = "separately_authorized"
 
     @model_validator(mode="after")
-    def reject_implicit_authority(self) -> "AuthorityDeclaration":
+    def reject_implicit_authority(self) -> AuthorityDeclaration:
         prohibited = {"authorized", "automatic", "unattended"}
         if self.provider_writes in prohibited or self.production_migration in prohibited:
             raise ValueError("feature contracts cannot grant production authority")
@@ -66,13 +66,23 @@ class FeatureImplementationContractV1(BaseModel):
     documentation_impact: str
 
     @model_validator(mode="after")
-    def validate_category_obligations(self) -> "FeatureImplementationContractV1":
-        if self.category in {FeatureCategory.EXECUTION_INTENT, FeatureCategory.PROVIDER_INTEGRATION}:
+    def validate_category_obligations(self) -> FeatureImplementationContractV1:
+        execution_categories = {
+            FeatureCategory.EXECUTION_INTENT,
+            FeatureCategory.PROVIDER_INTEGRATION,
+        }
+        if self.category in execution_categories:
             required = {"idempotency", "provider_readback"}
             if not required.issubset(set(self.required_scenario_categories)):
-                raise ValueError("execution/provider features require idempotency and provider_readback")
-        if self.migration_classification != "none" and self.authority.production_migration == "none":
-            raise ValueError("migration classification contradicts production_migration declaration")
+                raise ValueError(
+                    "execution/provider features require idempotency and provider_readback"
+                )
+        has_migration = self.migration_classification != "none"
+        migration_declared = self.authority.production_migration != "none"
+        if has_migration and not migration_declared:
+            raise ValueError(
+                "migration classification contradicts production_migration declaration"
+            )
         return self
 
     def digest(self) -> str:
@@ -121,7 +131,7 @@ class ChangeImpactAssessmentV1(BaseModel):
     suppresses_mandatory_gates: bool = False
 
     @model_validator(mode="after")
-    def enforce_shadow_safety(self) -> "ChangeImpactAssessmentV1":
+    def enforce_shadow_safety(self) -> ChangeImpactAssessmentV1:
         if self.mode != "shadow":
             raise ValueError("v7.4.0 impact analysis is shadow-only")
         if self.suppresses_mandatory_gates:
