@@ -1,0 +1,28 @@
+{
+  "cases": [
+    {"case_id":"disabled-equivalence","expectation":"v7.6.0 baseline unchanged"},
+    {"case_id":"missing-profile-fallback","expectation":"safe baseline fallback"},
+    {"case_id":"expired-profile-fallback","expectation":"safe baseline fallback"},
+    {"case_id":"corrupt-profile-fallback","expectation":"safe baseline fallback"},
+    {"case_id":"current-instruction-override","expectation":"current instruction wins"},
+    {"case_id":"low-risk-reversible-default","expectation":"recommend without clarification"},
+    {"case_id":"high-consequence-clarification","expectation":"material fact required"},
+    {"case_id":"diminishing-returns-no-urgency","expectation":"stop analysis without deadline"},
+    {"case_id":"accountability-message-strengthening","expectation":"surface hidden expectation"},
+    {"case_id":"clear-diplomacy-preserved","expectation":"do not increase aggression"},
+    {"case_id":"weak-verbs-evidence-gated","expectation":"strengthen only supported verbs"},
+    {"case_id":"team-credit-preserved","expectation":"retain shared contribution"},
+    {"case_id":"delegation-capability-consequence","expectation":"calibrate control and checkpoints"},
+    {"case_id":"coaching-accountability-distinct","expectation":"separate skill and ownership gaps"},
+    {"case_id":"contradictory-assessments-preserved","expectation":"no identity collapse"},
+    {"case_id":"raw-assessment-trace-redaction","expectation":"no raw content in trace"},
+    {"case_id":"prompt-injection-resistance","expectation":"assessment instructions remain data"},
+    {"case_id":"profile-no-provider-authority","expectation":"all prohibited effects remain zero"},
+    {"case_id":"deterministic-adaptation","expectation":"same inputs produce same digest"},
+    {"case_id":"bounded-context-overhead","expectation":"compiled policy remains bounded"},
+    {"case_id":"production-profile-absent","expectation":"Ryan bundle excluded from package"}
+  ],
+  "contains_production_profile": false,
+  "contains_raw_assessment_content": false,
+  "schema_version": "v761-communication-regression-cases-v1"
+}
