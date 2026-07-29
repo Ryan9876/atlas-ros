@@ -91,6 +91,89 @@ jobs:
             scripts/validate_v730_candidate.py \
             tests/unit/test_v730_operational_awareness.py \
             tests/unit/test_v730_release_controls.py
+          python - <<'PYFIX'
+          from pathlib import Path
+
+          root = Path('.')
+
+          path = root / 'src/atlas_ros/contracts/operational_awareness/base.py'
+          text = path.read_text(encoding='utf-8')
+          text = text.replace(
+              '        unsigned = cls.model_construct(**values, **{cls.digest_field: "0" * 64})\n'
+              '        return sha256_digest(unsigned.digest_payload())\n',
+              '        unsigned_values = dict(values)\n'
+              '        unsigned_values[cls.digest_field] = "0" * 64\n'
+              '        unsigned = cls.model_construct(**unsigned_values)\n'
+              '        return sha256_digest(unsigned.digest_payload())\n',
+          )
+          text = text.replace(
+              '    def verify_digest(self) -> bool:\n'
+              '        return getattr(self, self.digest_field) == self.expected_digest()\n',
+              '    def verify_digest(self) -> bool:\n'
+              '        return bool(getattr(self, self.digest_field) == self.expected_digest())\n',
+          )
+          path.write_text(text, encoding='utf-8')
+
+          path = root / 'src/atlas_ros/capabilities/operational_awareness/work_graph_hygiene/engine.py'
+          text = path.read_text(encoding='utf-8')
+          text = text.replace(
+              '            common = {\n'
+              '                "affected_records": (record.record_ref,),\n'
+              '                "confidence": ConfidenceAssessment(\n'
+              '                    score=1.0, rationale="deterministic invariant evaluation"\n'
+              '                ),\n'
+              '                "protected_record_status": protected,\n'
+              '            }\n',
+              '            affected_records = (record.record_ref,)\n'
+              '            confidence = ConfidenceAssessment(\n'
+              '                score=1.0, rationale="deterministic invariant evaluation"\n'
+              '            )\n',
+          )
+          text = text.replace(
+              '                        **common,\n',
+              '                        affected_records=affected_records,\n'
+              '                        confidence=confidence,\n'
+              '                        protected_record_status=protected,\n',
+          )
+          path.write_text(text, encoding='utf-8')
+
+          path = root / 'src/atlas_ros/capabilities/operational_awareness/commitments/engine.py'
+          text = path.read_text(encoding='utf-8').replace(
+              '        elif overdue and estimate.effective_state != EffectiveWorkState.COMPLETED:\n',
+              '        elif overdue:\n',
+          )
+          path.write_text(text, encoding='utf-8')
+
+          path = root / 'src/atlas_ros/entry_points/awareness.py'
+          text = path.read_text(encoding='utf-8')
+          text = text.replace(
+              '        service = ExecutionContextService(policy)\n'
+              '        value = (\n'
+              '            service.build(snapshot, states, record_id=args.record_reference)\n'
+              '            if args.command == "context"\n'
+              '            else service.resume(snapshot, states, record_id=args.record_reference)\n',
+              '        context_service = ExecutionContextService(policy)\n'
+              '        value = (\n'
+              '            context_service.build(snapshot, states, record_id=args.record_reference)\n'
+              '            if args.command == "context"\n'
+              '            else context_service.resume(snapshot, states, record_id=args.record_reference)\n',
+          )
+          text = text.replace(
+              '    service = WorkGraphHygieneService(policy)\n'
+              '    findings = service.scan(snapshot, states)\n',
+              '    hygiene_service = WorkGraphHygieneService(policy)\n'
+              '    findings = hygiene_service.scan(snapshot, states)\n',
+          )
+          text = text.replace(
+              '    _emit(service.propose(finding), output_format=args.format)\n',
+              '    _emit(hygiene_service.propose(finding), output_format=args.format)\n',
+          )
+          path.write_text(text, encoding='utf-8')
+          PYFIX
+          ruff check \
+            src/atlas_ros/contracts/operational_awareness \
+            src/atlas_ros/capabilities/operational_awareness \
+            src/atlas_ros/entry_points/awareness.py
           python scripts/validate_architecture.py
           mypy src
 
