@@ -1,0 +1,16 @@
+schema_version: workflow-registry-v1
+mode: shadow
+workflows:
+  lean-ci:
+    purpose: fast draft feedback
+    full_history: false
+    cancellable: true
+  full-candidate-ci:
+    purpose: complete frozen-candidate validation
+    full_history: true
+    cancellable: false
+safety:
+  unknown_paths: broaden
+  governance_changes: broaden
+  dependency_changes: broaden
+  mandatory_candidate_gates_suppressible: false
