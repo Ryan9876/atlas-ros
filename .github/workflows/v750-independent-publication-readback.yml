@@ -32,7 +32,6 @@ jobs:
       - name: Verify immutable tag target and manifest
         run: |
           set -euo pipefail
-          git fetch origin "refs/tags/${TAG}:refs/tags/${TAG}"
           test "$(git rev-list -n 1 "$TAG")" = "$EXPECTED_TAG_COMMIT"
           git show "$TAG:release/RELEASE_MANIFEST_V750.md" > RELEASE_MANIFEST_V750.md
           grep -F 'e5b828d40e63e6d3106ae6bddbcc08b48273f74b' RELEASE_MANIFEST_V750.md
