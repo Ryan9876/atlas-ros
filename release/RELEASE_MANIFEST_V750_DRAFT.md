@@ -57,6 +57,19 @@ Required production integrations remain exactly GitHub, Notion, and Todoist. No 
 
 No production Notion schema migration is required for this candidate. Confirmed interpretation evidence and proposal-only historical duplicate-review findings use existing Review Records fields and page content. No property, record, or historical evidence was removed or rewritten.
 
+## Governed records
+
+- Architecture and policy decision: https://app.notion.com/p/3acb8344ad2c81758df3e17da0276687
+- Architecture/schema review: https://app.notion.com/p/3acb8344ad2c816fbfabd9350a039d58
+- Implementation review: https://app.notion.com/p/3acb8344ad2c81f596f3f4f3859b5347
+- Security and privacy review: https://app.notion.com/p/3acb8344ad2c81f982f9e2f9c1be2ce1
+- Schema review: https://app.notion.com/p/3acb8344ad2c81b28d32d941951a706e
+- Test evidence: https://app.notion.com/p/3acb8344ad2c8178b111d2cc8d6afdd8
+- Rollback review: https://app.notion.com/p/3acb8344ad2c8145a868fbbb689586fa
+- Provider-write review: https://app.notion.com/p/3acb8344ad2c81ddbfffda13251b1502
+- Release-candidate review: https://app.notion.com/p/3acb8344ad2c8113a401d8cec9e7decb
+- Exact-package promotion proposal: https://app.notion.com/p/3acb8344ad2c81488c7cf139e6861288
+
 ## Provider-write and activation state
 
 - Provider writes: `0`
