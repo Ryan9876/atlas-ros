@@ -308,5 +308,6 @@
       "deterministic": true,
       "live_provider_writes": 0
     }
-  ]
+  ],
+  "provider_writes": 0
 }
