@@ -34,7 +34,9 @@ def build_user_model_projection(
     for item in governed_evidence:
         if item.context_key.scope.user_id != user_id:
             raise ValueError("cross-user governed evidence is prohibited")
-    referenced_sources = {reference for item in preferences for reference in item.evidence_references}
+    referenced_sources = {
+        reference for item in preferences for reference in item.evidence_references
+    }
     if not referenced_sources.issubset(source_by_id):
         raise ValueError("every preference evidence reference must resolve")
     referenced_governed = {
@@ -74,7 +76,9 @@ def preserve_predecessor_clarification(
     decision: ClarificationDecisionV1,
 ) -> ClarificationDecisionV1:
     """Return the accepted v7.5 clarification result unchanged and provider-write free."""
-    if decision.clarification_status is ClarificationStatus.REQUIRED:
-        if decision.todoist_write_allowed or decision.provider_writes:
-            raise ValueError("required clarification must remain provider-write free")
+    if (
+        decision.clarification_status is ClarificationStatus.REQUIRED
+        and (decision.todoist_write_allowed or decision.provider_writes)
+    ):
+        raise ValueError("required clarification must remain provider-write free")
     return decision

@@ -115,9 +115,11 @@ class CommunicationSourceEvidenceV1(StrictContract):
         _parse_timestamp(self.evidence_date)
         if not self.source_document_digest and not self.governed_reference:
             raise ValueError("source evidence requires a digest or governed reference")
-        if self.evidence_type is CommunicationEvidenceType.SYSTEM_INFERENCE:
-            if self.confirmation_state is not PreferenceConfirmationState.PROVISIONAL:
-                raise ValueError("system inference remains provisional until user confirmation")
+        if (
+            self.evidence_type is CommunicationEvidenceType.SYSTEM_INFERENCE
+            and self.confirmation_state is not PreferenceConfirmationState.PROVISIONAL
+        ):
+            raise ValueError("system inference remains provisional until user confirmation")
         if tuple(sorted(set(self.governed_intent_evidence_ids))) != (
             self.governed_intent_evidence_ids
         ):

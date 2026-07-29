@@ -152,7 +152,7 @@ def main() -> None:
     if require_file(build / "ROLLBACK_RESTORATION_COMMIT.txt").read_text().strip() != rollback_commit:
         raise ValueError("rollback restoration identity mismatch")
 
-    proposal = require_file(build / "V761_PROPOSAL_EVIDENCE_INDEX.json")
+    require_file(build / "V761_PROPOSAL_EVIDENCE_INDEX.json")
     schemas = require_file(build / "V761_CONTRACT_SCHEMAS.json")
     policy = require_file(build / "V761_FEATURE_POLICY_TARGET.json")
     profile_schema = require_file(build / "V761_PROFILE_PROJECTION_SCHEMA_PROPOSAL.json")

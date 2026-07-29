@@ -171,11 +171,10 @@ class UserCommunicationFeaturePolicyV761:
             confidence_floor = 0.80 if consequential else 0.70
         if preference.confidence < confidence_floor:
             return False
-        if preference.sensitivity is SensitivityLevel.RESTRICTED and (
-            context is not CommunicationContext.SENSITIVE_STRESSFUL
-        ):
-            return False
-        return True
+        return not (
+            preference.sensitivity is SensitivityLevel.RESTRICTED
+            and context is not CommunicationContext.SENSITIVE_STRESSFUL
+        )
 
 
 def _bounded_unique(values: list[str], limit: int) -> tuple[str, ...]:
