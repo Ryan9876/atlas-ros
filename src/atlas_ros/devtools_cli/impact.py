@@ -19,22 +19,41 @@ BROAD_PREFIXES = (
     "src/atlas_ros/release",
     "scripts/",
 )
+KNOWN_PREFIXES = (
+    "src/",
+    "tests/",
+    "docs/",
+    "governance/",
+    ".github/",
+    "release/",
+)
 
 
 def assess_changes(paths: Iterable[str]) -> ChangeImpactAssessmentV1:
     changed = tuple(sorted(set(paths)))
     broad = not changed or any(path.startswith(BROAD_PREFIXES) for path in changed)
-    known = all(path.startswith(("src/", "tests/", "docs/", "governance/", ".github/", "release/")) or path in {"pyproject.toml"} for path in changed)
+    known = all(
+        path.startswith(KNOWN_PREFIXES) or path == "pyproject.toml" for path in changed
+    )
     if not known:
         broad = True
-    selected = ("ruff", "mypy", "architecture", "pytest") if broad else ("ruff", "targeted-pytest")
+    selected = (
+        ("ruff", "mypy", "architecture", "pytest")
+        if broad
+        else ("ruff", "targeted-pytest")
+    )
     broadened = ("complete-candidate-gates",) if broad else ()
     rationale = []
     if broad:
         rationale.append("shared, release-sensitive, workflow, dependency, or unknown change")
     if not known:
         rationale.append("unknown path broadened validation")
-    payload = {"changed": changed, "selected": selected, "broadened": broadened, "mode": "shadow"}
+    payload = {
+        "changed": changed,
+        "selected": selected,
+        "broadened": broadened,
+        "mode": "shadow",
+    }
     digest = hashlib.sha256(json.dumps(payload, sort_keys=True).encode()).hexdigest()
     return ChangeImpactAssessmentV1(
         changed_paths=changed,
