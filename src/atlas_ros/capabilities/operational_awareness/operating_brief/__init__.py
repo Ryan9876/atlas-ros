@@ -1,3 +1,5 @@
 from .engine import OperatingBriefService
 
-__all__ = ["OperatingBriefService"]
+CAPABILITY_ID = "atlas.exception-operating-brief"
+
+__all__ = ["CAPABILITY_ID", "OperatingBriefService"]
