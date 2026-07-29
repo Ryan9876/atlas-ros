@@ -1,0 +1,155 @@
+name: v7.5.1 independent publication readback
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - .github/workflows/v751-independent-publication-readback.yml
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  verify-publication:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      TAG: v7.5.1
+      EXPECTED_TAG_COMMIT: 379892900e1c82f84a6716f46a8180d83c836aa7
+      PACKAGE_SOURCE_COMMIT: 39ba3c6d6e3ebc4b0e217cc59bbd9cdbc8054a7c
+      SOURCE_SHA256: 6b724fff14c7db134c03d8ec7f23781c0074e838f1c4a6d29caeacdfc7486f77
+      WHEEL_SHA256: dd3ec561121c3c84e2b15be26a2998670524e5d2ef906a9f49a66410f4a9a997
+      VALIDATION_SHA256: e6cfb46e4f5f3beed6c793ac69c3c47f54c7a32a4447374c00c9397a3f2db36a
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+          persist-credentials: false
+
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.12.10'
+
+      - name: Verify immutable tag target and manifest
+        run: |
+          set -euo pipefail
+          test "$(git rev-list -n 1 "$TAG")" = "$EXPECTED_TAG_COMMIT"
+          git show "$TAG:release/RELEASE_MANIFEST_V751.md" > RELEASE_MANIFEST_V751.md
+          grep -F "$PACKAGE_SOURCE_COMMIT" RELEASE_MANIFEST_V751.md
+          grep -F '8731263498' RELEASE_MANIFEST_V751.md
+          grep -F 'collection://46af021f-eb9a-4eba-b10c-4523e70df0c3' RELEASE_MANIFEST_V751.md
+          grep -F 'V4D-55' RELEASE_MANIFEST_V751.md
+          grep -F 'V4V-97' RELEASE_MANIFEST_V751.md
+
+      - name: Download and verify published release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir release-assets
+          gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --dir release-assets
+          test -f release-assets/atlas_ros-7.5.1.tar.gz
+          test -f release-assets/atlas_ros-7.5.1-py3-none-any.whl
+          test -f release-assets/CHECKSUMS.sha256
+          test -f release-assets/EVIDENCE_CHECKSUMS.sha256
+          test -f release-assets/SBOM.spdx.json
+          test -f release-assets/SOURCE_MANIFEST.sha256
+          test -f release-assets/V751_FULL_VALIDATION.json
+          test -f release-assets/ACTIVE_RESTORATION.json
+          test -f release-assets/ROLLBACK_RESTORATION.json
+          test -f release-assets/RELEASE_MANIFEST_V751.md
+          (cd release-assets && sed 's#dist/##' CHECKSUMS.sha256 | sha256sum -c -)
+          test "$(sha256sum release-assets/atlas_ros-7.5.1.tar.gz | cut -d' ' -f1)" = "$SOURCE_SHA256"
+          test "$(sha256sum release-assets/atlas_ros-7.5.1-py3-none-any.whl | cut -d' ' -f1)" = "$WHEEL_SHA256"
+          test "$(sha256sum release-assets/V751_FULL_VALIDATION.json | cut -d' ' -f1)" = "$VALIDATION_SHA256"
+          cmp RELEASE_MANIFEST_V751.md release-assets/RELEASE_MANIFEST_V751.md
+
+      - name: Clean install and verify published packages
+        run: |
+          set -euo pipefail
+          for kind in wheel sdist; do
+            python -m venv "$kind-env"
+            if [ "$kind" = wheel ]; then
+              package=release-assets/atlas_ros-7.5.1-py3-none-any.whl
+            else
+              package=release-assets/atlas_ros-7.5.1.tar.gz
+            fi
+            "$kind-env/bin/python" -m pip install --disable-pip-version-check "$package"
+            "$kind-env/bin/python" -c "import atlas_ros; assert atlas_ros.__version__ == '7.5.1'"
+            "$kind-env/bin/atlas" verify --json > "$kind-verify.json"
+          done
+
+      - name: Verify non-publishing receipt and restoration evidence
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          receipt = json.loads(Path('release-assets/V751_FULL_VALIDATION.json').read_text())
+          assert receipt['status'] == 'passed'
+          assert receipt['candidate_commit'] == '39ba3c6d6e3ebc4b0e217cc59bbd9cdbc8054a7c'
+          assert receipt['candidate_version'] == '7.5.1'
+          assert receipt['active_version_unchanged'] == '7.5.0'
+          assert receipt['rollback_version_verified'] == '7.4.5'
+          assert receipt['integration_inventory_data_source'] == 'collection://46af021f-eb9a-4eba-b10c-4523e70df0c3'
+          assert receipt['build_count'] == 1
+          for field in (
+              'provider_writes',
+              'todoist_writes',
+              'authority_changes',
+              'production_schema_migrations',
+              'release_publications',
+              'production_tags_created_or_moved',
+              'integration_scope_expansions',
+              'credential_actions',
+              'messages_sent',
+              'calendar_actions',
+              'scheduled_actions',
+              'deletions',
+          ):
+              assert receipt[field] == 0, field
+          active = json.loads(Path('release-assets/ACTIVE_RESTORATION.json').read_text())
+          rollback = json.loads(Path('release-assets/ROLLBACK_RESTORATION.json').read_text())
+          assert active['version'] == '7.5.0'
+          assert rollback['version'] == '7.4.5'
+          PY
+
+      - name: Retain independent readback evidence
+        run: |
+          python - <<'PY'
+          import hashlib
+          import json
+          from pathlib import Path
+
+          payload = {
+              'schema_version': 'v751-independent-publication-readback-v1',
+              'status': 'passed',
+              'tag': 'v7.5.1',
+              'tag_commit': '379892900e1c82f84a6716f46a8180d83c836aa7',
+              'package_source_commit': '39ba3c6d6e3ebc4b0e217cc59bbd9cdbc8054a7c',
+              'source_sha256': '6b724fff14c7db134c03d8ec7f23781c0074e838f1c4a6d29caeacdfc7486f77',
+              'wheel_sha256': 'dd3ec561121c3c84e2b15be26a2998670524e5d2ef906a9f49a66410f4a9a997',
+              'integration_inventory_data_source': 'collection://46af021f-eb9a-4eba-b10c-4523e70df0c3',
+              'provider_writes': 0,
+              'authority_changes': 0,
+          }
+          text = json.dumps(payload, indent=2, sort_keys=True) + '\n'
+          Path('V751_INDEPENDENT_READBACK.json').write_text(text)
+          Path('V751_INDEPENDENT_READBACK.sha256').write_text(
+              hashlib.sha256(text.encode()).hexdigest()
+              + '  V751_INDEPENDENT_READBACK.json\n'
+          )
+          PY
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: atlas-ros-v751-independent-publication-readback
+          path: |
+            V751_INDEPENDENT_READBACK.json
+            V751_INDEPENDENT_READBACK.sha256
+            wheel-verify.json
+            sdist-verify.json
+          if-no-files-found: error
+          retention-days: 90
