@@ -1,3 +1,5 @@
 from .engine import CommitmentIntelligence
 
-__all__ = ["CommitmentIntelligence"]
+CAPABILITY_ID = "atlas.commitment-intelligence"
+
+__all__ = ["CAPABILITY_ID", "CommitmentIntelligence"]
