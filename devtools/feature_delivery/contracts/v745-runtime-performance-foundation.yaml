@@ -1,120 +1,134 @@
 schema_version: feature-contract-v1
-feature:
-  id: runtime-performance-foundation
-  version: 7.4.5
-  category: runtime_architecture
-  objective: >
-    Reduce repeated provider reads, runtime composition, governance compilation,
-    and operational recomputation while preserving canonical output,
-    deterministic behavior, complete evidence, and provider safety.
-included_capabilities:
-  - operation_read_snapshot
-  - provider_read_planning
-  - verified_registry_bundle
-  - performance_contracts
-  - capability_scoped_composition
-  - incremental_operational_computation
-excluded_capabilities:
-  - incremental_pipeline_digests
-  - bounded_runtime_concurrency
-  - attended_warm_session
+feature_id: runtime-performance-foundation
+feature_name: Atlas ROS Runtime Performance Foundation
+target_release: 7.4.5
+category: provider_integration
+business_objective: >
+  Reduce repeated provider reads, runtime composition, governance compilation,
+  and operational recomputation while preserving canonical output,
+  deterministic behavior, complete evidence, and provider safety.
+user_visible_outcome: >
+  Faster attended Atlas operations with unchanged command semantics, authority,
+  authorization, provider readback, and rollback behavior.
+inputs:
+  - live authority identity
+  - command and participating capability requirements
+  - provider record identities and required fields
+  - governed policy, contract, schema, and capability registries
+  - normalized operational records and prior disposable computation index
+outputs:
+  - immutable operation read snapshot
+  - provider-neutral operational read plan and receipts
+  - verified runtime registry bundle
+  - redacted behavior-neutral performance observations
+  - capability-scoped runtime composition plan
+  - incremental computation plan and receipt
+authoritative_systems:
+  - GitHub
+  - Notion
+  - Todoist
+affected_capabilities:
+  - operational-awareness
+  - delegated-work-intelligence
+  - action-work-state
+  - operating-brief
+  - execution-context-pack
+  - provider-read-coordination
+affected_contracts:
+  - OperationReadSnapshotV1
+  - OperationalReadPlanV1
+  - VerifiedRuntimeBundleV1
+  - PerformanceBudgetV1
+  - PerformanceObservationV1
+  - ProviderReadMetricsV1
+  - RuntimeCompositionMetricsV1
+  - IncrementalComputationMetricsV1
+  - PerformanceValidationReportV1
+  - RuntimeCompositionPlanV1
+  - OperationalComputationNodeV1
+  - OperationalDependencyEdgeV1
+  - OperationalComputationGraphV1
+  - IncrementalComputationPlanV1
+  - IncrementalComputationReceiptV1
+affected_policies:
+  - authority-resolution
+  - provider-read-evidence
+  - provider-write-authorization
+  - mandatory-provider-readback
+  - release-validation
+  - cache-classification
+provider_read_requirements:
+  - application layer declares semantic read requirements
+  - duplicate and overlapping reads are coalesced before adapter execution
+  - pagination and incomplete evidence remain explicit
+  - consequential writes revalidate preconditions and target revisions
 authority:
   provider_writes: unchanged
-  production_migration: prohibited
+  production_migration: none
   promotion: separately_authorized
-  publication: prohibited
-  production_authority_change: prohibited
-  immutable_release_modification: prohibited
-invariants:
-  - cold_path_remains_canonical
-  - complete_authority_verification
-  - no_mutable_provider_truth_as_authority
-  - deterministic_equivalence
-  - mandatory_provider_readback
-  - full_recomputation_fallback
-  - full_composition_fallback
-  - no_reduced_candidate_validation
-  - sequential_runtime_execution
-  - no_cached_authorization_or_execution_intent
-affected_runtime_modules:
-  - authority_bootstrap
-  - runtime_composition
-  - provider_read_coordination
-  - operational_awareness
-  - work_state_computation
-  - commitment_computation
-  - operating_brief_generation
-  - execution_context_generation
-affected_capabilities:
-  - operational_awareness
-  - delegated_work_intelligence
-  - action_work_state
-  - operating_brief
-  - execution_context_pack
-provider_read_implications:
-  - declare semantic read requirements in the application layer
-  - coalesce duplicate and overlapping reads
-  - preserve bounded pagination and explicit incomplete evidence
-  - revalidate write preconditions and mandatory readback
-cache_classifications:
-  immutable_package_artifacts:
-    - verified_runtime_bundle
-  per_operation_only:
-    - operation_read_snapshot
-    - operational_read_plan
-  disposable_non_authoritative:
-    - incremental_computation_index
-  prohibited:
-    - provider_credentials
-    - authorization
-    - execution_intent
-    - permanent_mutable_provider_truth
+migration_classification: none
+security_classification: internal
 compatibility_requirements:
   - preserve current command semantics
-  - preserve current authority initialization
-  - preserve provider write authorization
+  - preserve GitHub-first authority initialization
+  - preserve provider-write authorization and mandatory readback
   - preserve reconciliation behavior
   - preserve pipeline lineage and stage digest semantics
-  - preserve cold execution
-  - preserve Active and immediate rollback restoration
-expected_performance_improvements:
-  - fewer duplicate provider reads
-  - fewer registry source compilations
-  - reduced runtime composition work
-  - reduced unchanged operational-node recomputation
+  - preserve cold execution and full-composition fallback
+  - preserve full recomputation and rollback restoration
+invariants:
+  - cold path remains canonical
+  - complete authority verification remains mandatory
+  - mutable provider truth never becomes permanent authority
+  - scoped and full composition remain semantically equivalent
+  - incremental and full recomputation remain semantically equivalent
+  - candidate validation remains complete
+  - all runtime execution remains sequential
+  - authorization and execution intent are never cached
 prohibited_behaviors:
   - second execution planner
   - semantic reasoning in adapters
-  - reconciliation-created intent
-  - skipped pre-write validation
-  - skipped post-write readback
-  - concurrent or asynchronous provider execution
-  - resident runtime or retained authorization
-  - changed canonical pipeline digest semantics
-required_tests:
-  scenario_range: V745-001..V745-051
-  mandatory:
-    - operation_snapshot_contract
-    - provider_read_plan_contract
-    - registry_bundle_source_equivalence
-    - scoped_full_composition_equivalence
-    - incremental_full_computation_equivalence
-    - corruption_and_invalidation
-    - explicit_exclusions
-    - provider_write_prohibition
-    - authorization_and_readback_regression
-    - deterministic_replay
-    - active_release_restoration
-    - immediate_rollback_restoration
-    - complete_candidate_validation
-reserved_for_ryan:
-  - release_identity_change
-  - production_promotion
-  - production_tag_or_release_publication
-  - canonical_authority_activation
-  - incompatible_runtime_contracts
-  - material_production_architecture
-  - provider_permission_changes
-  - rollback_integrity_changes
-  - removal_of_established_fallback
-  - material_validation_reduction
+  - reconciliation-created execution intent
+  - skipped pre-write validation or post-write readback
+  - incremental pipeline digest changes
+  - concurrent or asynchronous provider or capability execution
+  - resident warm session or retained cross-command authorization
+  - production authority change, publication, tag creation, or immutable release modification
+decisions_reserved_for_ryan:
+  - exact candidate promotion
+  - production publication and tag creation
+  - canonical authority activation
+  - incompatible runtime contract changes
+  - provider permission changes
+  - rollback-integrity changes
+  - removal of established fallback
+  - material validation reduction
+required_scenario_categories:
+  - deterministic_replay
+  - idempotency
+  - provider_readback
+  - operation_snapshot
+  - read_plan_coalescing
+  - registry_bundle_equivalence
+  - scoped_full_composition_equivalence
+  - incremental_full_computation_equivalence
+  - corruption_and_invalidation
+  - explicit_exclusions
+  - active_and_rollback_restoration
+acceptance_criteria:
+  - all six included capabilities are implemented
+  - all three excluded capabilities remain absent
+  - fewer duplicate provider reads are demonstrated on governed fixtures
+  - registry source compilation can be replaced only by a verified equivalent bundle
+  - scoped composition preserves all externally observable outcomes
+  - incremental computation equals full recomputation for required scenarios
+  - no provider-write increase or correctness, evidence, memory, startup, or stability regression
+  - exact source and wheel artifacts are built once and reused
+  - complete non-publishing candidate validation and restoration pass
+performance_expectations:
+  - establish thresholds from measured baseline and fixture variance
+  - report p50 and p95 for directly affected operations
+  - do not fabricate connector latency or provider byte savings
+  - performance budgets cannot suppress correctness checks
+release_impact: additive backward-compatible runtime optimization foundation
+documentation_impact: architecture ADRs, operator guides, recovery procedures, performance report, and Feature Delivery Acceleration usage record
