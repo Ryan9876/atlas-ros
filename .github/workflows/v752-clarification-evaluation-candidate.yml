@@ -12,6 +12,7 @@ on:
       - 'src/atlas_ros/__init__.py'
       - 'src/atlas_ros/entry_points/main.py'
       - 'src/atlas_ros/clarification_*_v752.py'
+      - 'scripts/build_v752_*'
       - 'tests/test_v752_clarification_evaluation.py'
       - 'tests/unit/test_v700_entry_points.py'
       - 'tests/unit/test_v710_lazy_warm_runtime.py'
@@ -45,9 +46,20 @@ jobs:
           python-version: '3.12.10'
           cache: pip
       - run: python -m pip install --disable-pip-version-check -e '.[ci]'
-      - run: ruff check src/atlas_ros/clarification_*_v752.py tests/test_v752_clarification_evaluation.py
+      - run: |
+          ruff check \
+            src/atlas_ros/clarification_*_v752.py \
+            scripts/build_v752_* \
+            tests/test_v752_clarification_evaluation.py
       - run: mypy src/atlas_ros/clarification_*_v752.py
       - run: pytest --no-cov -q tests/test_v752_clarification_evaluation.py
+      - run: |
+          python scripts/build_v752_evaluation_evidence.py \
+            --fixtures tests/fixtures/v752_clarification_cases.json \
+            --output-directory build/lean-v752-evidence
+          test -s build/lean-v752-evidence/V752_BASELINE_REPORT.json
+          test -s build/lean-v752-evidence/V752_CONTRACT_SCHEMAS.json
+          test -s build/lean-v752-evidence/V752_DATA_MINIMIZATION_RECEIPT.json
 
   full-candidate:
     if: github.event_name == 'workflow_dispatch' || !github.event.pull_request.draft
@@ -86,6 +98,7 @@ jobs:
           python - <<'PY' >> "$GITHUB_ENV"
           import json
           from pathlib import Path
+
           authority = json.loads(Path('governance/AUTHORITY.json').read_text())
           print(f"ACTIVE_VERSION={authority['active_release']['version']}")
           print(f"ACTIVE_TAG={authority['active_release']['tag']}")
@@ -104,29 +117,34 @@ jobs:
           python scripts/validate_devtools_boundary.py
           pytest
 
-      - name: Validate clarification evaluation boundaries
+      - name: Build deterministic clarification evidence
         run: |
+          python scripts/build_v752_evaluation_evidence.py \
+            --fixtures tests/fixtures/v752_clarification_cases.json \
+            --output-directory build
           python - <<'PY'
           import json
           from pathlib import Path
-          fixture_document = json.loads(
-              Path('tests/fixtures/v752_clarification_cases.json').read_text()
+
+          baseline = json.loads(Path('build/V752_BASELINE_REPORT.json').read_text())
+          schemas = json.loads(Path('build/V752_CONTRACT_SCHEMAS.json').read_text())
+          receipt = json.loads(
+              Path('build/V752_DATA_MINIMIZATION_RECEIPT.json').read_text()
           )
-          assert fixture_document['schema_version'] == '1.0'
-          cases = fixture_document['cases']
-          assert len(cases) >= 12
-          assert len({case['case_id'] for case in cases}) == len(cases)
-          assert all(case['capture'] for case in cases)
-          assert all(case['provenance'] for case in cases)
-          assert all(case['expected'] for case in cases)
+          assert baseline['evaluation_version'] == '7.5.2'
+          assert baseline['provider_write_count'] == 0
+          assert baseline['todoist_write_count'] == 0
+          assert baseline['deterministic_digest']
+          assert len(baseline['cases']) == 12
+          assert len(schemas) == 7
+          assert receipt['status'] == 'passed'
+          assert receipt['fixture_count'] == 12
           PY
-          pytest --no-cov -q \
-            tests/test_v752_clarification_evaluation.py::test_provider_writes_are_rejected \
-            tests/test_v752_clarification_evaluation.py::test_shadow_evaluation_is_inert_and_digest_bound
 
       - name: Scan source and audit dependencies
         run: |
-          python scripts/scan_candidate_secrets.py --root . --output build/V752_SECRET_SCAN.json
+          python scripts/scan_candidate_secrets.py \
+            --root . --output build/V752_SECRET_SCAN.json
           pip-audit --disable-pip --require-hashes --no-deps --timeout 15 \
             --progress-spinner off --vulnerability-service pypi \
             --requirement requirements.runtime.lock --format json \
@@ -147,78 +165,6 @@ jobs:
           test -f dist/atlas_ros-7.5.2-py3-none-any.whl
           test "$(find dist -maxdepth 1 -type f | wc -l)" -eq 2
           printf '1\n' > build/BUILD_COUNT.txt
-          sha256sum dist/* > build/CHECKSUMS.sha256
-
-      - name: Generate source manifest and SPDX SBOM
-        run: |
-          git ls-files -z | sort -z | xargs -0 sha256sum > build/SOURCE_MANIFEST.sha256
-          python - <<'PY'
-          import json
-          import os
-          import subprocess
-          from pathlib import Path
-
-          manifest_lines = Path('build/SOURCE_MANIFEST.sha256').read_text().splitlines()
-          files = []
-          relationships = []
-          for index, line in enumerate(manifest_lines, start=1):
-              digest, path = line.split(maxsplit=1)
-              spdx_id = f'SPDXRef-File-{index}'
-              files.append(
-                  {
-                      'fileName': path,
-                      'SPDXID': spdx_id,
-                      'checksums': [
-                          {'algorithm': 'SHA256', 'checksumValue': digest}
-                      ],
-                      'licenseConcluded': 'NOASSERTION',
-                      'copyrightText': 'NOASSERTION',
-                  }
-              )
-              relationships.append(
-                  {
-                      'spdxElementId': 'SPDXRef-Package-atlas-ros',
-                      'relationshipType': 'CONTAINS',
-                      'relatedSpdxElement': spdx_id,
-                  }
-              )
-          created = subprocess.check_output(
-              ['git', 'show', '-s', '--format=%cI', 'HEAD'], text=True
-          ).strip()
-          package = {
-              'name': 'atlas-ros',
-              'SPDXID': 'SPDXRef-Package-atlas-ros',
-              'versionInfo': os.environ['CANDIDATE_VERSION'],
-              'downloadLocation': 'NOASSERTION',
-              'filesAnalyzed': True,
-              'licenseConcluded': 'NOASSERTION',
-              'licenseDeclared': 'NOASSERTION',
-              'copyrightText': 'NOASSERTION',
-          }
-          sbom = {
-              'spdxVersion': 'SPDX-2.3',
-              'dataLicense': 'CC0-1.0',
-              'SPDXID': 'SPDXRef-DOCUMENT',
-              'name': 'atlas-ros-v7.5.2-candidate',
-              'documentNamespace': (
-                  f"https://github.com/{os.environ['GITHUB_REPOSITORY']}"
-                  f"/spdx/{os.environ['CANDIDATE_COMMIT']}"
-              ),
-              'creationInfo': {
-                  'created': created,
-                  'creators': ['Tool: Atlas ROS v7.5.2 candidate workflow'],
-              },
-              'documentDescribes': ['SPDXRef-Package-atlas-ros'],
-              'packages': [package],
-              'files': files,
-              'relationships': relationships,
-          }
-          Path('build/SBOM.spdx.json').write_text(
-              json.dumps(sbom, indent=2, sort_keys=True) + '\n'
-          )
-          PY
-          sha256sum build/SOURCE_MANIFEST.sha256 build/SBOM.spdx.json \
-            > build/EVIDENCE_CHECKSUMS.sha256
 
       - name: Clean install exact artifacts
         run: |
@@ -231,7 +177,8 @@ jobs:
             fi
             env_dir="clean-install/$kind"
             python -m venv "$env_dir"
-            "$env_dir/bin/python" -m pip install --disable-pip-version-check "$package"
+            "$env_dir/bin/python" -m pip install \
+              --disable-pip-version-check "$package"
             "$env_dir/bin/python" -c \
               "import atlas_ros; assert atlas_ros.__version__ == '7.5.2'"
             "$env_dir/bin/atlas" status --json > "build/${kind}-status.json"
@@ -255,8 +202,10 @@ jobs:
             cd "restoration/rollback-${ROLLBACK_VERSION}"
             sed 's#  dist/#  #' CHECKSUMS.sha256 | sha256sum -c -
           )
-          active_wheel=$(find "restoration/active-${ACTIVE_VERSION}" -name '*.whl' -print -quit)
-          rollback_wheel=$(find "restoration/rollback-${ROLLBACK_VERSION}" -name '*.whl' -print -quit)
+          active_wheel=$(find \
+            "restoration/active-${ACTIVE_VERSION}" -name '*.whl' -print -quit)
+          rollback_wheel=$(find \
+            "restoration/rollback-${ROLLBACK_VERSION}" -name '*.whl' -print -quit)
           test -n "$active_wheel"
           test -n "$rollback_wheel"
           python -m venv restoration/active-clean
@@ -272,92 +221,34 @@ jobs:
           printf '%s\n' "$ACTIVE_COMMIT" > build/ACTIVE_RESTORATION_COMMIT.txt
           printf '%s\n' "$ROLLBACK_COMMIT" > build/ROLLBACK_RESTORATION_COMMIT.txt
 
-      - name: Create non-publishing receipts
+      - name: Build and verify complete candidate evidence
         run: |
+          set -euo pipefail
+          python scripts/build_v752_candidate_evidence.py
+          sha256sum -c build/CHECKSUMS.sha256
+          sha256sum -c build/EVIDENCE_CHECKSUMS.sha256
+          sha256sum -c build/NESTED_CHECKSUMS.sha256
           python - <<'PY'
-          import hashlib
           import json
           import os
           from pathlib import Path
 
-          def digest(path: str) -> str:
-              return hashlib.sha256(Path(path).read_bytes()).hexdigest()
-
-          dist_files = sorted(Path('dist').iterdir())
-          source = next(path for path in dist_files if path.suffix == '.gz')
-          wheel = next(path for path in dist_files if path.suffix == '.whl')
-          controller = {
-              'schema_version': 'v752-non-publishing-controller-v1',
-              'status': 'passed',
-              'candidate_commit': os.environ['CANDIDATE_COMMIT'],
-              'candidate_version': '7.5.2',
-              'active_version_unchanged': os.environ['ACTIVE_VERSION'],
-              'rollback_version_verified': os.environ['ROLLBACK_VERSION'],
-              'provider_writes': 0,
-              'todoist_writes': 0,
-              'authority_changes': 0,
-              'production_schema_migrations': 0,
-              'release_publications': 0,
-              'production_tags_created_or_moved': 0,
-              'integration_scope_expansions': 0,
-              'credential_actions': 0,
-              'messages_sent': 0,
-              'calendar_actions': 0,
-              'scheduled_actions': 0,
-              'deletions': 0,
-          }
-          actions = {
-              'schema_version': 'actions-utilization-report-v1',
-              'candidate_commit': os.environ['CANDIDATE_COMMIT'],
-              'build_count': 1,
-              'exact_artifacts_reused': True,
-              'duplicate_builds_avoided': True,
-              'stale_run_cancellation_enabled': True,
-              'dependency_cache_enabled': True,
-              'provider_writes': 0,
-              'todoist_writes': 0,
-          }
-          dod = {
-              'schema_version': 'feature-dod-receipt-v1',
-              'feature_id': 'clarification-calibration-evaluation',
-              'candidate_commit': os.environ['CANDIDATE_COMMIT'],
-              'status': 'passed',
-              'mandatory_gates_complete': True,
-              'exact_build_count': 1,
-              'production_unchanged': True,
-          }
-          validation = {
-              'schema_version': 'v752-validation-receipt-v1',
-              'status': 'passed',
-              'candidate_commit': os.environ['CANDIDATE_COMMIT'],
-              'candidate_version': os.environ['CANDIDATE_VERSION'],
-              'workflow_run_id': os.environ['GITHUB_RUN_ID'],
-              'source_distribution': source.name,
-              'source_distribution_sha256': digest(str(source)),
-              'wheel': wheel.name,
-              'wheel_sha256': digest(str(wheel)),
-              'sbom_sha256': digest('build/SBOM.spdx.json'),
-              'source_manifest_sha256': digest('build/SOURCE_MANIFEST.sha256'),
-              'secret_scan_sha256': digest('build/V752_SECRET_SCAN.json'),
-              'active_restoration_commit': os.environ['ACTIVE_COMMIT'],
-              'rollback_restoration_commit': os.environ['ROLLBACK_COMMIT'],
-              'provider_writes': 0,
-              'todoist_writes': 0,
-          }
-          outputs = {
-              'build/V752_NON_PUBLISHING_CONTROLLER.json': controller,
-              'build/V752_ACTIONS_UTILIZATION.json': actions,
-              'build/V752_DEFINITION_OF_DONE_RECEIPT.json': dod,
-              'build/V752_VALIDATION_RECEIPT.json': validation,
-          }
-          for path, payload in outputs.items():
-              Path(path).write_text(json.dumps(payload, indent=2, sort_keys=True) + '\n')
+          package = json.loads(Path('build/V752_PACKAGE_INDEX.json').read_text())
+          validation = json.loads(
+              Path('build/V752_VALIDATION_RECEIPT.json').read_text()
+          )
+          zero_writes = json.loads(
+              Path('build/V752_ZERO_PROVIDER_WRITE_RECEIPT.json').read_text()
+          )
+          assert package['candidate_commit'] == os.environ['CANDIDATE_COMMIT']
+          assert package['candidate_version'] == '7.5.2'
+          assert package['build_count'] == 1
+          assert validation['status'] == 'passed'
+          assert validation['active_restoration_version'] == os.environ['ACTIVE_VERSION']
+          assert validation['rollback_restoration_version'] == os.environ['ROLLBACK_VERSION']
+          assert zero_writes['provider_writes'] == 0
+          assert zero_writes['todoist_writes'] == 0
           PY
-          sha256sum build/V752_NON_PUBLISHING_CONTROLLER.json \
-            build/V752_ACTIONS_UTILIZATION.json \
-            build/V752_DEFINITION_OF_DONE_RECEIPT.json \
-            build/V752_VALIDATION_RECEIPT.json \
-            >> build/EVIDENCE_CHECKSUMS.sha256
 
       - name: Retain exact candidate evidence
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
