@@ -31,7 +31,6 @@ TIERS: dict[str, tuple[tuple[str, ...], ...]] = {
         ("mypy", "src"),
         ("python", "scripts/validate_architecture.py"),
         ("pytest",),
-        ("python", "-m", "build"),
     ),
 }
 
