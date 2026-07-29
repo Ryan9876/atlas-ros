@@ -1,0 +1,118 @@
+name: v7.6.1 independent publication readback
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  verify-publication:
+    if: github.event.release.tag_name == 'v7.6.1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      TAG: v7.6.1
+      EXPECTED_TAG_COMMIT: ${{ github.event.release.target_commitish }}
+      PACKAGE_SOURCE_COMMIT: 4fdda0c574b75fa5e56367aaa9355341b6b84176
+      ARTIFACT_ID: '8742484220'
+      ARTIFACT_SHA256: 7cd46dda08683fe3a3a681a7398dd32820996cec48abe5eb241d0fd7a3826221
+      SOURCE_SHA256: 6945406d475901d396ee7cb4024fbb8c8420256c4f4b0f2358689fcae45b9ed2
+      WHEEL_SHA256: 0c5cf0e0187b8a14badfa6c2cab8fc5f041fd31d93f3b3f5a17df240ef6eb2a9
+      SBOM_SHA256: 9b4ed28d44ccbee53c61c8c6814bebd84a754a1c9a803c50d7a840f5eaf856d1
+      SOURCE_MANIFEST_SHA256: f22cd5abb795b369841aefd67bab6baadbee24d692f6c4d013dc6fe57965baeb
+      VALIDATION_SHA256: 93958cc6bc1d1131723cba80f4a6c70f730e8f38ed75b03207f74f27ba286d65
+      ZERO_WRITE_SHA256: 2d357135116813cb9326e73e170c77ec31547c505a6dd7c68898cf19779bdc82
+      RELEASE_MANIFEST_SHA256: f10b3a15ff9e459359d2e59d706f221c5fa5c6b509149a802bb8cafb7678f7e7
+      AUTHORIZATION_SHA256: 219c77b03069328619fa945771676b13daa05f339a64b74e363450acfabb76aa
+      FEATURE_POLICY_SHA256: ff822f9b45ab1bf5fd5092adbfb63c7f80631e5bb7868d144acbadd829ee028c
+      FEATURE_POLICY_DIGEST: 861ee645b619d46fa3183e34157835354cbaf47a118d84f15e0d0cb1fecc6b8c
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          ref: ${{ env.TAG }}
+          fetch-depth: 0
+          fetch-tags: true
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.12.10'
+      - name: Verify immutable tag target and manifest
+        run: |
+          set -euo pipefail
+          test "$(git rev-list -n 1 "$TAG")" = "$EXPECTED_TAG_COMMIT"
+          test "$(sha256sum release/RELEASE_MANIFEST_V761.md | cut -d' ' -f1)" = "$RELEASE_MANIFEST_SHA256"
+          test "$(sha256sum release/V761_EXACT_PACKAGE_AUTHORIZATION.md | cut -d' ' -f1)" = "$AUTHORIZATION_SHA256"
+      - name: Download and verify published release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir release-assets
+          gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --dir release-assets
+          test "$(find release-assets -maxdepth 1 -type f | wc -l)" -eq 34
+          (cd release-assets && sed 's#  dist/#  #' CHECKSUMS.sha256 | sha256sum -c -)
+          (cd release-assets && sed 's#  build/#  #' EVIDENCE_CHECKSUMS.sha256 | sha256sum -c -)
+          (cd release-assets && sed 's#  build/#  #' NESTED_CHECKSUMS.sha256 | sha256sum -c -)
+          test "$(sha256sum release-assets/atlas_ros-7.6.1.tar.gz | cut -d' ' -f1)" = "$SOURCE_SHA256"
+          test "$(sha256sum release-assets/atlas_ros-7.6.1-py3-none-any.whl | cut -d' ' -f1)" = "$WHEEL_SHA256"
+          test "$(sha256sum release-assets/SBOM.spdx.json | cut -d' ' -f1)" = "$SBOM_SHA256"
+          test "$(sha256sum release-assets/SOURCE_MANIFEST.sha256 | cut -d' ' -f1)" = "$SOURCE_MANIFEST_SHA256"
+          test "$(sha256sum release-assets/V761_VALIDATION_RECEIPT.json | cut -d' ' -f1)" = "$VALIDATION_SHA256"
+          test "$(sha256sum release-assets/V761_ZERO_PROVIDER_WRITE_RECEIPT.json | cut -d' ' -f1)" = "$ZERO_WRITE_SHA256"
+          test "$(sha256sum release-assets/V761_FEATURE_POLICY_TARGET.json | cut -d' ' -f1)" = "$FEATURE_POLICY_SHA256"
+          test "$(sha256sum release-assets/RELEASE_MANIFEST_V761.md | cut -d' ' -f1)" = "$RELEASE_MANIFEST_SHA256"
+          test "$(sha256sum release-assets/V761_EXACT_PACKAGE_AUTHORIZATION.md | cut -d' ' -f1)" = "$AUTHORIZATION_SHA256"
+      - name: Clean install and verify published packages
+        run: |
+          set -euo pipefail
+          for kind in wheel sdist; do
+            python -m venv "$kind-env"
+            package=release-assets/atlas_ros-7.6.1.tar.gz
+            [ "$kind" = wheel ] && package=release-assets/atlas_ros-7.6.1-py3-none-any.whl
+            "$kind-env/bin/python" -m pip install --disable-pip-version-check "$package"
+            "$kind-env/bin/python" -c "import atlas_ros; assert atlas_ros.__version__ == '7.6.1'"
+            "$kind-env/bin/atlas" status --json > "$kind-status.json"
+            "$kind-env/bin/atlas" verify --json > "$kind-verify.json"
+          done
+      - name: Verify policy and zero-write receipts
+        run: |
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          root=Path('release-assets')
+          receipt=json.loads((root/'V761_VALIDATION_RECEIPT.json').read_text())
+          assert receipt['status']=='passed' and receipt['candidate_commit']==os.environ['PACKAGE_SOURCE_COMMIT'] and receipt['candidate_version']=='7.6.1'
+          assert receipt['active_restoration_version']=='7.6.0' and receipt['rollback_restoration_version']=='7.5.2'
+          assert receipt['production_profile_in_package'] is False and receipt['profile_activation_performed'] is False
+          policy=json.loads((root/'V761_FEATURE_POLICY_TARGET.json').read_text())
+          assert policy['feature_policy_digest']==os.environ['FEATURE_POLICY_DIGEST']
+          assert policy['after_release_activation']=='disabled' and policy['profile_activation_separate_transaction'] is True
+          zero=json.loads((root/'V761_ZERO_PROVIDER_WRITE_RECEIPT.json').read_text())
+          for field in ('provider_writes','todoist_writes','credential_actions','messages_sent','calendar_actions','scheduled_actions','deletions','forgetting_executions','profile_activations'):
+              assert zero[field]==0, field
+          PY
+      - name: Retain independent publication readback evidence
+        run: |
+          python - <<'PY'
+          import hashlib, json, os
+          from pathlib import Path
+          payload={'schema_version':'v761-independent-publication-readback-v1','status':'passed','tag':'v7.6.1','tag_commit':os.environ['EXPECTED_TAG_COMMIT'],'package_source_commit':os.environ['PACKAGE_SOURCE_COMMIT'],'artifact_id':8742484220,'artifact_sha256':os.environ['ARTIFACT_SHA256'],'source_sha256':os.environ['SOURCE_SHA256'],'wheel_sha256':os.environ['WHEEL_SHA256'],'sbom_sha256':os.environ['SBOM_SHA256'],'source_manifest_sha256':os.environ['SOURCE_MANIFEST_SHA256'],'validation_receipt_sha256':os.environ['VALIDATION_SHA256'],'manifest_sha256':os.environ['RELEASE_MANIFEST_SHA256'],'feature_policy_digest':os.environ['FEATURE_POLICY_DIGEST'],'decision_id':'V4D-58','review_id':'V4V-102','provider_writes':0,'todoist_writes':0,'authority_changes':0,'profile_activations':0}
+          text=json.dumps(payload,indent=2,sort_keys=True)+'\n'
+          Path('V761_INDEPENDENT_READBACK.json').write_text(text)
+          Path('V761_INDEPENDENT_READBACK.sha256').write_text(hashlib.sha256(text.encode()).hexdigest()+'  V761_INDEPENDENT_READBACK.json\n')
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: atlas-ros-v761-independent-publication-readback
+          path: |
+            V761_INDEPENDENT_READBACK.json
+            V761_INDEPENDENT_READBACK.sha256
+            wheel-status.json
+            wheel-verify.json
+            sdist-status.json
+            sdist-verify.json
+          if-no-files-found: error
+          retention-days: 90
