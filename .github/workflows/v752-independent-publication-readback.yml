@@ -181,7 +181,8 @@ jobs:
               assert zero[field] == 0, field
 
           secret = json.loads(Path('release-assets/V752_SECRET_SCAN.json').read_text())
-          assert secret['status'] == 'passed'
+          assert secret['passed'] is True
+          assert secret['finding_count'] == 0
           assert secret['findings'] == []
           for audit_name in ('V752_PIP_AUDIT_PYPI.json', 'V752_PIP_AUDIT_OSV.json'):
               audit = json.loads(Path('release-assets', audit_name).read_text())
