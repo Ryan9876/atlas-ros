@@ -1,0 +1,44 @@
+{
+  "$id": "https://github.com/Ryan9876/atlas-ros/schemas/operational-awareness/work-graph-edge.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "contract_id": {
+      "const": "atlas.work-graph-edge",
+      "default": "atlas.work-graph-edge",
+      "title": "Contract Id",
+      "type": "string"
+    },
+    "edge_digest": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Edge Digest",
+      "type": "string"
+    },
+    "edge_type": {
+      "title": "Edge Type",
+      "type": "string"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "source_record_id": {
+      "title": "Source Record Id",
+      "type": "string"
+    },
+    "target_record_id": {
+      "title": "Target Record Id",
+      "type": "string"
+    }
+  },
+  "required": [
+    "source_record_id",
+    "target_record_id",
+    "edge_type",
+    "edge_digest"
+  ],
+  "title": "WorkGraphEdgeV1",
+  "type": "object"
+}

@@ -20,7 +20,7 @@ def status(*, json_output: bool = False) -> None:
         "status": "candidate_runtime_available",
         "version": __version__,
         "authority_model_version": "7.0",
-        "active_production_version": "7.1.0",
+        "active_production_version": "7.1.1",
         "production_authority_changed": False,
         "provider_writes": False,
     }
@@ -29,7 +29,7 @@ def status(*, json_output: bool = False) -> None:
         return
     print(
         f"Atlas ROS {__version__} candidate runtime is installed; "
-        "Atlas ROS 7.1.0 remains Active and no provider writes were performed."
+        "Atlas ROS 7.1.1 remains Active and no provider writes were performed."
     )
 
 
@@ -58,20 +58,20 @@ def initialize(*, json_output: bool = False) -> None:
 def verify(*, json_output: bool = False) -> None:
     """Verify only the installed candidate identity; release verification is separate."""
     payload = {
-        "valid": __version__ == "7.1.1",
+        "valid": __version__ == "7.3.0",
         "scope": "installed_candidate_runtime_identity",
         "version": __version__,
-        "active_production_version": "7.1.0",
+        "active_production_version": "7.1.1",
         "writes": False,
     }
     if json_output:
         print(json.dumps(payload, sort_keys=True))
         return
     if not payload["valid"]:
-        raise RuntimeCommandError("installed runtime identity is not Atlas ROS v7.1.1")
+        raise RuntimeCommandError("installed runtime identity is not Atlas ROS v7.3.0")
     print(
         f"Installed candidate identity verified: Atlas ROS {__version__}; "
-        "Active production remains 7.1.0; writes: 0."
+        "Active production remains 7.1.1; writes: 0."
     )
 
 
@@ -84,6 +84,8 @@ def _parser() -> argparse.ArgumentParser:
     subparsers.add_parser("process")
     subparsers.add_parser("plan")
     subparsers.add_parser("execute")
+    subparsers.add_parser("awareness")
+    subparsers.add_parser("lifecycle")
     return parser
 
 
@@ -126,6 +128,18 @@ def _dispatch_execute(arguments: Sequence[str]) -> None:
     )
 
 
+def _dispatch_awareness(arguments: Sequence[str]) -> None:
+    from atlas_ros.entry_points.awareness import main as awareness_main
+
+    awareness_main(arguments)
+
+
+def _dispatch_lifecycle(arguments: Sequence[str]) -> None:
+    from atlas_ros.entry_points.lifecycle import main as lifecycle_main
+
+    lifecycle_main(arguments)
+
+
 _COMMANDS = {
     "status": _dispatch_status,
     "initialize": _dispatch_initialize,
@@ -133,6 +147,8 @@ _COMMANDS = {
     "process": _dispatch_process,
     "plan": _dispatch_plan,
     "execute": _dispatch_execute,
+    "awareness": _dispatch_awareness,
+    "lifecycle": _dispatch_lifecycle,
 }
 
 

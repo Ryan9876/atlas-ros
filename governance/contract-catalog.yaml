@@ -1,105 +1,360 @@
-schema_version: "1.0"
+schema_version: '1.0'
 digest_algorithm: sha256
 contracts:
-  - id: atlas.capture-envelope
-    schema_version: "1.0"
-    owner: input_processing
-    schema: schemas/capture/capture-envelope.schema.json
-    readers: ["1.x"]
-    writer: "1.0"
-    compatibility: additive_only_within_major
-  - id: atlas.intent-graph
-    schema_version: "1.0"
-    owner: input_processing
-    schema: schemas/reasoning/intent-graph.schema.json
-    readers: ["1.x"]
-    writer: "1.0"
-    compatibility: additive_only_within_major
-  - id: atlas.proposed-execution-plan
-    schema_version: "1.0"
-    owner: execution_planning
-    schema: schemas/execution/proposed-execution-plan.schema.json
-    readers: ["1.x"]
-    writer: "1.0"
-    compatibility: additive_only_within_major
-  - id: atlas.provider-operation-payload
-    schema_version: "1.0"
-    owner: attended_execution
-    schema: schemas/execution/provider-operation-payload.schema.json
-    readers: ["1.x"]
-    writer: "1.0"
-    compatibility: additive_only_within_major
-  - id: atlas.authorized-execution-plan
-    schema_version: "1.0"
-    owner: attended_authorization
-    schema: schemas/execution/authorized-execution-plan.schema.json
-    readers: ["1.x"]
-    writer: "1.0"
-    compatibility: additive_only_within_major
-  - id: atlas.execution-transaction-receipt
-    schema_version: "1.0"
-    owner: attended_execution
-    schema: schemas/execution/execution-transaction-receipt.schema.json
-    readers: ["1.x"]
-    writer: "1.0"
-    compatibility: additive_only_within_major
-  - id: atlas.pipeline-run-envelope
-    schema_version: "1.0"
-    owner: canonical_processing
-    schema: schemas/execution/pipeline-run-envelope.schema.json
-    readers: ["1.x"]
-    writer: "1.0"
-    compatibility: additive_only_within_major
-  - id: atlas.historical-item
-    schema_version: "1.0"
-    owner: historical_cleanup
-    schema: schemas/history/historical-item.schema.json
-    readers: ["1.x"]
-    writer: "1.0"
-    compatibility: additive_only_within_major
-  - id: atlas.historical-inventory
-    schema_version: "1.0"
-    owner: historical_cleanup
-    schema: schemas/history/historical-inventory.schema.json
-    readers: ["1.x"]
-    writer: "1.0"
-    compatibility: additive_only_within_major
-  - id: atlas.historical-cleanup-plan
-    schema_version: "1.0"
-    owner: historical_cleanup
-    schema: schemas/history/historical-cleanup-plan.schema.json
-    readers: ["1.x"]
-    writer: "1.0"
-    compatibility: additive_only_within_major
-  - id: atlas.historical-cleanup-receipt
-    schema_version: "1.0"
-    owner: historical_cleanup
-    schema: schemas/history/historical-cleanup-receipt.schema.json
-    readers: ["1.x"]
-    writer: "1.0"
-    compatibility: additive_only_within_major
-  - id: atlas.release-specification
-    schema_version: "1.0"
-    owner: release_compiler
-    schema: schemas/release/release-specification.schema.json
-    readers: ["1.x"]
-    writer: "1.0"
-    compatibility: additive_only_within_major
-  - id: atlas.release-compilation-receipt
-    schema_version: "1.0"
-    owner: release_compiler
-    schema: schemas/release/release-compilation-receipt.schema.json
-    readers: ["1.x"]
-    writer: "1.0"
-    compatibility: additive_only_within_major
+- id: atlas.capture-envelope
+  schema_version: '1.0'
+  owner: input_processing
+  schema: schemas/capture/capture-envelope.schema.json
+  readers:
+  - 1.x
+  writer: '1.0'
+  compatibility: additive_only_within_major
+- id: atlas.intent-graph
+  schema_version: '1.0'
+  owner: input_processing
+  schema: schemas/reasoning/intent-graph.schema.json
+  readers:
+  - 1.x
+  writer: '1.0'
+  compatibility: additive_only_within_major
+- id: atlas.proposed-execution-plan
+  schema_version: '1.0'
+  owner: execution_planning
+  schema: schemas/execution/proposed-execution-plan.schema.json
+  readers:
+  - 1.x
+  writer: '1.0'
+  compatibility: additive_only_within_major
+- id: atlas.provider-operation-payload
+  schema_version: '1.0'
+  owner: attended_execution
+  schema: schemas/execution/provider-operation-payload.schema.json
+  readers:
+  - 1.x
+  writer: '1.0'
+  compatibility: additive_only_within_major
+- id: atlas.authorized-execution-plan
+  schema_version: '1.0'
+  owner: attended_authorization
+  schema: schemas/execution/authorized-execution-plan.schema.json
+  readers:
+  - 1.x
+  writer: '1.0'
+  compatibility: additive_only_within_major
+- id: atlas.execution-transaction-receipt
+  schema_version: '1.0'
+  owner: attended_execution
+  schema: schemas/execution/execution-transaction-receipt.schema.json
+  readers:
+  - 1.x
+  writer: '1.0'
+  compatibility: additive_only_within_major
+- id: atlas.pipeline-run-envelope
+  schema_version: '1.0'
+  owner: canonical_processing
+  schema: schemas/execution/pipeline-run-envelope.schema.json
+  readers:
+  - 1.x
+  writer: '1.0'
+  compatibility: additive_only_within_major
+- id: atlas.historical-item
+  schema_version: '1.0'
+  owner: historical_cleanup
+  schema: schemas/history/historical-item.schema.json
+  readers:
+  - 1.x
+  writer: '1.0'
+  compatibility: additive_only_within_major
+- id: atlas.historical-inventory
+  schema_version: '1.0'
+  owner: historical_cleanup
+  schema: schemas/history/historical-inventory.schema.json
+  readers:
+  - 1.x
+  writer: '1.0'
+  compatibility: additive_only_within_major
+- id: atlas.historical-cleanup-plan
+  schema_version: '1.0'
+  owner: historical_cleanup
+  schema: schemas/history/historical-cleanup-plan.schema.json
+  readers:
+  - 1.x
+  writer: '1.0'
+  compatibility: additive_only_within_major
+- id: atlas.historical-cleanup-receipt
+  schema_version: '1.0'
+  owner: historical_cleanup
+  schema: schemas/history/historical-cleanup-receipt.schema.json
+  readers:
+  - 1.x
+  writer: '1.0'
+  compatibility: additive_only_within_major
+- id: atlas.release-specification
+  schema_version: '1.0'
+  owner: release_compiler
+  schema: schemas/release/release-specification.schema.json
+  readers:
+  - 1.x
+  writer: '1.0'
+  compatibility: additive_only_within_major
+- id: atlas.release-compilation-receipt
+  schema_version: '1.0'
+  owner: release_compiler
+  schema: schemas/release/release-compilation-receipt.schema.json
+  readers:
+  - 1.x
+  writer: '1.0'
+  compatibility: additive_only_within_major
+- id: atlas.operational-record-ref
+  schema_version: '1.0'
+  owner: operational_snapshot
+  schema: schemas/operational-awareness/operational-record-ref.schema.json
+  readers:
+  - 1.x
+  writer: '1.0'
+  compatibility: additive_only_within_major
+- id: atlas.normalized-operational-record
+  schema_version: '1.0'
+  owner: operational_snapshot
+  schema: schemas/operational-awareness/normalized-operational-record.schema.json
+  readers:
+  - 1.x
+  writer: '1.0'
+  compatibility: additive_only_within_major
+- id: atlas.freshness-assessment
+  schema_version: '1.0'
+  owner: operational_snapshot
+  schema: schemas/operational-awareness/freshness-assessment.schema.json
+  readers:
+  - 1.x
+  writer: '1.0'
+  compatibility: additive_only_within_major
+- id: atlas.operational-evidence
+  schema_version: '1.0'
+  owner: operational_snapshot
+  schema: schemas/operational-awareness/operational-evidence.schema.json
+  readers:
+  - 1.x
+  writer: '1.0'
+  compatibility: additive_only_within_major
+- id: atlas.evidence-conflict
+  schema_version: '1.0'
+  owner: operational_snapshot
+  schema: schemas/operational-awareness/evidence-conflict.schema.json
+  readers:
+  - 1.x
+  writer: '1.0'
+  compatibility: additive_only_within_major
+- id: atlas.operational-snapshot
+  schema_version: '1.0'
+  owner: operational_snapshot
+  schema: schemas/operational-awareness/operational-snapshot.schema.json
+  readers:
+  - 1.x
+  writer: '1.0'
+  compatibility: additive_only_within_major
+- id: atlas.work-state-estimate
+  schema_version: '1.0'
+  owner: work_state_intelligence
+  schema: schemas/operational-awareness/work-state-estimate.schema.json
+  readers:
+  - 1.x
+  writer: '1.0'
+  compatibility: additive_only_within_major
+- id: atlas.commitment-candidate
+  schema_version: '1.0'
+  owner: commitment_intelligence
+  schema: schemas/operational-awareness/commitment-candidate.schema.json
+  readers:
+  - 1.x
+  writer: '1.0'
+  compatibility: additive_only_within_major
+- id: atlas.commitment-assessment
+  schema_version: '1.0'
+  owner: commitment_intelligence
+  schema: schemas/operational-awareness/commitment-assessment.schema.json
+  readers:
+  - 1.x
+  writer: '1.0'
+  compatibility: additive_only_within_major
+- id: atlas.material-change
+  schema_version: '1.0'
+  owner: operating_brief
+  schema: schemas/operational-awareness/material-change.schema.json
+  readers:
+  - 1.x
+  writer: '1.0'
+  compatibility: additive_only_within_major
+- id: atlas.operating-brief-item
+  schema_version: '1.0'
+  owner: operating_brief
+  schema: schemas/operational-awareness/operating-brief-item.schema.json
+  readers:
+  - 1.x
+  writer: '1.0'
+  compatibility: additive_only_within_major
+- id: atlas.operating-brief
+  schema_version: '1.0'
+  owner: operating_brief
+  schema: schemas/operational-awareness/operating-brief.schema.json
+  readers:
+  - 1.x
+  writer: '1.0'
+  compatibility: additive_only_within_major
+- id: atlas.resumption-point
+  schema_version: '1.0'
+  owner: execution_context
+  schema: schemas/operational-awareness/resumption-point.schema.json
+  readers:
+  - 1.x
+  writer: '1.0'
+  compatibility: additive_only_within_major
+- id: atlas.execution-context-pack
+  schema_version: '1.0'
+  owner: execution_context
+  schema: schemas/operational-awareness/execution-context-pack.schema.json
+  readers:
+  - 1.x
+  writer: '1.0'
+  compatibility: additive_only_within_major
+- id: atlas.work-graph-node
+  schema_version: '1.0'
+  owner: work_graph_hygiene
+  schema: schemas/operational-awareness/work-graph-node.schema.json
+  readers:
+  - 1.x
+  writer: '1.0'
+  compatibility: additive_only_within_major
+- id: atlas.work-graph-edge
+  schema_version: '1.0'
+  owner: work_graph_hygiene
+  schema: schemas/operational-awareness/work-graph-edge.schema.json
+  readers:
+  - 1.x
+  writer: '1.0'
+  compatibility: additive_only_within_major
+- id: atlas.work-graph-snapshot
+  schema_version: '1.0'
+  owner: work_graph_hygiene
+  schema: schemas/operational-awareness/work-graph-snapshot.schema.json
+  readers:
+  - 1.x
+  writer: '1.0'
+  compatibility: additive_only_within_major
+- id: atlas.hygiene-finding
+  schema_version: '1.0'
+  owner: work_graph_hygiene
+  schema: schemas/operational-awareness/hygiene-finding.schema.json
+  readers:
+  - 1.x
+  writer: '1.0'
+  compatibility: additive_only_within_major
+- id: atlas.repair-proposal
+  schema_version: '1.0'
+  owner: work_graph_hygiene
+  schema: schemas/operational-awareness/repair-proposal.schema.json
+  readers:
+  - 1.x
+  writer: '1.0'
+  compatibility: additive_only_within_major
+- id: atlas.command-source-ref
+  schema_version: '1.0'
+  owner: command_lifecycle
+  schema: schemas/operational-awareness/command-source-ref.schema.json
+  readers:
+  - 1.x
+  writer: '1.0'
+  compatibility: additive_only_within_major
+- id: atlas.command
+  schema_version: '1.0'
+  owner: command_lifecycle
+  schema: schemas/operational-awareness/atlas-command.schema.json
+  readers:
+  - 1.x
+  writer: '1.0'
+  compatibility: additive_only_within_major
+- id: atlas.command-interpretation
+  schema_version: '1.0'
+  owner: command_lifecycle
+  schema: schemas/operational-awareness/command-interpretation.schema.json
+  readers:
+  - 1.x
+  writer: '1.0'
+  compatibility: additive_only_within_major
+- id: atlas.provider-operation-spec
+  schema_version: '1.0'
+  owner: command_lifecycle
+  schema: schemas/operational-awareness/provider-operation-spec.schema.json
+  readers:
+  - 1.x
+  writer: '1.0'
+  compatibility: additive_only_within_major
+- id: atlas.delegation-transition
+  schema_version: '1.0'
+  owner: command_lifecycle
+  schema: schemas/operational-awareness/delegation-transition.schema.json
+  readers:
+  - 1.x
+  writer: '1.0'
+  compatibility: additive_only_within_major
+- id: atlas.work-state-transition
+  schema_version: '1.0'
+  owner: command_lifecycle
+  schema: schemas/operational-awareness/work-state-transition.schema.json
+  readers:
+  - 1.x
+  writer: '1.0'
+  compatibility: additive_only_within_major
+- id: atlas.next-action-projection
+  schema_version: '1.0'
+  owner: command_lifecycle
+  schema: schemas/operational-awareness/next-action-projection.schema.json
+  readers:
+  - 1.x
+  writer: '1.0'
+  compatibility: additive_only_within_major
+- id: atlas.todoist-lifecycle-plan
+  schema_version: '1.0'
+  owner: command_lifecycle
+  schema: schemas/operational-awareness/todoist-lifecycle-plan.schema.json
+  readers:
+  - 1.x
+  writer: '1.0'
+  compatibility: additive_only_within_major
+- id: atlas.awareness-stage-receipt
+  schema_version: '1.0'
+  owner: operational_awareness
+  schema: schemas/operational-awareness/awareness-stage-receipt.schema.json
+  readers:
+  - 1.x
+  writer: '1.0'
+  compatibility: additive_only_within_major
+- id: atlas.operational-awareness-receipt
+  schema_version: '1.0'
+  owner: operational_awareness
+  schema: schemas/operational-awareness/operational-awareness-receipt.schema.json
+  readers:
+  - 1.x
+  writer: '1.0'
+  compatibility: additive_only_within_major
+- id: atlas.command-execution-receipt
+  schema_version: '1.0'
+  owner: command_lifecycle
+  schema: schemas/operational-awareness/command-execution-receipt.schema.json
+  readers:
+  - 1.x
+  writer: '1.0'
+  compatibility: additive_only_within_major
 lifecycle:
   legacy_contracts:
-    allowed_only_in: [src/atlas_ros/contracts/migrations, tests/migration]
+    allowed_only_in:
+    - src/atlas_ros/contracts/migrations
+    - tests/migration
     forbidden_from:
-      - src/atlas_ros/application
-      - src/atlas_ros/capabilities
-      - src/atlas_ros/contracts/execution
-      - src/atlas_ros/entry_points
-      - src/atlas_ros/kernel
-      - src/atlas_ros/policy
-      - src/atlas_ros/ports
+    - src/atlas_ros/application
+    - src/atlas_ros/capabilities
+    - src/atlas_ros/contracts/execution
+    - src/atlas_ros/entry_points
+    - src/atlas_ros/kernel
+    - src/atlas_ros/policy
+    - src/atlas_ros/ports

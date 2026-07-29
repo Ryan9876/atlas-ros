@@ -68,8 +68,8 @@ for prefix in (
     )
     assert result.returncode == 0, result.stderr
     payload = json.loads(result.stdout)
-    assert payload["version"] == "7.1.1"
-    assert payload["active_production_version"] == "7.1.0"
+    assert payload["version"] == "7.3.0"
+    assert payload["active_production_version"] == "7.1.1"
 
 
 def config(tmp_path: Path, token: str = "secret") -> WarmRuntimeConfig:

@@ -1,0 +1,482 @@
+{
+  "$defs": {
+    "AuthoritativeSystem": {
+      "enum": [
+        "github",
+        "notion",
+        "todoist",
+        "sqlite",
+        "other"
+      ],
+      "title": "AuthoritativeSystem",
+      "type": "string"
+    },
+    "BriefItemV1": {
+      "additionalProperties": false,
+      "properties": {
+        "conclusion": {
+          "maxLength": 2000,
+          "minLength": 1,
+          "title": "Conclusion",
+          "type": "string"
+        },
+        "confidence": {
+          "$ref": "#/$defs/ConfidenceAssessment"
+        },
+        "contract_id": {
+          "const": "atlas.operating-brief-item",
+          "default": "atlas.operating-brief-item",
+          "title": "Contract Id",
+          "type": "string"
+        },
+        "evidence_refs": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Evidence Refs",
+          "type": "array"
+        },
+        "item_digest": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Item Digest",
+          "type": "string"
+        },
+        "item_id": {
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Item Id",
+          "type": "string"
+        },
+        "item_type": {
+          "maxLength": 100,
+          "minLength": 1,
+          "title": "Item Type",
+          "type": "string"
+        },
+        "materiality": {
+          "$ref": "#/$defs/Materiality"
+        },
+        "rank": {
+          "minimum": 1,
+          "title": "Rank",
+          "type": "integer"
+        },
+        "record_reference": {
+          "$ref": "#/$defs/OperationalRecordRefV1"
+        },
+        "schema_version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "item_id",
+        "record_reference",
+        "conclusion",
+        "item_type",
+        "rank",
+        "materiality",
+        "evidence_refs",
+        "confidence",
+        "item_digest"
+      ],
+      "title": "BriefItemV1",
+      "type": "object"
+    },
+    "ConfidenceAssessment": {
+      "properties": {
+        "missing_data": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/MissingDataIndicator"
+          },
+          "title": "Missing Data",
+          "type": "array"
+        },
+        "rationale": {
+          "title": "Rationale",
+          "type": "string"
+        },
+        "score": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Score"
+        }
+      },
+      "required": [
+        "score",
+        "rationale"
+      ],
+      "title": "ConfidenceAssessment",
+      "type": "object"
+    },
+    "MaterialChangeV1": {
+      "additionalProperties": false,
+      "properties": {
+        "change_digest": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Change Digest",
+          "type": "string"
+        },
+        "change_time": {
+          "title": "Change Time",
+          "type": "string"
+        },
+        "confidence": {
+          "$ref": "#/$defs/ConfidenceAssessment"
+        },
+        "contract_id": {
+          "const": "atlas.material-change",
+          "default": "atlas.material-change",
+          "title": "Contract Id",
+          "type": "string"
+        },
+        "current_value": {
+          "title": "Current Value"
+        },
+        "downstream_effect": {
+          "anyOf": [
+            {
+              "maxLength": 2000,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Downstream Effect"
+        },
+        "materiality": {
+          "$ref": "#/$defs/Materiality"
+        },
+        "previous_value": {
+          "title": "Previous Value"
+        },
+        "provenance": {
+          "items": {
+            "$ref": "#/$defs/ProvenanceRecord"
+          },
+          "title": "Provenance",
+          "type": "array"
+        },
+        "reason_it_matters": {
+          "maxLength": 2000,
+          "minLength": 1,
+          "title": "Reason It Matters",
+          "type": "string"
+        },
+        "record_reference": {
+          "$ref": "#/$defs/OperationalRecordRefV1"
+        },
+        "schema_version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "record_reference",
+        "previous_value",
+        "current_value",
+        "change_time",
+        "materiality",
+        "reason_it_matters",
+        "confidence",
+        "provenance",
+        "change_digest"
+      ],
+      "title": "MaterialChangeV1",
+      "type": "object"
+    },
+    "Materiality": {
+      "enum": [
+        "low",
+        "medium",
+        "high",
+        "critical"
+      ],
+      "title": "Materiality",
+      "type": "string"
+    },
+    "MissingDataIndicator": {
+      "properties": {
+        "field_name": {
+          "title": "Field Name",
+          "type": "string"
+        },
+        "material": {
+          "default": false,
+          "title": "Material",
+          "type": "boolean"
+        },
+        "reason": {
+          "title": "Reason",
+          "type": "string"
+        }
+      },
+      "required": [
+        "field_name",
+        "reason"
+      ],
+      "title": "MissingDataIndicator",
+      "type": "object"
+    },
+    "OperationalRecordRefV1": {
+      "additionalProperties": false,
+      "properties": {
+        "authoritative_system": {
+          "$ref": "#/$defs/AuthoritativeSystem"
+        },
+        "canonical_record_id": {
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Canonical Record Id",
+          "type": "string"
+        },
+        "canonical_url": {
+          "anyOf": [
+            {
+              "maxLength": 2000,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Canonical Url"
+        },
+        "contract_id": {
+          "const": "atlas.operational-record-ref",
+          "default": "atlas.operational-record-ref",
+          "title": "Contract Id",
+          "type": "string"
+        },
+        "parent_record_id": {
+          "anyOf": [
+            {
+              "maxLength": 512,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Parent Record Id"
+        },
+        "record_type": {
+          "$ref": "#/$defs/OperationalRecordType"
+        },
+        "schema_version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "source_digest": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Source Digest",
+          "type": "string"
+        },
+        "source_revision": {
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Source Revision",
+          "type": "string"
+        }
+      },
+      "required": [
+        "record_type",
+        "canonical_record_id",
+        "authoritative_system",
+        "source_revision",
+        "source_digest"
+      ],
+      "title": "OperationalRecordRefV1",
+      "type": "object"
+    },
+    "OperationalRecordType": {
+      "enum": [
+        "action_record",
+        "execution_step",
+        "delegated_work",
+        "portfolio_project",
+        "risk_or_blocker",
+        "todoist_task",
+        "provider_transaction_receipt",
+        "decision_record",
+        "review_record"
+      ],
+      "title": "OperationalRecordType",
+      "type": "string"
+    },
+    "ProvenanceRecord": {
+      "properties": {
+        "observed_at": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Observed At"
+        },
+        "origin": {
+          "$ref": "#/$defs/ValueOrigin"
+        },
+        "schema_version": {
+          "default": "advisory-v1",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "source_ref": {
+          "title": "Source Ref",
+          "type": "string"
+        }
+      },
+      "required": [
+        "source_ref",
+        "origin"
+      ],
+      "title": "ProvenanceRecord",
+      "type": "object"
+    },
+    "ValueOrigin": {
+      "enum": [
+        "observed",
+        "inferred",
+        "configured",
+        "simulated",
+        "unknown"
+      ],
+      "title": "ValueOrigin",
+      "type": "string"
+    }
+  },
+  "$id": "https://github.com/Ryan9876/atlas-ros/schemas/operational-awareness/operating-brief.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "brief_digest": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Brief Digest",
+      "type": "string"
+    },
+    "contract_id": {
+      "const": "atlas.operating-brief",
+      "default": "atlas.operating-brief",
+      "title": "Contract Id",
+      "type": "string"
+    },
+    "decisions_requiring_ryan": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/BriefItemV1"
+      },
+      "title": "Decisions Requiring Ryan",
+      "type": "array"
+    },
+    "delegated_work_requiring_follow_up": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/BriefItemV1"
+      },
+      "title": "Delegated Work Requiring Follow Up",
+      "type": "array"
+    },
+    "highest_value_next_action": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/BriefItemV1"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "material_completions": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/BriefItemV1"
+      },
+      "title": "Material Completions",
+      "type": "array"
+    },
+    "new_or_worsened_blockers": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/BriefItemV1"
+      },
+      "title": "New Or Worsened Blockers",
+      "type": "array"
+    },
+    "overdue_or_at_risk_commitments": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/BriefItemV1"
+      },
+      "title": "Overdue Or At Risk Commitments",
+      "type": "array"
+    },
+    "overflow_summary": {
+      "title": "Overflow Summary",
+      "type": "string"
+    },
+    "safe_to_ignore_summary": {
+      "title": "Safe To Ignore Summary",
+      "type": "string"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "significant_changes": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/MaterialChangeV1"
+      },
+      "title": "Significant Changes",
+      "type": "array"
+    },
+    "source_snapshot_references": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Source Snapshot References",
+      "type": "array"
+    },
+    "stale_or_contradictory_work_state": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/BriefItemV1"
+      },
+      "title": "Stale Or Contradictory Work State",
+      "type": "array"
+    }
+  },
+  "required": [
+    "safe_to_ignore_summary",
+    "overflow_summary",
+    "source_snapshot_references",
+    "brief_digest"
+  ],
+  "title": "OperatingBriefV1",
+  "type": "object"
+}

@@ -1,0 +1,96 @@
+{
+  "$defs": {
+    "FreshnessState": {
+      "enum": [
+        "current",
+        "aging",
+        "stale",
+        "contradicted",
+        "unverifiable"
+      ],
+      "title": "FreshnessState",
+      "type": "string"
+    }
+  },
+  "$id": "https://github.com/Ryan9876/atlas-ros/schemas/operational-awareness/freshness-assessment.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "age_days": {
+      "anyOf": [
+        {
+          "minimum": 0,
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Age Days"
+    },
+    "assessment_digest": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Assessment Digest",
+      "type": "string"
+    },
+    "contract_id": {
+      "const": "atlas.freshness-assessment",
+      "default": "atlas.freshness-assessment",
+      "title": "Contract Id",
+      "type": "string"
+    },
+    "evaluated_at": {
+      "title": "Evaluated At",
+      "type": "string"
+    },
+    "rationale": {
+      "maxLength": 2000,
+      "minLength": 1,
+      "title": "Rationale",
+      "type": "string"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "source_time": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Source Time"
+    },
+    "state": {
+      "$ref": "#/$defs/FreshnessState"
+    },
+    "threshold_days": {
+      "anyOf": [
+        {
+          "minimum": 0,
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Threshold Days"
+    }
+  },
+  "required": [
+    "state",
+    "evaluated_at",
+    "rationale",
+    "assessment_digest"
+  ],
+  "title": "FreshnessAssessmentV1",
+  "type": "object"
+}

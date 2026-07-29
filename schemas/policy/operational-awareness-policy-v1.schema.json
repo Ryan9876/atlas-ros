@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "atlas://schemas/policy/operational-awareness-policy-v1",
+  "title": "Atlas ROS Operational Awareness Policy v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "policy_id",
+    "lifecycle",
+    "state_mappings",
+    "authority_precedence",
+    "freshness_days",
+    "confidence",
+    "completion",
+    "brief",
+    "context",
+    "hygiene",
+    "command"
+  ],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "policy_id": {"const": "atlas.operational-awareness.v1"},
+    "lifecycle": {"const": "active"},
+    "state_mappings": {"type": "object", "minProperties": 1, "additionalProperties": {"type": "string"}},
+    "authority_precedence": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string"}},
+    "freshness_days": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["current", "aging", "stale"],
+      "properties": {"current": {"type": "integer", "minimum": 0}, "aging": {"type": "integer", "minimum": 1}, "stale": {"type": "integer", "minimum": 1}}
+    },
+    "confidence": {"type": "object"},
+    "completion": {"type": "object"},
+    "brief": {"type": "object"},
+    "context": {"type": "object"},
+    "hygiene": {"type": "object"},
+    "command": {"type": "object"}
+  }
+}

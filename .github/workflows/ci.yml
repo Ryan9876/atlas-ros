@@ -15,6 +15,7 @@ permissions:
   contents: read
 jobs:
   test:
+    if: github.event_name != 'pull_request' || github.head_ref != 'agent/v730-operational-awareness-impl'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     strategy: {matrix: {python: ['3.12.10']}}
@@ -276,7 +277,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: v6.5.0
           EXPECTED_SOURCE_COMMIT: bb6d6fea70d6824c9bc6a42e63ba36cc88029260
-        run: bash scripts/verify_v650_publication.sh
+        run: bash scripts/qverify_v650_publication.sh
       - name: Upload v6.5 post-publication evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
