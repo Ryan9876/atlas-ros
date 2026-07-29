@@ -241,7 +241,7 @@ jobs:
           mkdir -p restoration/active-v711 restoration/rollback-v710
           gh release download v7.1.1 --repo "$GITHUB_REPOSITORY" --dir restoration/active-v711
           gh release download v7.1.0 --repo "$GITHUB_REPOSITORY" --dir restoration/rollback-v710
-          (cd restoration/active-v711 && sha256sum -c SHA256SUMS)
+          (cd restoration/active-v711 && sha256sum -c CHECKSUMS.sha256)
           (cd restoration/rollback-v710 && sha256sum -c CHECKSUMS.sha256)
           active_wheel=$(find restoration/active-v711 -name 'atlas_ros-7.1.1*.whl' -print -quit)
           rollback_wheel=$(find restoration/rollback-v710 -name 'atlas_ros-7.1.0*.whl' -print -quit)
