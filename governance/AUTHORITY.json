@@ -65,13 +65,13 @@
       "immutable_commit": "bb6d6fea70d6824c9bc6a42e63ba36cc88029260",
       "release_url": "https://github.com/Ryan9876/atlas-ros/releases/tag/v6.5.0",
       "tag": "v6.5.0",
-      "version": "v6.5.0"
+      "version": "6.5.0"
     },
     {
       "immutable_commit": "863d5ddf9ebd4723200166cf31c7acd93ebec54f",
       "release_url": "https://github.com/Ryan9876/atlas-ros/releases/tag/v6.2.0",
       "tag": "v6.2.0",
-      "version": "v6.2.0"
+      "version": "6.2.0"
     }
   ],
   "immediate_rollback": {
