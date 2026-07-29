@@ -1,12 +1,11 @@
 name: v7.4.5 authorized publication controller
 
 on:
-  push:
+  pull_request:
     branches: [main]
+    types: [closed]
     paths:
       - release/RELEASE_MANIFEST_V745.md
-      - .github/workflows/v745-authorized-publication-controller.yml
-      - .github/workflows/v745-independent-publication-readback.yml
 
 permissions:
   contents: write
@@ -18,26 +17,28 @@ concurrency:
 
 jobs:
   publish:
+    if: github.event.pull_request.merged == true
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     env:
       TAG: v7.4.5
+      TARGET_COMMIT: ${{ github.event.pull_request.merge_commit_sha }}
       ARTIFACT_ID: '8722777483'
       ARTIFACT_DIGEST: 79f0444480e450f0ac205992572ad97f339691042dead1ba9b4704db86eef071
       SOURCE_SHA256: dc31dbdba07c63f16d7c1df7344ea4760b751cbf8a7f02f7441e1946afca9c15
       WHEEL_SHA256: bb718dcfa808add92eb612115f3040f1eb4da0490c766eb2603a2c37ac5c1be6
     steps:
-      - name: Checkout exact manifest commit
+      - name: Checkout exact manifest merge commit
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
         with:
-          ref: ${{ github.sha }}
+          ref: ${{ env.TARGET_COMMIT }}
           fetch-depth: 0
           persist-credentials: true
 
       - name: Verify prepublication authority and exact manifest
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git rev-parse HEAD)" = "$TARGET_COMMIT"
           test -f release/RELEASE_MANIFEST_V745.md
           python - <<'PY'
           import json
@@ -78,9 +79,9 @@ jobs:
         run: |
           set -euo pipefail
           if git rev-parse "$TAG" >/dev/null 2>&1; then
-            test "$(git rev-list -n 1 "$TAG")" = "$GITHUB_SHA"
+            test "$(git rev-list -n 1 "$TAG")" = "$TARGET_COMMIT"
           else
-            git tag -a "$TAG" "$GITHUB_SHA" -m "Atlas ROS v7.4.5 immutable release"
+            git tag -a "$TAG" "$TARGET_COMMIT" -m "Atlas ROS v7.4.5 immutable release"
             git push origin "refs/tags/$TAG"
           fi
           if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
@@ -91,6 +92,7 @@ jobs:
           gh release create "$TAG" \
             --repo "$GITHUB_REPOSITORY" \
             --verify-tag \
+            --target "$TARGET_COMMIT" \
             --title "Atlas ROS v7.4.5" \
             --notes-file release/RELEASE_MANIFEST_V745.md \
             publication/package/dist/atlas_ros-7.4.5.tar.gz \
