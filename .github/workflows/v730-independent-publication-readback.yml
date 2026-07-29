@@ -52,7 +52,6 @@ jobs:
             > readback/release.json
           gh release download "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" \
             --dir readback/assets
-          git fetch --tags --force
           test "$(git rev-list -n 1 "$RELEASE_TAG")" = "$EXPECTED_TAG_TARGET"
           git show "$RELEASE_TAG:release/RELEASE_MANIFEST_V730.md" \
             > readback/tagged-manifest.md
