@@ -11,10 +11,28 @@ from pathlib import Path
 from atlas_ros.devtools_cli.impact import assess_changes
 
 TIERS: dict[str, tuple[tuple[str, ...], ...]] = {
-    "edit": (("ruff", "check", "."), ("pytest", "-q", "tests/unit")),
-    "feature": (("ruff", "check", "."), ("mypy", "src"), ("pytest", "-q")),
-    "branch": (("ruff", "check", "."), ("mypy", "src"), ("python", "scripts/validate_architecture.py"), ("pytest",)),
-    "candidate": (("ruff", "check", "."), ("mypy", "src"), ("python", "scripts/validate_architecture.py"), ("pytest",), ("python", "-m", "build")),
+    "edit": (
+        ("ruff", "check", "."),
+        ("pytest", "-q", "tests/unit"),
+    ),
+    "feature": (
+        ("ruff", "check", "."),
+        ("mypy", "src"),
+        ("pytest", "-q"),
+    ),
+    "branch": (
+        ("ruff", "check", "."),
+        ("mypy", "src"),
+        ("python", "scripts/validate_architecture.py"),
+        ("pytest",),
+    ),
+    "candidate": (
+        ("ruff", "check", "."),
+        ("mypy", "src"),
+        ("python", "scripts/validate_architecture.py"),
+        ("pytest",),
+        ("python", "-m", "build"),
+    ),
 }
 
 
@@ -34,7 +52,12 @@ class ValidationReceipt:
     provider_writes: int = 0
 
 
-def validate(tier: str, *, execute: bool, changed_paths: tuple[str, ...] = ()) -> ValidationReceipt:
+def validate(
+    tier: str,
+    *,
+    execute: bool,
+    changed_paths: tuple[str, ...] = (),
+) -> ValidationReceipt:
     if tier not in TIERS:
         raise ValueError(f"unsupported validation tier: {tier}")
     impact = assess_changes(changed_paths)
