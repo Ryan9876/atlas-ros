@@ -1,18 +1,24 @@
 {
   "active_release": {
-    "immutable_commit": "51fdeefda8330c8e11bd74336d5f6a569a78e789",
-    "manifest_path": "release/RELEASE_MANIFEST_V730.md",
-    "manifest_sha256": "b3c1633362638ae810395c7972866fbb9884223390bb2c5679911ba0169efe70",
-    "manifest_url": "https://github.com/Ryan9876/atlas-ros/blob/51fdeefda8330c8e11bd74336d5f6a569a78e789/release/RELEASE_MANIFEST_V730.md",
-    "release_url": "https://github.com/Ryan9876/atlas-ros/releases/tag/v7.3.0",
-    "source_sha256": "6e152ca6f5c1cd1644937ed9eea6582966f18bb3e558ec6c851fa2c7a6c6306e",
+    "immutable_commit": "6d48b93c195b7b1761df561760d04aea67d28a55",
+    "manifest_path": "release/RELEASE_MANIFEST_V740.md",
+    "manifest_sha256": "98d2b8aa094e848277006a6579ea93befdf000216f4b355ba72b88615293ad98",
+    "manifest_url": "https://github.com/Ryan9876/atlas-ros/blob/6d48b93c195b7b1761df561760d04aea67d28a55/release/RELEASE_MANIFEST_V740.md",
+    "release_url": "https://github.com/Ryan9876/atlas-ros/releases/tag/v7.4.0",
+    "source_sha256": "12d555568ad451d4f8316290b5b0a6d8b83289feba04aa7fccaa293d4d772ae7",
     "status": "Active",
-    "tag": "v7.3.0",
-    "version": "7.3.0",
-    "wheel_sha256": "5be3ea8af13e70d7bf2e2fa54fc07532d8182c90ee1121e3a881c4214f7a3890"
+    "tag": "v7.4.0",
+    "version": "7.4.0",
+    "wheel_sha256": "22fe5269a24454a42824838e49c1ec1d0c86521954c4e6947d98917e9450c882"
   },
   "authority_model_version": "7.0",
   "historical_rollbacks": [
+    {
+      "immutable_commit": "7e18113b58fcd486b5c7e8eb9368c7c70bc83bcd",
+      "release_url": "https://github.com/Ryan9876/atlas-ros/releases/tag/v7.1.1",
+      "tag": "v7.1.1",
+      "version": "7.1.1"
+    },
     {
       "immutable_commit": "0711b045f34f5ab7b03f7a61bc80653e0d815463",
       "release_url": "https://github.com/Ryan9876/atlas-ros/releases/tag/v7.1.0",
@@ -39,23 +45,23 @@
     }
   ],
   "immediate_rollback": {
-    "immutable_commit": "7e18113b58fcd486b5c7e8eb9368c7c70bc83bcd",
-    "release_url": "https://github.com/Ryan9876/atlas-ros/releases/tag/v7.1.1",
-    "tag": "v7.1.1",
-    "version": "7.1.1"
+    "immutable_commit": "51fdeefda8330c8e11bd74336d5f6a569a78e789",
+    "release_url": "https://github.com/Ryan9876/atlas-ros/releases/tag/v7.3.0",
+    "tag": "v7.3.0",
+    "version": "7.3.0"
   },
   "integration_inventory_resolution": "active-release-manifest",
   "integrity": {
     "algorithm": "sha256",
-    "content_sha256": "fb04219b37dd5ffff9fd4e60dc7b9e99adfd2d1d30802310f9369a923ab89aba"
+    "content_sha256": "fa0bdd470a61a7f174d14894abe3888648b8b7a8f5e3c68d7e5b8e084f65ee01"
   },
-  "last_promotion_transaction_id": "V4D-51-production-promotion",
-  "last_verified_at": "2026-07-28T22:27:15-04:00",
+  "last_promotion_transaction_id": "V4D-52-production-promotion",
+  "last_verified_at": "2026-07-29T00:33:25-04:00",
   "minimum_compatible_initializer_version": "7.0.1",
   "notion_system_state_url": "https://app.notion.com/p/3a0b8344ad2c81d1b545d0266b7cd809",
   "release_index": {
     "path": "governance/RELEASE_INDEX.md",
-    "sha256": "6160deb23d2f6500840ceadd6d5bb124d50eb710d66ea517d98e52c58542920f"
+    "sha256": "8098340511b5dbfe654e83300ab3ca848ae98ef7794f3530cecf0140af6588a2"
   },
   "repository": "Ryan9876/atlas-ros",
   "schema_version": "1.0"
