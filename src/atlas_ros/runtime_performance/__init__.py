@@ -35,9 +35,14 @@ from atlas_ros.runtime_performance.services import (
     RuntimeBundleVerifier,
     SequentialReadAdapter,
 )
+from atlas_ros.runtime_performance.telemetry import (
+    IncrementalComputationMetricsV1,
+    PerformanceValidationReportV1,
+)
 
 __all__ = [
     "CapabilityScopedComposer",
+    "IncrementalComputationMetricsV1",
     "IncrementalComputationPlanV1",
     "IncrementalComputationReceiptV1",
     "IncrementalOperationalPlanner",
@@ -50,6 +55,7 @@ __all__ = [
     "OperationSnapshotCoordinator",
     "PerformanceBudgetV1",
     "PerformanceObservationV1",
+    "PerformanceValidationReportV1",
     "ProviderReadMetricsV1",
     "ReadRequirementV1",
     "RuntimeBundleBuilder",
