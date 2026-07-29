@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "atlas-ros"
-version = "7.4.0"
+version = "7.4.5"
 description = "Policy-driven executable core for Atlas Ryan Operating System"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -76,10 +76,12 @@ select = ["E", "F", "I", "UP", "B", "SIM"]
 "src/atlas_ros/engines/__init__.py" = ["I001"]
 "src/atlas_ros/engines/governed_execution_v65.py" = ["E501", "F401", "UP035", "UP037"]
 "src/atlas_ros/kernel/bootstrap.py" = ["UP047"]
+"src/atlas_ros/runtime_performance/contracts.py" = ["E501", "UP035"]
 "tests/test_v65_governed_execution_intelligence.py" = ["E501"]
 "scripts/build_v510_candidate_evidence.py" = ["E501"]
 "scripts/build_v530_candidate_evidence.py" = ["E501"]
 "scripts/compare_v62_performance.py" = ["I001", "E501"]
+"scripts/validate_v745_runtime_performance.py" = ["E501"]
 "scripts/scan_candidate_secrets.py" = ["I001"]
 "tools/assemble_v410_restoration.py" = ["E501"]
 

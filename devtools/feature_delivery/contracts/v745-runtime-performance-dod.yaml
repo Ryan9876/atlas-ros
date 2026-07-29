@@ -1,0 +1,42 @@
+schema_version: feature-dod-v1
+feature_id: runtime-performance-foundation
+required_items:
+  - feature_contract
+  - architecture_adrs
+  - operation_snapshot
+  - provider_read_planning
+  - verified_runtime_bundle
+  - performance_governance
+  - scoped_composition
+  - incremental_computation
+  - deterministic_scenarios
+  - explicit_exclusions
+  - full_validation
+  - exact_artifacts
+  - security_audits
+  - active_restoration
+  - rollback_restoration
+  - non_publishing_controller
+  - actions_utilization
+  - traceability
+  - operator_recovery_guidance
+evidence:
+  feature_contract: build/V745_FEATURE_CONTRACT_SUMMARY.json
+  architecture_adrs: governance/adr/ADR-0075-runtime-performance-foundation.md
+  operation_snapshot: tests/unit/test_v745_runtime_performance.py
+  provider_read_planning: tests/unit/test_v745_runtime_performance.py
+  verified_runtime_bundle: build/VERIFIED_RUNTIME_BUNDLE.sha256
+  performance_governance: build/V745_PERFORMANCE_VALIDATION.json
+  scoped_composition: tests/unit/test_v745_runtime_performance_services.py
+  incremental_computation: tests/unit/test_v745_runtime_performance_services.py
+  deterministic_scenarios: docs/release/V745_TRACEABILITY.md
+  explicit_exclusions: build/V745_NON_PUBLISHING_CONTROLLER.json
+  full_validation: build/V745_VALIDATION_RECEIPT.json
+  exact_artifacts: build/CHECKSUMS.sha256
+  security_audits: build/V745_SECRET_SCAN.json
+  active_restoration: build/ACTIVE_RESTORATION.json
+  rollback_restoration: build/ROLLBACK_RESTORATION.json
+  non_publishing_controller: build/V745_NON_PUBLISHING_CONTROLLER.json
+  actions_utilization: build/V745_ACTIONS_UTILIZATION.json
+  traceability: docs/release/V745_TRACEABILITY.md
+  operator_recovery_guidance: docs/runtime-performance-foundation.md

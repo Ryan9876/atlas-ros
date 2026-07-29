@@ -1,0 +1,293 @@
+name: v7.4.5 runtime performance candidate
+
+on:
+  pull_request:
+    branches:
+      - main
+      - agent/v745-runtime-performance-prompt-package
+    types: [opened, synchronize, ready_for_review, reopened]
+  workflow_dispatch:
+
+concurrency:
+  group: v745-runtime-performance-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  CANDIDATE_VERSION: 7.4.5
+
+jobs:
+  lean:
+    if: github.event_name == 'pull_request' && github.event.pull_request.draft
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 1
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.12.10'
+          cache: pip
+      - run: python -m pip install --disable-pip-version-check -e '.[ci]'
+      - run: |
+          ruff check \
+            src/atlas_ros/runtime_performance \
+            tests/unit/test_v745_runtime_performance.py \
+            tests/unit/test_v745_runtime_performance_services.py \
+            scripts/validate_v745_exclusions.py \
+            scripts/validate_v745_runtime_performance.py \
+            scripts/build_v745_candidate_evidence.py \
+            scripts/build_v745_runtime_bundle.py
+      - run: mypy src/atlas_ros/runtime_performance
+      - run: |
+          pytest --no-cov -q \
+            tests/unit/test_v745_runtime_performance.py \
+            tests/unit/test_v745_runtime_performance_services.py
+      - run: python scripts/validate_v745_exclusions.py
+      - run: |
+          atlas-dev compile-contract \
+            devtools/feature_delivery/contracts/v745-runtime-performance-foundation.yaml
+      - run: |
+          python scripts/build_v745_runtime_bundle.py \
+            --output build/verified_runtime_bundle.json
+          test -s build/verified_runtime_bundle.json
+
+  full-candidate:
+    if: github.event_name == 'workflow_dispatch' || !github.event.pull_request.draft
+    runs-on: ubuntu-24.04
+    timeout-minutes: 150
+    env:
+      CANDIDATE_COMMIT: ${{ github.event.pull_request.head.sha || github.sha }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Checkout exact frozen candidate
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          fetch-tags: true
+          persist-credentials: false
+
+      - name: Bind source identity
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$CANDIDATE_COMMIT"
+          mkdir -p build dist clean-install restoration
+          git rev-parse HEAD > build/SOURCE_COMMIT.txt
+          git ls-tree -r --full-tree HEAD > build/SOURCE_TREE.txt
+
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.12.10'
+          cache: pip
+
+      - name: Install validation environment
+        run: python -m pip install --disable-pip-version-check -e '.[dev]'
+
+      - name: Resolve live restoration authority
+        run: |
+          python - <<'PY' >> "$GITHUB_ENV"
+          import json
+          from pathlib import Path
+          authority = json.loads(Path('governance/AUTHORITY.json').read_text())
+          print(f"ACTIVE_VERSION={authority['active_release']['version']}")
+          print(f"ACTIVE_TAG={authority['active_release']['tag']}")
+          print(f"ACTIVE_COMMIT={authority['active_release']['immutable_commit']}")
+          print(f"ROLLBACK_VERSION={authority['immediate_rollback']['version']}")
+          print(f"ROLLBACK_TAG={authority['immediate_rollback']['tag']}")
+          print(f"ROLLBACK_COMMIT={authority['immediate_rollback']['immutable_commit']}")
+          PY
+
+      - name: Validate feature contract
+        run: |
+          atlas-dev compile-contract \
+            devtools/feature_delivery/contracts/v745-runtime-performance-foundation.yaml \
+            > build/V745_FEATURE_CONTRACT_SUMMARY.json
+
+      - name: Run complete correctness gates
+        run: |
+          set -euo pipefail
+          ruff check .
+          mypy src/atlas_ros
+          python scripts/validate_architecture.py
+          python scripts/validate_devtools_boundary.py
+          python scripts/validate_v745_exclusions.py
+          pytest
+
+      - name: Run runtime-performance equivalence and benchmarks
+        run: |
+          python scripts/validate_v745_runtime_performance.py \
+            --output build/V745_PERFORMANCE_VALIDATION.json
+
+      - name: Scan source and audit dependencies
+        run: |
+          python scripts/scan_candidate_secrets.py --root . --output build/V745_SECRET_SCAN.json
+          pip-audit --disable-pip --require-hashes --no-deps --timeout 15 \
+            --progress-spinner off --vulnerability-service pypi \
+            --requirement requirements.runtime.lock --format json \
+            --output build/V745_PIP_AUDIT_PYPI.json
+          pip-audit --disable-pip --require-hashes --no-deps --timeout 15 \
+            --progress-spinner off --vulnerability-service osv \
+            --requirement requirements.runtime.lock --format json \
+            --output build/V745_PIP_AUDIT_OSV.json
+          python scripts/evaluate_dependency_audit.py \
+            build/V745_PIP_AUDIT_PYPI.json build/V745_PIP_AUDIT_OSV.json
+
+      - name: Compile verified runtime bundle
+        run: |
+          python scripts/build_v745_runtime_bundle.py
+          test -s src/atlas_ros/data/runtime_performance/verified_runtime_bundle.json
+          sha256sum src/atlas_ros/data/runtime_performance/verified_runtime_bundle.json \
+            > build/VERIFIED_RUNTIME_BUNDLE.sha256
+
+      - name: Build exact package once
+        run: |
+          set -euo pipefail
+          rm -rf dist
+          python -m build
+          test -f dist/atlas_ros-7.4.5.tar.gz
+          test -f dist/atlas_ros-7.4.5-py3-none-any.whl
+          test "$(find dist -maxdepth 1 -type f | wc -l)" -eq 2
+          printf '1\n' > build/BUILD_COUNT.txt
+          sha256sum dist/* > build/CHECKSUMS.sha256
+
+      - name: Generate source manifest and SPDX SBOM
+        run: |
+          git ls-files -z | sort -z | xargs -0 sha256sum > build/SOURCE_MANIFEST.sha256
+          sha256sum src/atlas_ros/data/runtime_performance/verified_runtime_bundle.json \
+            >> build/SOURCE_MANIFEST.sha256
+          python scripts/build_v745_candidate_evidence.py --build-dir build --dist-dir dist
+          sha256sum build/SOURCE_MANIFEST.sha256 build/SBOM.spdx.json \
+            build/V745_CANDIDATE_EVIDENCE.json \
+            build/VERIFIED_RUNTIME_BUNDLE.sha256 > build/EVIDENCE_CHECKSUMS.sha256
+
+      - name: Clean install exact artifacts
+        run: |
+          set -euo pipefail
+          for kind in sdist wheel; do
+            python -m venv "clean-install/$kind"
+            if [ "$kind" = wheel ]; then
+              package=dist/atlas_ros-7.4.5-py3-none-any.whl
+            else
+              package=dist/atlas_ros-7.4.5.tar.gz
+            fi
+            "clean-install/$kind/bin/python" -m pip install --disable-pip-version-check "$package"
+            "clean-install/$kind/bin/python" -c \
+              "import atlas_ros; assert atlas_ros.__version__ == '7.4.5'"
+            "clean-install/$kind/bin/atlas" status --json > "build/${kind}-status.json"
+            "clean-install/$kind/bin/atlas" verify --json > "build/${kind}-verify.json"
+            "clean-install/$kind/bin/python" -c \
+              "from importlib.resources import files; p=files('atlas_ros').joinpath('data/runtime_performance/verified_runtime_bundle.json'); assert p.is_file()"
+          done
+
+      - name: Restore Active and immediate rollback
+        run: |
+          set -euo pipefail
+          mkdir -p "restoration/active-${ACTIVE_VERSION}" \
+            "restoration/rollback-${ROLLBACK_VERSION}"
+          gh release download "$ACTIVE_TAG" --repo "$GITHUB_REPOSITORY" \
+            --dir "restoration/active-${ACTIVE_VERSION}"
+          gh release download "$ROLLBACK_TAG" --repo "$GITHUB_REPOSITORY" \
+            --dir "restoration/rollback-${ROLLBACK_VERSION}"
+          (cd "restoration/active-${ACTIVE_VERSION}" && sha256sum -c CHECKSUMS.sha256)
+          (cd "restoration/rollback-${ROLLBACK_VERSION}" && sha256sum -c CHECKSUMS.sha256)
+          active_wheel=$(find "restoration/active-${ACTIVE_VERSION}" -name '*.whl' -print -quit)
+          rollback_wheel=$(find "restoration/rollback-${ROLLBACK_VERSION}" -name '*.whl' -print -quit)
+          test -n "$active_wheel"
+          test -n "$rollback_wheel"
+          python -m venv restoration/active-clean
+          python -m venv restoration/rollback-clean
+          restoration/active-clean/bin/python -m pip install \
+            --disable-pip-version-check "$active_wheel"
+          restoration/rollback-clean/bin/python -m pip install \
+            --disable-pip-version-check "$rollback_wheel"
+          restoration/active-clean/bin/python -c \
+            "import atlas_ros; assert atlas_ros.__version__ == '${ACTIVE_VERSION}'"
+          restoration/rollback-clean/bin/python -c \
+            "import atlas_ros; assert atlas_ros.__version__ == '${ROLLBACK_VERSION}'"
+          restoration/active-clean/bin/atlas status --json > build/ACTIVE_RESTORATION.json
+          restoration/rollback-clean/bin/atlas status --json > build/ROLLBACK_RESTORATION.json
+
+      - name: Validate non-publishing controller and final receipts
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          authority = json.loads(Path('governance/AUTHORITY.json').read_text())
+          assert authority['active_release']['version'] == os.environ['ACTIVE_VERSION']
+          assert authority['active_release']['immutable_commit'] == os.environ['ACTIVE_COMMIT']
+          assert authority['immediate_rollback']['version'] == os.environ['ROLLBACK_VERSION']
+          controller = {
+            'schema_version': 'v745-non-publishing-controller-v1',
+            'status': 'passed',
+            'candidate_commit': os.environ['CANDIDATE_COMMIT'],
+            'candidate_version': '7.4.5',
+            'active_version_unchanged': os.environ['ACTIVE_VERSION'],
+            'rollback_version_verified': os.environ['ROLLBACK_VERSION'],
+            'provider_writes': 0,
+            'authority_changes': 0,
+            'production_schema_migrations': 0,
+            'release_publications': 0,
+            'production_tags_created_or_moved': 0,
+            'integration_scope_expansions': 0,
+            'credential_actions': 0,
+            'messages_sent': 0,
+            'calendar_actions': 0,
+            'scheduled_actions': 0,
+            'deletions': 0,
+            'pipeline_digest_semantics_changed': False,
+            'runtime_concurrency_enabled': False,
+            'resident_warm_session_created': False,
+          }
+          actions = {
+            'schema_version': 'actions-utilization-report-v1',
+            'candidate_commit': os.environ['CANDIDATE_COMMIT'],
+            'build_count': 1,
+            'exact_artifacts_reused': True,
+            'duplicate_builds_avoided': True,
+            'draft_ci_model': 'lean',
+            'frozen_candidate_ci_model': 'complete',
+            'stale_run_cancellation_enabled': True,
+            'dependency_cache_enabled': True,
+            'provider_writes': 0,
+          }
+          dod = {
+            'schema_version': 'feature-dod-receipt-v1',
+            'feature_id': 'runtime-performance-foundation',
+            'candidate_commit': os.environ['CANDIDATE_COMMIT'],
+            'status': 'passed',
+            'mandatory_gates_complete': True,
+            'exact_build_count': 1,
+            'production_unchanged': True,
+          }
+          Path('build/V745_NON_PUBLISHING_CONTROLLER.json').write_text(
+            json.dumps(controller, indent=2, sort_keys=True) + '\n'
+          )
+          Path('build/V745_ACTIONS_UTILIZATION.json').write_text(
+            json.dumps(actions, indent=2, sort_keys=True) + '\n'
+          )
+          Path('build/V745_DEFINITION_OF_DONE_RECEIPT.json').write_text(
+            json.dumps(dod, indent=2, sort_keys=True) + '\n'
+          )
+          PY
+          sha256sum build/V745_NON_PUBLISHING_CONTROLLER.json \
+            build/V745_ACTIONS_UTILIZATION.json \
+            build/V745_DEFINITION_OF_DONE_RECEIPT.json \
+            >> build/EVIDENCE_CHECKSUMS.sha256
+
+      - name: Retain exact candidate evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: atlas-ros-v745-runtime-performance-${{ env.CANDIDATE_COMMIT }}
+          path: |
+            dist/
+            build/
+          if-no-files-found: error
+          retention-days: 90
