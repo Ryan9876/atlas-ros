@@ -57,7 +57,14 @@ class ContextFamiliarityV1(BaseModel):
 
     @property
     def contextual_score(self) -> float:
-        return sum(self.model_dump().values()) / 6
+        return (
+            self.user
+            + self.domain
+            + self.project
+            + self.terminology
+            + self.evidence_recency
+            + self.interpretation_consistency
+        ) / 6.0
 
 
 class ConsequenceAssessmentV1(BaseModel):
