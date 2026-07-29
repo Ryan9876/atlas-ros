@@ -9,6 +9,8 @@ on:
       - "src/atlas_ros/intent_learning_v750.py"
       - "src/atlas_ros/intent_learning_policy_v750.py"
       - "tests/test_v750_adaptive_clarification.py"
+      - "tests/unit/test_v700_entry_points.py"
+      - "tests/unit/test_v710_lazy_warm_runtime.py"
       - "docs/architecture/V750_ADAPTIVE_CLARIFICATION_AND_INTENT_LEARNING.md"
       - "governance/V750_DECISION_RESOLUTION.md"
       - "governance/adr/ADR-0082-adaptive-clarification-intent-learning.md"
@@ -210,16 +212,15 @@ jobs:
       - name: Restore Active and immediate rollback
         run: |
           set -euo pipefail
-          mkdir -p "restoration/active-${ACTIVE_VERSION}" \
-            "restoration/rollback-${ROLLBACK_VERSION}"
-          gh release download "$ACTIVE_TAG" --repo "$GITHUB_REPOSITORY" \
-            --dir "restoration/active-${ACTIVE_VERSION}"
-          gh release download "$ROLLBACK_TAG" --repo "$GITHUB_REPOSITORY" \
-            --dir "restoration/rollback-${ROLLBACK_VERSION}"
-          (cd "restoration/active-${ACTIVE_VERSION}" && sha256sum -c CHECKSUMS.sha256)
-          (cd "restoration/rollback-${ROLLBACK_VERSION}" && sha256sum -c CHECKSUMS.sha256)
-          active_wheel=$(find "restoration/active-${ACTIVE_VERSION}" -name '*.whl' -print -quit)
-          rollback_wheel=$(find "restoration/rollback-${ROLLBACK_VERSION}" -name '*.whl' -print -quit)
+          active_dir="restoration/active-${ACTIVE_VERSION}"
+          rollback_dir="restoration/rollback-${ROLLBACK_VERSION}"
+          mkdir -p "$active_dir" "$rollback_dir"
+          gh release download "$ACTIVE_TAG" --repo "$GITHUB_REPOSITORY" --dir "$active_dir"
+          gh release download "$ROLLBACK_TAG" --repo "$GITHUB_REPOSITORY" --dir "$rollback_dir"
+          (cd "$active_dir" && sed 's#dist/##' CHECKSUMS.sha256 | sha256sum -c -)
+          (cd "$rollback_dir" && sed 's#dist/##' CHECKSUMS.sha256 | sha256sum -c -)
+          active_wheel=$(find "$active_dir" -name '*.whl' -print -quit)
+          rollback_wheel=$(find "$rollback_dir" -name '*.whl' -print -quit)
           test -n "$active_wheel"
           test -n "$rollback_wheel"
           python -m venv restoration/active-clean
