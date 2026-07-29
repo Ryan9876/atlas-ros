@@ -11,11 +11,11 @@ from atlas_ros.contracts.operational_awareness import (
     EffectiveWorkState,
     HygieneFindingV1,
     HygieneSeverity,
+    NormalizedOperationalRecordV1,
     OperationalRecordRefV1,
     OperationalSnapshotV1,
     RepairClass,
     RepairProposalV1,
-    NormalizedOperationalRecordV1,
     WorkGraphEdgeV1,
     WorkGraphNodeV1,
     WorkGraphSnapshotV1,
@@ -125,13 +125,10 @@ class WorkGraphHygieneService:
                 self.policy.hygiene.protected_record_types
             )
             eligibility = RepairClass.PROTECTED if protected else RepairClass.INDIVIDUAL
-            common = {
-                "affected_records": (record.record_ref,),
-                "confidence": ConfidenceAssessment(
-                    score=1.0, rationale="deterministic invariant evaluation"
-                ),
-                "protected_record_status": protected,
-            }
+            affected_records = (record.record_ref,)
+            confidence = ConfidenceAssessment(
+                score=1.0, rationale="deterministic invariant evaluation"
+            )
             key = (record.record_ref.record_type.value, record.title.strip().lower())
             if title_counts[key] > 1 and record.record_ref.record_type.value in {
                 "action_record",
@@ -148,7 +145,9 @@ class WorkGraphHygieneService:
                         ),
                         disposition="review and consolidate exact duplicates",
                         eligibility=eligibility,
-                        **common,
+                        affected_records=affected_records,
+                        confidence=confidence,
+                        protected_record_status=protected,
                     )
                 )
             if record.todoist_task_id and todoist_counts[record.todoist_task_id] > 1:
@@ -163,7 +162,9 @@ class WorkGraphHygieneService:
                         downstream="provider representation is ambiguous",
                         disposition="retain one canonical mapping after attended review",
                         eligibility=eligibility,
-                        **common,
+                        affected_records=affected_records,
+                        confidence=confidence,
+                        protected_record_status=protected,
                     )
                 )
             parent_id = record.record_ref.parent_record_id
@@ -177,7 +178,9 @@ class WorkGraphHygieneService:
                         downstream="work cannot be traced to a persistent outcome",
                         disposition="restore the exact parent relationship",
                         eligibility=eligibility,
-                        **common,
+                        affected_records=affected_records,
+                        confidence=confidence,
+                        protected_record_status=protected,
                     )
                 )
             if record.completed and any(
@@ -193,7 +196,9 @@ class WorkGraphHygieneService:
                         downstream="persistent outcome may have been closed prematurely",
                         disposition="reopen parent or validate child disposition",
                         eligibility=eligibility,
-                        **common,
+                        affected_records=affected_records,
+                        confidence=confidence,
+                        protected_record_status=protected,
                     )
                 )
             if record.cancelled and any(
@@ -209,7 +214,9 @@ class WorkGraphHygieneService:
                         downstream="active work is no longer attached to a valid outcome",
                         disposition="cancel, supersede, or reparent active children",
                         eligibility=eligibility,
-                        **common,
+                        affected_records=affected_records,
+                        confidence=confidence,
+                        protected_record_status=protected,
                     )
                 )
             if record.observed_state == "blocked" and not record.blockers:
@@ -222,7 +229,9 @@ class WorkGraphHygieneService:
                         downstream="resolution ownership and next action are unclear",
                         disposition="name and link the blocker",
                         eligibility=eligibility,
-                        **common,
+                        affected_records=affected_records,
+                        confidence=confidence,
+                        protected_record_status=protected,
                     )
                 )
             if record.delegated and not record.responsible_party:
@@ -235,7 +244,9 @@ class WorkGraphHygieneService:
                         downstream="delegation cannot be verified or followed up",
                         disposition="resolve the responsible party",
                         eligibility=RepairClass.RYAN_DECISION if not protected else eligibility,
-                        **common,
+                        affected_records=affected_records,
+                        confidence=confidence,
+                        protected_record_status=protected,
                     )
                 )
             if state_by_id.get(record_id) in {
@@ -251,7 +262,9 @@ class WorkGraphHygieneService:
                         downstream="safe completion cannot be determined",
                         disposition="define completion criteria before execution",
                         eligibility=eligibility,
-                        **common,
+                        affected_records=affected_records,
+                        confidence=confidence,
+                        protected_record_status=protected,
                     )
                 )
             active_checkpoints = int(record.extra.get("active_ryan_checkpoint_count", 0) or 0)
@@ -269,7 +282,9 @@ class WorkGraphHygieneService:
                         downstream="Todoist displays duplicate or competing next actions",
                         disposition="retain one current Ryan-owned checkpoint",
                         eligibility=eligibility,
-                        **common,
+                        affected_records=affected_records,
+                        confidence=confidence,
+                        protected_record_status=protected,
                     )
                 )
             if record.received_evidence and record.extra.get("obsolete_follow_up_active"):
@@ -282,7 +297,9 @@ class WorkGraphHygieneService:
                         downstream="Ryan sees an obsolete action instead of the review action",
                         disposition="close follow-up and project the review action",
                         eligibility=eligibility,
-                        **common,
+                        affected_records=affected_records,
+                        confidence=confidence,
+                        protected_record_status=protected,
                     )
                 )
         # Deduplicate exact rule/record pairs.

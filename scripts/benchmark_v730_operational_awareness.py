@@ -10,9 +10,9 @@ import subprocess
 import sys
 import time
 import tracemalloc
+from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from typing import Callable
 
 from atlas_ros.application.operational_awareness import OperationalAwarenessCoordinator
 from atlas_ros.contracts.operational_awareness import (

@@ -121,20 +121,20 @@ def main(argv: Sequence[str] | None = None) -> None:
     snapshot = _load_snapshot(args.input)
     states = WorkStateIntelligence(policy).estimate_all(snapshot)
     if args.command in {"context", "resume"}:
-        service = ExecutionContextService(policy)
+        context_service = ExecutionContextService(policy)
         value = (
-            service.build(snapshot, states, record_id=args.record_reference)
+            context_service.build(snapshot, states, record_id=args.record_reference)
             if args.command == "context"
-            else service.resume(snapshot, states, record_id=args.record_reference)
+            else context_service.resume(snapshot, states, record_id=args.record_reference)
         )
         _emit(value, output_format=args.format)
         return
-    service = WorkGraphHygieneService(policy)
-    findings = service.scan(snapshot, states)
+    hygiene_service = WorkGraphHygieneService(policy)
+    findings = hygiene_service.scan(snapshot, states)
     if args.hygiene_command == "scan":
         _emit(findings, output_format=args.format)
         return
     finding = next((item for item in findings if item.finding_id == args.finding_id), None)
     if finding is None:
         raise SystemExit(f"unknown hygiene finding: {args.finding_id}")
-    _emit(service.propose(finding), output_format=args.format)
+    _emit(hygiene_service.propose(finding), output_format=args.format)

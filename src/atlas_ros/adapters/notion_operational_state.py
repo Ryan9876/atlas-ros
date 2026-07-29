@@ -1,8 +1,9 @@
 """Pure Notion-to-operational-record translation; no planning or writes."""
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import Any, Iterable
+from typing import Any
 
 from atlas_ros.contracts.operational_awareness import (
     AcceptanceState,

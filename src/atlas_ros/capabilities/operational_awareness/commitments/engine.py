@@ -120,7 +120,7 @@ class CommitmentIntelligence:
             follow_up = FollowUpDisposition.COMPLETED
         elif record.acceptance_status == AcceptanceState.UNCONFIRMED:
             follow_up = FollowUpDisposition.VERIFICATION
-        elif overdue and estimate.effective_state != EffectiveWorkState.COMPLETED:
+        elif overdue:
             follow_up = FollowUpDisposition.DEADLINE_AT_RISK
         elif record.checkpoint and freshness.state in {FreshnessState.AGING, FreshnessState.STALE}:
             follow_up = FollowUpDisposition.APPROPRIATE

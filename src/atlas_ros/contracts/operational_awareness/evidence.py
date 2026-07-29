@@ -7,7 +7,6 @@ from typing import Any, Literal
 from pydantic import Field, model_validator
 
 from atlas_ros.contracts.advisory_v1 import ProvenanceRecord, ValueOrigin
-from atlas_ros.contracts.digests import sha256_digest
 
 from .base import AuthorityLevel, DigestBoundModel, FreshnessState, Materiality
 from .records import OperationalRecordRefV1

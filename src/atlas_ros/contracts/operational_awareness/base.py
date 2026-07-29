@@ -5,7 +5,7 @@ from __future__ import annotations
 from enum import StrEnum
 from typing import Any, ClassVar
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict
 
 from atlas_ros.contracts.digests import sha256_digest
 
@@ -25,7 +25,9 @@ class DigestBoundModel(StrictModel):
     @classmethod
     def compute_digest(cls, values: dict[str, Any]) -> str:
         """Apply model defaults before hashing so serialized replay remains stable."""
-        unsigned = cls.model_construct(**values, **{cls.digest_field: "0" * 64})
+        unsigned_values = dict(values)
+        unsigned_values[cls.digest_field] = "0" * 64
+        unsigned = cls.model_construct(**unsigned_values)
         return sha256_digest(unsigned.digest_payload())
 
     def digest_payload(self) -> dict[str, Any]:
@@ -38,7 +40,7 @@ class DigestBoundModel(StrictModel):
         return sha256_digest(self.digest_payload())
 
     def verify_digest(self) -> bool:
-        return getattr(self, self.digest_field) == self.expected_digest()
+        return bool(getattr(self, self.digest_field) == self.expected_digest())
 
 
 class AuthoritativeSystem(StrEnum):
