@@ -88,7 +88,9 @@ def quality() -> evaluation.QuestionQualityAssessmentV1:
     )
 
 
-def shadow_case(case_id: str = "anx-central-management") -> evaluation.ClarificationEvaluationCaseV1:
+def shadow_case(
+    case_id: str = "anx-central-management",
+) -> evaluation.ClarificationEvaluationCaseV1:
     decision = predecessor()
     case = evaluation.ClarificationEvaluationPolicyV752(mode="shadow").evaluate(
         event=event_for(decision),
@@ -330,7 +332,10 @@ def test_fixture_baseline_is_deterministic_and_provider_write_free() -> None:
     assert first.metrics.clarification_avoided_strong_evidence == 1
     assert first.metrics.clarification_reintroduced_context_change == 1
     assert first.recommended_thresholds
-    assert not any(re.search(r"\b\d+(?:\.\d+)?%", item) for item in first.recommended_thresholds)
+    assert not any(
+        re.search(r"\b\d+(?:\.\d+)?%", item)
+        for item in first.recommended_thresholds
+    )
 
 
 def test_contract_schema_bundle_contains_exact_required_contracts() -> None:
