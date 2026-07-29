@@ -20,6 +20,8 @@ class CapabilityDescriptor:
     sole_planning_authority: bool
     advisory_only: bool
     may_create_execution_intent: bool | None
+    explicit_intent_required: bool
+    authorization_required: bool
     digest: str
 
     @property
@@ -77,6 +79,14 @@ class CapabilityRegistry:
             raise ValueError("atlas.reconciliation is required")
         if reconciliation.may_create_execution_intent is not False:
             raise ValueError("reconciliation cannot create execution intent")
+        command_lifecycle = values.get("atlas.command-lifecycle")
+        if command_lifecycle is not None and not (
+            command_lifecycle.explicit_intent_required
+            and command_lifecycle.authorization_required
+        ):
+            raise ValueError(
+                "command lifecycle requires explicit intent and attended authorization"
+            )
         return cls(
             capabilities=MappingProxyType(values),
             digest=digest,
