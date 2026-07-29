@@ -35,12 +35,7 @@ def test_lazy_target_imports_only_after_command_resolution(
     )
 
     assert "lazy_fixture.command" not in sys.modules
-    profile = profile_dispatch(
-        registry,
-        "fixture",
-        ("ok",),
-        namespace_prefix="lazy_fixture",
-    )
+    profile = profile_dispatch(registry, "fixture", ("ok",), namespace_prefix="lazy_fixture")
     assert profile.imported_modules == ("lazy_fixture", "lazy_fixture.command")
 
 
@@ -68,8 +63,8 @@ for prefix in (
     )
     assert result.returncode == 0, result.stderr
     payload = json.loads(result.stdout)
-    assert payload["version"] == "7.6.0"
-    assert payload["active_production_version"] == "7.5.2"
+    assert payload["version"] == "7.6.1"
+    assert payload["active_production_version"] == "7.6.0"
 
 
 def config(tmp_path: Path, token: str = "fixture-token") -> WarmRuntimeConfig:
@@ -103,24 +98,9 @@ def test_warm_runtime_is_authenticated_non_authoritative_and_fresh(tmp_path: Pat
     assert loaded.payload_digest == snapshot.payload_digest
 
     with pytest.raises(WarmRuntimeError, match="authentication"):
-        cache.get(
-            key="capabilities",
-            auth_token="incorrect-token",
-            expected_source_digest="a" * 64,
-            now_epoch=120.0,
-        )
+        cache.get(key="capabilities", auth_token="incorrect-token", expected_source_digest="a" * 64, now_epoch=120.0)
     with pytest.raises(WarmRuntimeError, match="expired"):
-        cache.get(
-            key="capabilities",
-            auth_token="fixture-token",
-            expected_source_digest="a" * 64,
-            now_epoch=200.0,
-        )
+        cache.get(key="capabilities", auth_token="fixture-token", expected_source_digest="a" * 64, now_epoch=200.0)
     with pytest.raises(WarmRuntimeError, match="stale"):
-        cache.get(
-            key="capabilities",
-            auth_token="fixture-token",
-            expected_source_digest="b" * 64,
-            now_epoch=120.0,
-        )
+        cache.get(key="capabilities", auth_token="fixture-token", expected_source_digest="b" * 64, now_epoch=120.0)
     assert cache.clear(auth_token="fixture-token") == 1
