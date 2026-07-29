@@ -81,6 +81,7 @@ select = ["E", "F", "I", "UP", "B", "SIM"]
 "scripts/build_v510_candidate_evidence.py" = ["E501"]
 "scripts/build_v530_candidate_evidence.py" = ["E501"]
 "scripts/compare_v62_performance.py" = ["I001", "E501"]
+"scripts/validate_v745_runtime_performance.py" = ["E501"]
 "scripts/scan_candidate_secrets.py" = ["I001"]
 "tools/assemble_v410_restoration.py" = ["E501"]
 
