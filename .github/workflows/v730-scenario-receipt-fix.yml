@@ -1,0 +1,66 @@
+name: v7.3.0 scenario receipt repair
+
+on:
+  push:
+    branches: [agent/v730-operational-awareness]
+    paths:
+      - '.github/workflows/v730-scenario-receipt-fix.yml'
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/v730-scenario-receipt-fix.yml'
+
+permissions:
+  contents: write
+  pull-requests: read
+
+concurrency:
+  group: v730-scenario-receipt-${{ github.event.pull_request.head.ref || github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  repair:
+    if: github.event_name == 'push' || github.event.pull_request.head.ref == 'agent/v730-operational-awareness'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Check out canonical candidate branch
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          ref: agent/v730-operational-awareness
+          fetch-depth: 1
+          persist-credentials: true
+
+      - name: Add verified aggregate provider-write receipt
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          path = Path('tests/fixtures/operational-awareness/v730-scenarios.json')
+          data = json.loads(path.read_text())
+          scenarios = data['scenarios']
+          if data['scenario_count'] != len(scenarios):
+              raise SystemExit('scenario_count does not match scenario list')
+          if len(scenarios) < 51:
+              raise SystemExit('scenario corpus is incomplete')
+          if not all(item.get('live_provider_writes') == 0 for item in scenarios):
+              raise SystemExit('one or more scenarios permit provider writes')
+          data['provider_writes'] = 0
+          path.write_text(json.dumps(data, indent=2) + '\n')
+          reloaded = json.loads(path.read_text())
+          assert reloaded['provider_writes'] == 0
+          assert all(item['live_provider_writes'] == 0 for item in reloaded['scenarios'])
+          PY
+
+      - name: Commit fixture receipt only
+        run: |
+          set -euo pipefail
+          git config user.name 'atlas-ros-bot'
+          git config user.email 'atlas-ros-bot@users.noreply.github.com'
+          git add tests/fixtures/operational-awareness/v730-scenarios.json
+          git diff --cached --quiet && exit 0
+          git commit -m 'test: bind v7.3.0 zero-write scenario receipt'
+          git push origin HEAD:agent/v730-operational-awareness
