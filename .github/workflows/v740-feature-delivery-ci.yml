@@ -30,7 +30,7 @@ jobs:
       - run: python -m pip install --disable-pip-version-check -e '.[ci]'
       - run: ruff check src/atlas_ros/devtools_cli src/atlas_ros/entry_points/dev.py tests/unit/test_v740_feature_delivery.py
       - run: python scripts/validate_devtools_boundary.py
-      - run: pytest -q tests/unit/test_v740_feature_delivery.py
+      - run: pytest --no-cov -q tests/unit/test_v740_feature_delivery.py
       - run: atlas-dev explain-impact governance/architecture.yaml
 
   full-candidate:
