@@ -65,7 +65,11 @@ def main() -> None:
     assert manifest_text == tagged_manifest
     assert sha256_digest(manifest_text) == MANIFEST_DIGEST
     assert PACKAGE_SOURCE_COMMIT in manifest_text
-    assert "Required production integrations remain exactly **GitHub, Notion, and Todoist**" in manifest_text
+    required_integrations = (
+        "Required production integrations remain exactly "
+        "**GitHub, Notion, and Todoist**"
+    )
+    assert required_integrations in manifest_text
     assert "Google Drive remains optional" in manifest_text
     assert "requires no production Notion schema migration" in manifest_text
     assert "Immediate rollback: Atlas ROS v7.3.0" in manifest_text
@@ -83,7 +87,13 @@ def main() -> None:
         "wheel_sha256": WHEEL_SHA256,
         "immediate_rollback_version": ROLLBACK_VERSION,
         "immediate_rollback_commit": ROLLBACK_COMMIT,
-        "historical_rollbacks": ["7.1.1", "7.1.0", "7.0.1", "6.5.0", "6.2.0"],
+        "historical_rollbacks": [
+            "7.1.1",
+            "7.1.0",
+            "7.0.1",
+            "6.5.0",
+            "6.2.0",
+        ],
         "release_index_sha256": authority.release_index.sha256,
         "authority_integrity_sha256": authority.integrity.content_sha256,
         "promotion_decision": "V4D-52",
