@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from atlas_ros.contracts.reasoning_v62 import EnhancedReasoningPackageV62
+from atlas_ros.contracts.v62 import PlanningMemoryEntry, PlanningStyle
 from atlas_ros.engines.input_pipeline_v62 import AdaptiveInputProcessingPipelineV62
 from atlas_ros.intent_learning_v750 import (
     ClarificationDecisionV1,
@@ -63,11 +65,37 @@ class AdaptiveInputProcessingWithClarificationV750:
         self.base_pipeline = base_pipeline or AdaptiveInputProcessingPipelineV62()
         self.policy = policy or AdaptiveClarificationPolicyV750(enabled=False)
 
-    def process(self, raw_input: str, **kwargs: object) -> object:
-        return self.base_pipeline.process(raw_input, **kwargs)
+    def process(
+        self,
+        raw_input: str,
+        *,
+        planning_style: PlanningStyle = PlanningStyle.CONCISE,
+        planning_memory: tuple[PlanningMemoryEntry, ...] = (),
+    ) -> EnhancedReasoningPackageV62:
+        return self.base_pipeline.process(
+            raw_input,
+            planning_style=planning_style,
+            planning_memory=planning_memory,
+        )
 
-    def evaluate_clarification(self, **kwargs: object) -> ClarificationDecisionV1 | None:
-        return self.policy.evaluate(**kwargs)  # type: ignore[arg-type]
+    def evaluate_clarification(
+        self,
+        *,
+        capture: str,
+        proposed_completion: CompletionDimensionsV1 | None,
+        related_records: tuple[RelatedRecordV1, ...],
+        familiarity: ContextFamiliarityV1,
+        consequence: ConsequenceAssessmentV1,
+        evidence: tuple[IntentEvidenceV1, ...] = (),
+    ) -> ClarificationDecisionV1 | None:
+        return self.policy.evaluate(
+            capture=capture,
+            proposed_completion=proposed_completion,
+            related_records=related_records,
+            familiarity=familiarity,
+            consequence=consequence,
+            evidence=evidence,
+        )
 
     @staticmethod
     def execution_blocked(decision: ClarificationDecisionV1 | None) -> bool:
