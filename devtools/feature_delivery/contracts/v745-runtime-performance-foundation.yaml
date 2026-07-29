@@ -1,0 +1,120 @@
+schema_version: feature-contract-v1
+feature:
+  id: runtime-performance-foundation
+  version: 7.4.5
+  category: runtime_architecture
+  objective: >
+    Reduce repeated provider reads, runtime composition, governance compilation,
+    and operational recomputation while preserving canonical output,
+    deterministic behavior, complete evidence, and provider safety.
+included_capabilities:
+  - operation_read_snapshot
+  - provider_read_planning
+  - verified_registry_bundle
+  - performance_contracts
+  - capability_scoped_composition
+  - incremental_operational_computation
+excluded_capabilities:
+  - incremental_pipeline_digests
+  - bounded_runtime_concurrency
+  - attended_warm_session
+authority:
+  provider_writes: unchanged
+  production_migration: prohibited
+  promotion: separately_authorized
+  publication: prohibited
+  production_authority_change: prohibited
+  immutable_release_modification: prohibited
+invariants:
+  - cold_path_remains_canonical
+  - complete_authority_verification
+  - no_mutable_provider_truth_as_authority
+  - deterministic_equivalence
+  - mandatory_provider_readback
+  - full_recomputation_fallback
+  - full_composition_fallback
+  - no_reduced_candidate_validation
+  - sequential_runtime_execution
+  - no_cached_authorization_or_execution_intent
+affected_runtime_modules:
+  - authority_bootstrap
+  - runtime_composition
+  - provider_read_coordination
+  - operational_awareness
+  - work_state_computation
+  - commitment_computation
+  - operating_brief_generation
+  - execution_context_generation
+affected_capabilities:
+  - operational_awareness
+  - delegated_work_intelligence
+  - action_work_state
+  - operating_brief
+  - execution_context_pack
+provider_read_implications:
+  - declare semantic read requirements in the application layer
+  - coalesce duplicate and overlapping reads
+  - preserve bounded pagination and explicit incomplete evidence
+  - revalidate write preconditions and mandatory readback
+cache_classifications:
+  immutable_package_artifacts:
+    - verified_runtime_bundle
+  per_operation_only:
+    - operation_read_snapshot
+    - operational_read_plan
+  disposable_non_authoritative:
+    - incremental_computation_index
+  prohibited:
+    - provider_credentials
+    - authorization
+    - execution_intent
+    - permanent_mutable_provider_truth
+compatibility_requirements:
+  - preserve current command semantics
+  - preserve current authority initialization
+  - preserve provider write authorization
+  - preserve reconciliation behavior
+  - preserve pipeline lineage and stage digest semantics
+  - preserve cold execution
+  - preserve Active and immediate rollback restoration
+expected_performance_improvements:
+  - fewer duplicate provider reads
+  - fewer registry source compilations
+  - reduced runtime composition work
+  - reduced unchanged operational-node recomputation
+prohibited_behaviors:
+  - second execution planner
+  - semantic reasoning in adapters
+  - reconciliation-created intent
+  - skipped pre-write validation
+  - skipped post-write readback
+  - concurrent or asynchronous provider execution
+  - resident runtime or retained authorization
+  - changed canonical pipeline digest semantics
+required_tests:
+  scenario_range: V745-001..V745-051
+  mandatory:
+    - operation_snapshot_contract
+    - provider_read_plan_contract
+    - registry_bundle_source_equivalence
+    - scoped_full_composition_equivalence
+    - incremental_full_computation_equivalence
+    - corruption_and_invalidation
+    - explicit_exclusions
+    - provider_write_prohibition
+    - authorization_and_readback_regression
+    - deterministic_replay
+    - active_release_restoration
+    - immediate_rollback_restoration
+    - complete_candidate_validation
+reserved_for_ryan:
+  - release_identity_change
+  - production_promotion
+  - production_tag_or_release_publication
+  - canonical_authority_activation
+  - incompatible_runtime_contracts
+  - material_production_architecture
+  - provider_permission_changes
+  - rollback_integrity_changes
+  - removal_of_established_fallback
+  - material_validation_reduction
