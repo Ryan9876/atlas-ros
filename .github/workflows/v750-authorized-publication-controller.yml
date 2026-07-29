@@ -1,0 +1,109 @@
+name: v7.5.0 authorized publication controller
+
+on:
+  pull_request:
+    branches: [main]
+    types: [closed]
+    paths:
+      - release/RELEASE_MANIFEST_V750.md
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: v750-authorized-publication
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      TAG: v7.5.0
+      TARGET_COMMIT: ${{ github.event.pull_request.merge_commit_sha }}
+      ARTIFACT_ID: '8728012606'
+      SOURCE_SHA256: e6327b2f77e293cad543c6b1fec1d2c8ceff5b3321a05828f586c5b9ef52660d
+      WHEEL_SHA256: 037b229c0e0e006202c6cceec916c67313664f1e7ae9a1c2e685bfd10bb729bd
+    steps:
+      - name: Checkout exact manifest merge commit
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          ref: ${{ env.TARGET_COMMIT }}
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Verify prepublication authority and exact manifest
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$TARGET_COMMIT"
+          test -f release/RELEASE_MANIFEST_V750.md
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          authority = json.loads(Path('governance/AUTHORITY.json').read_text())
+          assert authority['active_release']['version'] == '7.4.5'
+          assert authority['active_release']['immutable_commit'] == '88ccec11df6695b91fc2cc703105c42cd21e9f01'
+          assert authority['immediate_rollback']['version'] == '7.4.0'
+          manifest = Path('release/RELEASE_MANIFEST_V750.md').read_text()
+          for required in (
+              'e5b828d40e63e6d3106ae6bddbcc08b48273f74b',
+              '8728012606',
+              '60f9a02910564ccf066d47136dc910c793b750c43c70ef264fb709dcec660bc1',
+              'e6327b2f77e293cad543c6b1fec1d2c8ceff5b3321a05828f586c5b9ef52660d',
+              '037b229c0e0e006202c6cceec916c67313664f1e7ae9a1c2e685bfd10bb729bd',
+          ):
+              assert required in manifest
+          PY
+
+      - name: Download exact retained candidate artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p publication
+          gh api "/repos/${GITHUB_REPOSITORY}/actions/artifacts/${ARTIFACT_ID}/zip" > publication/candidate.zip
+          unzip -q publication/candidate.zip -d publication/package
+          test -f publication/package/dist/atlas_ros-7.5.0.tar.gz
+          test -f publication/package/dist/atlas_ros-7.5.0-py3-none-any.whl
+          test -f publication/package/build/CHECKSUMS.sha256
+          (cd publication/package && sha256sum -c build/CHECKSUMS.sha256)
+          test "$(sha256sum publication/package/dist/atlas_ros-7.5.0.tar.gz | cut -d' ' -f1)" = "$SOURCE_SHA256"
+          test "$(sha256sum publication/package/dist/atlas_ros-7.5.0-py3-none-any.whl | cut -d' ' -f1)" = "$WHEEL_SHA256"
+          test "$(cat publication/package/build/BUILD_COUNT.txt)" = "1"
+
+      - name: Create immutable tag and GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          git config user.name "Atlas ROS Release Bot"
+          git config user.email "atlas-ros-release@users.noreply.github.com"
+          if git rev-parse "$TAG" >/dev/null 2>&1; then
+            test "$(git rev-list -n 1 "$TAG")" = "$TARGET_COMMIT"
+          else
+            git tag -a "$TAG" "$TARGET_COMMIT" -m "Atlas ROS v7.5.0 immutable release"
+            git push origin "refs/tags/$TAG"
+          fi
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "Release already exists; refusing replacement."
+            exit 1
+          fi
+          cp release/RELEASE_MANIFEST_V750.md publication/package/RELEASE_MANIFEST_V750.md
+          gh release create "$TAG" \
+            --repo "$GITHUB_REPOSITORY" \
+            --verify-tag \
+            --target "$TARGET_COMMIT" \
+            --title "Atlas ROS v7.5.0" \
+            --notes-file release/RELEASE_MANIFEST_V750.md \
+            publication/package/dist/atlas_ros-7.5.0.tar.gz \
+            publication/package/dist/atlas_ros-7.5.0-py3-none-any.whl \
+            publication/package/build/CHECKSUMS.sha256 \
+            publication/package/build/EVIDENCE_CHECKSUMS.sha256 \
+            publication/package/build/SBOM.spdx.json \
+            publication/package/build/SOURCE_MANIFEST.sha256 \
+            publication/package/build/V750_FULL_VALIDATION.json \
+            publication/package/build/ACTIVE_RESTORATION.json \
+            publication/package/build/ROLLBACK_RESTORATION.json \
+            publication/package/RELEASE_MANIFEST_V750.md
