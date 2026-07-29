@@ -149,5 +149,3 @@ capabilities:
   outputs:
   - CommandInterpretationV1
   - TodoistLifecyclePlanV1
-  explicit_intent_required: true
-  authorization_required: true
