@@ -46,7 +46,7 @@ jobs:
   focused-validation:
     if: >-
       github.event_name == 'workflow_dispatch' ||
-      github.head_ref == 'agent/v730-operational-awareness'
+      github.head_ref == 'agent/v730-operational-awareness-impl'
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:

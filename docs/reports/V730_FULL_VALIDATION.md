@@ -10,5 +10,5 @@ Status: completed before branch development.
 - Decision Log, Review Records, Automation Register, open pull requests, release work, and restoration evidence were reviewed.
 - No v7.2 or v7.3 governed scope, tag, release, branch, or pull request conflicted with this candidate.
 - Development base: latest `main` commit `444fe9b2bb70ca3e8d59eb57f0f356e6403c0be7`.
-- Development branch: `agent/v730-operational-awareness`.
+- Development branch: `agent/v730-operational-awareness-impl`.
 - Production writes during validation: 0.

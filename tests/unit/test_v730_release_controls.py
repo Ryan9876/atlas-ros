@@ -59,7 +59,7 @@ def test_v730_workflow_controls_enforce_lean_full_and_build_once() -> None:
     assert "PUBLISH" not in full
     assert "gh release create" not in full
     assert "gh release upload" not in full
-    assert "agent/v730-operational-awareness" in ci
+    assert "agent/v730-operational-awareness-impl" in ci
 
 
 def test_v730_workflow_path_matrix_covers_required_change_classes() -> None:
