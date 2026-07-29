@@ -23,7 +23,6 @@ from atlas_ros.contracts.history import (
     HistoricalInventory,
     HistoricalItem,
 )
-from atlas_ros.contracts.reasoning import IntentGraph
 from atlas_ros.contracts.operational_awareness import (
     AtlasCommandV1,
     AwarenessStageReceiptV1,
@@ -56,6 +55,7 @@ from atlas_ros.contracts.operational_awareness import (
     WorkStateEstimateV1,
     WorkStateTransitionV1,
 )
+from atlas_ros.contracts.reasoning import IntentGraph
 from atlas_ros.contracts.registry import ContractDescriptor
 from atlas_ros.contracts.release import ReleaseCompilationReceipt, ReleaseSpecification
 
