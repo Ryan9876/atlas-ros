@@ -25,7 +25,9 @@ class DigestBoundModel(StrictModel):
     @classmethod
     def compute_digest(cls, values: dict[str, Any]) -> str:
         """Apply model defaults before hashing so serialized replay remains stable."""
-        unsigned = cls.model_construct(**values, **{cls.digest_field: "0" * 64})
+        payload = dict(values)
+        payload[cls.digest_field] = "0" * 64
+        unsigned = cls.model_construct(**payload)
         return sha256_digest(unsigned.digest_payload())
 
     def digest_payload(self) -> dict[str, Any]:
@@ -38,7 +40,8 @@ class DigestBoundModel(StrictModel):
         return sha256_digest(self.digest_payload())
 
     def verify_digest(self) -> bool:
-        return getattr(self, self.digest_field) == self.expected_digest()
+        actual = getattr(self, self.digest_field)
+        return isinstance(actual, str) and actual == self.expected_digest()
 
 
 class AuthoritativeSystem(StrEnum):
