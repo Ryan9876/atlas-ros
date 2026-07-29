@@ -35,10 +35,23 @@ jobs:
           python-version: '3.12.10'
           cache: pip
       - run: python -m pip install --disable-pip-version-check -e '.[ci]'
-      - run: ruff check src/atlas_ros/runtime_performance tests/unit/test_v745_runtime_performance.py
+      - run: |
+          ruff check \
+            src/atlas_ros/runtime_performance \
+            tests/unit/test_v745_runtime_performance.py \
+            tests/unit/test_v745_runtime_performance_services.py \
+            scripts/validate_v745_exclusions.py \
+            scripts/validate_v745_runtime_performance.py \
+            scripts/build_v745_candidate_evidence.py
       - run: mypy src/atlas_ros/runtime_performance
-      - run: pytest --no-cov -q tests/unit/test_v745_runtime_performance.py
+      - run: |
+          pytest --no-cov -q \
+            tests/unit/test_v745_runtime_performance.py \
+            tests/unit/test_v745_runtime_performance_services.py
       - run: python scripts/validate_v745_exclusions.py
+      - run: |
+          atlas-dev compile-contract \
+            devtools/feature_delivery/contracts/v745-runtime-performance-foundation.yaml
 
   full-candidate:
     if: github.event_name == 'workflow_dispatch' || !github.event.pull_request.draft
@@ -88,7 +101,8 @@ jobs:
 
       - name: Validate feature contract
         run: |
-          atlas-dev feature-summary devtools/feature_delivery/contracts/v745-runtime-performance-foundation.yaml \
+          atlas-dev compile-contract \
+            devtools/feature_delivery/contracts/v745-runtime-performance-foundation.yaml \
             > build/V745_FEATURE_CONTRACT_SUMMARY.json
 
       - name: Run complete correctness gates
@@ -103,7 +117,8 @@ jobs:
 
       - name: Run runtime-performance equivalence and benchmarks
         run: |
-          python scripts/validate_v745_runtime_performance.py --output build/V745_PERFORMANCE_VALIDATION.json
+          python scripts/validate_v745_runtime_performance.py \
+            --output build/V745_PERFORMANCE_VALIDATION.json
 
       - name: Scan source and audit dependencies
         run: |
@@ -148,7 +163,8 @@ jobs:
               package=dist/atlas_ros-7.4.5.tar.gz
             fi
             "clean-install/$kind/bin/python" -m pip install --disable-pip-version-check "$package"
-            "clean-install/$kind/bin/python" -c "import atlas_ros; assert atlas_ros.__version__ == '7.4.5'"
+            "clean-install/$kind/bin/python" -c \
+              "import atlas_ros; assert atlas_ros.__version__ == '7.4.5'"
             "clean-install/$kind/bin/atlas" status --json > "build/${kind}-status.json"
             "clean-install/$kind/bin/atlas" verify --json > "build/${kind}-verify.json"
           done
@@ -156,19 +172,26 @@ jobs:
       - name: Restore Active and immediate rollback
         run: |
           set -euo pipefail
-          mkdir -p "restoration/active-${ACTIVE_VERSION}" "restoration/rollback-${ROLLBACK_VERSION}"
-          gh release download "$ACTIVE_TAG" --repo "$GITHUB_REPOSITORY" --dir "restoration/active-${ACTIVE_VERSION}"
-          gh release download "$ROLLBACK_TAG" --repo "$GITHUB_REPOSITORY" --dir "restoration/rollback-${ROLLBACK_VERSION}"
+          mkdir -p "restoration/active-${ACTIVE_VERSION}" \
+            "restoration/rollback-${ROLLBACK_VERSION}"
+          gh release download "$ACTIVE_TAG" --repo "$GITHUB_REPOSITORY" \
+            --dir "restoration/active-${ACTIVE_VERSION}"
+          gh release download "$ROLLBACK_TAG" --repo "$GITHUB_REPOSITORY" \
+            --dir "restoration/rollback-${ROLLBACK_VERSION}"
           (cd "restoration/active-${ACTIVE_VERSION}" && sha256sum -c CHECKSUMS.sha256)
           (cd "restoration/rollback-${ROLLBACK_VERSION}" && sha256sum -c CHECKSUMS.sha256)
           active_wheel=$(find "restoration/active-${ACTIVE_VERSION}" -name '*.whl' -print -quit)
           rollback_wheel=$(find "restoration/rollback-${ROLLBACK_VERSION}" -name '*.whl' -print -quit)
           python -m venv restoration/active-clean
           python -m venv restoration/rollback-clean
-          restoration/active-clean/bin/python -m pip install --disable-pip-version-check "$active_wheel"
-          restoration/rollback-clean/bin/python -m pip install --disable-pip-version-check "$rollback_wheel"
-          restoration/active-clean/bin/python -c "import atlas_ros; assert atlas_ros.__version__ == '${ACTIVE_VERSION}'"
-          restoration/rollback-clean/bin/python -c "import atlas_ros; assert atlas_ros.__version__ == '${ROLLBACK_VERSION}'"
+          restoration/active-clean/bin/python -m pip install \
+            --disable-pip-version-check "$active_wheel"
+          restoration/rollback-clean/bin/python -m pip install \
+            --disable-pip-version-check "$rollback_wheel"
+          restoration/active-clean/bin/python -c \
+            "import atlas_ros; assert atlas_ros.__version__ == '${ACTIVE_VERSION}'"
+          restoration/rollback-clean/bin/python -c \
+            "import atlas_ros; assert atlas_ros.__version__ == '${ROLLBACK_VERSION}'"
           restoration/active-clean/bin/atlas status --json > build/ACTIVE_RESTORATION.json
           restoration/rollback-clean/bin/atlas status --json > build/ROLLBACK_RESTORATION.json
 
