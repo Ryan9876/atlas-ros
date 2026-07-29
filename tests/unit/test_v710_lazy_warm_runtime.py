@@ -68,11 +68,11 @@ for prefix in (
     )
     assert result.returncode == 0, result.stderr
     payload = json.loads(result.stdout)
-    assert payload["version"] == "7.4.5"
-    assert payload["active_production_version"] == "7.4.0"
+    assert payload["version"] == "7.5.1"
+    assert payload["active_production_version"] == "7.5.0"
 
 
-def config(tmp_path: Path, token: str = "secret") -> WarmRuntimeConfig:
+def config(tmp_path: Path, token: str = "fixture-token") -> WarmRuntimeConfig:
     return WarmRuntimeConfig(
         root=tmp_path / "warm",
         auth_token_sha256=hashlib.sha256(token.encode()).hexdigest(),
@@ -89,13 +89,13 @@ def test_warm_runtime_is_authenticated_non_authoritative_and_fresh(tmp_path: Pat
         kind="capability_metadata",
         payload=payload,
         source_digest="a" * 64,
-        auth_token="secret",
+        auth_token="fixture-token",
         verified_at_epoch=100.0,
     )
 
     loaded = cache.get(
         key="capabilities",
-        auth_token="secret",
+        auth_token="fixture-token",
         expected_source_digest="a" * 64,
         now_epoch=120.0,
     )
@@ -105,22 +105,22 @@ def test_warm_runtime_is_authenticated_non_authoritative_and_fresh(tmp_path: Pat
     with pytest.raises(WarmRuntimeError, match="authentication"):
         cache.get(
             key="capabilities",
-            auth_token="wrong",
+            auth_token="incorrect-token",
             expected_source_digest="a" * 64,
             now_epoch=120.0,
         )
     with pytest.raises(WarmRuntimeError, match="expired"):
         cache.get(
             key="capabilities",
-            auth_token="secret",
+            auth_token="fixture-token",
             expected_source_digest="a" * 64,
             now_epoch=200.0,
         )
     with pytest.raises(WarmRuntimeError, match="stale"):
         cache.get(
             key="capabilities",
-            auth_token="secret",
+            auth_token="fixture-token",
             expected_source_digest="b" * 64,
             now_epoch=120.0,
         )
-    assert cache.clear(auth_token="secret") == 1
+    assert cache.clear(auth_token="fixture-token") == 1
