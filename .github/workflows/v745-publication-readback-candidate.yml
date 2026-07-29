@@ -1,0 +1,85 @@
+name: v7.4.5 publication readback candidate
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    paths:
+      - .github/workflows/v745-publication-readback-candidate.yml
+      - release/V745_PUBLICATION_READBACK_CANDIDATE.md
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Checkout immutable tag
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          ref: v7.4.5
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Verify tag and published release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test -f release/RELEASE_MANIFEST_V745.md
+          mkdir -p readback/v745 readback/v740 evidence
+          gh release download v7.4.5 --repo "$GITHUB_REPOSITORY" --dir readback/v745
+          test -f readback/v745/atlas_ros-7.4.5.tar.gz
+          test -f readback/v745/atlas_ros-7.4.5-py3-none-any.whl
+          test -f readback/v745/CHECKSUMS.sha256
+          test -f readback/v745/RELEASE_MANIFEST_V745.md
+          (cd readback/v745 && sha256sum -c CHECKSUMS.sha256)
+          test "$(sha256sum readback/v745/atlas_ros-7.4.5.tar.gz | cut -d' ' -f1)" = "dc31dbdba07c63f16d7c1df7344ea4760b751cbf8a7f02f7441e1946afca9c15"
+          test "$(sha256sum readback/v745/atlas_ros-7.4.5-py3-none-any.whl | cut -d' ' -f1)" = "bb718dcfa808add92eb612115f3040f1eb4da0490c766eb2603a2c37ac5c1be6"
+          cmp release/RELEASE_MANIFEST_V745.md readback/v745/RELEASE_MANIFEST_V745.md
+          gh release download v7.4.0 --repo "$GITHUB_REPOSITORY" --dir readback/v740
+          test -f readback/v740/atlas_ros-7.4.0.tar.gz
+          test -f readback/v740/atlas_ros-7.4.0-py3-none-any.whl
+          test -f readback/v740/CHECKSUMS.sha256
+          (cd readback/v740 && sha256sum -c CHECKSUMS.sha256)
+
+      - name: Clean-install v7.4.5 and rollback v7.4.0
+        run: |
+          set -euo pipefail
+          python -m venv verify-v745
+          verify-v745/bin/python -m pip install --disable-pip-version-check readback/v745/atlas_ros-7.4.5-py3-none-any.whl
+          verify-v745/bin/python -c "import atlas_ros; assert atlas_ros.__version__ == '7.4.5'"
+          verify-v745/bin/atlas status --json
+          verify-v745/bin/atlas verify --json
+          python -m venv verify-v740
+          verify-v740/bin/python -m pip install --disable-pip-version-check readback/v740/atlas_ros-7.4.0-py3-none-any.whl
+          verify-v740/bin/python -c "import atlas_ros; assert atlas_ros.__version__ == '7.4.0'"
+          verify-v740/bin/atlas status --json
+          verify-v740/bin/atlas verify --json
+
+      - name: Produce independent readback receipt
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          receipt = {
+              "schema_version": "v745-independent-publication-readback-v1",
+              "status": "passed",
+              "tag": "v7.4.5",
+              "tag_target": "88ccec11df6695b91fc2cc703105c42cd21e9f01",
+              "source_sha256": "dc31dbdba07c63f16d7c1df7344ea4760b751cbf8a7f02f7441e1946afca9c15",
+              "wheel_sha256": "bb718dcfa808add92eb612115f3040f1eb4da0490c766eb2603a2c37ac5c1be6",
+              "rollback_verified": "v7.4.0",
+              "provider_writes": 0,
+          }
+          Path("evidence/V745_INDEPENDENT_PUBLICATION_READBACK.json").write_text(json.dumps(receipt, indent=2, sort_keys=True) + "\n")
+          PY
+
+      - name: Retain independent readback evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: atlas-ros-v745-independent-publication-readback
+          path: evidence/V745_INDEPENDENT_PUBLICATION_READBACK.json
+          if-no-files-found: error
+          retention-days: 90
