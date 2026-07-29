@@ -1,6 +1,7 @@
 {
   "schema_version": "v730-evaluation-scenarios-1.0",
   "scenario_count": 51,
+  "provider_writes": 0,
   "scenarios": [
     {
       "id": 1,
