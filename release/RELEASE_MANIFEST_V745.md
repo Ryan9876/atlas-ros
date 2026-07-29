@@ -17,6 +17,7 @@ Status: exact package authorized for immutable publication and controlled produc
 - Build count: `1`
 - Full non-publishing validation run: `30449158280`
 - Full validation result: all mandatory correctness, architecture, equivalence, performance, security, packaging, clean-install, restoration, and non-publishing gates passed with `86.24%` branch-aware coverage and provider writes `0`.
+- Authorized publication transaction: `V745-production-publication`
 
 The immutable `v7.4.5` tag must point to the commit containing this manifest. Package artifacts remain bound to the exact package source commit above; the manifest commit adds release metadata and governed publication controls only.
 
