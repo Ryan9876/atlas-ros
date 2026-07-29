@@ -15,6 +15,7 @@ Status: exact package authorized for immutable publication and controlled produc
 - SPDX SBOM SHA-256: `63f832a34a4cfe37b03205358769530740231eac86d1539844e49eaf2d6d1cd8`
 - Source manifest SHA-256: `0b11225c44c27ae623af1b8fc80a51c08116001cb75124e0d44e4cb8ab360ef1`
 - Validation receipt SHA-256: `2760f23872efe3068dfbc1c1c61e58d7e02000c58fecd2fb5b37ffd93ec84139`
+- Draft immutable manifest SHA-256: `044df67cd69a5dee361b70bafe6ccae0ace08e204abe343387d155b1f7fb335b`
 - Build count: `1`
 - Full non-publishing validation run: `30491239732`
 - Governing Decision: `V4D-57`
