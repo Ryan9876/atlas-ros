@@ -1,0 +1,17 @@
+{
+  "schema_version": "1.0",
+  "cases": [
+    {"case_id":"anx-central-management","capture":"Centrally manage ANX customer devices","provenance":"accepted v7.5 regression","expected":"separate outcome clarification"},
+    {"case_id":"jira-customization-vs-integration","capture":"Jira customization and Jira integration","provenance":"minimized synthetic","expected":"related non-equivalent actions"},
+    {"case_id":"true-completion-equivalent","capture":"Define ANX naming standard","provenance":"accepted v7.5 regression","expected":"exact duplicate"},
+    {"case_id":"paraphrased-duplicate","capture":"Create the ANX device naming standard","provenance":"accepted v7.5 regression","expected":"paraphrased duplicate"},
+    {"case_id":"high-consequence-ambiguity","capture":"Change production access model","provenance":"accepted v7.5 regression","expected":"clarification required"},
+    {"case_id":"strong-evidence-avoids-question","capture":"New ANX monitoring outcome","provenance":"minimized synthetic","expected":"clarification avoided"},
+    {"case_id":"context-change-reintroduces-question","capture":"Reuse prior interpretation after scope change","provenance":"minimized synthetic","expected":"clarification reintroduced"},
+    {"case_id":"stale-evidence","capture":"Broad vendor migration","provenance":"accepted v7.5 regression","expected":"stale evidence excluded"},
+    {"case_id":"contradictory-evidence","capture":"Broad vendor migration","provenance":"accepted v7.5 regression","expected":"contradictory evidence excluded"},
+    {"case_id":"user-correction","capture":"New ANX lifecycle outcome","provenance":"minimized synthetic","expected":"correction changes confirmed interpretation"},
+    {"case_id":"no-material-change","capture":"Confirm already-supported interpretation","provenance":"minimized synthetic","expected":"question produces no material change"},
+    {"case_id":"prevents-wrong-suppression","capture":"Separate centralized configuration outcome","provenance":"minimized synthetic","expected":"incorrect suppression prevented"}
+  ]
+}
