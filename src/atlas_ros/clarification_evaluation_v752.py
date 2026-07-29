@@ -10,7 +10,6 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 from atlas_ros.contracts.digests import sha256_digest
 from atlas_ros.intent_learning_v750 import ClarificationDecisionV1
 
-
 EvaluationMode = Literal["disabled", "shadow"]
 
 
@@ -39,7 +38,11 @@ class ClarificationEventV1(StrictContract):
     final_confirmed_interpretation: str | None = None
     final_classification: str | None = None
     final_destination: str | None = None
-    execution_path_effect: Literal["none", "suppression_prevented", "duplicate_prevented"] = "none"
+    execution_path_effect: Literal[
+        "none",
+        "suppression_prevented",
+        "duplicate_prevented",
+    ] = "none"
     provider_write_count: int = 0
     todoist_write_count: int = 0
 
@@ -176,9 +179,13 @@ class ClarificationEvaluationPolicyV752:
     ) -> ClarificationEvaluationCaseV1 | None:
         if self.mode == "disabled":
             return None
-        predecessor_digest = sha256_digest(predecessor_decision.model_dump(mode="json"))
+        predecessor_digest = sha256_digest(
+            predecessor_decision.model_dump(mode="json")
+        )
         if predecessor_digest != event.initial_decision_digest:
-            raise ValueError("evaluation event does not reference the authoritative predecessor decision")
+            raise ValueError(
+                "evaluation event does not reference the authoritative predecessor decision"
+            )
         return ClarificationEvaluationCaseV1(
             case_id=case_id,
             event=event,
@@ -189,25 +196,38 @@ class ClarificationEvaluationPolicyV752:
         )
 
 
-def aggregate_metrics(cases: tuple[ClarificationEvaluationCaseV1, ...]) -> ClarificationMetricsV1:
+def aggregate_metrics(
+    cases: tuple[ClarificationEvaluationCaseV1, ...],
+) -> ClarificationMetricsV1:
     """Derive deterministic metrics without thresholds or external writes."""
 
     return ClarificationMetricsV1(
         total_cases=len(cases),
-        false_duplicates=sum(case.outcome.false_duplicate_prevented for case in cases),
-        false_separate_classifications=sum(case.outcome.false_separate_prevented for case in cases),
+        false_duplicates=sum(
+            case.outcome.false_duplicate_prevented for case in cases
+        ),
+        false_separate_classifications=sum(
+            case.outcome.false_separate_prevented for case in cases
+        ),
         user_corrections=sum(case.outcome.corrected_by_user for case in cases),
         clarifications=sum(case.event.question is not None for case in cases),
-        one_question_resolutions=sum(case.outcome.resolved_with_one_question for case in cases),
+        one_question_resolutions=sum(
+            case.outcome.resolved_with_one_question for case in cases
+        ),
         repeated_questions=sum(case.outcome.repeated_question for case in cases),
         no_material_change_questions=sum(
-            case.event.question is not None and not case.outcome.material_change for case in cases
+            case.event.question is not None and not case.outcome.material_change
+            for case in cases
         ),
-        task_suppression_prevented=sum(case.outcome.task_suppression_prevented for case in cases),
+        task_suppression_prevented=sum(
+            case.outcome.task_suppression_prevented for case in cases
+        ),
         duplicate_task_creation_prevented=sum(
             case.outcome.duplicate_task_creation_prevented for case in cases
         ),
-        confirmed_pattern_reuse=sum(case.outcome.confirmed_pattern_reused for case in cases),
+        confirmed_pattern_reuse=sum(
+            case.outcome.confirmed_pattern_reused for case in cases
+        ),
         clarification_avoided_strong_evidence=sum(
             case.outcome.clarification_avoided_strong_evidence for case in cases
         ),
