@@ -109,6 +109,7 @@ def build_operation_snapshot(
 
     records = tuple(sorted(provider_records, key=lambda item: (item.provider, item.canonical_record_id)))
     receipts = tuple(sorted(provider_read_receipts, key=lambda item: (item.provider, item.request_id)))
+    normalized_scope = tuple(sorted(set(requested_scope)))
     by_canonical: dict[str, set[str]] = defaultdict(set)
     for record in records:
         by_canonical[record.canonical_record_id].add(record.normalized_content_digest)
@@ -116,7 +117,7 @@ def build_operation_snapshot(
     payload = {
         "operation_id": operation_id,
         "correlation_id": correlation_id,
-        "requested_scope": sorted(set(requested_scope)),
+        "requested_scope": normalized_scope,
         "authoritative_release_identity": authoritative_release_identity,
         "provider_records": [record.model_dump(mode="json") for record in records],
         "provider_read_receipts": [receipt.model_dump(mode="json") for receipt in receipts],
@@ -126,7 +127,7 @@ def build_operation_snapshot(
     return OperationReadSnapshotV1(
         operation_id=operation_id,
         correlation_id=correlation_id,
-        requested_scope=tuple(payload["requested_scope"]),
+        requested_scope=normalized_scope,
         authoritative_release_identity=authoritative_release_identity,
         provider_records=records,
         canonical_record_references=tuple(sorted({item.canonical_record_id for item in records})),
