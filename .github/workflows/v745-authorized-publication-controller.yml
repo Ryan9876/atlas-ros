@@ -78,6 +78,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
+          git config user.name "Atlas ROS Release Bot"
+          git config user.email "atlas-ros-release@users.noreply.github.com"
           if git rev-parse "$TAG" >/dev/null 2>&1; then
             test "$(git rev-list -n 1 "$TAG")" = "$TARGET_COMMIT"
           else
