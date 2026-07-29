@@ -40,8 +40,8 @@ jobs:
           mypy
           src/atlas_ros/intent_learning_v750.py
           src/atlas_ros/intent_learning_policy_v750.py
-      - name: Run v7.5 tests
-        run: pytest -q tests/test_v750_adaptive_clarification.py
+      - name: Run full branch-aware test suite
+        run: pytest
       - name: Verify non-publishing and provider-write boundaries
         run: |
           python - <<'PY'
