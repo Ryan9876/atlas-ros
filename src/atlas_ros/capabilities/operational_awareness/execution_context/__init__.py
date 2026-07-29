@@ -1,3 +1,5 @@
 from .engine import ExecutionContextService
 
-__all__ = ["ExecutionContextService"]
+CAPABILITY_ID = "atlas.execution-context"
+
+__all__ = ["CAPABILITY_ID", "ExecutionContextService"]
