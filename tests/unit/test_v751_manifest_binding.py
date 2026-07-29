@@ -1,8 +1,7 @@
 from pathlib import Path
 
-import pytest
-
 from atlas_ros.kernel import bootstrap
+import pytest
 
 
 _INVENTORY_DATA_SOURCE = "collection://46af021f-eb9a-4eba-b10c-4523e70df0c3"
