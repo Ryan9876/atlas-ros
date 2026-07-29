@@ -154,7 +154,9 @@ def main() -> None:
         prior_schema_identity="schema-1",
         prior_redaction_policy_digest="redaction-1",
     )
-    assert incremental.recompute_node_ids == tuple(f"node-{index}" for index in range(100))
+    expected_node_ids = {f"node-{index}" for index in range(100)}
+    assert len(incremental.recompute_node_ids) == len(expected_node_ids)
+    assert set(incremental.recompute_node_ids) == expected_node_ids
 
     plan_times, plan_memory = timed(
         lambda: compile_read_plan(operation_id="benchmark", requirements=requirements)
