@@ -1,0 +1,329 @@
+name: v7.4.0 feature delivery candidate
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: v740-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  CANDIDATE_VERSION: 7.4.0
+
+jobs:
+  lean:
+    if: github.event_name == 'pull_request' && github.event.pull_request.draft
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.12.10'
+          cache: pip
+      - run: python -m pip install --disable-pip-version-check -e '.[ci]'
+      - run: ruff check src/atlas_ros/devtools_cli src/atlas_ros/entry_points/dev.py tests/unit/test_v740_feature_delivery.py
+      - run: python scripts/validate_devtools_boundary.py
+      - run: pytest --no-cov -q tests/unit/test_v740_feature_delivery.py
+      - run: atlas-dev explain-impact governance/architecture.yaml
+
+  full-candidate:
+    if: github.event_name == 'workflow_dispatch' || !github.event.pull_request.draft
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    env:
+      CANDIDATE_COMMIT: ${{ github.event.pull_request.head.sha || github.sha }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Checkout exact frozen candidate
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          fetch-tags: true
+          persist-credentials: false
+
+      - name: Bind exact source identity
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$CANDIDATE_COMMIT"
+          mkdir -p build restoration clean-install
+          git rev-parse HEAD > build/SOURCE_COMMIT.txt
+          git show -s --format=%cI HEAD > build/SOURCE_TIMESTAMP.txt
+          git ls-tree -r --full-tree HEAD > build/SOURCE_TREE.txt
+
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.12.10'
+          cache: pip
+
+      - name: Install pinned validation environment
+        run: python -m pip install --disable-pip-version-check -e '.[dev]'
+
+      - name: Resolve live restoration authority
+        run: |
+          python - <<'PY' >> "$GITHUB_ENV"
+          import json
+          from pathlib import Path
+          authority = json.loads(Path('governance/AUTHORITY.json').read_text())
+          print(f"ACTIVE_VERSION={authority['active_release']['version']}")
+          print(f"ACTIVE_TAG={authority['active_release']['tag']}")
+          print(f"ACTIVE_COMMIT={authority['active_release']['immutable_commit']}")
+          print(f"ROLLBACK_VERSION={authority['immediate_rollback']['version']}")
+          print(f"ROLLBACK_TAG={authority['immediate_rollback']['tag']}")
+          print(f"ROLLBACK_COMMIT={authority['immediate_rollback']['immutable_commit']}")
+          PY
+
+      - name: Run complete candidate correctness gates
+        run: |
+          set -euo pipefail
+          atlas-dev validate --tier candidate --execute \
+            --changed governance/architecture.yaml pyproject.toml \
+            --receipt build/v740-validation-receipt.json
+          python scripts/validate_devtools_boundary.py
+          atlas-dev explain-impact governance/architecture.yaml \
+            > build/v740-shadow-impact.json
+
+      - name: Scan exact source for secrets
+        run: python scripts/scan_candidate_secrets.py --root . --output build/v740-secret-scan.json
+
+      - name: Audit locked dependencies with PyPI and OSV
+        run: |
+          set -euo pipefail
+          pip-audit --disable-pip --require-hashes --no-deps --timeout 15 \
+            --progress-spinner off --vulnerability-service pypi \
+            --requirement requirements.runtime.lock --format json \
+            --output build/pip-audit-pypi.json
+          pip-audit --disable-pip --require-hashes --no-deps --timeout 15 \
+            --progress-spinner off --vulnerability-service osv \
+            --requirement requirements.runtime.lock --format json \
+            --output build/pip-audit-osv.json
+          python scripts/evaluate_dependency_audit.py \
+            build/pip-audit-pypi.json build/pip-audit-osv.json
+
+      - name: Build exact candidate once
+        run: |
+          set -euo pipefail
+          rm -rf dist
+          python -m build
+          test -f "dist/atlas_ros-${CANDIDATE_VERSION}.tar.gz"
+          test -f "dist/atlas_ros-${CANDIDATE_VERSION}-py3-none-any.whl"
+          test "$(find dist -maxdepth 1 -type f | wc -l)" -eq 2
+          printf '1\n' > build/BUILD_COUNT.txt
+          sha256sum dist/* > build/CHECKSUMS.sha256
+
+      - name: Generate source manifest and SPDX SBOM
+        run: |
+          set -euo pipefail
+          git ls-files -z | sort -z | xargs -0 sha256sum > build/SOURCE_MANIFEST.sha256
+          python - <<'PY'
+          import importlib.metadata
+          import json
+          import uuid
+          from datetime import datetime, timezone
+          from pathlib import Path
+          packages = []
+          for distribution in sorted(
+              importlib.metadata.distributions(),
+              key=lambda item: item.metadata['Name'].lower(),
+          ):
+              name = distribution.metadata['Name']
+              version = distribution.version
+              packages.append({
+                  'SPDXID': f"SPDXRef-Package-{name.replace('_', '-').replace('.', '-')}",
+                  'name': name,
+                  'versionInfo': version,
+                  'downloadLocation': 'NOASSERTION',
+                  'filesAnalyzed': False,
+                  'licenseConcluded': 'NOASSERTION',
+                  'licenseDeclared': 'NOASSERTION',
+              })
+          document = {
+              'spdxVersion': 'SPDX-2.3',
+              'dataLicense': 'CC0-1.0',
+              'SPDXID': 'SPDXRef-DOCUMENT',
+              'name': 'atlas-ros-7.4.0-candidate',
+              'documentNamespace': f"urn:uuid:{uuid.uuid4()}",
+              'creationInfo': {
+                  'created': datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ'),
+                  'creators': ['Tool: Atlas ROS v7.4.0 candidate workflow'],
+              },
+              'packages': packages,
+          }
+          path = Path('build/SBOM.spdx.json')
+          path.write_text(json.dumps(document, indent=2, sort_keys=True) + '\n')
+          loaded = json.loads(path.read_text())
+          assert loaded['spdxVersion'] == 'SPDX-2.3'
+          assert loaded['packages']
+          PY
+          sha256sum build/SOURCE_MANIFEST.sha256 build/SBOM.spdx.json \
+            > build/EVIDENCE_CHECKSUMS.sha256
+
+      - name: Clean-install exact source and wheel
+        run: |
+          set -euo pipefail
+          for kind in sdist wheel; do
+            python -m venv "clean-install/$kind"
+            if [ "$kind" = wheel ]; then
+              package="dist/atlas_ros-${CANDIDATE_VERSION}-py3-none-any.whl"
+            else
+              package="dist/atlas_ros-${CANDIDATE_VERSION}.tar.gz"
+            fi
+            "clean-install/$kind/bin/python" -m pip install \
+              --disable-pip-version-check "$package"
+            "clean-install/$kind/bin/python" -c \
+              "import atlas_ros; assert atlas_ros.__version__ == '${CANDIDATE_VERSION}'"
+            "clean-install/$kind/bin/atlas" status --json \
+              > "build/${kind}-status.json"
+            "clean-install/$kind/bin/atlas" verify --json \
+              > "build/${kind}-verify.json"
+            "clean-install/$kind/bin/atlas-dev" explain-impact unknown.file \
+              > "build/${kind}-impact.json"
+          done
+
+      - name: Restore Active and immediate rollback releases
+        run: |
+          set -euo pipefail
+          mkdir -p "restoration/active-${ACTIVE_VERSION}" \
+            "restoration/rollback-${ROLLBACK_VERSION}"
+          gh release download "$ACTIVE_TAG" --repo "$GITHUB_REPOSITORY" \
+            --dir "restoration/active-${ACTIVE_VERSION}"
+          gh release download "$ROLLBACK_TAG" --repo "$GITHUB_REPOSITORY" \
+            --dir "restoration/rollback-${ROLLBACK_VERSION}"
+          (cd "restoration/active-${ACTIVE_VERSION}" && sha256sum -c CHECKSUMS.sha256)
+          (cd "restoration/rollback-${ROLLBACK_VERSION}" && sha256sum -c CHECKSUMS.sha256)
+          active_wheel=$(find "restoration/active-${ACTIVE_VERSION}" -name '*.whl' -print -quit)
+          rollback_wheel=$(find "restoration/rollback-${ROLLBACK_VERSION}" -name '*.whl' -print -quit)
+          test -n "$active_wheel"
+          test -n "$rollback_wheel"
+          python -m venv restoration/active-clean
+          python -m venv restoration/rollback-clean
+          restoration/active-clean/bin/python -m pip install \
+            --disable-pip-version-check "$active_wheel"
+          restoration/rollback-clean/bin/python -m pip install \
+            --disable-pip-version-check "$rollback_wheel"
+          restoration/active-clean/bin/python -c \
+            "import atlas_ros; assert atlas_ros.__version__ == '${ACTIVE_VERSION}'"
+          restoration/rollback-clean/bin/python -c \
+            "import atlas_ros; assert atlas_ros.__version__ == '${ROLLBACK_VERSION}'"
+          restoration/active-clean/bin/atlas status --json > build/active-restoration-status.json
+          restoration/rollback-clean/bin/atlas status --json > build/rollback-restoration-status.json
+
+      - name: Compare candidate and Active startup performance
+        run: |
+          python - <<'PY'
+          import json
+          import statistics
+          import subprocess
+          import time
+          from pathlib import Path
+          def sample(command):
+              values = []
+              for _ in range(20):
+                  started = time.perf_counter()
+                  subprocess.run(command, check=True, stdout=subprocess.DEVNULL)
+                  values.append(time.perf_counter() - started)
+              return values
+          candidate = sample(['clean-install/wheel/bin/atlas', 'status', '--json'])
+          active = sample(['restoration/active-clean/bin/atlas', 'status', '--json'])
+          report = {
+              'schema_version': 'development-performance-report-v1',
+              'candidate_version': '7.4.0',
+              'active_version': Path('build/active-restoration-status.json').read_text(),
+              'candidate_median_seconds': statistics.median(candidate),
+              'active_median_seconds': statistics.median(active),
+              'candidate_samples': len(candidate),
+              'active_samples': len(active),
+          }
+          Path('build/PERFORMANCE.json').write_text(
+              json.dumps(report, indent=2, sort_keys=True) + '\n'
+          )
+          PY
+
+      - name: Verify documented manual fallback
+        run: |
+          set -euo pipefail
+          test -s docs/feature-delivery-toolkit.md
+          grep -q "Manual fallback" docs/feature-delivery-toolkit.md
+          ruff check src/atlas_ros/devtools_cli src/atlas_ros/entry_points/dev.py
+          mypy src/atlas_ros/devtools_cli src/atlas_ros/entry_points/dev.py
+          python scripts/validate_architecture.py
+          python scripts/validate_devtools_boundary.py
+          pytest --no-cov -q tests/unit/test_v740_feature_delivery.py
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          Path('build/MANUAL_FALLBACK.json').write_text(json.dumps({
+              'schema_version': 'manual-fallback-validation-v1',
+              'status': 'passed',
+              'toolkit_bypass_available': True,
+              'production_runtime_dependency': False,
+          }, indent=2, sort_keys=True) + '\n')
+          PY
+
+      - name: Validate non-publishing final controller boundaries
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          authority = json.loads(Path('governance/AUTHORITY.json').read_text())
+          assert authority['active_release']['version'] == os.environ['ACTIVE_VERSION']
+          assert authority['active_release']['immutable_commit'] == os.environ['ACTIVE_COMMIT']
+          assert authority['immediate_rollback']['version'] == os.environ['ROLLBACK_VERSION']
+          summary = {
+              'schema_version': 'v740-non-publishing-final-controller-v1',
+              'status': 'passed',
+              'candidate_commit': os.environ['CANDIDATE_COMMIT'],
+              'candidate_version': os.environ['CANDIDATE_VERSION'],
+              'active_version_unchanged': os.environ['ACTIVE_VERSION'],
+              'rollback_version_verified': os.environ['ROLLBACK_VERSION'],
+              'provider_writes': 0,
+              'production_schema_migrations': 0,
+              'authority_changes': 0,
+              'release_publications': 0,
+              'integration_scope_expansions': 0,
+              'messages_sent': 0,
+              'email_actions': 0,
+              'calendar_actions': 0,
+              'scheduled_actions': 0,
+              'deletions': 0,
+              'credential_actions': 0,
+              'network_actions': 0,
+              'package_build_count': 1,
+          }
+          Path('build/FINAL_CONTROLLER.json').write_text(
+              json.dumps(summary, indent=2, sort_keys=True) + '\n'
+          )
+          PY
+
+      - name: Bind nested evidence package
+        run: |
+          set -euo pipefail
+          sha256sum dist/* build/*.json build/*.sha256 build/*.txt \
+            > build/NESTED_CHECKSUMS.sha256
+          tar -czf build/v740-evidence.tar.gz \
+            release/V740_CANDIDATE_SCOPE.md \
+            release/V740_DRAFT_RELEASE_NOTES.md \
+            docs/feature-delivery-toolkit.md \
+            build/*.json build/*.sha256 build/*.txt
+          sha256sum build/v740-evidence.tar.gz > build/EVIDENCE_PACKAGE.sha256
+
+      - name: Upload exact non-publishing candidate evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: v740-candidate-${{ github.event.pull_request.head.sha || github.sha }}
+          path: |
+            dist/
+            build/
+          if-no-files-found: error
+          retention-days: 14

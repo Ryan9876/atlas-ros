@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "atlas-ros"
-version = "7.3.0"
+version = "7.4.0"
 description = "Policy-driven executable core for Atlas Ryan Operating System"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -22,6 +22,7 @@ dev = ["pytest==9.0.2", "pytest-cov==6.3.0", "hypothesis==6.148.7", "ruff==0.12.
 
 [project.scripts]
 atlas = "atlas_ros.entry_points.main:main"
+atlas-dev = "atlas_ros.entry_points.dev:main"
 atlas-evaluate = "atlas_ros.entry_points.evaluate:main"
 atlas-release = "atlas_ros.entry_points.release:main"
 atlas-migrate = "atlas_ros.entry_points.migrate:main"

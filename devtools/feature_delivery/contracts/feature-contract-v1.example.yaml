@@ -1,0 +1,49 @@
+schema_version: feature-contract-v1
+feature_id: feature-delivery-acceleration
+feature_name: Atlas Feature Delivery Acceleration Foundation
+target_release: 7.4.0
+category: development_tooling
+business_objective: Reduce repetitive feature-delivery work without reducing release quality.
+user_visible_outcome: Faster, governed feature implementation and validation.
+inputs:
+  - feature-specific behavior
+  - acceptance scenarios
+outputs:
+  - implementation summary
+  - validation scope
+  - traceability seed
+authoritative_systems:
+  - GitHub
+  - Notion
+affected_capabilities:
+  - development-tooling
+affected_contracts:
+  - FeatureImplementationContractV1
+affected_policies:
+  - release-validation
+authority:
+  provider_writes: none
+  production_migration: none
+  promotion: separately_authorized
+migration_classification: none
+security_classification: internal
+compatibility_requirements:
+  - production runtime imports no development tooling
+invariants:
+  - candidate validation remains complete
+  - impact analysis remains shadow-only
+prohibited_behaviors:
+  - production authority change
+  - provider permission expansion
+decisions_reserved_for_ryan:
+  - exact package promotion
+required_scenario_categories:
+  - deterministic_replay
+  - manual_fallback
+acceptance_criteria:
+  - stable feature-contract digest
+  - complete candidate gates cannot be suppressed
+performance_expectations:
+  - focused validation is faster than complete validation
+release_impact: additive development tooling
+documentation_impact: developer and future-prompt guides

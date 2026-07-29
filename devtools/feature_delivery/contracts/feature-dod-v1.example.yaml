@@ -1,0 +1,17 @@
+schema_version: feature-dod-v1
+feature_id: feature-delivery-acceleration
+required_items:
+  - feature_contract_approved
+  - architecture_impact_assessed
+  - contracts_defined
+  - schemas_defined
+  - architecture_boundaries_validated
+  - unit_tests_passed
+  - integration_tests_passed
+  - deterministic_replay_passed
+  - compatibility_validated
+  - documentation_updated
+  - exact_artifacts_validated
+  - rollback_restored
+  - manual_fallback_passed
+evidence: {}
