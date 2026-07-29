@@ -1,7 +1,7 @@
 from __future__ import annotations
 
+from collections.abc import Iterable
 from enum import StrEnum
-from typing import Iterable
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -38,10 +38,10 @@ class CompletionDimensionsV1(BaseModel):
     execution_evidence: str
     completion_boundary: str
 
-    def materially_equivalent(self, other: "CompletionDimensionsV1") -> bool:
+    def materially_equivalent(self, other: CompletionDimensionsV1) -> bool:
         return all(
             _normalize(getattr(self, field)) == _normalize(getattr(other, field))
-            for field in self.model_fields
+            for field in self.__class__.model_fields
         )
 
 
@@ -127,7 +127,7 @@ class ClarificationDecisionV1(BaseModel):
     provider_writes: int = 0
 
     @model_validator(mode="after")
-    def enforce_execution_boundary(self) -> "ClarificationDecisionV1":
+    def enforce_execution_boundary(self) -> ClarificationDecisionV1:
         if self.clarification_status == ClarificationStatus.REQUIRED:
             if not self.clarification_question:
                 raise ValueError("required clarification must include a focused question")
@@ -155,7 +155,11 @@ def decide_relationship(
         if item.confirmed and not item.stale and not item.contradictory
     )
     corrected = tuple(item for item in confirmed if item.corrected_by_user)
-    evidence_level = _evidence_level(familiarity.contextual_score, len(confirmed), len(corrected))
+    evidence_level = _evidence_level(
+        familiarity.contextual_score,
+        len(confirmed),
+        len(corrected),
+    )
 
     equivalent = tuple(
         record
@@ -182,7 +186,6 @@ def decide_relationship(
             clarification_status=ClarificationStatus.NOT_REQUIRED,
             clarification_question=None,
             clarification_reason=None,
-            todoist_write_allowed=False,
         )
 
     candidate_interpretations = _candidate_interpretations(capture)
@@ -196,16 +199,17 @@ def decide_relationship(
     if records and uncertainty_is_material:
         context = ", ".join(record.title for record in records[:3])
         question = (
-            f"I found related work for {context}. Is '{capture}' a separate outcome with its own "
-            "completion boundary, or should it describe the existing work collectively?"
+            f"I found related work for {context}. Is '{capture}' a separate outcome "
+            "with its own completion boundary, or should it describe the existing "
+            "work collectively?"
         )
         return ClarificationDecisionV1(
             original_capture=capture,
             related_record_ids=tuple(record.record_id for record in records),
             candidate_interpretations=candidate_interpretations,
             material_distinction=(
-                "Shared subject matter does not establish equivalent intended outcome, scope, "
-                "Definition of Done, ownership, evidence, or completion boundary."
+                "Shared subject matter does not establish equivalent intended outcome, "
+                "scope, Definition of Done, ownership, evidence, or completion boundary."
             ),
             evidence_level=evidence_level,
             familiarity=familiarity,
@@ -213,7 +217,9 @@ def decide_relationship(
             relationship=RelationshipClassification.NEEDS_CLARIFICATION,
             clarification_status=ClarificationStatus.REQUIRED,
             clarification_question=question,
-            clarification_reason="Completing the existing record may not necessarily satisfy the new capture.",
+            clarification_reason=(
+                "Completing the existing record may not necessarily satisfy the new capture."
+            ),
         )
 
     relationship = (
@@ -225,7 +231,9 @@ def decide_relationship(
         original_capture=capture,
         related_record_ids=tuple(record.record_id for record in records),
         candidate_interpretations=candidate_interpretations,
-        material_distinction="The proposed completion dimensions are not equivalent to related records.",
+        material_distinction=(
+            "The proposed completion dimensions are not equivalent to related records."
+        ),
         evidence_level=evidence_level,
         familiarity=familiarity,
         consequence=consequence,
@@ -233,7 +241,6 @@ def decide_relationship(
         clarification_status=ClarificationStatus.NOT_REQUIRED,
         clarification_question=None,
         clarification_reason=None,
-        todoist_write_allowed=False,
     )
 
 
