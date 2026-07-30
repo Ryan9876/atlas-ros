@@ -1,0 +1,76 @@
+name: v7.8.0 independent publication verification
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, ready_for_review]
+    paths:
+      - '.github/workflows/v780-independent-publication-readback-pr.yml'
+
+permissions:
+  contents: read
+
+env:
+  TAG: v7.8.0
+  PUBLICATION_COMMIT: 72974d1d7da9f07a4c8a41b73b22c0fae3770268
+  SOURCE_SHA256: c9644b9196fd8d5c43b3fa6211ed1901924401b2f3419711a248dcd8f14105ad
+  WHEEL_SHA256: c7c8daf6926160334c3947ca7a86496cad9b86c2894abdc4dbe4a56a6cf6125a
+  SBOM_SHA256: 6e35a81f31ec78d4cbffd58b3e65c675d9c41eafe62fc375cefe8500a389bb88
+  SOURCE_MANIFEST_SHA256: 6e6d0ad22ae9828f5bba17b18c23d2572b043b408479d13f91418cdfa7934ba7
+  SOURCE_TREE_SHA256: 56502e35b843fd9a5f6e5371b74166707af690cde572ca74912fc7c8165eeae0
+  VALIDATION_SHA256: 663d2ea3aac7d3b9715c869f2a4e88abd6116f95943b391378f46a71fe97a861
+  MANIFEST_SHA256: 6942c315d2379555871af017ed816e207176ff57622f3483d2043dee28310687
+  AUTHORIZATION_SHA256: 0651a1a3aeb6badbe0c6885646b5952d978d95551458def2a7ceaf40bc61521a
+
+jobs:
+  independent-readback:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          ref: v7.8.0
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Verify immutable tag and Release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$PUBLICATION_COMMIT"
+          test "$(git describe --exact-match --tags HEAD)" = "$TAG"
+          mkdir -p readback
+          gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --dir readback
+          test "$(sha256sum readback/atlas_ros-7.8.0.tar.gz | cut -d' ' -f1)" = "$SOURCE_SHA256"
+          test "$(sha256sum readback/atlas_ros-7.8.0-py3-none-any.whl | cut -d' ' -f1)" = "$WHEEL_SHA256"
+          test "$(sha256sum readback/V780_SBOM.spdx.json | cut -d' ' -f1)" = "$SBOM_SHA256"
+          test "$(sha256sum readback/V780_SOURCE_MANIFEST.json | cut -d' ' -f1)" = "$SOURCE_MANIFEST_SHA256"
+          test "$(sha256sum readback/SOURCE_TREE.txt | cut -d' ' -f1)" = "$SOURCE_TREE_SHA256"
+          test "$(sha256sum readback/V780_VALIDATION_RECEIPT.json | cut -d' ' -f1)" = "$VALIDATION_SHA256"
+          test "$(sha256sum readback/RELEASE_MANIFEST_V780.md | cut -d' ' -f1)" = "$MANIFEST_SHA256"
+          test "$(sha256sum readback/V780_EXACT_PACKAGE_AUTHORIZATION.md | cut -d' ' -f1)" = "$AUTHORIZATION_SHA256"
+      - name: Verify clean installs and rollback restoration
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          for kind in sdist wheel; do
+            python -m venv "readback/$kind-env"
+            package=readback/atlas_ros-7.8.0.tar.gz
+            [ "$kind" = wheel ] && package=readback/atlas_ros-7.8.0-py3-none-any.whl
+            "readback/$kind-env/bin/python" -m pip install --disable-pip-version-check "$package"
+            "readback/$kind-env/bin/python" -c "import atlas_ros; assert atlas_ros.__version__ == '7.8.0'"
+            "readback/$kind-env/bin/atlas" status --json
+            "readback/$kind-env/bin/atlas" verify --json
+          done
+          mkdir -p readback/v770 readback/v761
+          gh release download v7.7.0 --repo "$GITHUB_REPOSITORY" --dir readback/v770
+          gh release download v7.6.1 --repo "$GITHUB_REPOSITORY" --dir readback/v761
+          (cd readback/v770 && sed 's#  dist/#  #' CHECKSUMS.sha256 | sha256sum -c -)
+          (cd readback/v761 && sed 's#  dist/#  #' CHECKSUMS.sha256 | sha256sum -c -)
+      - name: Emit receipt
+        run: |
+          cat > V780_PUBLICATION_READBACK_RECEIPT.json <<'JSON'
+          {"schema_version":"v780-publication-readback-v1","status":"passed","tag":"v7.8.0","publication_commit":"72974d1d7da9f07a4c8a41b73b22c0fae3770268","rollback_v770":"passed","historical_v761":"passed","provider_writes":0,"todoist_writes":0}
+          JSON
+          cat V780_PUBLICATION_READBACK_RECEIPT.json
