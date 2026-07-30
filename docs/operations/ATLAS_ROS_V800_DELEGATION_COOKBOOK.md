@@ -23,7 +23,7 @@ Optional separate delivery timing is expressed as `delegate-due:`. `follow-up:` 
 
 ## Natural task-update syntax
 
-A natural update qualifies only when it contains explicit ownership language, one uniquely identifiable responsible person, an expected outcome, and completion criteria.
+A natural update qualifies only when it contains explicit ownership language, one uniquely identifiable responsible person, an expected outcome, and completion criteria. Recognizing a written name is not identity resolution: the name must resolve to exactly one governed person identity in the authoritative operational snapshot before provider planning can proceed.
 
 ```text
 Bill J is handling Workday access request 276412207.
@@ -39,11 +39,11 @@ The normalized proposal is an existing typed `delegate` command. The current `Co
 A qualified delegation requires:
 
 1. Explicit ownership evidence such as `delegated to`, `assigned to`, `owns`, `is handling`, or `responsible for`.
-2. A uniquely identifiable responsible person.
+2. A uniquely identifiable responsible person whose governed provider identity resolves exactly once.
 3. The expected outcome.
 4. Completion criteria, normally introduced by `Done when:` or `Completion criteria:`.
 
-A person's name alone is not ownership evidence.
+A person's name alone is not ownership evidence, and a capitalized name alone is not a resolved provider identity. Unresolved or multiply matched identities fail closed.
 
 ## Delegate and accountable owner
 
@@ -117,7 +117,7 @@ Bill may take this.
 
 ## Generated Delegated Work record
 
-A qualified delegation plans one authoritative Notion Delegated Work upsert containing the delegate, accountable owner, expected outcome, completion criteria, delegated date, delegate due date, Ryan follow-up checkpoint, acceptance status, effective state, parent Action Record, source update, provenance, command digest, idempotency identity, Todoist checkpoint identity and URL after readback, and latest reconciliation state. Notion remains the system of record for management state.
+A qualified delegation plans one authoritative Notion Delegated Work upsert containing the delegate, governed delegate identity, accountable owner, governed accountable-owner identity, expected outcome, completion criteria, delegated date, delegate due date, Ryan follow-up checkpoint, acceptance status, effective state, parent Action Record, source update, provenance, command digest, idempotency identity, Todoist checkpoint identity and URL after readback, and latest reconciliation state. Notion remains the system of record for management state.
 
 The v8.0.0 migration is additive and remains unapplied until the exact release is authorized and activated. Existing v7.8.0 production schemas remain unchanged before activation.
 
@@ -129,7 +129,7 @@ A planned checkpoint remains Ryan-owned and names the followed parent outcome:
 Follow up with Bill J on Workday access request 276412207
 ```
 
-A generic task such as `Follow up with Bill J` is invalid. The checkpoint uses the explicit Ryan follow-up date, links to the authoritative Notion identity, and remains undated only when compiled policy permits it.
+A generic task such as `Follow up with Bill J` is invalid. The checkpoint uses the explicit Ryan follow-up date and is mapped only after the actual Delegated Work URL is returned by Notion readback. The Todoist description links that verified Notion URL; a parent Action Record URL or predicted URL is not an acceptable substitute. The checkpoint remains undated only when compiled policy permits it.
 
 ## One-active-checkpoint rule
 
@@ -141,7 +141,7 @@ The normalized command is digest-bound to the exact source record, source revisi
 
 ## Reconciliation
 
-Readback verifies the Notion record identity, command digest, idempotency identity, Todoist parent identity, checkpoint content, due date, and authoritative-record link. After a partial failure, reconciliation reads back by stable identities before retrying. A write that may already have succeeded is never repeated merely because readback failed.
+Readback verifies the Notion record identity and actual URL, command digest, idempotency identity, Todoist parent identity, checkpoint content, due date, and exact authoritative-record URL link. After a partial failure, reconciliation reads back by stable identities before retrying. A write that may already have succeeded is never repeated merely because readback failed.
 
 ## Provider-write plan example
 
