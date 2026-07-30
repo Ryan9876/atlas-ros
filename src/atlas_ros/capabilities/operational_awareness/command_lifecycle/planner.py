@@ -51,23 +51,11 @@ class CommandLifecycleService:
         if parent is None:
             ambiguity.append("parent outcome could not be resolved uniquely")
             blockers.append("resolve the exact persistent parent outcome")
-        origin = command.fields.get("intent-origin", "explicit-command")
         responsible = command.subject or command.fields.get("responsible")
-        responsible_identity = command.fields.get("responsible-id")
-        accountable_identity = command.fields.get("accountable-id")
         if command.command_type == AtlasCommandType.DELEGATE and not responsible:
             ambiguity.append("delegation requires a responsible party")
             if "Responsible party required" not in blockers:
                 blockers.append("resolve the assignee identity")
-        if command.command_type == AtlasCommandType.DELEGATE and origin == "task-update":
-            if not responsible_identity:
-                ambiguity.append("responsible party identity is unresolved")
-                if "Responsible party identity required" not in blockers:
-                    blockers.append("Responsible party identity required")
-            if not accountable_identity:
-                ambiguity.append("accountable party identity is unresolved")
-                if "Accountable party identity required" not in blockers:
-                    blockers.append("Accountable party identity required")
         expected_outcome = command.fields.get("outcome") or command.fields.get("expected")
         if command.command_type == AtlasCommandType.DELEGATE and not expected_outcome:
             ambiguity.append("delegation requires an expected outcome")
@@ -87,6 +75,7 @@ class CommandLifecycleService:
             blockers.append("Ryan follow-up checkpoint required by policy")
         next_action = self._next_action(command, responsible, expected_outcome)
         score = 1.0 if not ambiguity and not blockers else max(0.0, 1.0 - 0.2 * len(blockers))
+        origin = command.fields.get("intent-origin", "explicit-command")
         provenance = (
             ProvenanceRecord(
                 source_ref=(
@@ -167,10 +156,8 @@ class CommandLifecycleService:
             "record_id": notion_target,
             "transition": command.command_type.value,
             "delegate": interpretation.responsible_party,
-            "delegate_identity": command.fields.get("responsible-id"),
             "responsible_party": interpretation.responsible_party,
             "accountable_owner": interpretation.accountable_party,
-            "accountable_owner_identity": command.fields.get("accountable-id"),
             "accountable_party": interpretation.accountable_party,
             "expected_outcome": interpretation.expected_outcome,
             "completion_criteria": interpretation.completion_criteria,
@@ -243,13 +230,10 @@ class CommandLifecycleService:
                         "due": interpretation.follow_up_checkpoint,
                         "projection_identity": next_identity,
                         "authoritative_record_identity": notion_target,
-                        "authoritative_record_url": None,
-                        "authoritative_record_url_source": "notion_readback",
-                        "requires_notion_readback": notion_operation.idempotency_key,
-                        "parent_outcome": parent.title,
-                        "description_template": (
-                            "Authoritative Delegated Work: {authoritative_record_url}\n"
-                            f"Parent outcome: {parent.title}"
+                        "authoritative_record_url": parent.record_ref.canonical_url,
+                        "description": (
+                            f"Authoritative Delegated Work: {notion_target}; "
+                            f"parent outcome: {parent.title}"
                         ),
                     },
                     idempotency_key=f"{command.idempotency_identity}:checkpoint:{next_identity}",
