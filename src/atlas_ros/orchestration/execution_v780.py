@@ -9,7 +9,7 @@ from __future__ import annotations
 import time
 from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, cast
 
 from atlas_ros.adapters.errors import AdapterError
 from atlas_ros.contracts import (
@@ -20,25 +20,22 @@ from atlas_ros.contracts import (
     TransactionJournalEntry,
     TransactionStateV2,
 )
+from atlas_ros.orchestration.execution import ExecutionEvent
 from atlas_ros.orchestration.execution import ExecutionOrchestratorV2 as _BaseOrchestrator
+from atlas_ros.orchestration.execution import GovernedRetryPolicy as _BaseRetryPolicy
 from atlas_ros.orchestration.execution import InMemoryExecutionStore
 from atlas_ros.orchestration.ports import ExecutionProviderPort, ProviderExecutionError
 
 
 @dataclass(frozen=True)
-class GovernedRetryPolicy:
+class GovernedRetryPolicy(_BaseRetryPolicy):
     """Bounded retry policy owned exclusively by governed orchestration."""
 
-    maximum_attempts: int = 3
-    backoff_seconds: tuple[float, ...] = (0.0, 0.25, 1.0)
     maximum_delay_seconds: float = 60.0
     allow_provider_retry_after: bool = True
 
     def __post_init__(self) -> None:
-        if self.maximum_attempts < 1 or self.maximum_attempts > 5:
-            raise ValueError("retry attempts must remain between one and five")
-        if len(self.backoff_seconds) < self.maximum_attempts:
-            raise ValueError("retry policy requires one governed delay per attempt")
+        super().__post_init__()
         if any(delay < 0 for delay in self.backoff_seconds):
             raise ValueError("retry delays cannot be negative")
         if self.maximum_delay_seconds < 0:
@@ -70,7 +67,7 @@ class ExecutionOrchestratorV2(_BaseOrchestrator):
         *,
         retry_policy: GovernedRetryPolicy | None = None,
         store: InMemoryExecutionStore | None = None,
-        event_sink: Callable[..., None] | None = None,
+        event_sink: Callable[[ExecutionEvent], None] | None = None,
         sleeper: Callable[[float], None] = time.sleep,
     ) -> None:
         super().__init__(
@@ -101,7 +98,8 @@ class ExecutionOrchestratorV2(_BaseOrchestrator):
         *,
         simulation: bool,
     ) -> tuple[ProviderOperationResult, TransactionStateV2]:
-        for attempt in range(1, self._retry_policy.maximum_attempts + 1):
+        policy = cast(GovernedRetryPolicy, self._retry_policy)
+        for attempt in range(1, policy.maximum_attempts + 1):
             self._emit(
                 "provider_operation_started",
                 command,
@@ -155,12 +153,9 @@ class ExecutionOrchestratorV2(_BaseOrchestrator):
                             references=recovered.provider_object_references,
                         )
                         return recovered, state
-                if (
-                    not exc.classification.retryable
-                    or attempt >= self._retry_policy.maximum_attempts
-                ):
+                if not exc.classification.retryable or attempt >= policy.maximum_attempts:
                     raise
-                delay, delay_source = self._retry_policy.delay_for(
+                delay, delay_source = policy.delay_for(
                     failed_attempt=attempt,
                     retry_after_seconds=self._retry_after(exc),
                 )
