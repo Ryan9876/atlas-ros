@@ -1,0 +1,163 @@
+name: v7.7.0 authorized publication controller
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - release/V770_PUBLICATION_TRIGGER.json
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: v770-authorized-publication
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      TAG: v7.7.0
+      TARGET_COMMIT: ${{ github.sha }}
+      ARTIFACT_ID: '8745439952'
+      ARTIFACT_DIGEST: sha256:10f950c596f173e8846008656cf8180b685c9af05242affce1b4f746166b070d
+      PACKAGE_SOURCE_COMMIT: 63cea36766e1398d5c60674ac57487020273c109
+      IMPLEMENTATION_MERGE: 4bc1bdb2ef9139988bf48902ac13c55c08f63f13
+      SOURCE_SHA256: 4248062fde25dd5ed4cab8700ca7633395bb9bc206986103d4e034089851a715
+      WHEEL_SHA256: a8c8a56e33e587a491f6dce9ad6e7573371a03d45f8c51bdda6ec97349ce3a38
+      SBOM_SHA256: 8380f2911e6758286552040c2b0e5b466500a1dfab7ce3c6053b17116132e101
+      SOURCE_MANIFEST_SHA256: c2022150e7f42b843b4b71d1ffe67019bb2f0e06c8e9c6ac74a219db6ac4e4b4
+      VALIDATION_SHA256: 529dfe526779d9463c4f6e69325d7d6291d2d24e1283489c054c4f85f6d405fd
+      INITIALIZATION_EVIDENCE_SHA256: 936d1852a28404fcb932c0d6085df046b83577d9faefb4aba305381c3549370d
+      ZERO_WRITE_SHA256: 3b18c98b7fdf0c601ee362980bfd1c3380272d4665ea40b78c2a6a15b7edf785
+      DRAFT_MANIFEST_SHA256: d9a5787916ae2248d28b1c3583a993376b140a7abf93606641ffa648f8c48db1
+      RELEASE_MANIFEST_SHA256: 1b557de47f366aad3bc684dd87cc63eae78a19ff27da06ca9eddf9128cec74a0
+      AUTHORIZATION_SHA256: 267bd2aa6f43e2e52df0df3bad0986e52f1f4ac731be2a5798fa08c4e4ba4ab0
+      DECISION_ID: V4D-59
+      REVIEW_ID: V4V-105
+    steps:
+      - name: Checkout exact publication transaction
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          ref: ${{ env.TARGET_COMMIT }}
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Verify prepublication authority and exact controls
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$TARGET_COMMIT"
+          test "$(sha256sum release/RELEASE_MANIFEST_V770.md | cut -d' ' -f1)" = "$RELEASE_MANIFEST_SHA256"
+          test "$(sha256sum release/V770_EXACT_PACKAGE_AUTHORIZATION.md | cut -d' ' -f1)" = "$AUTHORIZATION_SHA256"
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          authority=json.loads(Path('governance/AUTHORITY.json').read_text())
+          assert authority['active_release']['version']=='7.6.1'
+          assert authority['active_release']['immutable_commit']=='91532b8f6b38ea82ef232d1181ef78418471b66b'
+          assert authority['immediate_rollback']['version']=='7.6.0'
+          assert authority['immediate_rollback']['immutable_commit']=='a177bcebd1e97d784822e378b661a5ec17aee7d5'
+          trigger=json.loads(Path('release/V770_PUBLICATION_TRIGGER.json').read_text())
+          assert trigger=={
+            'artifact_id':8745439952,
+            'artifact_sha256':'10f950c596f173e8846008656cf8180b685c9af05242affce1b4f746166b070d',
+            'authorization_sha256':os.environ['AUTHORIZATION_SHA256'],
+            'decision_id':os.environ['DECISION_ID'],
+            'implementation_merge':os.environ['IMPLEMENTATION_MERGE'],
+            'package_source_commit':os.environ['PACKAGE_SOURCE_COMMIT'],
+            'release_manifest_sha256':os.environ['RELEASE_MANIFEST_SHA256'],
+            'review_id':os.environ['REVIEW_ID'],
+            'schema_version':'v770-publication-trigger-v1',
+            'tag':'v7.7.0',
+          }
+          manifest=Path('release/RELEASE_MANIFEST_V770.md').read_text()
+          authorization=Path('release/V770_EXACT_PACKAGE_AUTHORIZATION.md').read_text()
+          required_manifest=(
+              os.environ['PACKAGE_SOURCE_COMMIT'],os.environ['IMPLEMENTATION_MERGE'],
+              os.environ['ARTIFACT_ID'],os.environ['ARTIFACT_DIGEST'].removeprefix('sha256:'),
+              os.environ['SOURCE_SHA256'],os.environ['WHEEL_SHA256'],os.environ['SBOM_SHA256'],
+              os.environ['SOURCE_MANIFEST_SHA256'],os.environ['VALIDATION_SHA256'],
+              os.environ['INITIALIZATION_EVIDENCE_SHA256'],os.environ['ZERO_WRITE_SHA256'],
+              os.environ['DRAFT_MANIFEST_SHA256'],os.environ['DECISION_ID'],os.environ['REVIEW_ID'],
+              'collection://46af021f-eb9a-4eba-b10c-4523e70df0c3'
+          )
+          for required in required_manifest:
+              assert required in manifest, required
+          required_authorization=(
+              os.environ['PACKAGE_SOURCE_COMMIT'],os.environ['IMPLEMENTATION_MERGE'],
+              os.environ['ARTIFACT_ID'],os.environ['ARTIFACT_DIGEST'].removeprefix('sha256:'),
+              os.environ['SOURCE_SHA256'],os.environ['WHEEL_SHA256'],os.environ['SBOM_SHA256'],
+              os.environ['SOURCE_MANIFEST_SHA256'],os.environ['VALIDATION_SHA256'],
+              os.environ['INITIALIZATION_EVIDENCE_SHA256'],os.environ['ZERO_WRITE_SHA256'],
+              os.environ['RELEASE_MANIFEST_SHA256'],os.environ['DECISION_ID'],os.environ['REVIEW_ID']
+          )
+          for required in required_authorization:
+              assert required in authorization, required
+          PY
+
+      - name: Verify and download exact retained candidate artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$(gh api "/repos/${GITHUB_REPOSITORY}/actions/artifacts/${ARTIFACT_ID}" --jq .digest)" = "$ARTIFACT_DIGEST"
+          mkdir -p publication
+          gh api "/repos/${GITHUB_REPOSITORY}/actions/artifacts/${ARTIFACT_ID}/zip" > publication/candidate.zip
+          test "$(sha256sum publication/candidate.zip | cut -d' ' -f1)" = "${ARTIFACT_DIGEST#sha256:}"
+          unzip -q publication/candidate.zip -d publication/package
+          (cd publication/package && sha256sum -c build/CHECKSUMS.sha256 && sha256sum -c build/EVIDENCE_CHECKSUMS.sha256 && sha256sum -c build/NESTED_CHECKSUMS.sha256)
+          test "$(sha256sum publication/package/dist/atlas_ros-7.7.0.tar.gz | cut -d' ' -f1)" = "$SOURCE_SHA256"
+          test "$(sha256sum publication/package/dist/atlas_ros-7.7.0-py3-none-any.whl | cut -d' ' -f1)" = "$WHEEL_SHA256"
+          test "$(sha256sum publication/package/build/SBOM.spdx.json | cut -d' ' -f1)" = "$SBOM_SHA256"
+          test "$(sha256sum publication/package/build/SOURCE_MANIFEST.sha256 | cut -d' ' -f1)" = "$SOURCE_MANIFEST_SHA256"
+          test "$(sha256sum publication/package/build/V770_VALIDATION_RECEIPT.json | cut -d' ' -f1)" = "$VALIDATION_SHA256"
+          test "$(sha256sum publication/package/build/V770_INITIALIZATION_EVIDENCE_INDEX.json | cut -d' ' -f1)" = "$INITIALIZATION_EVIDENCE_SHA256"
+          test "$(sha256sum publication/package/build/V770_ZERO_PROVIDER_WRITE_RECEIPT.json | cut -d' ' -f1)" = "$ZERO_WRITE_SHA256"
+          test "$(sha256sum publication/package/build/V770_DRAFT_IMMUTABLE_MANIFEST.md | cut -d' ' -f1)" = "$DRAFT_MANIFEST_SHA256"
+          test "$(cat publication/package/build/BUILD_COUNT.txt)" = "1"
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          root=Path('publication/package/build')
+          receipt=json.loads((root/'V770_VALIDATION_RECEIPT.json').read_text())
+          assert receipt['status']=='passed'
+          assert receipt['candidate_commit']==os.environ['PACKAGE_SOURCE_COMMIT']
+          assert receipt['candidate_version']=='7.7.0'
+          assert receipt['active_restoration_version']=='7.6.1'
+          assert receipt['active_restoration_commit']=='91532b8f6b38ea82ef232d1181ef78418471b66b'
+          assert receipt['rollback_restoration_version']=='7.6.0'
+          assert receipt['rollback_restoration_commit']=='a177bcebd1e97d784822e378b661a5ec17aee7d5'
+          assert receipt['build_count']==1 and receipt['provider_writes']==0 and receipt['todoist_writes']==0
+          evidence=json.loads((root/'V770_INITIALIZATION_EVIDENCE_INDEX.json').read_text())
+          assert evidence['status']=='passed'
+          assert evidence['cold_external_reads']==6 and evidence['warm_external_reads']==4
+          assert evidence['post_terminal_executed_calls']==0
+          assert evidence['general_searches']==0 and evidence['plugin_skill_reads']==0
+          assert evidence['google_drive_reads']==0 and evidence['provider_writes']==0
+          zero=json.loads((root/'V770_ZERO_PROVIDER_WRITE_RECEIPT.json').read_text())
+          for field in ('provider_writes','todoist_writes','credential_actions','messages_sent','calendar_actions','scheduled_actions','deletions','profile_activations','production_tags_created_or_moved','release_publications','authority_activations'):
+              assert zero[field]==0, field
+          PY
+
+      - name: Create immutable tag and GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          git config user.name "Atlas ROS Release Bot"
+          git config user.email "atlas-ros-release@users.noreply.github.com"
+          if git rev-parse "$TAG" >/dev/null 2>&1; then
+            test "$(git rev-list -n 1 "$TAG")" = "$TARGET_COMMIT"
+          else
+            git tag -a "$TAG" "$TARGET_COMMIT" -m "Atlas ROS v7.7.0 immutable initialization circuit breaker release"
+            git push origin "refs/tags/$TAG"
+          fi
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "Release already exists; refusing replacement."
+            exit 1
+          fi
+          cp release/RELEASE_MANIFEST_V770.md publication/package/RELEASE_MANIFEST_V770.md
+          cp release/V770_EXACT_PACKAGE_AUTHORIZATION.md publication/package/V770_EXACT_PACKAGE_AUTHORIZATION.md
+          gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --verify-tag --target "$TARGET_COMMIT" --title "Atlas ROS v7.7.0" --notes-file release/RELEASE_MANIFEST_V770.md publication/package/dist/atlas_ros-7.7.0.tar.gz publication/package/dist/atlas_ros-7.7.0-py3-none-any.whl publication/package/build/* publication/package/RELEASE_MANIFEST_V770.md publication/package/V770_EXACT_PACKAGE_AUTHORIZATION.md
