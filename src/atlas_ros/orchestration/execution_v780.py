@@ -11,6 +11,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any
 
+from atlas_ros.adapters.errors import AdapterError
 from atlas_ros.contracts import (
     ExecutionAuthorizationV2,
     ExecutionCommandV2,
@@ -43,7 +44,12 @@ class GovernedRetryPolicy:
         if self.maximum_delay_seconds < 0:
             raise ValueError("maximum retry delay cannot be negative")
 
-    def delay_for(self, *, failed_attempt: int, retry_after_seconds: float | None) -> tuple[float, str]:
+    def delay_for(
+        self,
+        *,
+        failed_attempt: int,
+        retry_after_seconds: float | None,
+    ) -> tuple[float, str]:
         """Choose a deterministic bounded delay for the next governed attempt."""
         if (
             self.allow_provider_retry_after
@@ -74,6 +80,13 @@ class ExecutionOrchestratorV2(_BaseOrchestrator):
             event_sink=event_sink,
         )
         self._sleeper = sleeper
+
+    @staticmethod
+    def _retry_after(exc: ProviderExecutionError) -> float | None:
+        if exc.retry_after_seconds is not None:
+            return exc.retry_after_seconds
+        cause = exc.__cause__
+        return cause.retry_after_seconds if isinstance(cause, AdapterError) else None
 
     def _apply_with_retry(
         self,
@@ -149,7 +162,7 @@ class ExecutionOrchestratorV2(_BaseOrchestrator):
                     raise
                 delay, delay_source = self._retry_policy.delay_for(
                     failed_attempt=attempt,
-                    retry_after_seconds=exc.retry_after_seconds,
+                    retry_after_seconds=self._retry_after(exc),
                 )
                 state = self._transition(
                     entries,
