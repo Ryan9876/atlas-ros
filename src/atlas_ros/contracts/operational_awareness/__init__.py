@@ -15,6 +15,13 @@ from .base import (
     RepairClass,
 )
 from .briefs import BriefItemV1, MaterialChangeV1, OperatingBriefV1
+from .clarification import (
+    AmbiguityCategory,
+    ClarificationAnalysisV1,
+    ClarificationQuestionMode,
+    ClarificationResolutionV1,
+    InterpretationCandidateV1,
+)
 from .commands import (
     AtlasCommandV1,
     CommandInterpretationV1,
@@ -49,12 +56,16 @@ from .work_state import WorkStateEstimateV1
 
 __all__ = [
     "AcceptanceState",
+    "AmbiguityCategory",
     "AtlasCommandType",
     "AtlasCommandV1",
     "AuthorityLevel",
     "AuthoritativeSystem",
     "AwarenessStageReceiptV1",
     "BriefItemV1",
+    "ClarificationAnalysisV1",
+    "ClarificationQuestionMode",
+    "ClarificationResolutionV1",
     "CommandExecutionReceiptV1",
     "CommandInterpretationV1",
     "CommandSourceRefV1",
@@ -70,6 +81,7 @@ __all__ = [
     "FreshnessState",
     "HygieneFindingV1",
     "HygieneSeverity",
+    "InterpretationCandidateV1",
     "MaterialChangeV1",
     "Materiality",
     "NextActionProjectionV1",
