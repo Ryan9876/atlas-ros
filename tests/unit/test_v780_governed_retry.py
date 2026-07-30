@@ -55,6 +55,12 @@ def command_and_authorization(op: ProviderOperation):
     return command, authorization
 
 
+def retry_entry(transaction):  # type: ignore[no-untyped-def]
+    return next(
+        entry for entry in transaction.journal if entry.event_type == "retry_scheduled"
+    )
+
+
 def test_governed_backoff_calls_injected_sleeper_and_is_journaled() -> None:
     op = operation()
     provider = FakeExecutionProvider(
@@ -78,7 +84,7 @@ def test_governed_backoff_calls_injected_sleeper_and_is_journaled() -> None:
     assert transaction.state == TransactionStateV2.VERIFIED
     assert receipt.attempt_counts[op.operation_id] == 2
     assert delays == [1.5]
-    scheduled = next(entry for entry in transaction.journal if entry.event_type == "retry_scheduled")
+    scheduled = retry_entry(transaction)
     assert "delay_seconds=1.5" in scheduled.result
     assert "delay_source=governed_backoff" in scheduled.result
 
@@ -125,8 +131,7 @@ def test_valid_retry_after_is_bounded_and_preferred() -> None:
     transaction, _ = orchestrator.execute(command, authorization)
 
     assert delays == [5.0]
-    scheduled = next(entry for entry in transaction.journal if entry.event_type == "retry_scheduled")
-    assert "delay_source=provider_retry_after" in scheduled.result
+    assert "delay_source=provider_retry_after" in retry_entry(transaction).result
 
 
 def test_retry_after_parser_rejects_malformed_values() -> None:
