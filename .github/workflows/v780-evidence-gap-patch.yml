@@ -91,3 +91,5 @@ jobs:
           fi
           git commit -m "ci: retain v7.8.0 SBOM and source manifest evidence"
           git push origin HEAD:agent/v7.8.0-corrective-hardening
+
+# Trigger revision 2
