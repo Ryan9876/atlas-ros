@@ -149,3 +149,15 @@ capabilities:
   outputs:
   - CommandInterpretationV1
   - TodoistLifecyclePlanV1
+- id: atlas.context-aware-clarification
+  package: capabilities/operational_awareness/clarification
+  owner: Operational Awareness
+  writes_providers: false
+  inputs:
+  - UserInstruction
+  - BoundedAuthoritativeContext
+  outputs:
+  - ClarificationAnalysisV1
+  - ClarificationResolutionV1
+  advisory_only: true
+  may_create_execution_intent: false
