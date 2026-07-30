@@ -8,6 +8,10 @@ from atlas_ros.capabilities.operational_awareness.command_lifecycle import (
     CommandLifecycleService,
     TaskUpdateLifecycleNormalizer,
 )
+from atlas_ros.capabilities.operational_awareness.command_lifecycle.natural_delegation import (
+    bind_natural_delegation_identities,
+    bind_natural_delegation_plan,
+)
 from atlas_ros.contracts.execution.transaction import ProposedExecutionPlan
 from atlas_ros.contracts.operational_awareness import (
     AtlasCommandV1,
@@ -48,7 +52,14 @@ class CommandLifecycleCoordinator:
         if source.source_command_text.lstrip().lower().startswith("@atlas"):
             command = AtlasCommandParser(self.policy).parse(source)
         else:
-            normalization = TaskUpdateLifecycleNormalizer(self.policy).normalize(source, snapshot)
+            normalization = TaskUpdateLifecycleNormalizer(self.policy).normalize(
+                source,
+                snapshot,
+            )
+            normalization = bind_natural_delegation_identities(
+                normalization,
+                snapshot,
+            )
             command = normalization.proposed_command
         service = CommandLifecycleService(self.policy)
         interpretation = service.interpret(command, snapshot)
@@ -57,6 +68,8 @@ class CommandLifecycleCoordinator:
         operation_ids: tuple[str, ...] = ()
         if not interpretation.blockers:
             lifecycle = service.plan(interpretation, snapshot)
+            if normalization is not None:
+                lifecycle = bind_natural_delegation_plan(lifecycle)
             canonical = self.planner.compile(lifecycle)
             operation_ids = tuple(item.operation_id for item in canonical.operations)
         receipt = CommandExecutionReceiptV1.create(
