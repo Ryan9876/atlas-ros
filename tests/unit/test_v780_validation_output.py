@@ -7,7 +7,12 @@ import pytest
 from atlas_ros.devtools_cli.validation import validate
 
 
-def completed(returncode: int, *, stdout: str = "", stderr: str = "") -> subprocess.CompletedProcess[str]:
+def completed(
+    returncode: int,
+    *,
+    stdout: str = "",
+    stderr: str = "",
+) -> subprocess.CompletedProcess[str]:
     return subprocess.CompletedProcess(("check",), returncode, stdout=stdout, stderr=stderr)
 
 
