@@ -540,7 +540,7 @@ class InitializationOperation:
             return False
         return isinstance(
             error,
-            (TransientInitializationReadError, TimeoutError, ConnectionError),
+            TransientInitializationReadError | TimeoutError | ConnectionError,
         ) and not isinstance(error, PermissionError)
 
     def _reject(
