@@ -153,6 +153,10 @@ jobs:
               'ACTIVE_VERSION': active['version'],
               'ACTIVE_TAG': active['tag'],
               'ACTIVE_COMMIT': active['immutable_commit'],
+              'ACTIVE_MANIFEST_PATH': active['manifest_path'],
+              'ACTIVE_MANIFEST_SHA256': active['manifest_sha256'],
+              'ACTIVE_SOURCE_SHA256': active['source_sha256'],
+              'ACTIVE_WHEEL_SHA256': active['wheel_sha256'],
               'ROLLBACK_VERSION': rollback['version'],
               'ROLLBACK_TAG': rollback['tag'],
               'ROLLBACK_COMMIT': rollback['immutable_commit'],
@@ -256,13 +260,57 @@ jobs:
           done
       - name: Restore current Active release and immediate rollback
         run: |
-          mkdir -p "restoration/active-${ACTIVE_VERSION}" "restoration/rollback-${ROLLBACK_VERSION}"
-          gh release download "$ACTIVE_TAG" --repo "$GITHUB_REPOSITORY" --dir "restoration/active-${ACTIVE_VERSION}"
-          gh release download "$ROLLBACK_TAG" --repo "$GITHUB_REPOSITORY" --dir "restoration/rollback-${ROLLBACK_VERSION}"
-          (cd "restoration/active-${ACTIVE_VERSION}" && sed 's#  dist/#  #' CHECKSUMS.sha256 | sha256sum -c -)
-          (cd "restoration/rollback-${ROLLBACK_VERSION}" && sed 's#  dist/#  #' CHECKSUMS.sha256 | sha256sum -c -)
+          set -euo pipefail
+          test "$(git rev-list -n 1 "$ACTIVE_TAG")" = "$ACTIVE_COMMIT"
+          test "$(git rev-list -n 1 "$ROLLBACK_TAG")" = "$ROLLBACK_COMMIT"
+
+          git show "$ACTIVE_COMMIT:$ACTIVE_MANIFEST_PATH" > build/ACTIVE_RELEASE_MANIFEST.md
+          test "$(sha256sum build/ACTIVE_RELEASE_MANIFEST.md | cut -d' ' -f1)" = "$ACTIVE_MANIFEST_SHA256"
+
+          rollback_manifest="$(
+            git ls-tree -r --name-only "$ROLLBACK_COMMIT" -- release |
+            while IFS= read -r path; do
+              case "$path" in
+                release/RELEASE_MANIFEST_*.md)
+                  if git show "$ROLLBACK_COMMIT:$path" | grep -Fq "Release version: \`$ROLLBACK_VERSION\`"; then
+                    printf '%s\n' "$path"
+                    break
+                  fi
+                  ;;
+              esac
+            done
+          )"
+          test -n "$rollback_manifest"
+          git show "$ROLLBACK_COMMIT:$rollback_manifest" > build/ROLLBACK_RELEASE_MANIFEST.md
+          rollback_source_sha="$(sed -n 's/^- Source distribution SHA-256: `\([0-9a-f]\{64\}\)`.*/\1/p' build/ROLLBACK_RELEASE_MANIFEST.md)"
+          rollback_wheel_sha="$(sed -n 's/^- Wheel SHA-256: `\([0-9a-f]\{64\}\)`.*/\1/p' build/ROLLBACK_RELEASE_MANIFEST.md)"
+          test -n "$rollback_source_sha"
+          test -n "$rollback_wheel_sha"
+
+          active_dir="restoration/active-${ACTIVE_VERSION}"
+          rollback_dir="restoration/rollback-${ROLLBACK_VERSION}"
+          mkdir -p "$active_dir" "$rollback_dir"
+          gh release download "$ACTIVE_TAG" --repo "$GITHUB_REPOSITORY" --dir "$active_dir"
+          gh release download "$ROLLBACK_TAG" --repo "$GITHUB_REPOSITORY" --dir "$rollback_dir"
+
+          active_sdist="$(find "$active_dir" -maxdepth 1 -type f -name "atlas_ros-${ACTIVE_VERSION}.tar.gz" -print -quit)"
+          active_wheel="$(find "$active_dir" -maxdepth 1 -type f -name "atlas_ros-${ACTIVE_VERSION}-py3-none-any.whl" -print -quit)"
+          rollback_sdist="$(find "$rollback_dir" -maxdepth 1 -type f -name "atlas_ros-${ROLLBACK_VERSION}.tar.gz" -print -quit)"
+          rollback_wheel="$(find "$rollback_dir" -maxdepth 1 -type f -name "atlas_ros-${ROLLBACK_VERSION}-py3-none-any.whl" -print -quit)"
+          test -n "$active_sdist"
+          test -n "$active_wheel"
+          test -n "$rollback_sdist"
+          test -n "$rollback_wheel"
+          test "$(sha256sum "$active_sdist" | cut -d' ' -f1)" = "$ACTIVE_SOURCE_SHA256"
+          test "$(sha256sum "$active_wheel" | cut -d' ' -f1)" = "$ACTIVE_WHEEL_SHA256"
+          test "$(sha256sum "$rollback_sdist" | cut -d' ' -f1)" = "$rollback_source_sha"
+          test "$(sha256sum "$rollback_wheel" | cut -d' ' -f1)" = "$rollback_wheel_sha"
+
           printf '%s\n' "$ACTIVE_COMMIT" > build/ACTIVE_RESTORATION_COMMIT.txt
           printf '%s\n' "$ROLLBACK_COMMIT" > build/ROLLBACK_RESTORATION_COMMIT.txt
+          printf '%s\n' "$rollback_manifest" > build/ROLLBACK_MANIFEST_PATH.txt
+          printf '%s\n' "$rollback_source_sha" > build/ROLLBACK_SOURCE_SHA256.txt
+          printf '%s\n' "$rollback_wheel_sha" > build/ROLLBACK_WHEEL_SHA256.txt
       - name: Generate exact candidate receipt
         run: |
           sha256sum dist/* > build/PACKAGE_CHECKSUMS.sha256
