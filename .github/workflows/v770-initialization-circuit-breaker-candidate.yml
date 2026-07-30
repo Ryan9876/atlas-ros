@@ -59,6 +59,11 @@ jobs:
       - run: python -m pip install --disable-pip-version-check -e '.[ci]'
       - name: Targeted static validation
         run: |
+          python - <<'PY'
+          from pathlib import Path
+          source = Path('src/atlas_ros/kernel/initialization_circuit_breaker.py').read_text()
+          assert '(TransientInitializationReadError, TimeoutError, ConnectionError)' not in source
+          PY
           ruff check \
             src/atlas_ros/contracts/authority.py \
             src/atlas_ros/entry_points/main.py \
@@ -135,6 +140,11 @@ jobs:
       - run: python -m pip install --disable-pip-version-check -e '.[dev]'
       - name: Complete correctness gates
         run: |
+          python - <<'PY'
+          from pathlib import Path
+          source = Path('src/atlas_ros/kernel/initialization_circuit_breaker.py').read_text()
+          assert '(TransientInitializationReadError, TimeoutError, ConnectionError)' not in source
+          PY
           test ! -d .atlas-v770-bootstrap
           test ! -f .github/workflows/v770-bootstrap-apply.yml
           ruff check .
