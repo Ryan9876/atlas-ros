@@ -137,7 +137,7 @@ jobs:
           assert evidence['general_searches']==0 and evidence['plugin_skill_reads']==0
           assert evidence['google_drive_reads']==0 and evidence['provider_writes']==0
           zero=json.loads((root/'V770_ZERO_PROVIDER_WRITE_RECEIPT.json').read_text())
-          for field in ('provider_writes','todoist_writes','credential_actions','messages_sent','calendar_actions','scheduled_actions','deletions','profile_activations','production_tags_created_or_moved','release_publications','authority_activations'):
+          for field in ('provider_writes','todoist_writes','credential_actions','messages_sent','calendar_actions','scheduled_actions','deletions','profile_activations','production_tags_created_or_moved','release_publications','authority_changes'):
               assert zero[field]==0, field
           PY
 
