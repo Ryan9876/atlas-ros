@@ -270,7 +270,8 @@ def test_10_explicit_follow_up_is_todoist_due_date() -> None:
 def test_11_missing_follow_up_uses_compiled_undated_policy() -> None:
     result = _prepare(
         "Bill owns the request and should finish Friday.\n"
-        "Expected outcome: Access is approved."
+        "Expected outcome: Access is approved.\n"
+        "Done when: Bill confirms completion."
     )
     assert result.interpretation.delegate_due == "Friday"
     assert result.interpretation.follow_up_checkpoint is None
@@ -446,5 +447,16 @@ def test_25_ambiguous_person_identity_blocks_provider_planning() -> None:
     assert "Responsible party identity must resolve uniquely" in (
         result.interpretation.blockers
     )
+    assert result.lifecycle_plan is None
+    assert result.canonical_plan is None
+
+
+def test_26_due_language_never_synthesizes_completion_criteria() -> None:
+    result = _prepare(
+        "Bill owns the request and should finish Friday.\n"
+        "Expected outcome: Access is approved.\n"
+        "Follow up Thursday."
+    )
+    assert "Completion criteria required" in result.interpretation.blockers
     assert result.lifecycle_plan is None
     assert result.canonical_plan is None
