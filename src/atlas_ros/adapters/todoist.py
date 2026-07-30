@@ -12,7 +12,11 @@ from urllib.request import Request, urlopen
 
 from pydantic import BaseModel, ConfigDict
 
-from atlas_ros.adapters.errors import AdapterConfigurationError, AdapterError
+from atlas_ros.adapters.errors import (
+    AdapterConfigurationError,
+    AdapterError,
+    parse_retry_after,
+)
 from atlas_ros.adapters.keychain import MacOSKeychain
 
 
@@ -70,6 +74,8 @@ class TodoistAdapter(Protocol):
 
 @dataclass
 class LiveTodoistAdapter:
+    """Single-attempt Todoist REST transport with redacted failure metadata."""
+
     token: str
     base_url: str = "https://api.todoist.com/api/v1"
     timeout_seconds: float = 15.0
@@ -110,8 +116,15 @@ class LiveTodoistAdapter:
             with urlopen(request, timeout=self.timeout_seconds) as response:
                 return json.loads(response.read().decode())
         except HTTPError as exc:
+            retryable = exc.code == 429 or exc.code >= 500
             raise AdapterError(
-                "todoist", path, f"HTTP {exc.code}", retryable=exc.code == 429 or exc.code >= 500
+                "todoist",
+                path,
+                f"HTTP {exc.code}",
+                retryable=retryable,
+                retry_after_seconds=(
+                    parse_retry_after(exc.headers.get("Retry-After")) if retryable else None
+                ),
             ) from exc
         except TimeoutError as exc:
             raise AdapterError("todoist", path, "request timed out", retryable=True) from exc
@@ -124,16 +137,11 @@ class LiveTodoistAdapter:
         next_path: str | None = path
         while next_path:
             body = self._request("GET", next_path)
-            # Todoist API v1 collection endpoints return a cursor envelope.
-            # Retaining list support keeps the adapter compatible with the
-            # legacy API response shape used by existing test doubles.
             if isinstance(body, list):
                 page, cursor = body, None
             elif isinstance(body, dict) and isinstance(body.get("results"), list):
                 page, cursor = body["results"], body.get("next_cursor")
             elif isinstance(body, dict) and isinstance(body.get("items"), list):
-                # Completed-task endpoints use an ``items`` envelope rather
-                # than the ``results`` envelope used by standard collections.
                 page, cursor = body["items"], body.get("next_cursor")
             else:
                 raise AdapterError("todoist", path, "malformed response")
