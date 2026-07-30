@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Build deterministic v7.7.0 Initialization Circuit Breaker evidence."""
 
+# ruff: noqa: E402 -- repository root is bound before local release-tool imports.
+
 from __future__ import annotations
 
 import argparse
