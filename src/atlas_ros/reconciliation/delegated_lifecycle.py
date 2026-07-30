@@ -59,34 +59,55 @@ class DelegatedLifecycleReconciler:
             if item.action == "upsert_current_checkpoint"
         )
         checkpoint_operation = checkpoint_operations[-1] if checkpoint_operations else None
+        natural = (
+            plan.command_interpretation.command.fields.get("intent-origin")
+            == "task-update"
+        )
         verified: list[str] = []
         mismatched: list[str] = []
         recovery: list[str] = []
+        notion_url: str | None = None
 
         if notion_readback is None:
             mismatched.append("notion readback missing")
             recovery.append("read back authoritative Delegated Work before any retry")
-        elif all(
-            notion_readback.get(key) == value
-            for key, value in notion_operation.expected_readback.items()
-        ):
-            verified.append(notion_operation.idempotency_key)
         else:
-            mismatched.append("notion identity or command digest mismatch")
-            recovery.append("reconcile Notion from the exact authorized operation")
+            exact_notion_match = all(
+                notion_readback.get(key) == value
+                for key, value in notion_operation.expected_readback.items()
+            )
+            notion_url_value = str(notion_readback.get("canonical_url") or "").strip()
+            notion_url_valid = not natural or notion_url_value.startswith("https://")
+            if exact_notion_match and notion_url_valid:
+                notion_url = notion_url_value or None
+                verified.append(notion_operation.idempotency_key)
+            else:
+                mismatched.append("notion identity, command digest, or URL mismatch")
+                recovery.append("reconcile Notion from the exact authorized operation")
 
         if checkpoint_operation is not None:
             if todoist_readback is None:
                 mismatched.append("todoist checkpoint readback missing")
                 recovery.append("read back checkpoint by projection identity before any retry")
-            elif all(
-                todoist_readback.get(key) == value
-                for key, value in checkpoint_operation.expected_readback.items()
-            ):
-                verified.append(checkpoint_operation.idempotency_key)
             else:
-                mismatched.append("todoist checkpoint identity or due date mismatch")
-                recovery.append("resume the exact idempotent checkpoint operation")
+                exact_todoist_match = all(
+                    todoist_readback.get(key) == value
+                    for key, value in checkpoint_operation.expected_readback.items()
+                )
+                linked_url_matches = (
+                    not natural
+                    or (
+                        notion_url is not None
+                        and todoist_readback.get("authoritative_record_url") == notion_url
+                    )
+                )
+                if exact_todoist_match and linked_url_matches:
+                    verified.append(checkpoint_operation.idempotency_key)
+                else:
+                    mismatched.append(
+                        "todoist checkpoint identity, due date, or Notion link mismatch"
+                    )
+                    recovery.append("resume the exact idempotent checkpoint operation")
 
         return DelegatedLifecycleReconciliationAssessment.create(
             consistent=not mismatched,
