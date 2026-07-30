@@ -3,12 +3,11 @@ from .execution import (
     ExecutionAuthorization,
     ExecutionEvent,
     ExecutionOrchestrator,
-    ExecutionOrchestratorV2,
     ExecutionRequest,
     ExecutionTransaction,
-    GovernedRetryPolicy,
     InMemoryExecutionStore,
 )
+from .execution_v780 import ExecutionOrchestratorV2, GovernedRetryPolicy
 from .fakes import FakeExecutionProvider, FaultMode
 from .ports import ExecutionProviderPort, ProviderExecutionError
 

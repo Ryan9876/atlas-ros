@@ -63,8 +63,10 @@ for prefix in (
     )
     assert result.returncode == 0, result.stderr
     payload = json.loads(result.stdout)
-    assert payload["version"] == "7.7.0"
-    assert payload["active_production_version"] == "7.6.1"
+    assert payload["version"] == "7.8.0"
+    assert payload["production_authority_loaded"] is False
+    assert payload["production_authority_state"] == "not_loaded"
+    assert "active_production_version" not in payload
 
 
 def config(tmp_path: Path, token: str = "fixture-token") -> WarmRuntimeConfig:

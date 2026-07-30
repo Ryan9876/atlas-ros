@@ -179,7 +179,11 @@ class NotionExecutionAdapterV2:
                 if exc.retryable
                 else ErrorClassification.PERMISSION_FAILURE
             )
-            raise ProviderExecutionError(classification, str(exc)) from exc
+            raise ProviderExecutionError(
+                classification,
+                str(exc),
+                retry_after_seconds=exc.retry_after_seconds,
+            ) from exc
         raise ProviderExecutionError(
             ErrorClassification.VALIDATION_FAILURE,
             f"unsupported Notion execution operation: {operation.operation_type}",

@@ -28,7 +28,7 @@ class DomainKnowledgeRegistryV62:
         )
         exact = pack.domain == canonical.domain
         confidence = 0.98 if exact and canonical.domain != "general" else 0.78
-        missing = ()
+        missing: tuple[str, ...] = ()
         technical_intents = {
             "controlled-technology-pilot",
             "automation-proof-of-concept",

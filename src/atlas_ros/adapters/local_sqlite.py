@@ -7,6 +7,7 @@ not a canonical business, planning, release, or authorization authority.
 from __future__ import annotations
 
 import json
+import os
 import sqlite3
 from collections.abc import Iterator
 from contextlib import contextmanager
@@ -40,12 +41,29 @@ class JournalTransactionSnapshot:
 
 
 class SQLiteExecutionJournal:
-    """Durable, idempotent local journal with no provider or business authority."""
+    """Durable, idempotent local journal with private POSIX file modes."""
 
     def __init__(self, path: Path) -> None:
         self.path = path
-        self.path.parent.mkdir(parents=True, exist_ok=True)
+        self.path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+        self._secure_database_files()
         self._initialize()
+        self._secure_database_files()
+
+    def _secure_database_files(self) -> None:
+        """Restore 0700 directory and 0600 database/WAL/SHM modes on POSIX."""
+        if os.name != "posix":
+            return
+        self.path.parent.chmod(0o700)
+        for candidate in (
+            self.path,
+            Path(f"{self.path}-wal"),
+            Path(f"{self.path}-shm"),
+        ):
+            try:
+                candidate.chmod(0o600)
+            except FileNotFoundError:
+                continue
 
     def begin(self, plan: AuthorizedExecutionPlan, *, transaction_id: str) -> None:
         if not transaction_id.strip():
@@ -336,16 +354,22 @@ class SQLiteExecutionJournal:
 
     @contextmanager
     def _connection(self) -> Iterator[sqlite3.Connection]:
+        self.path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
         connection = sqlite3.connect(self.path)
         connection.execute("PRAGMA foreign_keys = ON")
+        self._secure_database_files()
         try:
             yield connection
             connection.commit()
+            self._secure_database_files()
         except Exception:
             connection.rollback()
+            self._secure_database_files()
             raise
         finally:
+            self._secure_database_files()
             connection.close()
+            self._secure_database_files()
 
 
 def _now() -> str:

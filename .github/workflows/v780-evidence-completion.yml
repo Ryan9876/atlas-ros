@@ -1,0 +1,116 @@
+name: v7.8.0 evidence completion
+
+on:
+  pull_request:
+    branches: [main]
+    types: [ready_for_review]
+    paths:
+      - '.github/workflows/v780-evidence-completion.yml'
+      - '.github/workflows/v780-corrective-hardening-candidate.yml'
+      - 'pyproject.toml'
+      - 'requirements.runtime.lock'
+      - 'src/**'
+      - 'tests/**'
+      - 'release/*V780*'
+
+permissions:
+  contents: read
+
+env:
+  CANDIDATE_VERSION: 7.8.0
+
+jobs:
+  evidence-completion:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.head.ref == 'agent/v7.8.0-corrective-hardening'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Bind exact source
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha }}"
+          mkdir -p evidence
+          git rev-parse HEAD > evidence/SOURCE_COMMIT.txt
+          git ls-tree -r --full-tree HEAD > evidence/SOURCE_TREE.txt
+      - name: Generate SPDX SBOM and source manifest
+        run: |
+          python - <<'PY'
+          import json
+          import subprocess
+          from pathlib import Path
+
+          source_commit = Path('evidence/SOURCE_COMMIT.txt').read_text().strip()
+          packages = []
+          for line in Path('requirements.runtime.lock').read_text(encoding='utf-8').splitlines():
+              stripped = line.strip()
+              if not stripped or stripped.startswith('#') or '==' not in stripped:
+                  continue
+              name, remainder = stripped.split('==', 1)
+              version = remainder.split(' ', 1)[0].split('\\', 1)[0].strip()
+              packages.append({
+                  'SPDXID': f'SPDXRef-Package-{name}',
+                  'name': name,
+                  'versionInfo': version,
+                  'downloadLocation': 'NOASSERTION',
+                  'filesAnalyzed': False,
+                  'licenseConcluded': 'NOASSERTION',
+                  'licenseDeclared': 'NOASSERTION',
+              })
+          sbom = {
+              'spdxVersion': 'SPDX-2.3',
+              'dataLicense': 'CC0-1.0',
+              'SPDXID': 'SPDXRef-DOCUMENT',
+              'name': 'atlas-ros-7.8.0',
+              'documentNamespace': f'https://github.com/Ryan9876/atlas-ros/spdx/{source_commit}',
+              'creationInfo': {
+                  'created': '2026-07-30T00:00:00Z',
+                  'creators': ['Tool: atlas-v780-evidence-completion'],
+              },
+              'packages': packages,
+          }
+          Path('evidence/V780_SBOM.spdx.json').write_text(
+              json.dumps(sbom, indent=2, sort_keys=True) + '\n', encoding='utf-8'
+          )
+          tree = subprocess.check_output(
+              ['git', 'ls-tree', '-r', '--full-tree', source_commit], text=True
+          ).splitlines()
+          manifest = {
+              'schema_version': 'v780-source-manifest-v1',
+              'source_commit': source_commit,
+              'entries': tree,
+          }
+          Path('evidence/V780_SOURCE_MANIFEST.json').write_text(
+              json.dumps(manifest, indent=2, sort_keys=True) + '\n', encoding='utf-8'
+          )
+          PY
+          sha256sum evidence/V780_SBOM.spdx.json \
+            evidence/V780_SOURCE_MANIFEST.json \
+            evidence/SOURCE_TREE.txt \
+            > evidence/EVIDENCE_CHECKSUMS.sha256
+      - name: Validate evidence files
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          sbom = json.loads(Path('evidence/V780_SBOM.spdx.json').read_text())
+          manifest = json.loads(Path('evidence/V780_SOURCE_MANIFEST.json').read_text())
+          commit = Path('evidence/SOURCE_COMMIT.txt').read_text().strip()
+          assert sbom['spdxVersion'] == 'SPDX-2.3'
+          assert sbom['documentNamespace'].endswith(commit)
+          assert manifest['source_commit'] == commit
+          assert manifest['entries']
+          PY
+          sha256sum -c evidence/EVIDENCE_CHECKSUMS.sha256
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: atlas-ros-v780-evidence-${{ github.event.pull_request.head.sha }}
+          path: evidence/
+          if-no-files-found: error
+          retention-days: 90

@@ -9,7 +9,11 @@ from urllib.request import Request, urlopen
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from atlas_ros.adapters.errors import AdapterConfigurationError, AdapterError
+from atlas_ros.adapters.errors import (
+    AdapterConfigurationError,
+    AdapterError,
+    parse_retry_after,
+)
 from atlas_ros.adapters.keychain import MacOSKeychain
 
 
@@ -32,7 +36,7 @@ class NotionAdapter(Protocol):
 
 @dataclass
 class LiveNotionAdapter:
-    """Thin Notion REST adapter. Tokens are read only from process configuration."""
+    """Single-attempt Notion REST transport with redacted failure metadata."""
 
     token: str
     base_url: str = "https://api.notion.com/v1"
@@ -70,8 +74,15 @@ class LiveNotionAdapter:
             with urlopen(request, timeout=self.timeout_seconds) as response:
                 body = json.loads(response.read().decode())
         except HTTPError as exc:
+            retryable = exc.code == 429 or exc.code >= 500
             raise AdapterError(
-                "notion", path, f"HTTP {exc.code}", retryable=exc.code == 429 or exc.code >= 500
+                "notion",
+                path,
+                f"HTTP {exc.code}",
+                retryable=retryable,
+                retry_after_seconds=(
+                    parse_retry_after(exc.headers.get("Retry-After")) if retryable else None
+                ),
             ) from exc
         except (json.JSONDecodeError, UnicodeDecodeError) as exc:
             raise AdapterError("notion", path, "malformed JSON response", retryable=True) from exc

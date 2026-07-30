@@ -19,10 +19,18 @@ class ProviderExecutionError(RuntimeError):
         message: str,
         *,
         uncertain_apply: bool = False,
+        retry_after_seconds: float | None = None,
     ) -> None:
         super().__init__(message[:1_000])
         self.classification = classification
         self.uncertain_apply = uncertain_apply
+        self.retry_after_seconds = (
+            retry_after_seconds
+            if classification.retryable
+            and retry_after_seconds is not None
+            and retry_after_seconds >= 0
+            else None
+        )
 
 
 class ExecutionProviderPort(Protocol):

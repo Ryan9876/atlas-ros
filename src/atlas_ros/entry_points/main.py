@@ -9,8 +9,7 @@ from collections.abc import Sequence
 
 from atlas_ros import __version__
 
-CANDIDATE_VERSION = "7.7.0"
-ACTIVE_PRODUCTION_VERSION = "7.6.1"
+EXPECTED_INSTALLED_VERSION = "7.8.0"
 
 
 class RuntimeCommandError(RuntimeError):
@@ -18,22 +17,22 @@ class RuntimeCommandError(RuntimeError):
 
 
 def status(*, json_output: bool = False) -> None:
-    """Report installed runtime identity without loading providers or release tooling."""
+    """Report installed identity without inferring or loading live production authority."""
     payload = {
-        "status": "candidate_runtime_available",
+        "status": "installed_runtime_available",
         "version": __version__,
+        "runtime_identity": "installed_package",
         "authority_model_version": "7.0",
-        "active_production_version": ACTIVE_PRODUCTION_VERSION,
-        "production_authority_changed": False,
-        "provider_writes": False,
+        "production_authority_loaded": False,
+        "production_authority_state": "not_loaded",
+        "provider_writes": 0,
     }
     if json_output:
         print(json.dumps(payload, sort_keys=True))
         return
     print(
-        f"Atlas ROS {__version__} candidate runtime is installed; "
-        f"Atlas ROS {ACTIVE_PRODUCTION_VERSION} remains Active and no provider writes "
-        "were performed."
+        f"Atlas ROS {__version__} installed runtime is available; "
+        "live production authority was not loaded or inferred; provider writes: 0."
     )
 
 
@@ -50,6 +49,7 @@ def initialize(*, json_output: bool = False) -> None:
         ],
         "receipt_schema_version": "2.0",
         "terminal_lock_activated": True,
+        "production_authority_loaded": False,
         "provider_writes": 0,
         "google_drive_reads": 0,
         "post_terminal_executed_calls": 0,
@@ -65,12 +65,12 @@ def initialize(*, json_output: bool = False) -> None:
 
 
 def verify(*, json_output: bool = False) -> None:
-    """Verify only the installed candidate identity; release verification is separate."""
+    """Verify only the installed package identity; live authority verification is separate."""
     payload = {
-        "valid": __version__ == CANDIDATE_VERSION,
-        "scope": "installed_candidate_runtime_identity",
+        "valid": __version__ == EXPECTED_INSTALLED_VERSION,
+        "scope": "installed_runtime_identity",
         "version": __version__,
-        "active_production_version": ACTIVE_PRODUCTION_VERSION,
+        "production_authority_loaded": False,
         "writes": False,
     }
     if json_output:
@@ -78,11 +78,11 @@ def verify(*, json_output: bool = False) -> None:
         return
     if not payload["valid"]:
         raise RuntimeCommandError(
-            f"installed runtime identity is not Atlas ROS v{CANDIDATE_VERSION}"
+            f"installed runtime identity is not Atlas ROS v{EXPECTED_INSTALLED_VERSION}"
         )
     print(
-        f"Installed candidate identity verified: Atlas ROS {__version__}; "
-        f"Active production remains {ACTIVE_PRODUCTION_VERSION}; writes: 0."
+        f"Installed runtime identity verified: Atlas ROS {__version__}; "
+        "live production authority was not loaded; writes: 0."
     )
 
 
@@ -117,7 +117,7 @@ def _dispatch_verify(arguments: Sequence[str]) -> None:
 
 def _dispatch_process(arguments: Sequence[str]) -> None:
     if arguments:
-        raise RuntimeCommandError("process does not accept arguments in the candidate surface")
+        raise RuntimeCommandError("process does not accept arguments in the installed surface")
     raise RuntimeCommandError(
         "process is not exposed until the canonical capability pipeline is bound"
     )
@@ -125,7 +125,7 @@ def _dispatch_process(arguments: Sequence[str]) -> None:
 
 def _dispatch_plan(arguments: Sequence[str]) -> None:
     if arguments:
-        raise RuntimeCommandError("plan does not accept arguments in the candidate surface")
+        raise RuntimeCommandError("plan does not accept arguments in the installed surface")
     raise RuntimeCommandError(
         "plan is not exposed until the canonical capability pipeline is bound"
     )
@@ -133,7 +133,7 @@ def _dispatch_plan(arguments: Sequence[str]) -> None:
 
 def _dispatch_execute(arguments: Sequence[str]) -> None:
     if arguments:
-        raise RuntimeCommandError("execute does not accept arguments in the candidate surface")
+        raise RuntimeCommandError("execute does not accept arguments in the installed surface")
     raise RuntimeCommandError(
         "execution requires an immutable authorized plan and configured provider adapter"
     )
@@ -166,13 +166,17 @@ _COMMANDS = {
 def main(argv: Sequence[str] | None = None) -> None:
     """Dispatch canonical commands without legacy or release-tooling fallbacks."""
     arguments = list(sys.argv[1:] if argv is None else argv)
+    parser = _parser()
     if not arguments:
-        _parser().print_help()
+        parser.print_help()
         raise SystemExit(2)
+    if arguments in (["--help"], ["-h"]):
+        parser.print_help()
+        return
     command, *remaining = arguments
     handler = _COMMANDS.get(command)
     if handler is None:
-        _parser().error(f"unknown command: {command}")
+        parser.error(f"unknown command: {command}")
     handler(remaining)
 
 

@@ -326,25 +326,31 @@ class ArchetypeSelectionEngineV62:
         scores: list[tuple[float, PlanningArchetype, tuple[str, ...]]] = []
         normalized = canonical.raw_input.casefold()
         for archetype in self.registry.archetypes:
-            evidence: list[str] = []
+            evidence_codes_for_archetype: list[str] = []
             score = 0.45
             if archetype.archetype_id == canonical.intent_type:
                 score = 0.92
-                evidence.append("canonical_intent_type")
+                evidence_codes_for_archetype.append("canonical_intent_type")
             matched = tuple(term for term in archetype.trigger_terms if term in normalized)
             if matched:
                 score = max(score, min(0.96, 0.72 + (0.06 * len(matched))))
-                evidence.extend(f"trigger:{term}" for term in matched)
+                evidence_codes_for_archetype.extend(f"trigger:{term}" for term in matched)
             if (
                 archetype.archetype_id == "controlled-technology-pilot"
                 and canonical.canonical_text == _CLOUDVISION_OUTCOME
             ):
                 score = 0.99
-                evidence.append("v611_cloudvision_acceptance_contract")
-            scores.append((score, archetype, tuple(evidence or ("fallback_similarity",))))
+                evidence_codes_for_archetype.append("v611_cloudvision_acceptance_contract")
+            scores.append(
+                (
+                    score,
+                    archetype,
+                    tuple(evidence_codes_for_archetype or ("fallback_similarity",)),
+                )
+            )
         scores.sort(key=lambda item: (-item[0], item[1].archetype_id))
         selected_score, selected, evidence_codes = scores[0]
-        evidence = tuple(
+        evidence_references = tuple(
             EvidenceReference(source="archetype_registry_v1", detail=code)
             for code in evidence_codes
         )
@@ -353,14 +359,14 @@ class ArchetypeSelectionEngineV62:
             "archetype_id": selected.archetype_id,
             "archetype_version": selected.version,
             "confidence": selected_score,
-            "evidence": [item.model_dump(mode="json") for item in evidence],
+            "evidence": [item.model_dump(mode="json") for item in evidence_references],
             "alternatives": alternatives,
         }
         return ArchetypeSelection(
             archetype_id=selected.archetype_id,
             archetype_version=selected.version,
             confidence=selected_score,
-            evidence=evidence,
+            evidence=evidence_references,
             alternatives=alternatives,
             selection_digest=deterministic_digest(values),
         )
