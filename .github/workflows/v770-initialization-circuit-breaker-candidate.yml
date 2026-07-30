@@ -9,7 +9,7 @@ on:
         type: string
   pull_request:
     branches: [main]
-    types: [opened, synchronize, reopened]
+    types: [opened, synchronize, reopened, ready_for_review]
     paths:
       - '.github/workflows/v770-initialization-circuit-breaker-candidate.yml'
       - 'pyproject.toml'
@@ -43,7 +43,9 @@ env:
 
 jobs:
   lean:
-    if: github.event_name == 'pull_request'
+    if: >-
+      github.event_name == 'pull_request' &&
+      github.event.action != 'ready_for_review'
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
@@ -90,18 +92,23 @@ jobs:
             --output-directory build/lean-v770-evidence
 
   full-candidate:
-    if: github.event_name == 'workflow_dispatch'
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'pull_request' &&
+       github.event.action == 'ready_for_review' &&
+       github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.head.ref == 'agent/v770-initialization-circuit-breaker')
     runs-on: ubuntu-24.04
     timeout-minutes: 150
     env:
-      CANDIDATE_COMMIT: ${{ inputs.candidate_commit }}
+      CANDIDATE_COMMIT: ${{ inputs.candidate_commit || github.event.pull_request.head.sha }}
       GH_TOKEN: ${{ github.token }}
     steps:
       - name: Start elapsed-time record
         run: echo "WORKFLOW_STARTED_EPOCH=$(date +%s)" >> "$GITHUB_ENV"
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
         with:
-          ref: ${{ inputs.candidate_commit }}
+          ref: ${{ inputs.candidate_commit || github.event.pull_request.head.sha }}
           fetch-depth: 0
           fetch-tags: true
           persist-credentials: false
