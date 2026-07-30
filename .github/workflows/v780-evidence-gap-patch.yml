@@ -1,0 +1,93 @@
+name: v7.8.0 evidence-gap patch
+
+on:
+  push:
+    branches: [agent/v7.8.0-corrective-hardening]
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          ref: agent/v7.8.0-corrective-hardening
+          fetch-depth: 0
+      - name: Add retained SBOM and source-manifest evidence
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('.github/workflows/v780-corrective-hardening-candidate.yml')
+          text = path.read_text(encoding='utf-8')
+          old = "          sha256sum build/V780_VALIDATION_RECEIPT.json > build/EVIDENCE_CHECKSUMS.sha256\n"
+          new = """          python - <<'PY_EVIDENCE'
+          import json
+          import subprocess
+          from pathlib import Path
+
+          source_commit = Path('build/SOURCE_COMMIT.txt').read_text().strip()
+          runtime_lock = Path('requirements.runtime.lock').read_text(encoding='utf-8').splitlines()
+          packages = []
+          for line in runtime_lock:
+              stripped = line.strip()
+              if not stripped or stripped.startswith('#') or '==' not in stripped:
+                  continue
+              name, remainder = stripped.split('==', 1)
+              version = remainder.split(' ', 1)[0].split('\\\\', 1)[0].strip()
+              packages.append({
+                  'SPDXID': f'SPDXRef-Package-{name}',
+                  'name': name,
+                  'versionInfo': version,
+                  'downloadLocation': 'NOASSERTION',
+                  'filesAnalyzed': False,
+                  'licenseConcluded': 'NOASSERTION',
+                  'licenseDeclared': 'NOASSERTION',
+              })
+          sbom = {
+              'spdxVersion': 'SPDX-2.3',
+              'dataLicense': 'CC0-1.0',
+              'SPDXID': 'SPDXRef-DOCUMENT',
+              'name': 'atlas-ros-7.8.0',
+              'documentNamespace': f'https://github.com/Ryan9876/atlas-ros/spdx/{source_commit}',
+              'creationInfo': {
+                  'created': '2026-07-30T00:00:00Z',
+                  'creators': ['Tool: atlas-v780-candidate-workflow'],
+              },
+              'packages': packages,
+          }
+          Path('build/V780_SBOM.spdx.json').write_text(
+              json.dumps(sbom, indent=2, sort_keys=True) + '\\n', encoding='utf-8'
+          )
+          tree = subprocess.check_output(
+              ['git', 'ls-tree', '-r', '--full-tree', source_commit], text=True
+          ).splitlines()
+          manifest = {
+              'schema_version': 'v780-source-manifest-v1',
+              'source_commit': source_commit,
+              'entries': tree,
+          }
+          Path('build/V780_SOURCE_MANIFEST.json').write_text(
+              json.dumps(manifest, indent=2, sort_keys=True) + '\\n', encoding='utf-8'
+          )
+          PY_EVIDENCE
+          sha256sum \\
+            build/V780_VALIDATION_RECEIPT.json \\
+            build/V780_SBOM.spdx.json \\
+            build/V780_SOURCE_MANIFEST.json \\
+            > build/EVIDENCE_CHECKSUMS.sha256
+"""
+          if old not in text:
+              raise SystemExit('candidate evidence anchor not found')
+          path.write_text(text.replace(old, new), encoding='utf-8')
+          PY
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add .github/workflows/v780-corrective-hardening-candidate.yml
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m "ci: retain v7.8.0 SBOM and source manifest evidence"
+          git push origin HEAD:agent/v7.8.0-corrective-hardening
