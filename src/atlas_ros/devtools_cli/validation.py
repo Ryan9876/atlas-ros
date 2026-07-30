@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import subprocess
+import sys
 import time
 from dataclasses import asdict, dataclass
 from pathlib import Path
@@ -51,6 +52,17 @@ class ValidationReceipt:
     provider_writes: int = 0
 
 
+def _replay_failure(label: str, result: subprocess.CompletedProcess[str]) -> None:
+    """Expose captured diagnostics only for the first failed validation command."""
+    print(f"validation failed: {label}", file=sys.stderr)
+    if result.stdout:
+        sys.stdout.write(result.stdout)
+        sys.stdout.flush()
+    if result.stderr:
+        sys.stderr.write(result.stderr)
+        sys.stderr.flush()
+
+
 def validate(
     tier: str,
     *,
@@ -71,6 +83,7 @@ def validate(
         result = subprocess.run(command, check=False, text=True, capture_output=True)
         (passed if result.returncode == 0 else failed).append(label)
         if result.returncode != 0:
+            _replay_failure(label, result)
             break
     duration = time.monotonic() - started
     complete = execute and not failed and len(passed) == len(commands)
