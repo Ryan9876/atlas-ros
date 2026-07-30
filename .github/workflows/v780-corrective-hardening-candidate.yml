@@ -1,0 +1,270 @@
+name: v7.8.0 corrective hardening candidate
+
+on:
+  workflow_dispatch:
+    inputs:
+      candidate_commit:
+        description: Exact frozen candidate commit SHA
+        required: true
+        type: string
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, ready_for_review]
+    paths:
+      - '.github/workflows/v780-corrective-hardening-candidate.yml'
+      - 'pyproject.toml'
+      - 'src/atlas_ros/__init__.py'
+      - 'src/atlas_ros/entry_points/main.py'
+      - 'src/atlas_ros/devtools_cli/validation.py'
+      - 'src/atlas_ros/runtime/database.py'
+      - 'src/atlas_ros/adapters/**'
+      - 'src/atlas_ros/orchestration/**'
+      - 'src/atlas_ros/reconciliation/**'
+      - 'tests/unit/test_v780_*'
+      - 'tests/unit/test_v700_entry_points.py'
+      - 'tests/test_execution_orchestration_v2.py'
+      - 'tests/test_canonical_reconciliation_v2.py'
+      - 'docs/architecture/V780_*'
+      - 'release/*V780*'
+
+concurrency:
+  group: v780-corrective-${{ github.event.pull_request.number || inputs.candidate_commit || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  CANDIDATE_VERSION: 7.8.0
+
+jobs:
+  lean:
+    if: >-
+      github.event_name == 'pull_request' &&
+      github.event.action != 'ready_for_review'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 1
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.12.10'
+          cache: pip
+      - run: python -m pip install --disable-pip-version-check -e '.[ci]'
+      - name: Targeted static validation
+        run: |
+          ruff check \
+            src/atlas_ros/__init__.py \
+            src/atlas_ros/entry_points/main.py \
+            src/atlas_ros/devtools_cli/validation.py \
+            src/atlas_ros/runtime/database.py \
+            src/atlas_ros/adapters/errors.py \
+            src/atlas_ros/adapters/local_sqlite.py \
+            src/atlas_ros/adapters/notion.py \
+            src/atlas_ros/adapters/notion_execution.py \
+            src/atlas_ros/adapters/todoist.py \
+            src/atlas_ros/orchestration/ports.py \
+            src/atlas_ros/orchestration/execution_v780.py \
+            src/atlas_ros/orchestration/__init__.py \
+            src/atlas_ros/reconciliation/engine.py \
+            tests/unit/test_v700_entry_points.py \
+            tests/unit/test_v780_validation_output.py \
+            tests/unit/test_v780_database_permissions.py \
+            tests/unit/test_v780_governed_retry.py \
+            tests/unit/test_v780_reconciliation_idempotency.py
+          mypy \
+            src/atlas_ros/entry_points/main.py \
+            src/atlas_ros/devtools_cli/validation.py \
+            src/atlas_ros/runtime/database.py \
+            src/atlas_ros/adapters/errors.py \
+            src/atlas_ros/adapters/local_sqlite.py \
+            src/atlas_ros/adapters/notion.py \
+            src/atlas_ros/adapters/notion_execution.py \
+            src/atlas_ros/adapters/todoist.py \
+            src/atlas_ros/orchestration/ports.py \
+            src/atlas_ros/orchestration/execution_v780.py \
+            src/atlas_ros/reconciliation/engine.py
+          python scripts/validate_architecture.py
+      - name: Targeted regression tests
+        run: |
+          pytest --no-cov -q \
+            tests/unit/test_v700_entry_points.py \
+            tests/unit/test_v780_validation_output.py \
+            tests/unit/test_v780_database_permissions.py \
+            tests/unit/test_v780_governed_retry.py \
+            tests/unit/test_v780_reconciliation_idempotency.py \
+            tests/test_execution_orchestration_v2.py \
+            tests/test_canonical_reconciliation_v2.py
+      - name: Package smoke build
+        run: |
+          python -m build
+          test -f dist/atlas_ros-7.8.0.tar.gz
+          test -f dist/atlas_ros-7.8.0-py3-none-any.whl
+          python -c "import atlas_ros; assert atlas_ros.__version__ == '7.8.0'"
+
+  full-candidate:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'pull_request' &&
+       github.event.action == 'ready_for_review' &&
+       github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.head.ref == 'agent/v7.8.0-corrective-hardening')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    env:
+      CANDIDATE_COMMIT: ${{ inputs.candidate_commit || github.event.pull_request.head.sha }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          ref: ${{ inputs.candidate_commit || github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          fetch-tags: true
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.12.10'
+          cache: pip
+      - run: python -m pip install --disable-pip-version-check -e '.[dev]'
+      - name: Bind exact source and live restoration authority
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$CANDIDATE_COMMIT"
+          mkdir -p build dist clean-install restoration
+          git rev-parse HEAD > build/SOURCE_COMMIT.txt
+          git ls-tree -r --full-tree HEAD > build/SOURCE_TREE.txt
+          git fetch --no-tags origin main:refs/remotes/origin/main
+          git show origin/main:governance/AUTHORITY.json > build/LIVE_AUTHORITY.json
+          python - <<'PY' >> "$GITHUB_ENV"
+          import json
+          from pathlib import Path
+          authority = json.loads(Path('build/LIVE_AUTHORITY.json').read_text())
+          active = authority['active_release']
+          rollback = authority['immediate_rollback']
+          assert active['status'] == 'Active'
+          for key, value in {
+              'ACTIVE_VERSION': active['version'],
+              'ACTIVE_TAG': active['tag'],
+              'ACTIVE_COMMIT': active['immutable_commit'],
+              'ROLLBACK_VERSION': rollback['version'],
+              'ROLLBACK_TAG': rollback['tag'],
+              'ROLLBACK_COMMIT': rollback['immutable_commit'],
+          }.items():
+              print(f'{key}={value}')
+          PY
+      - name: Complete correctness gates
+        run: |
+          ruff check \
+            src/atlas_ros/__init__.py \
+            src/atlas_ros/entry_points/main.py \
+            src/atlas_ros/devtools_cli/validation.py \
+            src/atlas_ros/runtime/database.py \
+            src/atlas_ros/adapters/errors.py \
+            src/atlas_ros/adapters/local_sqlite.py \
+            src/atlas_ros/adapters/notion.py \
+            src/atlas_ros/adapters/notion_execution.py \
+            src/atlas_ros/adapters/todoist.py \
+            src/atlas_ros/orchestration/ports.py \
+            src/atlas_ros/orchestration/execution_v780.py \
+            src/atlas_ros/orchestration/__init__.py \
+            src/atlas_ros/reconciliation/engine.py \
+            tests/unit/test_v700_entry_points.py \
+            tests/unit/test_v780_validation_output.py \
+            tests/unit/test_v780_database_permissions.py \
+            tests/unit/test_v780_governed_retry.py \
+            tests/unit/test_v780_reconciliation_idempotency.py
+          mypy src/atlas_ros
+          python scripts/validate_architecture.py
+          python scripts/validate_devtools_boundary.py
+          pytest
+      - name: Secret and dependency audits
+        run: |
+          rm -rf secret-scan-root && mkdir secret-scan-root
+          while IFS= read -r -d '' file; do
+            mkdir -p "secret-scan-root/$(dirname "$file")"
+            cp "$file" "secret-scan-root/$file"
+          done < <(git diff --name-only -z --diff-filter=ACMR origin/main...HEAD -- \
+            '*.cfg' '*.ini' '*.json' '*.md' '*.py' '*.toml' '*.txt' '*.yaml' '*.yml')
+          python scripts/scan_candidate_secrets.py \
+            --root secret-scan-root --output build/V780_SECRET_SCAN.json
+          pip-audit --disable-pip --require-hashes --no-deps --timeout 15 \
+            --progress-spinner off --vulnerability-service pypi \
+            --requirement requirements.runtime.lock --format json \
+            --output build/V780_PIP_AUDIT_PYPI.json
+          pip-audit --disable-pip --require-hashes --no-deps --timeout 15 \
+            --progress-spinner off --vulnerability-service osv \
+            --requirement requirements.runtime.lock --format json \
+            --output build/V780_PIP_AUDIT_OSV.json
+          python scripts/evaluate_dependency_audit.py \
+            build/V780_PIP_AUDIT_PYPI.json build/V780_PIP_AUDIT_OSV.json
+      - name: Build exact package once
+        run: |
+          rm -rf dist
+          python -m build
+          test -f dist/atlas_ros-7.8.0.tar.gz
+          test -f dist/atlas_ros-7.8.0-py3-none-any.whl
+          test "$(find dist -maxdepth 1 -type f | wc -l)" -eq 2
+          printf '1\n' > build/BUILD_COUNT.txt
+      - name: Clean source and wheel installation
+        run: |
+          for kind in sdist wheel; do
+            package=dist/atlas_ros-7.8.0.tar.gz
+            [ "$kind" = wheel ] && package=dist/atlas_ros-7.8.0-py3-none-any.whl
+            python -m venv "clean-install/$kind"
+            "clean-install/$kind/bin/python" -m pip install \
+              --disable-pip-version-check "$package"
+            "clean-install/$kind/bin/python" -c \
+              "import atlas_ros; assert atlas_ros.__version__ == '7.8.0'"
+            "clean-install/$kind/bin/atlas" status --json > "build/${kind}-status.json"
+            "clean-install/$kind/bin/atlas" verify --json > "build/${kind}-verify.json"
+          done
+      - name: Restore Active and immediate rollback
+        run: |
+          mkdir -p "restoration/active-${ACTIVE_VERSION}" \
+            "restoration/rollback-${ROLLBACK_VERSION}"
+          gh release download "$ACTIVE_TAG" --repo "$GITHUB_REPOSITORY" \
+            --dir "restoration/active-${ACTIVE_VERSION}"
+          gh release download "$ROLLBACK_TAG" --repo "$GITHUB_REPOSITORY" \
+            --dir "restoration/rollback-${ROLLBACK_VERSION}"
+          (cd "restoration/active-${ACTIVE_VERSION}" && \
+            sed 's#  dist/#  #' CHECKSUMS.sha256 | sha256sum -c -)
+          (cd "restoration/rollback-${ROLLBACK_VERSION}" && \
+            sed 's#  dist/#  #' CHECKSUMS.sha256 | sha256sum -c -)
+          printf '%s\n' "$ACTIVE_COMMIT" > build/ACTIVE_RESTORATION_COMMIT.txt
+          printf '%s\n' "$ROLLBACK_COMMIT" > build/ROLLBACK_RESTORATION_COMMIT.txt
+      - name: Generate candidate evidence
+        run: |
+          sha256sum dist/* > build/PACKAGE_CHECKSUMS.sha256
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          receipt = {
+              'schema_version': 'v780-candidate-receipt-v1',
+              'candidate_commit': Path('build/SOURCE_COMMIT.txt').read_text().strip(),
+              'build_count': 1,
+              'provider_writes': 0,
+              'todoist_writes': 0,
+              'active_restoration': 'passed',
+              'rollback_restoration': 'passed',
+          }
+          Path('build/V780_VALIDATION_RECEIPT.json').write_text(
+              json.dumps(receipt, indent=2, sort_keys=True) + '\n'
+          )
+          PY
+          sha256sum build/V780_VALIDATION_RECEIPT.json > build/EVIDENCE_CHECKSUMS.sha256
+      - id: upload
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: atlas-ros-v780-corrective-${{ env.CANDIDATE_COMMIT }}
+          path: |
+            dist/
+            build/
+            release/RELEASE_MANIFEST_V780_DRAFT.md
+            release/V780_EXACT_PACKAGE_AUTHORIZATION_TEMPLATE.md
+          if-no-files-found: error
+          retention-days: 90
