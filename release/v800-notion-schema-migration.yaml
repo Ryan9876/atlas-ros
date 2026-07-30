@@ -25,6 +25,8 @@ preconditions:
   - Provenance
   - Command Digest
   - Idempotency Identity
+  - Responsible Identity
+  - Accountable Identity
   - Todoist Checkpoint ID
   - Todoist Checkpoint URL
   - Latest Reconciliation State
@@ -38,6 +40,10 @@ additive_fields:
 - name: Command Digest
   type: RICH_TEXT
 - name: Idempotency Identity
+  type: RICH_TEXT
+- name: Responsible Identity
+  type: RICH_TEXT
+- name: Accountable Identity
   type: RICH_TEXT
 - name: Todoist Checkpoint ID
   type: RICH_TEXT
