@@ -48,7 +48,9 @@ class DelegationTransitionV1(DigestBoundModel):
     accountable_party: str
     expected_outcome: str
     completion_criteria: tuple[str, ...]
-    checkpoint: str | None
+    delegate_due: str | None = None
+    follow_up_checkpoint: str | None = None
+    checkpoint: str | None = None
     resulting_state: EffectiveWorkState = EffectiveWorkState.DELEGATED
     transition_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
 
@@ -60,6 +62,12 @@ class DelegationTransitionV1(DigestBoundModel):
     def validate_transition(self) -> DelegationTransitionV1:
         if not self.completion_criteria:
             raise ValueError("delegation transition requires completion criteria")
+        if (
+            self.follow_up_checkpoint is not None
+            and self.checkpoint is not None
+            and self.follow_up_checkpoint != self.checkpoint
+        ):
+            raise ValueError("checkpoint is only a compatibility alias for follow-up")
         if not self.verify_digest():
             raise ValueError("delegation transition digest mismatch")
         return self

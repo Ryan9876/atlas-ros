@@ -6,7 +6,7 @@ from typing import Any, Literal
 
 from pydantic import Field, model_validator
 
-from atlas_ros.contracts.advisory_v1 import ConfidenceAssessment
+from atlas_ros.contracts.advisory_v1 import ConfidenceAssessment, ProvenanceRecord
 
 from .base import AtlasCommandType, AuthoritativeSystem, DigestBoundModel
 from .records import OperationalRecordRefV1
@@ -74,8 +74,11 @@ class CommandInterpretationV1(DigestBoundModel):
     accountable_party: str | None = None
     expected_outcome: str | None = None
     completion_criteria: tuple[str, ...] = ()
+    delegate_due: str | None = None
+    follow_up_checkpoint: str | None = None
     next_checkpoint: str | None = None
     next_ryan_owned_action: str | None = None
+    provenance: tuple[ProvenanceRecord, ...] = ()
     confidence: ConfidenceAssessment
     ambiguity: tuple[str, ...] = ()
     blockers: tuple[str, ...] = ()
@@ -89,6 +92,63 @@ class CommandInterpretationV1(DigestBoundModel):
     def validate_interpretation(self) -> CommandInterpretationV1:
         if self.ambiguity and not self.blockers:
             raise ValueError("ambiguous interpretation must fail closed with blockers")
+        if (
+            self.follow_up_checkpoint is not None
+            and self.next_checkpoint is not None
+            and self.follow_up_checkpoint != self.next_checkpoint
+        ):
+            raise ValueError("next_checkpoint must remain the follow-up compatibility alias")
         if not self.verify_digest():
             raise ValueError("command interpretation digest mismatch")
+        return self
+
+
+class TaskUpdateLifecycleNormalizationV1(DigestBoundModel):
+    """Deterministic, provider-free normalization of one task update.
+
+    The result is a proposal only. It cannot authorize planning or execution.
+    """
+
+    digest_field = "normalization_digest"
+
+    contract_id: Literal["atlas.task-update-lifecycle-normalization"] = (
+        "atlas.task-update-lifecycle-normalization"
+    )
+    schema_version: Literal["1.0"] = "1.0"
+    source: CommandSourceRefV1
+    classification: AtlasCommandType
+    proposed_command: AtlasCommandV1
+    actionable_transition: bool
+    responsible_party: str | None = None
+    accountable_party: str | None = None
+    expected_outcome: str | None = None
+    completion_criteria: tuple[str, ...] = ()
+    delegate_due: str | None = None
+    follow_up_checkpoint: str | None = None
+    confidence: ConfidenceAssessment
+    provenance: tuple[ProvenanceRecord, ...] = ()
+    evidence: tuple[str, ...] = ()
+    ambiguity: tuple[str, ...] = ()
+    blockers: tuple[str, ...] = ()
+    normalization_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
+
+    @classmethod
+    def create(cls, **values: Any) -> TaskUpdateLifecycleNormalizationV1:
+        return cls(normalization_digest=cls.compute_digest(values), **values)
+
+    @model_validator(mode="after")
+    def validate_normalization(self) -> TaskUpdateLifecycleNormalizationV1:
+        if self.proposed_command.command_type != self.classification:
+            raise ValueError("normalization classification must match proposed command")
+        if self.ambiguity and not self.blockers:
+            raise ValueError("ambiguous normalization must fail closed with blockers")
+        if self.classification == AtlasCommandType.DELEGATE and not self.blockers:
+            if not self.responsible_party:
+                raise ValueError("qualified delegation requires a responsible party")
+            if not self.expected_outcome:
+                raise ValueError("qualified delegation requires an expected outcome")
+            if not self.completion_criteria:
+                raise ValueError("qualified delegation requires completion criteria")
+        if not self.verify_digest():
+            raise ValueError("task-update normalization digest mismatch")
         return self

@@ -54,6 +54,13 @@ class TodoistOperationalStateAdapter:
                     blockers=_strings(task.get("blockers")),
                     dependencies=_strings(task.get("dependencies")),
                     due_date=_optional(task.get("due_date")),
+                    follow_up_checkpoint=_optional(task.get("due_date")),
+                    todoist_checkpoint_id=task_id,
+                    todoist_checkpoint_url=_optional(task.get("url")),
+                    idempotency_identity=_optional(task.get("idempotency_identity")),
+                    latest_reconciliation_state=_optional(
+                        task.get("latest_reconciliation_state")
+                    ),
                     priority=int(task.get("priority", 4)),
                     child_ids=tuple(
                         f"todoist:{item}"

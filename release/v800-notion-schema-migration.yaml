@@ -1,0 +1,57 @@
+schema_version: '1.0'
+migration_id: atlas.v800.delegated-work.task-update-lifecycle-fields
+status: candidate_unapplied
+target:
+  system: notion
+  database: Delegated Work
+  data_source: collection://6d035d30-6c3b-4e69-b67d-2f0315831eb3
+preconditions:
+  required_existing_fields:
+  - Delegated Outcome
+  - Status
+  - Assigned Resource
+  - Accountable Owner
+  - Assigned Date
+  - Delivery Due Date
+  - Done When
+  - Next Checkpoint
+  - Acceptance Status
+  - Parent Action
+  - Todoist Command ID
+  - Todoist Parent Task ID
+  required_absent_fields:
+  - Effective State
+  - Source Update
+  - Provenance
+  - Command Digest
+  - Idempotency Identity
+  - Responsible Identity
+  - Accountable Identity
+  - Todoist Checkpoint ID
+  - Todoist Checkpoint URL
+  - Latest Reconciliation State
+additive_fields:
+- name: Effective State
+  type: RICH_TEXT
+- name: Source Update
+  type: RICH_TEXT
+- name: Provenance
+  type: RICH_TEXT
+- name: Command Digest
+  type: RICH_TEXT
+- name: Idempotency Identity
+  type: RICH_TEXT
+- name: Responsible Identity
+  type: RICH_TEXT
+- name: Accountable Identity
+  type: RICH_TEXT
+- name: Todoist Checkpoint ID
+  type: RICH_TEXT
+- name: Todoist Checkpoint URL
+  type: URL
+- name: Latest Reconciliation State
+  type: RICH_TEXT
+destructive_operations: []
+production_apply_authorized: false
+compatibility: Atlas ROS v7.8.0 ignores additive fields and remains rollback compatible
+rollback: leave additive fields unused; no data rewrite or deletion is required

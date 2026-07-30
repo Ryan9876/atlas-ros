@@ -89,6 +89,14 @@ class NormalizedOperationalRecordV1(DigestBoundModel):
     protected_history: bool = False
     todoist_task_id: str | None = None
     expected_outcome: str | None = None
+    delegate_due: str | None = None
+    follow_up_checkpoint: str | None = None
+    todoist_checkpoint_id: str | None = None
+    todoist_checkpoint_url: str | None = None
+    source_update: str | None = None
+    command_digest: str | None = None
+    idempotency_identity: str | None = None
+    latest_reconciliation_state: str | None = None
     received_evidence: tuple[str, ...] = ()
     extra: dict[str, Any] = Field(default_factory=dict)
     record_digest: str = Field(pattern=r"^[0-9a-f]{64}$")

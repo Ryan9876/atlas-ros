@@ -198,96 +198,6 @@
       "title": "MissingDataIndicator",
       "type": "object"
     },
-    "OperationalRecordRefV1": {
-      "additionalProperties": false,
-      "properties": {
-        "authoritative_system": {
-          "$ref": "#/$defs/AuthoritativeSystem"
-        },
-        "canonical_record_id": {
-          "maxLength": 512,
-          "minLength": 1,
-          "title": "Canonical Record Id",
-          "type": "string"
-        },
-        "canonical_url": {
-          "anyOf": [
-            {
-              "maxLength": 2000,
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "Canonical Url"
-        },
-        "contract_id": {
-          "const": "atlas.operational-record-ref",
-          "default": "atlas.operational-record-ref",
-          "title": "Contract Id",
-          "type": "string"
-        },
-        "parent_record_id": {
-          "anyOf": [
-            {
-              "maxLength": 512,
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "Parent Record Id"
-        },
-        "record_type": {
-          "$ref": "#/$defs/OperationalRecordType"
-        },
-        "schema_version": {
-          "const": "1.0",
-          "default": "1.0",
-          "title": "Schema Version",
-          "type": "string"
-        },
-        "source_digest": {
-          "pattern": "^[0-9a-f]{64}$",
-          "title": "Source Digest",
-          "type": "string"
-        },
-        "source_revision": {
-          "maxLength": 512,
-          "minLength": 1,
-          "title": "Source Revision",
-          "type": "string"
-        }
-      },
-      "required": [
-        "record_type",
-        "canonical_record_id",
-        "authoritative_system",
-        "source_revision",
-        "source_digest"
-      ],
-      "title": "OperationalRecordRefV1",
-      "type": "object"
-    },
-    "OperationalRecordType": {
-      "enum": [
-        "action_record",
-        "execution_step",
-        "delegated_work",
-        "portfolio_project",
-        "risk_or_blocker",
-        "todoist_task",
-        "provider_transaction_receipt",
-        "decision_record",
-        "review_record"
-      ],
-      "title": "OperationalRecordType",
-      "type": "string"
-    },
     "ProvenanceRecord": {
       "properties": {
         "observed_at": {
@@ -334,7 +244,7 @@
       "type": "string"
     }
   },
-  "$id": "https://github.com/Ryan9876/atlas-ros/schemas/operational-awareness/command-interpretation.schema.json",
+  "$id": "https://github.com/Ryan9876/atlas-ros/schemas/operational-awareness/task-update-lifecycle-normalization.schema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "properties": {
@@ -350,16 +260,9 @@
       "default": null,
       "title": "Accountable Party"
     },
-    "affected_notion_record": {
-      "anyOf": [
-        {
-          "$ref": "#/$defs/OperationalRecordRefV1"
-        },
-        {
-          "type": "null"
-        }
-      ],
-      "default": null
+    "actionable_transition": {
+      "title": "Actionable Transition",
+      "type": "boolean"
     },
     "ambiguity": {
       "default": [],
@@ -377,8 +280,8 @@
       "title": "Blockers",
       "type": "array"
     },
-    "command": {
-      "$ref": "#/$defs/AtlasCommandV1"
+    "classification": {
+      "$ref": "#/$defs/AtlasCommandType"
     },
     "completion_criteria": {
       "default": [],
@@ -392,8 +295,8 @@
       "$ref": "#/$defs/ConfidenceAssessment"
     },
     "contract_id": {
-      "const": "atlas.command-interpretation",
-      "default": "atlas.command-interpretation",
+      "const": "atlas.task-update-lifecycle-normalization",
+      "default": "atlas.task-update-lifecycle-normalization",
       "title": "Contract Id",
       "type": "string"
     },
@@ -408,6 +311,14 @@
       ],
       "default": null,
       "title": "Delegate Due"
+    },
+    "evidence": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Evidence",
+      "type": "array"
     },
     "expected_outcome": {
       "anyOf": [
@@ -433,45 +344,13 @@
       "default": null,
       "title": "Follow Up Checkpoint"
     },
-    "interpretation_digest": {
+    "normalization_digest": {
       "pattern": "^[0-9a-f]{64}$",
-      "title": "Interpretation Digest",
+      "title": "Normalization Digest",
       "type": "string"
     },
-    "next_checkpoint": {
-      "anyOf": [
-        {
-          "type": "string"
-        },
-        {
-          "type": "null"
-        }
-      ],
-      "default": null,
-      "title": "Next Checkpoint"
-    },
-    "next_ryan_owned_action": {
-      "anyOf": [
-        {
-          "type": "string"
-        },
-        {
-          "type": "null"
-        }
-      ],
-      "default": null,
-      "title": "Next Ryan Owned Action"
-    },
-    "parent_outcome": {
-      "anyOf": [
-        {
-          "$ref": "#/$defs/OperationalRecordRefV1"
-        },
-        {
-          "type": "null"
-        }
-      ],
-      "default": null
+    "proposed_command": {
+      "$ref": "#/$defs/AtlasCommandV1"
     },
     "provenance": {
       "default": [],
@@ -498,13 +377,19 @@
       "default": "1.0",
       "title": "Schema Version",
       "type": "string"
+    },
+    "source": {
+      "$ref": "#/$defs/CommandSourceRefV1"
     }
   },
   "required": [
-    "command",
+    "source",
+    "classification",
+    "proposed_command",
+    "actionable_transition",
     "confidence",
-    "interpretation_digest"
+    "normalization_digest"
   ],
-  "title": "CommandInterpretationV1",
+  "title": "TaskUpdateLifecycleNormalizationV1",
   "type": "object"
 }

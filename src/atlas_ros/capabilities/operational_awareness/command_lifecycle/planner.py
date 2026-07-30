@@ -4,7 +4,11 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from atlas_ros.contracts.advisory_v1 import ConfidenceAssessment
+from atlas_ros.contracts.advisory_v1 import (
+    ConfidenceAssessment,
+    ProvenanceRecord,
+    ValueOrigin,
+)
 from atlas_ros.contracts.digests import sha256_digest
 from atlas_ros.contracts.operational_awareness import (
     AtlasCommandType,
@@ -38,51 +42,81 @@ class CommandLifecycleService:
         }
         source_record = self._resolve_source_record(command, snapshot)
         parent = self._resolve_parent(command, source_record, records)
-        ambiguity: list[str] = []
-        blockers: list[str] = []
+        ambiguity: list[str] = self._encoded_values(
+            command.fields.get("normalization-ambiguity")
+        )
+        blockers: list[str] = self._encoded_values(
+            command.fields.get("normalization-blockers")
+        )
         if parent is None:
             ambiguity.append("parent outcome could not be resolved uniquely")
             blockers.append("resolve the exact persistent parent outcome")
         responsible = command.subject or command.fields.get("responsible")
         if command.command_type == AtlasCommandType.DELEGATE and not responsible:
             ambiguity.append("delegation requires a responsible party")
-            blockers.append("resolve the assignee identity")
+            if "Responsible party required" not in blockers:
+                blockers.append("resolve the assignee identity")
         expected_outcome = command.fields.get("outcome") or command.fields.get("expected")
         if command.command_type == AtlasCommandType.DELEGATE and not expected_outcome:
             ambiguity.append("delegation requires an expected outcome")
-            blockers.append("provide the delegated outcome")
+            if "Expected outcome required" not in blockers:
+                blockers.append("provide the delegated outcome")
         done_when = command.fields.get("done-when")
         completion_criteria = (done_when,) if done_when else source_record.definition_of_done
         if command.command_type == AtlasCommandType.DELEGATE and not completion_criteria:
             ambiguity.append("delegation requires completion criteria")
-            blockers.append("provide done-when criteria")
-        checkpoint = command.fields.get("follow-up") or command.fields.get("checkpoint")
-        if checkpoint is None and self.policy.command.missing_checkpoint_behavior == "reject":
-            blockers.append("checkpoint is required by policy")
+            if "Completion criteria required" not in blockers:
+                blockers.append("provide done-when criteria")
+        delegate_due = command.fields.get("delegate-due") or command.fields.get(
+            "delegate-due-date"
+        )
+        follow_up = command.fields.get("follow-up") or command.fields.get("checkpoint")
+        if follow_up is None and self.policy.command.missing_checkpoint_behavior == "reject":
+            blockers.append("Ryan follow-up checkpoint required by policy")
         next_action = self._next_action(command, responsible, expected_outcome)
-        score = 1.0 if not ambiguity else max(0.0, 1.0 - 0.3 * len(ambiguity))
+        score = 1.0 if not ambiguity and not blockers else max(0.0, 1.0 - 0.2 * len(blockers))
+        origin = command.fields.get("intent-origin", "explicit-command")
+        provenance = (
+            ProvenanceRecord(
+                source_ref=(
+                    f"{command.source.source_provider.value}:"
+                    f"{command.source.source_task_id}:"
+                    f"{command.source.source_task_revision}"
+                ),
+                origin=ValueOrigin.OBSERVED,
+                observed_at=command.source.source_task_revision,
+            ),
+        )
         return CommandInterpretationV1.create(
             command=command,
             parent_outcome=parent.record_ref if parent is not None else None,
             affected_notion_record=source_record.record_ref,
             responsible_party=responsible,
-            accountable_party=source_record.accountable_party or source_record.owner or "Ryan",
+            accountable_party=(
+                command.fields.get("accountable")
+                or source_record.accountable_party
+                or source_record.owner
+                or "Ryan"
+            ),
             expected_outcome=(
                 expected_outcome or source_record.expected_outcome or source_record.title
             ),
             completion_criteria=completion_criteria,
-            next_checkpoint=checkpoint,
+            delegate_due=delegate_due,
+            follow_up_checkpoint=follow_up,
+            next_checkpoint=follow_up,
             next_ryan_owned_action=next_action,
+            provenance=provenance,
             confidence=ConfidenceAssessment(
                 score=score,
                 rationale=(
-                    "explicit command normalized deterministically"
-                    if not ambiguity
-                    else "command is blocked by unresolved deterministic ambiguity"
+                    f"{origin} normalized deterministically"
+                    if not ambiguity and not blockers
+                    else f"{origin} is blocked by unresolved deterministic ambiguity"
                 ),
             ),
-            ambiguity=tuple(ambiguity),
-            blockers=tuple(blockers),
+            ambiguity=tuple(dict.fromkeys(ambiguity)),
+            blockers=tuple(dict.fromkeys(blockers)),
         )
 
     def plan(
@@ -103,30 +137,66 @@ class CommandLifecycleService:
             str(item) for item in parent.extra.get("active_ryan_checkpoint_ids", ())
         )
         action_title = interpretation.next_ryan_owned_action
+        if command.command_type == AtlasCommandType.DELEGATE and interpretation.responsible_party:
+            action_title = (
+                f"Follow up with {interpretation.responsible_party} on {parent.title}"
+            )
         state = self._resulting_state(command.command_type)
+        delegated_identity = self._delegated_work_identity(interpretation, parent)
+        notion_target = (
+            delegated_identity
+            if command.command_type == AtlasCommandType.DELEGATE
+            else (
+                interpretation.affected_notion_record.canonical_record_id
+                if interpretation.affected_notion_record
+                else parent.record_ref.canonical_record_id
+            )
+        )
         notion_payload = {
-            "record_id": interpretation.affected_notion_record.canonical_record_id
-            if interpretation.affected_notion_record
-            else parent.record_ref.canonical_record_id,
+            "record_id": notion_target,
             "transition": command.command_type.value,
+            "delegate": interpretation.responsible_party,
             "responsible_party": interpretation.responsible_party,
+            "accountable_owner": interpretation.accountable_party,
             "accountable_party": interpretation.accountable_party,
             "expected_outcome": interpretation.expected_outcome,
             "completion_criteria": interpretation.completion_criteria,
-            "checkpoint": interpretation.next_checkpoint,
+            "delegated_date": command.source.source_task_revision,
+            "delegate_due": interpretation.delegate_due,
+            "follow_up_checkpoint": interpretation.follow_up_checkpoint,
+            "acceptance_status": "unconfirmed",
             "effective_state": state.value,
+            "parent_action_record": parent.record_ref.canonical_record_id,
+            "parent_action_url": parent.record_ref.canonical_url,
+            "source_update": command.source.source_command_text,
+            "provenance": [
+                {
+                    "source_ref": item.source_ref,
+                    "origin": item.origin.value,
+                    "observed_at": item.observed_at,
+                }
+                for item in interpretation.provenance
+            ],
             "command_digest": command.command_digest,
+            "idempotency_identity": command.idempotency_identity,
+            "latest_reconciliation_state": "planned_not_executed",
         }
         notion_operation = ProviderOperationSpecV1.create(
             provider="notion",
-            action="upsert_management_state",
-            target=notion_payload["record_id"],
+            action=(
+                "upsert_delegated_work"
+                if command.command_type == AtlasCommandType.DELEGATE
+                else "upsert_management_state"
+            ),
+            target=notion_target,
             payload=notion_payload,
-            idempotency_key=f"{command.idempotency_identity}:notion",
+            idempotency_key=f"{command.idempotency_identity}:notion:{notion_target}",
             expected_readback={
+                "record_id": notion_target,
                 "transition": command.command_type.value,
                 "effective_state": state.value,
                 "command_digest": command.command_digest,
+                "idempotency_identity": command.idempotency_identity,
             },
         )
         todoist_operations: list[ProviderOperationSpecV1] = []
@@ -146,7 +216,7 @@ class CommandLifecycleService:
                 {
                     "parent": parent.todoist_task_id,
                     "title": action_title,
-                    "checkpoint": interpretation.next_checkpoint,
+                    "checkpoint": interpretation.follow_up_checkpoint,
                 }
             )
             todoist_operations.append(
@@ -157,14 +227,21 @@ class CommandLifecycleService:
                     payload={
                         "parent_task_id": parent.todoist_task_id,
                         "content": action_title,
-                        "due": interpretation.next_checkpoint,
+                        "due": interpretation.follow_up_checkpoint,
                         "projection_identity": next_identity,
+                        "authoritative_record_identity": notion_target,
+                        "authoritative_record_url": parent.record_ref.canonical_url,
+                        "description": (
+                            f"Authoritative Delegated Work: {notion_target}; "
+                            f"parent outcome: {parent.title}"
+                        ),
                     },
                     idempotency_key=f"{command.idempotency_identity}:checkpoint:{next_identity}",
                     expected_readback={
                         "parent_task_id": parent.todoist_task_id,
                         "content": action_title,
-                        "due": interpretation.next_checkpoint,
+                        "due": interpretation.follow_up_checkpoint,
+                        "authoritative_record_identity": notion_target,
                     },
                 )
             )
@@ -185,7 +262,7 @@ class CommandLifecycleService:
         projection = NextActionProjectionV1.create(
             parent_outcome=parent.record_ref,
             action_title=action_title,
-            due_date_or_checkpoint=interpretation.next_checkpoint,
+            due_date_or_checkpoint=interpretation.follow_up_checkpoint,
             reason=f"typed {command.command_type.value} lifecycle transition",
             replaces_task_ids=active_checkpoints,
             preserves_parent=True,
@@ -280,6 +357,26 @@ class CommandLifecycleService:
             AtlasCommandType.CANCEL: command.fields.get("next-action"),
         }
         return mapping[command.command_type]
+
+    @staticmethod
+    def _encoded_values(value: str | None) -> list[str]:
+        return [item.strip() for item in value.split(" | ") if item.strip()] if value else []
+
+    @staticmethod
+    def _delegated_work_identity(
+        interpretation: CommandInterpretationV1,
+        parent: NormalizedOperationalRecordV1,
+    ) -> str:
+        if interpretation.command.command_type != AtlasCommandType.DELEGATE:
+            return parent.record_ref.canonical_record_id
+        digest = sha256_digest(
+            {
+                "parent": parent.record_ref.canonical_record_id,
+                "responsible": interpretation.responsible_party,
+                "outcome": interpretation.expected_outcome,
+            }
+        )
+        return f"delegated-work:{digest}"
 
     @staticmethod
     def _resulting_state(command_type: AtlasCommandType) -> EffectiveWorkState:

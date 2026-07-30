@@ -146,6 +146,18 @@
           "title": "Contract Id",
           "type": "string"
         },
+        "delegate_due": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Delegate Due"
+        },
         "expected_outcome": {
           "anyOf": [
             {
@@ -157,6 +169,18 @@
           ],
           "default": null,
           "title": "Expected Outcome"
+        },
+        "follow_up_checkpoint": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Follow Up Checkpoint"
         },
         "interpretation_digest": {
           "pattern": "^[0-9a-f]{64}$",
@@ -197,6 +221,14 @@
             }
           ],
           "default": null
+        },
+        "provenance": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/ProvenanceRecord"
+          },
+          "title": "Provenance",
+          "type": "array"
         },
         "responsible_party": {
           "anyOf": [
@@ -445,6 +477,51 @@
         "review_record"
       ],
       "title": "OperationalRecordType",
+      "type": "string"
+    },
+    "ProvenanceRecord": {
+      "properties": {
+        "observed_at": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Observed At"
+        },
+        "origin": {
+          "$ref": "#/$defs/ValueOrigin"
+        },
+        "schema_version": {
+          "default": "advisory-v1",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "source_ref": {
+          "title": "Source Ref",
+          "type": "string"
+        }
+      },
+      "required": [
+        "source_ref",
+        "origin"
+      ],
+      "title": "ProvenanceRecord",
+      "type": "object"
+    },
+    "ValueOrigin": {
+      "enum": [
+        "observed",
+        "inferred",
+        "configured",
+        "simulated",
+        "unknown"
+      ],
+      "title": "ValueOrigin",
       "type": "string"
     }
   },
