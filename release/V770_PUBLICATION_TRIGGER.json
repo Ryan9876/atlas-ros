@@ -1,0 +1,12 @@
+{
+  "artifact_id": 8745439952,
+  "artifact_sha256": "10f950c596f173e8846008656cf8180b685c9af05242affce1b4f746166b070d",
+  "authorization_sha256": "267bd2aa6f43e2e52df0df3bad0986e52f1f4ac731be2a5798fa08c4e4ba4ab0",
+  "decision_id": "V4D-59",
+  "implementation_merge": "4bc1bdb2ef9139988bf48902ac13c55c08f63f13",
+  "package_source_commit": "63cea36766e1398d5c60674ac57487020273c109",
+  "release_manifest_sha256": "1b557de47f366aad3bc684dd87cc63eae78a19ff27da06ca9eddf9128cec74a0",
+  "review_id": "V4V-105",
+  "schema_version": "v770-publication-trigger-v1",
+  "tag": "v7.7.0"
+}
