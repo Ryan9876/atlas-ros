@@ -9,8 +9,8 @@ from collections.abc import Sequence
 
 from atlas_ros import __version__
 
-CANDIDATE_VERSION = "7.6.1"
-ACTIVE_PRODUCTION_VERSION = "7.6.0"
+CANDIDATE_VERSION = "7.7.0"
+ACTIVE_PRODUCTION_VERSION = "7.6.1"
 
 
 class RuntimeCommandError(RuntimeError):
@@ -48,6 +48,11 @@ def initialize(*, json_output: bool = False) -> None:
             "Notion Integration Inventory reader",
             "Todoist liveness reader",
         ],
+        "receipt_schema_version": "2.0",
+        "terminal_lock_activated": True,
+        "provider_writes": 0,
+        "google_drive_reads": 0,
+        "post_terminal_executed_calls": 0,
         "writes": False,
     }
     if json_output:

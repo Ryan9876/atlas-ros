@@ -79,12 +79,62 @@ class InitializationIntegrationResult(BaseModel):
     live_readable: bool
 
 
-class InitializationReceipt(BaseModel):
-    """Compact non-authoritative receipt for one Quick Initialization attempt."""
+class InitializationTraceEntry(BaseModel):
+    """One deterministic initialization trace event."""
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    schema_version: Literal["1.0"] = "1.0"
+    sequence: int = Field(ge=1)
+    state: str = Field(min_length=1, max_length=64)
+    capability: str = Field(min_length=1, max_length=128)
+    target: str = Field(min_length=1, max_length=1024)
+    outcome: Literal["completed", "failed", "rejected", "hit", "internal"]
+    attempt: int = Field(ge=0, le=2)
+    initiator: str = Field(min_length=1, max_length=128)
+    provider_invoked: bool
+    detail: str = Field(default="", max_length=2048)
+
+
+class InitializationRejectedCall(BaseModel):
+    """Pre-provider rejection evidence for one denied initialization-scoped call."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    sequence: int = Field(ge=1)
+    state: str = Field(min_length=1, max_length=64)
+    capability: str = Field(min_length=1, max_length=128)
+    target: str = Field(min_length=1, max_length=1024)
+    rejection_reason: str = Field(min_length=1, max_length=2048)
+    initiator: str = Field(min_length=1, max_length=128)
+    provider_invoked: Literal[False] = False
+
+
+class InitializationReadBudget(BaseModel):
+    """Read-budget accounting for one Quick Initialization operation."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    expected_external_reads: int = Field(ge=0, le=6)
+    maximum_clean_cold_reads: Literal[6] = 6
+    attempted_external_reads: int = Field(ge=0)
+    completed_external_reads: int = Field(ge=0)
+    failed_external_reads: int = Field(ge=0)
+    retry_count: int = Field(ge=0, le=1)
+    cache_reads: int = Field(ge=0)
+    cache_rejections: int = Field(ge=0)
+    rejected_calls: int = Field(ge=0)
+    reads_by_connector: dict[str, int] = Field(default_factory=dict)
+    reads_by_target: dict[str, int] = Field(default_factory=dict)
+    budget_passed: bool
+
+
+class InitializationReceipt(BaseModel):
+    """Versioned non-authoritative receipt for one Quick Initialization attempt."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    schema_version: Literal["1.0", "2.0"] = "2.0"
+    operation_id: str = Field(default="legacy-unbound", min_length=1, max_length=128)
     status: Literal["READY", "READY_WITH_WARNINGS", "INITIALIZATION_BLOCKED"]
     active_version: str | None = None
     active_commit: str | None = None
@@ -107,5 +157,15 @@ class InitializationReceipt(BaseModel):
     inventory_last_verified_at: datetime | None = None
     warnings: tuple[str, ...] = ()
     blocked_condition: str | None = None
+    expected_read_plan: tuple[str, ...] = ()
+    actual_trace: tuple[InitializationTraceEntry, ...] = ()
+    external_read_count: int = Field(default=0, ge=0)
+    retry_count: int = Field(default=0, ge=0, le=1)
+    rejected_call_count: int = Field(default=0, ge=0)
+    rejected_calls: tuple[InitializationRejectedCall, ...] = ()
+    read_budget: InitializationReadBudget | None = None
+    budget_result: bool = False
+    terminal_lock_activated: bool = False
     provider_writes: Literal[0] = 0
     google_drive_reads: Literal[0] = 0
+    post_terminal_executed_calls: Literal[0] = 0

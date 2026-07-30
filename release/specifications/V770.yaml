@@ -1,0 +1,23 @@
+schema_version: "1.0"
+release:
+  version: "7.7.0"
+  status: candidate_non_publishing
+  predecessor: "7.6.1"
+  proposed_immediate_rollback: "7.6.1"
+  preserved_rollback: "7.6.0"
+feature:
+  name: deterministic_initialization_circuit_breaker
+  cold_external_reads: 6
+  warm_external_reads: 4
+  maximum_transient_retries: 1
+  terminal_states:
+    - READY
+    - READY_WITH_WARNINGS
+    - INITIALIZATION_BLOCKED
+boundaries:
+  provider_writes: 0
+  google_drive_reads: 0
+  post_terminal_executed_calls: 0
+  publication_authorized: false
+  production_activation_authorized: false
+  authority_change_authorized: false
