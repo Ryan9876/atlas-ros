@@ -63,7 +63,7 @@ for prefix in (
     )
     assert result.returncode == 0, result.stderr
     payload = json.loads(result.stdout)
-    assert payload["version"] == "7.7.0"
+    assert payload["version"] == "7.8.0"
     assert payload["active_production_version"] == "7.6.1"
 
 
