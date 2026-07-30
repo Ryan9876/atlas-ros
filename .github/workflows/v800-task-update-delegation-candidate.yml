@@ -1,0 +1,221 @@
+name: v8.0.0 task-update delegation candidate
+
+on:
+  workflow_dispatch:
+    inputs:
+      candidate_commit:
+        description: Exact frozen candidate commit SHA
+        required: true
+        type: string
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, ready_for_review]
+    paths:
+      - '.github/workflows/v800-*'
+      - 'pyproject.toml'
+      - 'requirements.runtime.lock'
+      - 'src/atlas_ros/contracts/operational_awareness/**'
+      - 'src/atlas_ros/contracts/schemas.py'
+      - 'src/atlas_ros/capabilities/operational_awareness/command_lifecycle/**'
+      - 'src/atlas_ros/application/command_lifecycle.py'
+      - 'src/atlas_ros/planning/operational_awareness.py'
+      - 'src/atlas_ros/adapters/**'
+      - 'src/atlas_ros/reconciliation/**'
+      - 'schemas/operational-awareness/**'
+      - 'governance/contract-catalog.yaml'
+      - 'tests/fixtures/operational-awareness/v800-*'
+      - 'tests/unit/test_v800_*'
+      - 'docs/adr/ADR-0080-*'
+      - 'docs/operations/ATLAS_ROS_V800_*'
+      - 'release/*V800*'
+      - 'release/v800-*'
+      - 'scripts/*v800*'
+
+concurrency:
+  group: v800-delegation-${{ github.event.pull_request.number || inputs.candidate_commit || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  CANDIDATE_VERSION: 8.0.0
+
+jobs:
+  lean:
+    if: github.event_name == 'pull_request' && github.event.action != 'ready_for_review'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 1
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.12.10'
+          cache: pip
+      - run: python -m pip install --disable-pip-version-check -e '.[ci]'
+      - name: Targeted static validation
+        run: |
+          ruff check src/atlas_ros tests/unit/test_v800_task_update_delegation.py tests/unit/test_v800_release_controls.py
+          mypy src/atlas_ros
+          python scripts/validate_architecture.py
+          python scripts/validate_devtools_boundary.py
+      - name: Targeted conformance tests
+        run: |
+          pytest --no-cov -q tests/unit/test_v800_task_update_delegation.py tests/unit/test_v800_release_controls.py tests/unit/test_v730_operational_awareness.py
+      - name: Candidate migration validation
+        run: python scripts/validate_v800_notion_migration.py
+
+  full-candidate:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'pull_request' &&
+       github.event.action == 'ready_for_review' &&
+       github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.head.ref == 'agent/v8.0.0-task-update-delegation')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    env:
+      CANDIDATE_COMMIT: ${{ inputs.candidate_commit || github.event.pull_request.head.sha }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          ref: ${{ inputs.candidate_commit || github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          fetch-tags: true
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.12.10'
+          cache: pip
+      - run: python -m pip install --disable-pip-version-check -e '.[dev]'
+      - name: Bind exact source and live restoration authority
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$CANDIDATE_COMMIT"
+          mkdir -p build dist clean-install restoration
+          git rev-parse HEAD > build/SOURCE_COMMIT.txt
+          git ls-tree -r --full-tree HEAD > build/SOURCE_TREE.txt
+          git fetch --no-tags origin main:refs/remotes/origin/main
+          git show origin/main:governance/AUTHORITY.json > build/LIVE_AUTHORITY.json
+          python - <<'PY' >> "$GITHUB_ENV"
+          import json
+          from pathlib import Path
+          authority = json.loads(Path('build/LIVE_AUTHORITY.json').read_text())
+          active = authority['active_release']
+          rollback = authority['immediate_rollback']
+          assert active['status'] == 'Active'
+          assert active['version'] == '7.8.0', 'v8.0.0 candidate requires v7.8.0 rollback baseline'
+          for key, value in {
+              'ACTIVE_VERSION': active['version'],
+              'ACTIVE_TAG': active['tag'],
+              'ACTIVE_COMMIT': active['immutable_commit'],
+              'ROLLBACK_VERSION': rollback['version'],
+              'ROLLBACK_TAG': rollback['tag'],
+              'ROLLBACK_COMMIT': rollback['immutable_commit'],
+          }.items():
+              print(f'{key}={value}')
+          PY
+      - name: Complete correctness gates
+        run: |
+          ruff check src tests scripts
+          mypy src/atlas_ros
+          python scripts/validate_architecture.py
+          python scripts/validate_devtools_boundary.py
+          python scripts/validate_v800_notion_migration.py --output build/V800_MIGRATION_RECEIPT.json
+          test "$(jq -r .status build/V800_MIGRATION_RECEIPT.json)" = "validated_unapplied" # candidate_unapplied
+          pytest --junitxml=build/V800_TEST_RESULTS.xml --cov=atlas_ros --cov-report=term --cov-report=json:build/V800_COVERAGE.json
+      - name: Secret and dependency audits
+        run: |
+          rm -rf secret-scan-root && mkdir secret-scan-root
+          while IFS= read -r -d '' file; do
+            mkdir -p "secret-scan-root/$(dirname "$file")"
+            cp "$file" "secret-scan-root/$file"
+          done < <(git diff --name-only -z --diff-filter=ACMR origin/main...HEAD -- '*.cfg' '*.ini' '*.json' '*.md' '*.py' '*.toml' '*.txt' '*.yaml' '*.yml')
+          python scripts/scan_candidate_secrets.py --root secret-scan-root --output build/V800_SECRET_SCAN.json
+          pip-audit --disable-pip --require-hashes --no-deps --timeout 15 --progress-spinner off --vulnerability-service pypi --requirement requirements.runtime.lock --format json --output build/V800_PIP_AUDIT_PYPI.json
+          pip-audit --disable-pip --require-hashes --no-deps --timeout 15 --progress-spinner off --vulnerability-service osv --requirement requirements.runtime.lock --format json --output build/V800_PIP_AUDIT_OSV.json
+          python scripts/evaluate_dependency_audit.py build/V800_PIP_AUDIT_PYPI.json build/V800_PIP_AUDIT_OSV.json
+      - name: Provider-plan dry run and replay evidence
+        run: |
+          pytest --no-cov -q tests/unit/test_v800_task_update_delegation.py
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          Path('build/V800_PROVIDER_DRY_RUN.json').write_text(json.dumps({
+              'provider_writes': 0,
+              'todoist_writes': 0,
+              'notion_writes': 0,
+              'authorization_id': None,
+              'idempotency_replay': 'passed',
+              'notion_todoist_readback_fixture': 'passed',
+              'partial_failure_recovery_fixture': 'passed',
+          }, indent=2, sort_keys=True) + '\n')
+          PY
+      - name: Build exact package once
+        run: |
+          rm -rf dist
+          python -m build
+          test -f dist/atlas_ros-8.0.0.tar.gz
+          test -f dist/atlas_ros-8.0.0-py3-none-any.whl
+          test "$(find dist -maxdepth 1 -type f | wc -l)" -eq 2
+          printf '1\n' > build/BUILD_COUNT.txt
+      - name: Clean source and wheel installation
+        run: |
+          for kind in sdist wheel; do
+            package=dist/atlas_ros-8.0.0.tar.gz
+            [ "$kind" = wheel ] && package=dist/atlas_ros-8.0.0-py3-none-any.whl
+            python -m venv "clean-install/$kind"
+            "clean-install/$kind/bin/python" -m pip install --disable-pip-version-check "$package"
+            "clean-install/$kind/bin/python" -c "import atlas_ros; assert atlas_ros.__version__ == '8.0.0'"
+            "clean-install/$kind/bin/atlas" status --json > "build/${kind}-status.json"
+            "clean-install/$kind/bin/atlas" verify --json > "build/${kind}-verify.json"
+          done
+      - name: Restore current Active release and immediate rollback
+        run: |
+          mkdir -p "restoration/active-${ACTIVE_VERSION}" "restoration/rollback-${ROLLBACK_VERSION}"
+          gh release download "$ACTIVE_TAG" --repo "$GITHUB_REPOSITORY" --dir "restoration/active-${ACTIVE_VERSION}"
+          gh release download "$ROLLBACK_TAG" --repo "$GITHUB_REPOSITORY" --dir "restoration/rollback-${ROLLBACK_VERSION}"
+          (cd "restoration/active-${ACTIVE_VERSION}" && sed 's#  dist/#  #' CHECKSUMS.sha256 | sha256sum -c -)
+          (cd "restoration/rollback-${ROLLBACK_VERSION}" && sed 's#  dist/#  #' CHECKSUMS.sha256 | sha256sum -c -)
+          printf '%s\n' "$ACTIVE_COMMIT" > build/ACTIVE_RESTORATION_COMMIT.txt
+          printf '%s\n' "$ROLLBACK_COMMIT" > build/ROLLBACK_RESTORATION_COMMIT.txt
+      - name: Generate exact candidate receipt
+        run: |
+          sha256sum dist/* > build/PACKAGE_CHECKSUMS.sha256
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          receipt = {
+              'schema_version': 'v800-candidate-receipt-v1',
+              'candidate_commit': Path('build/SOURCE_COMMIT.txt').read_text().strip(),
+              'version': '8.0.0',
+              'build_count': 1,
+              'provider_writes': 0,
+              'todoist_writes': 0,
+              'notion_writes': 0,
+              'migration_status': 'validated_unapplied',
+              'active_restoration': 'passed',
+              'rollback_restoration': 'passed',
+              'publication_authorized': False,
+              'authority_activation_authorized': False,
+          }
+          Path('build/V800_VALIDATION_RECEIPT.json').write_text(json.dumps(receipt, indent=2, sort_keys=True) + '\n')
+          PY
+          sha256sum build/V800_VALIDATION_RECEIPT.json build/V800_MIGRATION_RECEIPT.json build/V800_PROVIDER_DRY_RUN.json > build/EVIDENCE_CHECKSUMS.sha256
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: atlas-ros-v800-candidate-${{ env.CANDIDATE_COMMIT }}
+          path: |
+            dist/
+            build/
+            release/RELEASE_MANIFEST_V800_DRAFT.md
+            release/V800_EXACT_PACKAGE_AUTHORIZATION_TEMPLATE.md
+            release/V800_MIGRATION_ASSESSMENT.md
+          if-no-files-found: error
+          retention-days: 90

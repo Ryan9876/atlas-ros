@@ -1,0 +1,13 @@
+{
+  "database": "Delegated Work",
+  "data_source": "collection://6d035d30-6c3b-4e69-b67d-2f0315831eb3",
+  "fields": [
+    "Acceptance Status", "Accountable Owner", "Assigned Date", "Assigned Person",
+    "Assigned Resource", "Blocked By", "Commitment Source", "Completed Date",
+    "Completion Evidence State", "Created", "Delegated Outcome", "Delegation ID",
+    "Delivery Due Date", "Done When", "Evidence URL", "Expected Evidence",
+    "Last Edited", "Last Verified", "Latest Update", "Next Checkpoint",
+    "Parent Action", "Portfolio Project", "Priority", "Resource Type", "Status",
+    "Todoist Command ID", "Todoist Parent Task ID"
+  ]
+}

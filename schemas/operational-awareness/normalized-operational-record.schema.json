@@ -177,6 +177,18 @@
       "title": "Child Ids",
       "type": "array"
     },
+    "command_digest": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Command Digest"
+    },
     "completed": {
       "default": false,
       "title": "Completed",
@@ -203,6 +215,18 @@
       },
       "title": "Definition Of Done",
       "type": "array"
+    },
+    "delegate_due": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Delegate Due"
     },
     "delegated": {
       "default": false,
@@ -245,6 +269,42 @@
       "additionalProperties": true,
       "title": "Extra",
       "type": "object"
+    },
+    "follow_up_checkpoint": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Follow Up Checkpoint"
+    },
+    "idempotency_identity": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Idempotency Identity"
+    },
+    "latest_reconciliation_state": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Latest Reconciliation State"
     },
     "observed_state": {
       "default": "",
@@ -312,6 +372,18 @@
       "title": "Schema Version",
       "type": "string"
     },
+    "source_update": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Source Update"
+    },
     "technically_complete": {
       "default": false,
       "title": "Technically Complete",
@@ -322,6 +394,30 @@
       "minLength": 1,
       "title": "Title",
       "type": "string"
+    },
+    "todoist_checkpoint_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Todoist Checkpoint Id"
+    },
+    "todoist_checkpoint_url": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Todoist Checkpoint Url"
     },
     "todoist_task_id": {
       "anyOf": [

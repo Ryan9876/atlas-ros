@@ -1,4 +1,8 @@
 from .authority import default_field_authority_registry
+from .delegated_lifecycle import (
+    DelegatedLifecycleReconciler,
+    DelegatedLifecycleReconciliationAssessment,
+)
 from .engine import (
     CanonicalReconciliationService,
     InMemoryReconciliationProvider,
@@ -23,6 +27,8 @@ from .state import (
 __all__ = [
     "AtlasCommand",
     "CanonicalReconciliationService",
+    "DelegatedLifecycleReconciler",
+    "DelegatedLifecycleReconciliationAssessment",
     "InMemoryReconciliationProvider",
     "InMemoryReconciliationState",
     "MutationType",

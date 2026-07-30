@@ -15,7 +15,12 @@ from .base import (
     RepairClass,
 )
 from .briefs import BriefItemV1, MaterialChangeV1, OperatingBriefV1
-from .commands import AtlasCommandV1, CommandInterpretationV1, CommandSourceRefV1
+from .commands import (
+    AtlasCommandV1,
+    CommandInterpretationV1,
+    CommandSourceRefV1,
+    TaskUpdateLifecycleNormalizationV1,
+)
 from .commitments import CommitmentAssessmentV1, CommitmentCandidateV1
 from .context import ExecutionContextPackV1, ResumptionPointV1
 from .evidence import EvidenceConflictV1, FreshnessAssessmentV1, OperationalEvidenceV1
@@ -79,6 +84,7 @@ __all__ = [
     "RepairClass",
     "RepairProposalV1",
     "ResumptionPointV1",
+    "TaskUpdateLifecycleNormalizationV1",
     "TodoistLifecyclePlanV1",
     "WorkGraphEdgeV1",
     "WorkGraphNodeV1",

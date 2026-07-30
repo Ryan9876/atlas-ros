@@ -1,0 +1,53 @@
+{
+  "schema_version": "1.0",
+  "shared_with": ["atlas-ros", "lew"],
+  "positive_delegation": [
+    {
+      "id": "natural-detailed",
+      "text": "Bill J is handling Workday access request 276412207.\nExpected outcome: Access is approved.\nDone when: Bill confirms completion.\nFollow up Monday.",
+      "responsible": "Bill J",
+      "outcome": "Access is approved",
+      "done_when": "Bill confirms completion",
+      "delegate_due": null,
+      "follow_up": "Monday"
+    },
+    {
+      "id": "separate-dates",
+      "text": "Bill is handling Workday access request 276412207.\nExpected outcome: Access is approved.\nDone when: Bill confirms completion.\nBill due: Friday\nFollow up: Thursday",
+      "responsible": "Bill",
+      "outcome": "Access is approved",
+      "done_when": "Bill confirms completion",
+      "delegate_due": "Friday",
+      "follow_up": "Thursday"
+    }
+  ],
+  "negative_delegation": [
+    {"id": "reviewed", "text": "Bill reviewed the request."},
+    {"id": "discussed", "text": "Discussed the request with Bill."},
+    {"id": "may-handle", "text": "Bill may be able to handle this."},
+    {"id": "may-take", "text": "Bill may take this."},
+    {"id": "name-only", "text": "Bill is included in the update."},
+    {"id": "copied", "text": "Bill was copied on the request."},
+    {"id": "consulted", "text": "Consulted Bill about the request."},
+    {"id": "suggested", "text": "Bill was suggested as a possible owner."},
+    {"id": "available", "text": "Bill is available Friday."},
+    {"id": "mentioned", "text": "The request mentions Bill."}
+  ],
+  "other_lifecycle": [
+    {
+      "id": "waiting",
+      "text": "Waiting for Bill to respond.",
+      "classification": "waiting-on"
+    },
+    {
+      "id": "blocked",
+      "text": "Blocked by vendor approval.",
+      "classification": "blocked"
+    },
+    {
+      "id": "complete",
+      "text": "The task is complete.",
+      "classification": "complete"
+    }
+  ]
+}
