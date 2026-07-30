@@ -100,9 +100,24 @@ def test_warm_runtime_is_authenticated_non_authoritative_and_fresh(tmp_path: Pat
     assert loaded.payload_digest == snapshot.payload_digest
 
     with pytest.raises(WarmRuntimeError, match="authentication"):
-        cache.get(key="capabilities", auth_token="incorrect-token", expected_source_digest="a" * 64, now_epoch=120.0)
+        cache.get(
+            key="capabilities",
+            auth_token="incorrect-token",
+            expected_source_digest="a" * 64,
+            now_epoch=120.0,
+        )
     with pytest.raises(WarmRuntimeError, match="expired"):
-        cache.get(key="capabilities", auth_token="fixture-token", expected_source_digest="a" * 64, now_epoch=200.0)
+        cache.get(
+            key="capabilities",
+            auth_token="fixture-token",
+            expected_source_digest="a" * 64,
+            now_epoch=200.0,
+        )
     with pytest.raises(WarmRuntimeError, match="stale"):
-        cache.get(key="capabilities", auth_token="fixture-token", expected_source_digest="b" * 64, now_epoch=120.0)
+        cache.get(
+            key="capabilities",
+            auth_token="fixture-token",
+            expected_source_digest="b" * 64,
+            now_epoch=120.0,
+        )
     assert cache.clear(auth_token="fixture-token") == 1
