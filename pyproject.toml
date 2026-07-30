@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "atlas-ros"
-version = "7.7.0"
+version = "7.8.0"
 description = "Policy-driven executable core for Atlas Ryan Operating System"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -78,41 +78,3 @@ select = ["E", "F", "I", "UP", "B", "SIM"]
 "src/atlas_ros/kernel/bootstrap.py" = ["UP047"]
 "src/atlas_ros/runtime_performance/contracts.py" = ["E501", "UP035"]
 "tests/test_v65_governed_execution_intelligence.py" = ["E501"]
-"scripts/build_v510_candidate_evidence.py" = ["E501"]
-"scripts/build_v530_candidate_evidence.py" = ["E501"]
-"scripts/compare_v62_performance.py" = ["I001", "E501"]
-"scripts/validate_v745_runtime_performance.py" = ["E501"]
-"scripts/scan_candidate_secrets.py" = ["I001"]
-"tools/assemble_v410_restoration.py" = ["E501"]
-"scripts/build_v760_candidate_evidence.py" = ["E501"]
-"scripts/build_v760_intent_memory_evidence.py" = ["I001", "E501"]
-"tests/test_v760_intent_memory.py" = ["E501"]
-"tests/test_v761_*.py" = ["E501", "F401", "I001"]
-"src/atlas_ros/user_communication_contracts_v761.py" = ["E501", "I001", "E302"]
-"src/atlas_ros/user_communication_playbooks_v761.py" = ["E501", "I001", "E302"]
-"src/atlas_ros/user_communication_policy_v761.py" = ["E501", "I001", "E302"]
-"src/atlas_ros/user_communication_projection_v761.py" = ["I001", "E302"]
-"src/atlas_ros/user_communication_v761.py" = ["I001"]
-"src/atlas_ros/profile_bundle_v761.py" = ["I001"]
-"tests/unit/test_v700_entry_points.py" = ["E501"]
-"tests/unit/test_v710_lazy_warm_runtime.py" = ["E501"]
-"scripts/build_v761_candidate_evidence.py" = ["E501", "I001", "E302"]
-"scripts/build_v761_communication_evidence.py" = ["E501", "I001", "E302"]
-"scripts/build_v770_candidate_evidence.py" = ["E501"]
-
-[tool.mypy]
-python_version = "3.12"
-strict = true
-files = ["src"]
-
-[[tool.mypy.overrides]]
-module = "atlas_ros.engines.archetypes_v62"
-disable_error_code = ["assignment", "attr-defined", "arg-type"]
-
-[[tool.mypy.overrides]]
-module = "atlas_ros.engines.intent_graph_v62"
-disable_error_code = ["arg-type"]
-
-[[tool.mypy.overrides]]
-module = "atlas_ros.engines.domain_knowledge_v62"
-disable_error_code = ["assignment"]
