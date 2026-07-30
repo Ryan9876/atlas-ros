@@ -111,7 +111,9 @@ class TaskUpdateLifecycleNormalizer:
         classification = AtlasCommandType.UPDATE
         actionable = False
         responsible: str | None = None
+        responsible_identity: str | None = None
         accountable = source_record.accountable_party or source_record.owner or "Ryan"
+        accountable_identity: str | None = None
         expected: str | None = None
         criteria: tuple[str, ...] = ()
         delegate_due = fields.get("delegate-due")
@@ -141,14 +143,51 @@ class TaskUpdateLifecycleNormalizer:
             criteria_text = fields.get("done-when")
             criteria = (criteria_text,) if criteria_text else ()
             inline_due = _DELEGATE_DUE_INLINE_RE.search(text)
-            if not criteria and inline_due is not None and expected:
-                criteria = (f"{expected} is complete",)
             if delegate_due is None and inline_due is not None:
                 delegate_due = self._clean(inline_due.group("date"))
                 evidence.append(f"delegate due evidence: {inline_due.group(0).strip()}")
             if responsible is None:
                 ambiguity.append("responsible party is not uniquely identifiable")
                 blockers.append("Responsible party required")
+            else:
+                responsible_identity, responsible_ambiguous = self._resolve_person_identity(
+                    responsible,
+                    snapshot,
+                )
+                if responsible_identity is None:
+                    ambiguity.append(
+                        "responsible party identity is ambiguous"
+                        if responsible_ambiguous
+                        else "responsible party identity is unresolved"
+                    )
+                    blockers.append(
+                        "Resolve responsible party identity uniquely"
+                        if responsible_ambiguous
+                        else "Responsible party identity required"
+                    )
+                else:
+                    evidence.append(
+                        f"responsible identity resolved: {responsible_identity}"
+                    )
+            accountable_identity, accountable_ambiguous = self._resolve_person_identity(
+                accountable,
+                snapshot,
+            )
+            if accountable_identity is None:
+                ambiguity.append(
+                    "accountable party identity is ambiguous"
+                    if accountable_ambiguous
+                    else "accountable party identity is unresolved"
+                )
+                blockers.append(
+                    "Resolve accountable party identity uniquely"
+                    if accountable_ambiguous
+                    else "Accountable party identity required"
+                )
+            else:
+                evidence.append(
+                    f"accountable identity resolved: {accountable_identity}"
+                )
             if not expected:
                 ambiguity.append("expected outcome is missing")
                 blockers.append("Expected outcome required")
@@ -181,7 +220,9 @@ class TaskUpdateLifecycleNormalizer:
             fields=fields,
             source=source,
             responsible=responsible,
+            responsible_identity=responsible_identity,
             accountable=accountable,
+            accountable_identity=accountable_identity,
             expected=expected,
             criteria=criteria,
             delegate_due=delegate_due,
@@ -244,6 +285,35 @@ class TaskUpdateLifecycleNormalizer:
         if len(candidates) != 1:
             raise ValueError("task update source does not resolve uniquely")
         return candidates[0]
+
+    @staticmethod
+    def _resolve_person_identity(
+        name: str,
+        snapshot: OperationalSnapshotV1,
+    ) -> tuple[str | None, bool]:
+        """Resolve one exact governed person identity from snapshot evidence."""
+        normalized_name = name.casefold().strip()
+        identities: set[str] = set()
+        for record in snapshot.normalized_records:
+            directory = record.extra.get("person_directory")
+            if not isinstance(directory, dict):
+                continue
+            for alias, raw_identity in directory.items():
+                if not isinstance(alias, str) or alias.casefold().strip() != normalized_name:
+                    continue
+                raw_values = (
+                    (raw_identity,)
+                    if isinstance(raw_identity, str)
+                    else raw_identity
+                    if isinstance(raw_identity, (list, tuple, set))
+                    else ()
+                )
+                for value in raw_values:
+                    if isinstance(value, str) and value.strip():
+                        identities.add(value.strip())
+        if len(identities) == 1:
+            return next(iter(identities)), False
+        return None, len(identities) > 1
 
     @staticmethod
     def _extract_fields(text: str) -> dict[str, str]:
@@ -324,6 +394,7 @@ class TaskUpdateLifecycleNormalizer:
         found = tuple(match.group(0) for match in _GENERIC_DATE_RE.finditer(scrubbed))
         if not found:
             return ()
+        # If every found date is already explicitly represented, no ambiguity remains.
         normalized = {item.casefold() for item in found}
         labeled = {
             item.casefold()
@@ -338,7 +409,9 @@ class TaskUpdateLifecycleNormalizer:
         fields: dict[str, str],
         source: CommandSourceRefV1,
         responsible: str | None,
+        responsible_identity: str | None,
         accountable: str,
+        accountable_identity: str | None,
         expected: str | None,
         criteria: tuple[str, ...],
         delegate_due: str | None,
@@ -350,7 +423,9 @@ class TaskUpdateLifecycleNormalizer:
         result = dict(fields)
         values = {
             "responsible": responsible,
+            "responsible-id": responsible_identity,
             "accountable": accountable,
+            "accountable-id": accountable_identity,
             "outcome": expected,
             "done-when": criteria[0] if criteria else None,
             "delegate-due": delegate_due,
