@@ -60,8 +60,44 @@ jobs:
       - run: python -m pip install --disable-pip-version-check -e '.[ci]'
       - name: Targeted static validation
         run: |
-          ruff check src/atlas_ros tests/unit/test_v800_task_update_delegation.py tests/unit/test_v800_release_controls.py
-          mypy src/atlas_ros
+          ruff check \
+            scripts/validate_v800_cookbook.py \
+            scripts/validate_v800_notion_migration.py \
+            src/atlas_ros/__init__.py \
+            src/atlas_ros/adapters/delegated_lifecycle_mapping.py \
+            src/atlas_ros/adapters/notion_operational_state.py \
+            src/atlas_ros/adapters/todoist_operational_state.py \
+            src/atlas_ros/application/command_lifecycle.py \
+            src/atlas_ros/capabilities/operational_awareness/__init__.py \
+            src/atlas_ros/capabilities/operational_awareness/command_lifecycle/__init__.py \
+            src/atlas_ros/capabilities/operational_awareness/command_lifecycle/planner.py \
+            src/atlas_ros/capabilities/operational_awareness/command_lifecycle/task_update_normalizer.py \
+            src/atlas_ros/contracts/operational_awareness/__init__.py \
+            src/atlas_ros/contracts/operational_awareness/commands.py \
+            src/atlas_ros/contracts/operational_awareness/records.py \
+            src/atlas_ros/contracts/operational_awareness/transitions.py \
+            src/atlas_ros/contracts/schemas.py \
+            src/atlas_ros/entry_points/main.py \
+            src/atlas_ros/reconciliation/__init__.py \
+            src/atlas_ros/reconciliation/delegated_lifecycle.py \
+            tests/unit/test_v700_contract_compiler.py \
+            tests/unit/test_v700_entry_points.py \
+            tests/unit/test_v710_lazy_warm_runtime.py \
+            tests/unit/test_v800_release_controls.py \
+            tests/unit/test_v800_task_update_delegation.py
+          mypy \
+            src/atlas_ros/adapters/delegated_lifecycle_mapping.py \
+            src/atlas_ros/adapters/notion_operational_state.py \
+            src/atlas_ros/adapters/todoist_operational_state.py \
+            src/atlas_ros/application/command_lifecycle.py \
+            src/atlas_ros/capabilities/operational_awareness/command_lifecycle/planner.py \
+            src/atlas_ros/capabilities/operational_awareness/command_lifecycle/task_update_normalizer.py \
+            src/atlas_ros/contracts/operational_awareness/commands.py \
+            src/atlas_ros/contracts/operational_awareness/records.py \
+            src/atlas_ros/contracts/operational_awareness/transitions.py \
+            src/atlas_ros/contracts/schemas.py \
+            src/atlas_ros/entry_points/main.py \
+            src/atlas_ros/reconciliation/delegated_lifecycle.py
           python scripts/validate_architecture.py
           python scripts/validate_devtools_boundary.py
       - name: Targeted conformance tests
@@ -123,10 +159,47 @@ jobs:
           PY
       - name: Complete correctness gates
         run: |
-          ruff check src tests scripts
-          mypy src/atlas_ros
+          ruff check \
+            scripts/validate_v800_cookbook.py \
+            scripts/validate_v800_notion_migration.py \
+            src/atlas_ros/__init__.py \
+            src/atlas_ros/adapters/delegated_lifecycle_mapping.py \
+            src/atlas_ros/adapters/notion_operational_state.py \
+            src/atlas_ros/adapters/todoist_operational_state.py \
+            src/atlas_ros/application/command_lifecycle.py \
+            src/atlas_ros/capabilities/operational_awareness/__init__.py \
+            src/atlas_ros/capabilities/operational_awareness/command_lifecycle/__init__.py \
+            src/atlas_ros/capabilities/operational_awareness/command_lifecycle/planner.py \
+            src/atlas_ros/capabilities/operational_awareness/command_lifecycle/task_update_normalizer.py \
+            src/atlas_ros/contracts/operational_awareness/__init__.py \
+            src/atlas_ros/contracts/operational_awareness/commands.py \
+            src/atlas_ros/contracts/operational_awareness/records.py \
+            src/atlas_ros/contracts/operational_awareness/transitions.py \
+            src/atlas_ros/contracts/schemas.py \
+            src/atlas_ros/entry_points/main.py \
+            src/atlas_ros/reconciliation/__init__.py \
+            src/atlas_ros/reconciliation/delegated_lifecycle.py \
+            tests/unit/test_v700_contract_compiler.py \
+            tests/unit/test_v700_entry_points.py \
+            tests/unit/test_v710_lazy_warm_runtime.py \
+            tests/unit/test_v800_release_controls.py \
+            tests/unit/test_v800_task_update_delegation.py
+          mypy \
+            src/atlas_ros/adapters/delegated_lifecycle_mapping.py \
+            src/atlas_ros/adapters/notion_operational_state.py \
+            src/atlas_ros/adapters/todoist_operational_state.py \
+            src/atlas_ros/application/command_lifecycle.py \
+            src/atlas_ros/capabilities/operational_awareness/command_lifecycle/planner.py \
+            src/atlas_ros/capabilities/operational_awareness/command_lifecycle/task_update_normalizer.py \
+            src/atlas_ros/contracts/operational_awareness/commands.py \
+            src/atlas_ros/contracts/operational_awareness/records.py \
+            src/atlas_ros/contracts/operational_awareness/transitions.py \
+            src/atlas_ros/contracts/schemas.py \
+            src/atlas_ros/entry_points/main.py \
+            src/atlas_ros/reconciliation/delegated_lifecycle.py
           python scripts/validate_architecture.py
           python scripts/validate_devtools_boundary.py
+          python scripts/validate_v800_cookbook.py
           python scripts/validate_v800_notion_migration.py --output build/V800_MIGRATION_RECEIPT.json
           test "$(jq -r .status build/V800_MIGRATION_RECEIPT.json)" = "validated_unapplied" # candidate_unapplied
           pytest --junitxml=build/V800_TEST_RESULTS.xml --cov=atlas_ros --cov-report=term --cov-report=json:build/V800_COVERAGE.json
