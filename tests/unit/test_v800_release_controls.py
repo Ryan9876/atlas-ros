@@ -70,24 +70,56 @@ def test_v800_candidate_workflow_builds_once_and_never_publishes() -> None:
     assert "agent/v8.0.0-task-update-delegation" in workflow
 
 
-def test_v800_publication_control_requires_finalized_exact_authorization() -> None:
+def test_v800_publication_control_requires_exact_push_transaction() -> None:
     workflow = (ROOT / ".github/workflows/v800-authorized-publication-controller.yml").read_text()
-    assert "workflow_dispatch" in workflow
+    assert "push:" in workflow
+    assert "release/V800_PUBLICATION_TRIGGER.json" in workflow
+    assert "workflow_dispatch" not in workflow
     assert "production-release" in workflow
+    assert "RELEASE_MANIFEST_V800.md" in workflow
     assert "V800_EXACT_PACKAGE_AUTHORIZATION.md" in workflow
-    assert "! grep -q 'PENDING'" in workflow
+    assert "PACKAGE_SOURCE_COMMIT" in workflow
+    assert "TARGET_COMMIT: ${{ github.sha }}" in workflow
+    assert 'git tag -a "$TAG" "$TARGET_COMMIT"' in workflow
     assert "python -m build" not in workflow
     assert "gh release create" in workflow
-    assert "Publication does not activate production authority" in workflow
+    assert "provider_writes" in workflow
+    assert "notion_writes" in workflow
+    assert "todoist_writes" in workflow
 
 
 def test_v800_independent_readback_is_non_activating_and_restores_live_active() -> None:
     workflow = (ROOT / ".github/workflows/v800-independent-publication-readback.yml").read_text()
     assert "governance/AUTHORITY.json" in workflow
     assert "RESTORE_TAG" in workflow
+    assert "RESTORE_MANIFEST_SHA256" in workflow
+    assert "RESTORE_SOURCE_SHA256" in workflow
+    assert "RESTORE_WHEEL_SHA256" in workflow
     assert "rollback_v780_restoration" in workflow
+    assert "historical_v770_verification" in workflow
     assert "authority_activated': False" in workflow
     assert "contents: write" not in workflow
+
+
+def test_v800_final_records_bind_exact_authorization_without_rebuild() -> None:
+    manifest = (ROOT / "release/RELEASE_MANIFEST_V800.md").read_text()
+    authorization = (ROOT / "release/V800_EXACT_PACKAGE_AUTHORIZATION.md").read_text()
+    trigger = (ROOT / "release/V800_PUBLICATION_TRIGGER.json").read_text()
+    for value in (
+        "674f0c979dec8f83a1610c7435e633e2d33e673a",
+        "b3283850c1bfb025b472f2e9e055317cc3a05f7d",
+        "8772036696",
+        "8771997275",
+        "V4D-61",
+        "V4V-111",
+        "d153491cf626aa6628e186faf84b9643bf9f3f491a272c18df30e5d6916de5c9",
+    ):
+        assert value in manifest
+        assert value in authorization
+        assert value in trigger
+    assert "PENDING" not in authorization
+    assert "must not be rebuilt" in authorization
+    assert "Publication alone does not activate production authority" in manifest
 
 
 def test_v800_draft_records_do_not_claim_authorization_or_activation() -> None:

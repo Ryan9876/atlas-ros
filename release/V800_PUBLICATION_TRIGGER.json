@@ -1,0 +1,15 @@
+{
+  "authorization_sha256": "b9ee50cbf4958bd22075d4247e92635d12af8a70d5f7ea5bf9e1d4640f20f439",
+  "candidate_artifact_id": 8772036696,
+  "candidate_artifact_sha256": "9202086b86df6f727daa097d476a82099ebdbd97e8e85aa433160cb8f40464ea",
+  "decision_id": "V4D-61",
+  "evidence_artifact_id": 8771997275,
+  "evidence_artifact_sha256": "e480e5f2ecda736fdabae36e71fba3a8628e1b9e7240085a24fc8a6eda999f95",
+  "implementation_merge": "b3283850c1bfb025b472f2e9e055317cc3a05f7d",
+  "migration_digest": "d153491cf626aa6628e186faf84b9643bf9f3f491a272c18df30e5d6916de5c9",
+  "package_source_commit": "674f0c979dec8f83a1610c7435e633e2d33e673a",
+  "release_manifest_sha256": "fd84ef9386f471873c3943074d356ea2e6ba2278e00762c544efec38c9de1699",
+  "review_id": "V4V-111",
+  "schema_version": "v800-publication-trigger-v1",
+  "tag": "v8.0.0"
+}
