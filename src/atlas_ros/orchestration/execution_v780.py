@@ -11,7 +11,6 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any, cast
 
-from atlas_ros.adapters.errors import AdapterError
 from atlas_ros.contracts import (
     ExecutionAuthorizationV2,
     ExecutionCommandV2,
@@ -74,13 +73,6 @@ class ExecutionOrchestratorV2(base_execution.ExecutionOrchestratorV2):
             event_sink=event_sink,
         )
         self._sleeper = sleeper
-
-    @staticmethod
-    def _retry_after(exc: ProviderExecutionError) -> float | None:
-        if exc.retry_after_seconds is not None:
-            return exc.retry_after_seconds
-        cause = exc.__cause__
-        return cause.retry_after_seconds if isinstance(cause, AdapterError) else None
 
     def _apply_with_retry(
         self,
@@ -154,7 +146,7 @@ class ExecutionOrchestratorV2(base_execution.ExecutionOrchestratorV2):
                     raise
                 delay, delay_source = policy.delay_for(
                     failed_attempt=attempt,
-                    retry_after_seconds=self._retry_after(exc),
+                    retry_after_seconds=exc.retry_after_seconds,
                 )
                 state = self._transition(
                     entries,
