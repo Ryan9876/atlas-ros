@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Literal
 
 from atlas_ros.contracts.models import deterministic_digest
 from atlas_ros.contracts.v62 import (
@@ -327,7 +327,9 @@ class IntentGraphEngineV62:
         for outcome in (*outcomes.secondary, *outcomes.supporting, *outcomes.competing):
             node_id = f"node-secondary-{outcome.outcome_id[-16:]}"
             node_type = IntentNodeType.SECONDARY_OUTCOME
-            horizon = "blocked" if outcome.role.value == "competing" else "current"
+            horizon: Literal["blocked", "current"] = (
+                "blocked" if outcome.role.value == "competing" else "current"
+            )
             nodes.append(
                 IntentNode(
                     node_id=node_id,
