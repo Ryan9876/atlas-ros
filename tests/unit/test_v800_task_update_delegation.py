@@ -27,6 +27,29 @@ NOW = datetime(2026, 7, 30, 17, 0, tzinfo=UTC)
 FIXTURES = json.loads(
     Path("tests/fixtures/operational-awareness/v800-task-update-delegation.json").read_text()
 )
+PERSON_DIRECTORY: tuple[dict[str, object], ...] = (
+    {
+        "display_name": "Ryan",
+        "canonical_identity": "person:ryan",
+        "notion_user_id": "notion-user-ryan",
+    },
+    {
+        "display_name": "Bill J",
+        "canonical_identity": "person:bill-j",
+        "notion_user_id": "notion-user-bill-j",
+    },
+    {
+        "display_name": "Bill",
+        "canonical_identity": "person:bill",
+        "notion_user_id": "notion-user-bill",
+    },
+    {
+        "display_name": "Tina",
+        "canonical_identity": "person:tina",
+        "notion_user_id": "notion-user-tina",
+    },
+)
+NOTION_DELEGATED_URL = "https://notion.example/delegated-work/bill-j-workday"
 
 
 def _record(
@@ -39,6 +62,7 @@ def _record(
     active_checkpoints: tuple[str, ...] = (),
     definition_of_done: tuple[str, ...] = (),
     completion_evidence: tuple[str, ...] = (),
+    person_directory: tuple[dict[str, object], ...] = PERSON_DIRECTORY,
 ) -> NormalizedOperationalRecordV1:
     ref = OperationalRecordRefV1.create(
         record_type=record_type,
@@ -58,16 +82,24 @@ def _record(
         completion_evidence=completion_evidence,
         updated_at=NOW.isoformat(),
         todoist_task_id=task_id,
-        extra={"active_ryan_checkpoint_ids": active_checkpoints},
+        extra={
+            "active_ryan_checkpoint_ids": active_checkpoints,
+            "person_directory": person_directory,
+        },
     )
 
 
-def _snapshot(*, active_checkpoints: tuple[str, ...] = ()):
+def _snapshot(
+    *,
+    active_checkpoints: tuple[str, ...] = (),
+    person_directory: tuple[dict[str, object], ...] = PERSON_DIRECTORY,
+):
     parent = _record(
         "A-1",
         "Workday access request 276412207",
         task_id="P-1",
         active_checkpoints=active_checkpoints,
+        person_directory=person_directory,
     )
     source = _record(
         "S-1",
@@ -75,6 +107,7 @@ def _snapshot(*, active_checkpoints: tuple[str, ...] = ()):
         record_type=OperationalRecordType.EXECUTION_STEP,
         parent="A-1",
         task_id="S-1-TASK",
+        person_directory=person_directory,
     )
     return OperationalSnapshotBuilder(load_operational_awareness_policy()).build(
         (parent, source),
@@ -85,7 +118,12 @@ def _snapshot(*, active_checkpoints: tuple[str, ...] = ()):
     )
 
 
-def _prepare(text: str, *, active_checkpoints: tuple[str, ...] = ()):
+def _prepare(
+    text: str,
+    *,
+    active_checkpoints: tuple[str, ...] = (),
+    person_directory: tuple[dict[str, object], ...] = PERSON_DIRECTORY,
+):
     source = TodoistCommandSourceAdapter().extract(
         {
             "id": "S-1-TASK",
@@ -97,11 +135,32 @@ def _prepare(text: str, *, active_checkpoints: tuple[str, ...] = ()):
     return CommandLifecycleCoordinator(
         load_operational_awareness_policy(),
         OperationalLifecycleExecutionPlanner(),
-    ).prepare(source, _snapshot(active_checkpoints=active_checkpoints))
+    ).prepare(
+        source,
+        _snapshot(
+            active_checkpoints=active_checkpoints,
+            person_directory=person_directory,
+        ),
+    )
 
 
 def _positive(case_id: str) -> dict[str, object]:
     return next(item for item in FIXTURES["positive_delegation"] if item["id"] == case_id)
+
+
+def _notion_readback(result) -> dict[str, object]:
+    assert result.lifecycle_plan is not None
+    notion = result.lifecycle_plan.notion_operations[0]
+    return {**dict(notion.expected_readback), "canonical_url": NOTION_DELEGATED_URL}
+
+
+def _todoist_readback(result) -> dict[str, object]:
+    assert result.lifecycle_plan is not None
+    checkpoint = result.lifecycle_plan.todoist_operations[-1]
+    return {
+        **dict(checkpoint.expected_readback),
+        "authoritative_record_url": NOTION_DELEGATED_URL,
+    }
 
 
 def test_01_existing_explicit_delegation_remains_compatible() -> None:
@@ -128,6 +187,8 @@ def test_02_qualified_natural_update_normalizes_to_delegate() -> None:
     assert result.interpretation.expected_outcome == case["outcome"]
     assert result.interpretation.completion_criteria == (case["done_when"],)
     assert result.interpretation.follow_up_checkpoint == case["follow_up"]
+    assert result.command.fields["responsible-identity"] == "person:bill-j"
+    assert result.command.fields["accountable-identity"] == "person:ryan"
     assert result.command.verify_digest()
     assert result.command.idempotency_identity.endswith(result.command.command_digest)
 
@@ -266,12 +327,10 @@ def test_16_provider_planning_has_zero_writes_before_authorization() -> None:
 def test_17_provider_readback_verifies_notion_and_todoist_identities() -> None:
     result = _prepare(str(_positive("natural-detailed")["text"]))
     assert result.lifecycle_plan is not None
-    notion = result.lifecycle_plan.notion_operations[0]
-    checkpoint = result.lifecycle_plan.todoist_operations[-1]
     assessment = DelegatedLifecycleReconciler().assess(
         result.lifecycle_plan,
-        notion_readback=dict(notion.expected_readback),
-        todoist_readback=dict(checkpoint.expected_readback),
+        notion_readback=_notion_readback(result),
+        todoist_readback=_todoist_readback(result),
     )
     assert assessment.consistent
     assert len(assessment.verified_identities) == 2
@@ -280,10 +339,9 @@ def test_17_provider_readback_verifies_notion_and_todoist_identities() -> None:
 def test_18_reconciliation_recovers_after_partial_failure() -> None:
     result = _prepare(str(_positive("natural-detailed")["text"]))
     assert result.lifecycle_plan is not None
-    notion = result.lifecycle_plan.notion_operations[0]
     partial = DelegatedLifecycleReconciler().assess(
         result.lifecycle_plan,
-        notion_readback=dict(notion.expected_readback),
+        notion_readback=_notion_readback(result),
         todoist_readback=None,
     )
     assert not partial.consistent
@@ -303,7 +361,11 @@ def test_19_cookbook_examples_match_normalizer_behavior() -> None:
         assert _prepare(str(case["text"])).command.command_type != AtlasCommandType.DELEGATE
 
 
-@pytest.mark.parametrize("case", FIXTURES["negative_delegation"], ids=lambda item: item["id"])
+@pytest.mark.parametrize(
+    "case",
+    FIXTURES["negative_delegation"],
+    ids=lambda item: item["id"],
+)
 def test_20_false_positive_delegation_rate_is_zero(case: dict[str, str]) -> None:
     result = _prepare(case["text"])
     assert result.command.command_type != AtlasCommandType.DELEGATE
@@ -320,19 +382,26 @@ def test_21_notion_mapping_keeps_dates_and_governance_fields_distinct() -> None:
     assert properties["date:Next Checkpoint:start"] == "Thursday"
     assert properties["Command Digest"] == result.command.command_digest
     assert properties["Latest Reconciliation State"] == "planned_not_executed"
+    assert properties["Responsible Identity"] == "person:bill"
+    assert properties["Accountable Identity"] == "person:ryan"
+    assert properties["Assigned Person"] == ["notion-user-bill"]
+    assert properties["Accountable Owner"] == ["notion-user-ryan"]
+    assert properties["Parent Action"] == ["https://notion.example/A-1"]
 
 
 def test_22_todoist_checkpoint_names_parent_outcome_and_links_notion() -> None:
     result = _prepare(str(_positive("natural-detailed")["text"]))
     assert result.lifecycle_plan is not None
     mapped = DelegatedLifecycleProviderMapper.todoist_checkpoint(
-        result.lifecycle_plan.todoist_operations[-1]
+        result.lifecycle_plan.todoist_operations[-1],
+        notion_readback=_notion_readback(result),
     )
     assert mapped["content"] == (
         "Follow up with Bill J on Workday access request 276412207"
     )
     assert mapped["due"] == "Monday"
-    assert mapped["authoritative_record_identity"] in mapped["description"]
+    assert mapped["authoritative_record_url"] == NOTION_DELEGATED_URL
+    assert NOTION_DELEGATED_URL in mapped["description"]
 
 
 def test_23_natural_interpretation_does_not_expand_execution_scope() -> None:
@@ -342,3 +411,40 @@ def test_23_natural_interpretation_does_not_expand_execution_scope() -> None:
     assert result.canonical_plan is not None
     assert not hasattr(result.normalization, "authorization_id")
     assert result.receipt.completion_state == "planned_not_executed"
+
+
+def test_24_unresolved_proper_name_blocks_provider_planning() -> None:
+    result = _prepare(
+        "Alex Q is handling Workday access request 276412207.\n"
+        "Expected outcome: Access is approved.\n"
+        "Done when: Alex confirms completion.\n"
+        "Follow up Monday."
+    )
+    assert result.command.command_type == AtlasCommandType.DELEGATE
+    assert "Responsible party identity must resolve uniquely" in (
+        result.interpretation.blockers
+    )
+    assert result.lifecycle_plan is None
+    assert result.canonical_plan is None
+    assert result.receipt.provider_write_count == 0
+
+
+def test_25_ambiguous_person_identity_blocks_provider_planning() -> None:
+    ambiguous_directory = (
+        *PERSON_DIRECTORY,
+        {
+            "display_name": "William Jones",
+            "canonical_identity": "person:william-jones",
+            "notion_user_id": "notion-user-william-jones",
+            "aliases": ["Bill J"],
+        },
+    )
+    result = _prepare(
+        str(_positive("natural-detailed")["text"]),
+        person_directory=ambiguous_directory,
+    )
+    assert "Responsible party identity must resolve uniquely" in (
+        result.interpretation.blockers
+    )
+    assert result.lifecycle_plan is None
+    assert result.canonical_plan is None
