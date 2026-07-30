@@ -70,6 +70,7 @@ jobs:
             src/atlas_ros/application/command_lifecycle.py \
             src/atlas_ros/capabilities/operational_awareness/__init__.py \
             src/atlas_ros/capabilities/operational_awareness/command_lifecycle/__init__.py \
+            src/atlas_ros/capabilities/operational_awareness/command_lifecycle/natural_delegation.py \
             src/atlas_ros/capabilities/operational_awareness/command_lifecycle/planner.py \
             src/atlas_ros/capabilities/operational_awareness/command_lifecycle/task_update_normalizer.py \
             src/atlas_ros/contracts/operational_awareness/__init__.py \
@@ -90,6 +91,7 @@ jobs:
             src/atlas_ros/adapters/notion_operational_state.py \
             src/atlas_ros/adapters/todoist_operational_state.py \
             src/atlas_ros/application/command_lifecycle.py \
+            src/atlas_ros/capabilities/operational_awareness/command_lifecycle/natural_delegation.py \
             src/atlas_ros/capabilities/operational_awareness/command_lifecycle/planner.py \
             src/atlas_ros/capabilities/operational_awareness/command_lifecycle/task_update_normalizer.py \
             src/atlas_ros/contracts/operational_awareness/commands.py \
@@ -169,6 +171,7 @@ jobs:
             src/atlas_ros/application/command_lifecycle.py \
             src/atlas_ros/capabilities/operational_awareness/__init__.py \
             src/atlas_ros/capabilities/operational_awareness/command_lifecycle/__init__.py \
+            src/atlas_ros/capabilities/operational_awareness/command_lifecycle/natural_delegation.py \
             src/atlas_ros/capabilities/operational_awareness/command_lifecycle/planner.py \
             src/atlas_ros/capabilities/operational_awareness/command_lifecycle/task_update_normalizer.py \
             src/atlas_ros/contracts/operational_awareness/__init__.py \
@@ -189,6 +192,7 @@ jobs:
             src/atlas_ros/adapters/notion_operational_state.py \
             src/atlas_ros/adapters/todoist_operational_state.py \
             src/atlas_ros/application/command_lifecycle.py \
+            src/atlas_ros/capabilities/operational_awareness/command_lifecycle/natural_delegation.py \
             src/atlas_ros/capabilities/operational_awareness/command_lifecycle/planner.py \
             src/atlas_ros/capabilities/operational_awareness/command_lifecycle/task_update_normalizer.py \
             src/atlas_ros/contracts/operational_awareness/commands.py \
@@ -228,6 +232,7 @@ jobs:
               'idempotency_replay': 'passed',
               'notion_todoist_readback_fixture': 'passed',
               'partial_failure_recovery_fixture': 'passed',
+              'unresolved_person_provider_planning': 'blocked',
           }, indent=2, sort_keys=True) + '\n')
           PY
       - name: Build exact package once
@@ -273,6 +278,7 @@ jobs:
               'todoist_writes': 0,
               'notion_writes': 0,
               'migration_status': 'validated_unapplied',
+              'identity_resolution': 'snapshot-backed-fail-closed',
               'active_restoration': 'passed',
               'rollback_restoration': 'passed',
               'publication_authorized': False,
