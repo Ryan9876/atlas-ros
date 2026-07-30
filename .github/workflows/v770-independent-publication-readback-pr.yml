@@ -1,0 +1,182 @@
+name: v7.7.0 independent publication readback PR
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - .github/workflows/v770-independent-publication-readback-pr.yml
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  verify-publication:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      TAG: v7.7.0
+      EXPECTED_TAG_COMMIT: 71d849b77a53b8f0ba5a9379ff45b44869756819
+      PACKAGE_SOURCE_COMMIT: 63cea36766e1398d5c60674ac57487020273c109
+      IMPLEMENTATION_MERGE: 4bc1bdb2ef9139988bf48902ac13c55c08f63f13
+      ARTIFACT_ID: '8745439952'
+      ARTIFACT_SHA256: 10f950c596f173e8846008656cf8180b685c9af05242affce1b4f746166b070d
+      SOURCE_SHA256: 4248062fde25dd5ed4cab8700ca7633395bb9bc206986103d4e034089851a715
+      WHEEL_SHA256: a8c8a56e33e587a491f6dce9ad6e7573371a03d45f8c51bdda6ec97349ce3a38
+      SBOM_SHA256: 8380f2911e6758286552040c2b0e5b466500a1dfab7ce3c6053b17116132e101
+      SOURCE_MANIFEST_SHA256: c2022150e7f42b843b4b71d1ffe67019bb2f0e06c8e9c6ac74a219db6ac4e4b4
+      VALIDATION_SHA256: 529dfe526779d9463c4f6e69325d7d6291d2d24e1283489c054c4f85f6d405fd
+      INITIALIZATION_EVIDENCE_SHA256: 936d1852a28404fcb932c0d6085df046b83577d9faefb4aba305381c3549370d
+      ZERO_WRITE_SHA256: 3b18c98b7fdf0c601ee362980bfd1c3380272d4665ea40b78c2a6a15b7edf785
+      RELEASE_MANIFEST_SHA256: 1b557de47f366aad3bc684dd87cc63eae78a19ff27da06ca9eddf9128cec74a0
+      AUTHORIZATION_SHA256: 267bd2aa6f43e2e52df0df3bad0986e52f1f4ac731be2a5798fa08c4e4ba4ab0
+      ACTIVE_PREDECESSOR_TAG: v7.6.1
+      ACTIVE_PREDECESSOR_COMMIT: 91532b8f6b38ea82ef232d1181ef78418471b66b
+      PRESERVED_ROLLBACK_TAG: v7.6.0
+      PRESERVED_ROLLBACK_COMMIT: a177bcebd1e97d784822e378b661a5ec17aee7d5
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          ref: ${{ env.TAG }}
+          fetch-depth: 0
+          fetch-tags: true
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.12.10'
+
+      - name: Verify immutable tag target and controls
+        run: |
+          set -euo pipefail
+          test "$(git rev-list -n 1 "$TAG")" = "$EXPECTED_TAG_COMMIT"
+          test "$(sha256sum release/RELEASE_MANIFEST_V770.md | cut -d' ' -f1)" = "$RELEASE_MANIFEST_SHA256"
+          test "$(sha256sum release/V770_EXACT_PACKAGE_AUTHORIZATION.md | cut -d' ' -f1)" = "$AUTHORIZATION_SHA256"
+
+      - name: Download and verify published release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir release-assets
+          gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --dir release-assets
+          test "$(find release-assets -maxdepth 1 -type f | wc -l)" -eq 33
+          (cd release-assets && sed 's#  dist/#  #' CHECKSUMS.sha256 | sha256sum -c -)
+          (cd release-assets && sed 's#  build/#  #' EVIDENCE_CHECKSUMS.sha256 | sha256sum -c -)
+          (cd release-assets && sed 's#  build/#  #' NESTED_CHECKSUMS.sha256 | sha256sum -c -)
+          test "$(sha256sum release-assets/atlas_ros-7.7.0.tar.gz | cut -d' ' -f1)" = "$SOURCE_SHA256"
+          test "$(sha256sum release-assets/atlas_ros-7.7.0-py3-none-any.whl | cut -d' ' -f1)" = "$WHEEL_SHA256"
+          test "$(sha256sum release-assets/SBOM.spdx.json | cut -d' ' -f1)" = "$SBOM_SHA256"
+          test "$(sha256sum release-assets/SOURCE_MANIFEST.sha256 | cut -d' ' -f1)" = "$SOURCE_MANIFEST_SHA256"
+          test "$(sha256sum release-assets/V770_VALIDATION_RECEIPT.json | cut -d' ' -f1)" = "$VALIDATION_SHA256"
+          test "$(sha256sum release-assets/V770_INITIALIZATION_EVIDENCE_INDEX.json | cut -d' ' -f1)" = "$INITIALIZATION_EVIDENCE_SHA256"
+          test "$(sha256sum release-assets/V770_ZERO_PROVIDER_WRITE_RECEIPT.json | cut -d' ' -f1)" = "$ZERO_WRITE_SHA256"
+          test "$(sha256sum release-assets/RELEASE_MANIFEST_V770.md | cut -d' ' -f1)" = "$RELEASE_MANIFEST_SHA256"
+          test "$(sha256sum release-assets/V770_EXACT_PACKAGE_AUTHORIZATION.md | cut -d' ' -f1)" = "$AUTHORIZATION_SHA256"
+
+      - name: Clean install and verify published packages
+        run: |
+          set -euo pipefail
+          for kind in wheel sdist; do
+            python -m venv "$kind-env"
+            package=release-assets/atlas_ros-7.7.0.tar.gz
+            [ "$kind" = wheel ] && package=release-assets/atlas_ros-7.7.0-py3-none-any.whl
+            "$kind-env/bin/python" -m pip install --disable-pip-version-check "$package"
+            "$kind-env/bin/python" -c "import atlas_ros; assert atlas_ros.__version__ == '7.7.0'"
+            "$kind-env/bin/atlas" status --json > "$kind-status.json"
+            "$kind-env/bin/atlas" verify --json > "$kind-verify.json"
+          done
+
+      - name: Verify initialization and zero-write evidence
+        run: |
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          root=Path('release-assets')
+          receipt=json.loads((root/'V770_VALIDATION_RECEIPT.json').read_text())
+          assert receipt['status']=='passed'
+          assert receipt['candidate_commit']==os.environ['PACKAGE_SOURCE_COMMIT']
+          assert receipt['candidate_version']=='7.7.0'
+          assert receipt['active_restoration_version']=='7.6.1'
+          assert receipt['active_restoration_commit']==os.environ['ACTIVE_PREDECESSOR_COMMIT']
+          assert receipt['rollback_restoration_version']=='7.6.0'
+          assert receipt['rollback_restoration_commit']==os.environ['PRESERVED_ROLLBACK_COMMIT']
+          evidence=json.loads((root/'V770_INITIALIZATION_EVIDENCE_INDEX.json').read_text())
+          assert evidence['status']=='passed'
+          assert evidence['cold_external_reads']==6 and evidence['warm_external_reads']==4
+          assert evidence['post_terminal_executed_calls']==0
+          assert evidence['general_searches']==0 and evidence['plugin_skill_reads']==0
+          assert evidence['google_drive_reads']==0 and evidence['provider_writes']==0
+          assert all(proof['status']=='passed' and proof['observed_provider_calls']==0 for proof in evidence['terminal_lock_proofs'])
+          zero=json.loads((root/'V770_ZERO_PROVIDER_WRITE_RECEIPT.json').read_text())
+          for field in ('provider_writes','todoist_writes','credential_actions','messages_sent','calendar_actions','scheduled_actions','deletions','profile_activations','authority_changes'):
+              assert zero[field]==0, field
+          PY
+
+      - name: Restore predecessor and preserved rollback
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p restoration/predecessor restoration/rollback
+          gh release download "$ACTIVE_PREDECESSOR_TAG" --repo "$GITHUB_REPOSITORY" --dir restoration/predecessor
+          gh release download "$PRESERVED_ROLLBACK_TAG" --repo "$GITHUB_REPOSITORY" --dir restoration/rollback
+          (cd restoration/predecessor && sed 's#  dist/#  #' CHECKSUMS.sha256 | sha256sum -c -)
+          (cd restoration/rollback && sed 's#  dist/#  #' CHECKSUMS.sha256 | sha256sum -c -)
+          predecessor_wheel=$(find restoration/predecessor -name '*.whl' -print -quit)
+          rollback_wheel=$(find restoration/rollback -name '*.whl' -print -quit)
+          python -m venv predecessor-env
+          python -m venv rollback-env
+          predecessor-env/bin/python -m pip install --disable-pip-version-check "$predecessor_wheel"
+          rollback-env/bin/python -m pip install --disable-pip-version-check "$rollback_wheel"
+          predecessor-env/bin/python -c "import atlas_ros; assert atlas_ros.__version__ == '7.6.1'"
+          rollback-env/bin/python -c "import atlas_ros; assert atlas_ros.__version__ == '7.6.0'"
+          test "$(git rev-list -n 1 "$ACTIVE_PREDECESSOR_TAG")" = "$ACTIVE_PREDECESSOR_COMMIT"
+          test "$(git rev-list -n 1 "$PRESERVED_ROLLBACK_TAG")" = "$PRESERVED_ROLLBACK_COMMIT"
+
+      - name: Retain independent publication readback evidence
+        run: |
+          python - <<'PY'
+          import hashlib, json, os
+          from pathlib import Path
+          payload={
+            'schema_version':'v770-independent-publication-readback-v1',
+            'status':'passed',
+            'tag':'v7.7.0',
+            'tag_commit':os.environ['EXPECTED_TAG_COMMIT'],
+            'package_source_commit':os.environ['PACKAGE_SOURCE_COMMIT'],
+            'implementation_merge':os.environ['IMPLEMENTATION_MERGE'],
+            'artifact_id':int(os.environ['ARTIFACT_ID']),
+            'artifact_sha256':os.environ['ARTIFACT_SHA256'],
+            'source_sha256':os.environ['SOURCE_SHA256'],
+            'wheel_sha256':os.environ['WHEEL_SHA256'],
+            'sbom_sha256':os.environ['SBOM_SHA256'],
+            'source_manifest_sha256':os.environ['SOURCE_MANIFEST_SHA256'],
+            'validation_receipt_sha256':os.environ['VALIDATION_SHA256'],
+            'initialization_evidence_sha256':os.environ['INITIALIZATION_EVIDENCE_SHA256'],
+            'manifest_sha256':os.environ['RELEASE_MANIFEST_SHA256'],
+            'authorization_sha256':os.environ['AUTHORIZATION_SHA256'],
+            'active_predecessor_commit':os.environ['ACTIVE_PREDECESSOR_COMMIT'],
+            'preserved_rollback_commit':os.environ['PRESERVED_ROLLBACK_COMMIT'],
+            'decision_id':'V4D-59',
+            'review_id':'V4V-105',
+            'provider_writes':0,
+            'todoist_writes':0,
+            'authority_changes':0,
+          }
+          text=json.dumps(payload,indent=2,sort_keys=True)+'\n'
+          Path('V770_INDEPENDENT_READBACK.json').write_text(text)
+          Path('V770_INDEPENDENT_READBACK.sha256').write_text(hashlib.sha256(text.encode()).hexdigest()+'  V770_INDEPENDENT_READBACK.json\n')
+          PY
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: atlas-ros-v770-independent-publication-readback
+          path: |
+            V770_INDEPENDENT_READBACK.json
+            V770_INDEPENDENT_READBACK.sha256
+            wheel-status.json
+            wheel-verify.json
+            sdist-status.json
+            sdist-verify.json
+          if-no-files-found: error
+          retention-days: 90
