@@ -32,7 +32,6 @@ class RuntimeDatabase:
         self.path = path
 
     def initialize(self) -> None:
-        self.path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
         self._secure_database_files()
         with self.connect() as connection:
             connection.executescript(SCHEMA)
@@ -42,6 +41,7 @@ class RuntimeDatabase:
 
     def _secure_database_files(self) -> None:
         """Restore private modes for the runtime directory, database, WAL, and SHM."""
+        self.path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
         if os.name != "posix":
             return
         self.path.parent.chmod(0o700)
@@ -72,7 +72,7 @@ class RuntimeDatabase:
 
     @contextmanager
     def connect(self) -> Iterator[sqlite3.Connection]:
-        self.path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+        self._secure_database_files()
         connection = sqlite3.connect(self.path, timeout=30)
         connection.execute("PRAGMA busy_timeout=30000")
         connection.row_factory = sqlite3.Row
