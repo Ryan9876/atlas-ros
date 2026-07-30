@@ -19,6 +19,12 @@ from atlas_ros.contracts.authority import (
 from atlas_ros.kernel.authority import AuthorityRecord
 from atlas_ros.kernel.context import InitializationContext, InitializationResult
 from atlas_ros.kernel.digests import sha256_digest
+from atlas_ros.kernel.initialization_circuit_breaker import (
+    InitializationCapability,
+    InitializationOperation,
+    InitializationState,
+    InitializationTargetBindings,
+)
 from atlas_ros.ports.authority import (
     AuthorityReader,
     ConnectorLivenessReader,
@@ -27,7 +33,6 @@ from atlas_ros.ports.authority import (
 )
 
 _AUTHORITY_PATH = PurePosixPath("governance/AUTHORITY.json")
-_RELEASE_INDEX_PATH = PurePosixPath("governance/RELEASE_INDEX.md")
 _REQUIRED_V7_INTEGRATIONS = frozenset({"GitHub", "Notion", "Todoist"})
 _WARM_CACHE_KEY = "atlas-quick-initialization-immutable-authority-v1"
 _WARM_PAYLOAD_SCHEMA = "1.0"
@@ -100,8 +105,9 @@ def quick_initialize(
     warm_cache: ImmutableAuthorityCache | None = None,
     warm_auth_token: str | None = None,
     timer: Callable[[], float] = perf_counter,
+    operation: InitializationOperation | None = None,
 ) -> InitializationResult:
-    """Run one compact fail-closed Quick Initialization operation."""
+    """Run one bounded fail-closed Quick Initialization operation."""
     started = timer()
     timings: list[InitializationStageTiming] = []
     warnings: list[str] = []
@@ -116,15 +122,36 @@ def quick_initialize(
     release_index_valid = False
     manifest_valid = False
     system_state_valid = False
+    operation_context = operation or InitializationOperation()
 
     try:
-        live_authority = _timed(
+        operation_context.transition(InitializationState.READING_AUTHORITY)
+        authority_text = _timed(
             "live_authority_read",
             timer,
             timings,
-            lambda: _read_live_authority(authority_reader),
+            lambda: operation_context.execute_external(
+                capability=InitializationCapability.GITHUB_AUTHORITY_READ,
+                target="github:governance/AUTHORITY.json@HEAD",
+                provider=lambda: authority_reader.read_text(_AUTHORITY_PATH, ref="HEAD"),
+            ),
         )
+        live_authority = _parse_authority(authority_text)
+        _verify_live_authority_identity(live_authority)
         authority = live_authority
+        operation_context.bind_targets(
+            InitializationTargetBindings(
+                release_index=(
+                    f"github:{live_authority.release_index.path}@HEAD"
+                ),
+                immutable_manifest=(
+                    f"github:{live_authority.active_release.manifest_path}@"
+                    f"{live_authority.active_release.immutable_commit}"
+                ),
+                system_state=f"notion:{live_authority.notion_system_state_url}",
+                integration_inventory="notion:<inventory-from-manifest>",
+            )
+        )
         source_digest = _immutable_source_digest(live_authority)
 
         if warm_cache is not None and warm_auth_token is not None:
@@ -140,12 +167,27 @@ def quick_initialize(
                         live_authority,
                     ),
                 )
+                operation_context.record_cache(outcome="hit")
                 cache_hit = True
                 execution_path = "warm"
+                operation_context.transition(InitializationState.READING_RELEASE_INDEX)
+                operation_context.record_internal_validation(
+                    capability="cached.release_index.validation",
+                    detail="digest and generated projection valid",
+                )
                 release_index_valid = True
+                operation_context.transition(InitializationState.READING_IMMUTABLE_MANIFEST)
+                operation_context.record_internal_validation(
+                    capability="cached.immutable_manifest.validation",
+                    detail="digest and immutable identity valid",
+                )
                 manifest_valid = True
             except (KeyError, OSError, TypeError, ValueError) as error:
                 cache_rejection_reason = str(error)
+                operation_context.record_cache(
+                    outcome="rejected",
+                    detail=cache_rejection_reason,
+                )
                 if _cache_unavailable(cache_rejection_reason):
                     execution_path = "cold"
                 else:
@@ -154,19 +196,41 @@ def quick_initialize(
                         warnings.append(f"warm cache rejected: {cache_rejection_reason}")
 
         if context is None:
+            operation_context.transition(InitializationState.READING_RELEASE_INDEX)
+            release_target = f"github:{live_authority.release_index.path}@HEAD"
             release_index = _timed(
                 "release_index_read_validation",
                 timer,
                 timings,
-                lambda: _read_release_index(authority_reader, live_authority),
+                lambda: operation_context.execute_external(
+                    capability=InitializationCapability.GITHUB_RELEASE_INDEX_READ,
+                    target=release_target,
+                    provider=lambda: authority_reader.read_text(
+                        PurePosixPath(live_authority.release_index.path),
+                        ref="HEAD",
+                    ),
+                ),
             )
+            _verify_release_index(live_authority, release_index)
             release_index_valid = True
+
+            operation_context.transition(InitializationState.READING_IMMUTABLE_MANIFEST)
+            active = live_authority.active_release
+            manifest_target = f"github:{active.manifest_path}@{active.immutable_commit}"
             manifest = _timed(
                 "manifest_read_validation",
                 timer,
                 timings,
-                lambda: _read_manifest(authority_reader, live_authority),
+                lambda: operation_context.execute_external(
+                    capability=InitializationCapability.GITHUB_IMMUTABLE_MANIFEST_READ,
+                    target=manifest_target,
+                    provider=lambda: authority_reader.read_text(
+                        PurePosixPath(active.manifest_path),
+                        ref=active.immutable_commit,
+                    ),
+                ),
             )
+            _verify_manifest(live_authority, manifest)
             manifest_valid = True
             context = _build_context(live_authority, release_index, manifest)
             if warm_cache is not None and warm_auth_token is not None:
@@ -189,31 +253,63 @@ def quick_initialize(
         if context is None:
             raise InitializationError("immutable initialization context was not resolved")
         resolved_context = context
+        operation_context.bind_targets(
+            InitializationTargetBindings(
+                release_index=f"github:{live_authority.release_index.path}@HEAD",
+                immutable_manifest=(
+                    f"github:{live_authority.active_release.manifest_path}@"
+                    f"{live_authority.active_release.immutable_commit}"
+                ),
+                system_state=f"notion:{resolved_context.system_state_url}",
+                integration_inventory=(
+                    f"notion:{resolved_context.integration_inventory_url}"
+                ),
+            )
+        )
 
+        operation_context.transition(InitializationState.READING_SYSTEM_STATE)
         system_state = _timed(
             "system_state_read",
             timer,
             timings,
-            lambda: dynamic_reader.read_system_state(resolved_context.system_state_url),
+            lambda: operation_context.execute_external(
+                capability=InitializationCapability.NOTION_SYSTEM_STATE_READ,
+                target=f"notion:{resolved_context.system_state_url}",
+                provider=lambda: dynamic_reader.read_system_state(
+                    resolved_context.system_state_url
+                ),
+            ),
         )
         _verify_system_state(resolved_context, system_state)
         system_state_valid = True
 
+        operation_context.transition(InitializationState.READING_INTEGRATION_INVENTORY)
         inventory = _timed(
             "integration_inventory_read",
             timer,
             timings,
-            lambda: dynamic_reader.read_integration_inventory(
-                resolved_context.integration_inventory_url
+            lambda: operation_context.execute_external(
+                capability=InitializationCapability.NOTION_INTEGRATION_INVENTORY_READ,
+                target=f"notion:{resolved_context.integration_inventory_url}",
+                provider=lambda: dynamic_reader.read_integration_inventory(
+                    resolved_context.integration_inventory_url
+                ),
             ),
         )
         _verify_integration_inventory(inventory)
 
+        operation_context.transition(InitializationState.CHECKING_CONNECTOR_LIVENESS)
         todoist_live = _timed(
             "todoist_liveness_read",
             timer,
             timings,
-            lambda: liveness_reader.read_connector_liveness(frozenset({"Todoist"})),
+            lambda: operation_context.execute_external(
+                capability=InitializationCapability.TODOIST_LIVENESS_READ,
+                target="todoist:connector-liveness",
+                provider=lambda: liveness_reader.read_connector_liveness(
+                    frozenset({"Todoist"})
+                ),
+            ),
         )
         if set(todoist_live) != {"Todoist"}:
             raise InitializationError(
@@ -225,7 +321,17 @@ def quick_initialize(
         status: Literal["READY", "READY_WITH_WARNINGS"] = (
             "READY_WITH_WARNINGS" if warnings else "READY"
         )
+        terminal_state = (
+            InitializationState.READY_WITH_WARNINGS
+            if warnings
+            else InitializationState.READY
+        )
+        operation_context.terminalize(terminal_state)
+        read_budget = operation_context.read_budget(
+            expected_external_reads=4 if execution_path == "warm" else 6
+        )
         receipt = InitializationReceipt(
+            operation_id=operation_context.operation_id,
             status=status,
             active_version=live_authority.active_release.version,
             active_commit=live_authority.active_release.immutable_commit,
@@ -247,10 +353,32 @@ def quick_initialize(
             system_state_last_verified_at=system_state.last_verified_at,
             inventory_last_verified_at=inventory.last_verified_at,
             warnings=tuple(warnings),
+            expected_read_plan=operation_context.expected_read_plan(
+                include_immutable_external_reads=execution_path != "warm"
+            ),
+            actual_trace=operation_context.trace(),
+            external_read_count=operation_context.attempted_external_reads,
+            retry_count=operation_context.retries,
+            rejected_call_count=len(operation_context.rejected_calls()),
+            rejected_calls=operation_context.rejected_calls(),
+            read_budget=read_budget,
+            budget_result=read_budget.budget_passed,
+            terminal_lock_activated=True,
+            post_terminal_executed_calls=0,
         )
         return InitializationResult(context=resolved_context, receipt=receipt)
     except Exception as error:
+        if operation_context.terminal and (
+            operation_context.state is not InitializationState.INITIALIZATION_BLOCKED
+        ):
+            raise
+        if not operation_context.terminal:
+            operation_context.block()
+        read_budget = operation_context.read_budget(
+            expected_external_reads=4 if execution_path == "warm" else 6
+        )
         receipt = InitializationReceipt(
+            operation_id=operation_context.operation_id,
             status="INITIALIZATION_BLOCKED",
             active_version=(authority.active_release.version if authority else None),
             active_commit=(authority.active_release.immutable_commit if authority else None),
@@ -285,12 +413,23 @@ def quick_initialize(
             ),
             warnings=tuple(warnings),
             blocked_condition=str(error),
+            expected_read_plan=operation_context.expected_read_plan(
+                include_immutable_external_reads=execution_path != "warm"
+            ),
+            actual_trace=operation_context.trace(),
+            external_read_count=operation_context.attempted_external_reads,
+            retry_count=operation_context.retries,
+            rejected_call_count=len(operation_context.rejected_calls()),
+            rejected_calls=operation_context.rejected_calls(),
+            read_budget=read_budget,
+            budget_result=read_budget.budget_passed,
+            terminal_lock_activated=True,
+            post_terminal_executed_calls=0,
         )
         return InitializationResult(context=None, receipt=receipt)
 
 
-def _read_live_authority(reader: AuthorityReader) -> AuthorityRecord:
-    authority = _parse_authority(reader.read_text(_AUTHORITY_PATH, ref="HEAD"))
+def _verify_live_authority_identity(authority: AuthorityRecord) -> None:
     active = authority.active_release
     if active.tag != f"v{active.version.removeprefix('v')}":
         raise InitializationError("active release version and tag disagree")
@@ -298,6 +437,11 @@ def _read_live_authority(reader: AuthorityReader) -> AuthorityRecord:
         raise InitializationError(
             "active manifest URL does not resolve to the declared manifest path"
         )
+
+
+def _read_live_authority(reader: AuthorityReader) -> AuthorityRecord:
+    authority = _parse_authority(reader.read_text(_AUTHORITY_PATH, ref="HEAD"))
+    _verify_live_authority_identity(authority)
     return authority
 
 
@@ -314,7 +458,7 @@ def _read_release_index(
     reader: AuthorityReader,
     authority: AuthorityRecord,
 ) -> str:
-    release_index = reader.read_text(_RELEASE_INDEX_PATH, ref="HEAD")
+    release_index = reader.read_text(PurePosixPath(authority.release_index.path), ref="HEAD")
     _verify_release_index(authority, release_index)
     return release_index
 

@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "atlas-ros"
-version = "7.6.1"
+version = "7.7.0"
 description = "Policy-driven executable core for Atlas Ryan Operating System"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -98,6 +98,7 @@ select = ["E", "F", "I", "UP", "B", "SIM"]
 "tests/unit/test_v710_lazy_warm_runtime.py" = ["E501"]
 "scripts/build_v761_candidate_evidence.py" = ["E501", "I001", "E302"]
 "scripts/build_v761_communication_evidence.py" = ["E501", "I001", "E302"]
+"scripts/build_v770_candidate_evidence.py" = ["E501"]
 
 [tool.mypy]
 python_version = "3.12"

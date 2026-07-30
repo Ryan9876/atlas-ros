@@ -25,6 +25,148 @@
       "title": "InitializationIntegrationResult",
       "type": "object"
     },
+    "InitializationReadBudget": {
+      "additionalProperties": false,
+      "description": "Read-budget accounting for one Quick Initialization operation.",
+      "properties": {
+        "attempted_external_reads": {
+          "minimum": 0,
+          "title": "Attempted External Reads",
+          "type": "integer"
+        },
+        "budget_passed": {
+          "title": "Budget Passed",
+          "type": "boolean"
+        },
+        "cache_reads": {
+          "minimum": 0,
+          "title": "Cache Reads",
+          "type": "integer"
+        },
+        "cache_rejections": {
+          "minimum": 0,
+          "title": "Cache Rejections",
+          "type": "integer"
+        },
+        "completed_external_reads": {
+          "minimum": 0,
+          "title": "Completed External Reads",
+          "type": "integer"
+        },
+        "expected_external_reads": {
+          "maximum": 6,
+          "minimum": 0,
+          "title": "Expected External Reads",
+          "type": "integer"
+        },
+        "failed_external_reads": {
+          "minimum": 0,
+          "title": "Failed External Reads",
+          "type": "integer"
+        },
+        "maximum_clean_cold_reads": {
+          "const": 6,
+          "default": 6,
+          "title": "Maximum Clean Cold Reads",
+          "type": "integer"
+        },
+        "reads_by_connector": {
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "title": "Reads By Connector",
+          "type": "object"
+        },
+        "reads_by_target": {
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "title": "Reads By Target",
+          "type": "object"
+        },
+        "rejected_calls": {
+          "minimum": 0,
+          "title": "Rejected Calls",
+          "type": "integer"
+        },
+        "retry_count": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Retry Count",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "expected_external_reads",
+        "attempted_external_reads",
+        "completed_external_reads",
+        "failed_external_reads",
+        "retry_count",
+        "cache_reads",
+        "cache_rejections",
+        "rejected_calls",
+        "budget_passed"
+      ],
+      "title": "InitializationReadBudget",
+      "type": "object"
+    },
+    "InitializationRejectedCall": {
+      "additionalProperties": false,
+      "description": "Pre-provider rejection evidence for one denied initialization-scoped call.",
+      "properties": {
+        "capability": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Capability",
+          "type": "string"
+        },
+        "initiator": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Initiator",
+          "type": "string"
+        },
+        "provider_invoked": {
+          "const": false,
+          "default": false,
+          "title": "Provider Invoked",
+          "type": "boolean"
+        },
+        "rejection_reason": {
+          "maxLength": 2048,
+          "minLength": 1,
+          "title": "Rejection Reason",
+          "type": "string"
+        },
+        "sequence": {
+          "minimum": 1,
+          "title": "Sequence",
+          "type": "integer"
+        },
+        "state": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "State",
+          "type": "string"
+        },
+        "target": {
+          "maxLength": 1024,
+          "minLength": 1,
+          "title": "Target",
+          "type": "string"
+        }
+      },
+      "required": [
+        "sequence",
+        "state",
+        "capability",
+        "target",
+        "rejection_reason",
+        "initiator"
+      ],
+      "title": "InitializationRejectedCall",
+      "type": "object"
+    },
     "InitializationStageTiming": {
       "additionalProperties": false,
       "description": "Elapsed time for one deterministic initialization stage.",
@@ -47,12 +189,86 @@
       ],
       "title": "InitializationStageTiming",
       "type": "object"
+    },
+    "InitializationTraceEntry": {
+      "additionalProperties": false,
+      "description": "One deterministic initialization trace event.",
+      "properties": {
+        "attempt": {
+          "maximum": 2,
+          "minimum": 0,
+          "title": "Attempt",
+          "type": "integer"
+        },
+        "capability": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Capability",
+          "type": "string"
+        },
+        "detail": {
+          "default": "",
+          "maxLength": 2048,
+          "title": "Detail",
+          "type": "string"
+        },
+        "initiator": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Initiator",
+          "type": "string"
+        },
+        "outcome": {
+          "enum": [
+            "completed",
+            "failed",
+            "rejected",
+            "hit",
+            "internal"
+          ],
+          "title": "Outcome",
+          "type": "string"
+        },
+        "provider_invoked": {
+          "title": "Provider Invoked",
+          "type": "boolean"
+        },
+        "sequence": {
+          "minimum": 1,
+          "title": "Sequence",
+          "type": "integer"
+        },
+        "state": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "State",
+          "type": "string"
+        },
+        "target": {
+          "maxLength": 1024,
+          "minLength": 1,
+          "title": "Target",
+          "type": "string"
+        }
+      },
+      "required": [
+        "sequence",
+        "state",
+        "capability",
+        "target",
+        "outcome",
+        "attempt",
+        "initiator",
+        "provider_invoked"
+      ],
+      "title": "InitializationTraceEntry",
+      "type": "object"
     }
   },
   "$id": "https://github.com/Ryan9876/atlas-ros/schemas/authority/initialization-receipt.schema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
-  "description": "Compact non-authoritative receipt for one Quick Initialization attempt.",
+  "description": "Versioned non-authoritative receipt for one Quick Initialization attempt.",
   "properties": {
     "active_commit": {
       "anyOf": [
@@ -77,6 +293,14 @@
       ],
       "default": null,
       "title": "Active Version"
+    },
+    "actual_trace": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/InitializationTraceEntry"
+      },
+      "title": "Actual Trace",
+      "type": "array"
     },
     "authority_agreement": {
       "default": false,
@@ -120,6 +344,11 @@
       "default": null,
       "title": "Blocked Condition"
     },
+    "budget_result": {
+      "default": false,
+      "title": "Budget Result",
+      "type": "boolean"
+    },
     "cache_hit": {
       "default": false,
       "title": "Cache Hit",
@@ -146,6 +375,20 @@
       ],
       "title": "Execution Path",
       "type": "string"
+    },
+    "expected_read_plan": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Expected Read Plan",
+      "type": "array"
+    },
+    "external_read_count": {
+      "default": 0,
+      "minimum": 0,
+      "title": "External Read Count",
+      "type": "integer"
     },
     "google_drive_reads": {
       "const": 0,
@@ -195,6 +438,19 @@
       "title": "Manifest Digest Valid",
       "type": "boolean"
     },
+    "operation_id": {
+      "default": "legacy-unbound",
+      "maxLength": 128,
+      "minLength": 1,
+      "title": "Operation Id",
+      "type": "string"
+    },
+    "post_terminal_executed_calls": {
+      "const": 0,
+      "default": 0,
+      "title": "Post Terminal Executed Calls",
+      "type": "integer"
+    },
     "provider_writes": {
       "const": 0,
       "default": 0,
@@ -205,6 +461,31 @@
       "default": false,
       "title": "Published Workspace Valid",
       "type": "boolean"
+    },
+    "read_budget": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/InitializationReadBudget"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "rejected_call_count": {
+      "default": 0,
+      "minimum": 0,
+      "title": "Rejected Call Count",
+      "type": "integer"
+    },
+    "rejected_calls": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/InitializationRejectedCall"
+      },
+      "title": "Rejected Calls",
+      "type": "array"
     },
     "release_index_digest_valid": {
       "default": false,
@@ -219,9 +500,19 @@
       "title": "Required Integrations",
       "type": "array"
     },
+    "retry_count": {
+      "default": 0,
+      "maximum": 1,
+      "minimum": 0,
+      "title": "Retry Count",
+      "type": "integer"
+    },
     "schema_version": {
-      "const": "1.0",
-      "default": "1.0",
+      "default": "2.0",
+      "enum": [
+        "1.0",
+        "2.0"
+      ],
       "title": "Schema Version",
       "type": "string"
     },
@@ -259,6 +550,11 @@
       ],
       "default": null,
       "title": "System State Last Verified At"
+    },
+    "terminal_lock_activated": {
+      "default": false,
+      "title": "Terminal Lock Activated",
+      "type": "boolean"
     },
     "total_elapsed_ms": {
       "minimum": 0,
