@@ -1,0 +1,78 @@
+{
+  "$id": "https://github.com/Ryan9876/atlas-ros/schemas/operational-awareness/clarification-analysis.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "contract_id": {"const": "atlas.clarification-analysis", "default": "atlas.clarification-analysis", "type": "string"},
+    "schema_version": {"const": "1.0", "default": "1.0", "type": "string"},
+    "original_instruction": {"minLength": 1, "type": "string"},
+    "stable_intent": {"items": {"minLength": 1, "type": "string"}, "type": "array"},
+    "ambiguity_category": {
+      "enum": [
+        "none",
+        "suspected_transcription_error",
+        "incorrect_relationship_or_connector_word",
+        "missing_target",
+        "missing_project_or_application_name",
+        "unrecognized_possible_proper_noun",
+        "multiple_plausible_targets",
+        "missing_ownership",
+        "missing_expected_outcome",
+        "missing_completion_criteria",
+        "conflicting_dates",
+        "conflicting_priorities",
+        "ambiguous_pronoun",
+        "ambiguous_delegation",
+        "ambiguous_action_versus_project",
+        "ambiguous_request_versus_informational_note"
+      ],
+      "type": "string"
+    },
+    "ambiguous_span": {"type": ["string", "null"]},
+    "context_sources_checked": {"items": {"type": "string"}, "type": "array"},
+    "candidates": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "normalized_instruction": {"minLength": 1, "type": "string"},
+          "rationale": {"minLength": 1, "type": "string"},
+          "confidence": {"maximum": 1.0, "minimum": 0.0, "type": "number"},
+          "material": {"default": true, "type": "boolean"},
+          "unsupported_assumptions": {"items": {"type": "string"}, "type": "array"}
+        },
+        "required": ["normalized_instruction", "rationale", "confidence"],
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "leading_interpretation": {"type": ["string", "null"]},
+    "clarification_required": {"type": "boolean"},
+    "question_mode": {"enum": ["confirmatory", "bounded_choice", "information_seeking", null]},
+    "clarification_question": {"type": ["string", "null"]},
+    "continue_unrelated_work": {"default": true, "type": "boolean"},
+    "downstream_execution_blocked": {"default": true, "type": "boolean"},
+    "provider_write_count": {"const": 0, "default": 0, "type": "integer"},
+    "confidence": {
+      "additionalProperties": false,
+      "properties": {
+        "score": {"type": ["number", "null"]},
+        "rationale": {"minLength": 1, "type": "string"},
+        "missing_data": {"items": {"type": "object"}, "type": "array"}
+      },
+      "required": ["score", "rationale"],
+      "type": "object"
+    },
+    "blockers": {"items": {"type": "string"}, "type": "array"},
+    "analysis_digest": {"pattern": "^[0-9a-f]{64}$", "type": "string"}
+  },
+  "required": [
+    "original_instruction",
+    "stable_intent",
+    "ambiguity_category",
+    "clarification_required",
+    "confidence",
+    "analysis_digest"
+  ],
+  "title": "ClarificationAnalysisV1",
+  "type": "object"
+}
