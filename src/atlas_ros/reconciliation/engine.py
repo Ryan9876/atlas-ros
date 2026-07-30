@@ -31,10 +31,39 @@ class ReconciliationProviderPort(Protocol):
     def readback(self, mutation: ReconciliationMutationV2) -> Any: ...
 
 
-@dataclass
+@dataclass(init=False)
 class InMemoryReconciliationState:
+    """Checkpoint plus keys for provider writes that returned successfully.
+
+    A successful provider return is recorded before readback. A later mismatch or
+    readback exception does not prove that the write failed, so the key remains and
+    any retry must read back before issuing another provider write. ``applied_keys``
+    remains as a compatibility alias for previously serialized or test-facing state.
+    """
+
     checkpoint: CheckpointToken
-    applied_keys: set[str] = field(default_factory=set)
+    successful_write_keys: set[str] = field(default_factory=set)
+
+    def __init__(
+        self,
+        checkpoint: CheckpointToken,
+        successful_write_keys: set[str] | None = None,
+        *,
+        applied_keys: set[str] | None = None,
+    ) -> None:
+        if successful_write_keys is not None and applied_keys is not None:
+            raise ValueError("provide only successful_write_keys or legacy applied_keys")
+        self.checkpoint = checkpoint
+        self.successful_write_keys = set(successful_write_keys or applied_keys or ())
+
+    @property
+    def applied_keys(self) -> set[str]:
+        """Compatibility alias; use successful_write_keys in new code."""
+        return self.successful_write_keys
+
+    @applied_keys.setter
+    def applied_keys(self, value: set[str]) -> None:
+        self.successful_write_keys = value
 
 
 @dataclass
@@ -43,13 +72,18 @@ class InMemoryReconciliationProvider:
     objects: dict[str, dict[str, Any]] = field(default_factory=dict)
     fail_before_write: set[str] = field(default_factory=set)
     mismatch_after_write: set[str] = field(default_factory=set)
+    raise_during_readback: set[str] = field(default_factory=set)
+    apply_calls: dict[str, int] = field(default_factory=dict)
 
     def apply(self, mutation: ReconciliationMutationV2) -> None:
+        self.apply_calls[mutation.mutation_id] = self.apply_calls.get(mutation.mutation_id, 0) + 1
         if mutation.mutation_id in self.fail_before_write:
             raise RuntimeError("provider operation failed before write")
         self.objects.setdefault(mutation.object_id, {})[mutation.field] = mutation.desired_value
 
     def readback(self, mutation: ReconciliationMutationV2) -> Any:
+        if mutation.mutation_id in self.raise_during_readback:
+            raise RuntimeError("provider readback failed")
         if mutation.mutation_id in self.mismatch_after_write:
             return {"mismatch": True}
         return self.objects.get(mutation.object_id, {}).get(mutation.field)
@@ -181,16 +215,17 @@ class CanonicalReconciliationService:
 
         before = self.state.checkpoint
         results: list[ReconciliationOperationResult] = []
-        newly_applied: list[str] = []
         try:
             for mutation in plan.ordered_mutations:
                 provider = self.providers.get(mutation.provider)
                 if provider is None:
                     raise RuntimeError(f"provider unavailable: {mutation.provider}")
-                already_applied = mutation.idempotency_key in self.state.applied_keys
-                if not already_applied:
+                write_succeeded = mutation.idempotency_key in self.state.successful_write_keys
+                if not write_succeeded:
                     provider.apply(mutation)
-                    newly_applied.append(mutation.idempotency_key)
+                    # Record only after provider apply returns. Do not remove this key if
+                    # readback later fails: the external write may have succeeded.
+                    self.state.successful_write_keys.add(mutation.idempotency_key)
                 actual = provider.readback(mutation)
                 verified = actual == mutation.desired_value
                 results.append(
@@ -200,7 +235,7 @@ class CanonicalReconciliationService:
                         object_id=mutation.object_id,
                         status=(
                             OperationStatus.ALREADY_APPLIED
-                            if already_applied and verified
+                            if write_succeeded and verified
                             else OperationStatus.APPLIED
                             if verified
                             else OperationStatus.READBACK_MISMATCH
@@ -213,14 +248,13 @@ class CanonicalReconciliationService:
                 )
                 if not verified:
                     raise RuntimeError("provider readback mismatch")
-            self.state.applied_keys.update(newly_applied)
             next_cursor = max(
                 (snapshot.captured_at for snapshot in plan.source_snapshots),
                 default=datetime.now(UTC),
             ).isoformat()
             resulting = CheckpointToken(
                 cursor=next_cursor,
-                applied_event_ids=tuple(sorted(self.state.applied_keys)),
+                applied_event_ids=tuple(sorted(self.state.successful_write_keys)),
             )
             self.state.checkpoint = resulting
             receipt_digest = deterministic_digest(
@@ -247,7 +281,8 @@ class CanonicalReconciliationService:
             )
             return ReconciliationResultV2(plan=plan, receipt=receipt)
         except Exception as exc:
-            self.state.applied_keys.update(newly_applied)
+            # Preserve the prior checkpoint until every write is verified. Successful
+            # write keys remain so retry performs readback before any duplicate apply.
             self.state.checkpoint = before
             if not results or results[-1].verified:
                 results.append(
