@@ -22,17 +22,38 @@ CREATE TABLE IF NOT EXISTS reconciliation_outbox (mutation_id TEXT PRIMARY KEY, 
 
 
 class RuntimeDatabase:
+    """Local runtime database with POSIX-only explicit file permission hardening.
+
+    On non-POSIX platforms SQLite behavior is preserved, but POSIX mode bits are not
+    asserted because the platform does not provide equivalent chmod semantics.
+    """
+
     def __init__(self, path: Path) -> None:
         self.path = path
 
     def initialize(self) -> None:
         self.path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
-        self.path.parent.chmod(0o700)
+        self._secure_database_files()
         with self.connect() as connection:
             connection.executescript(SCHEMA)
             self._ensure_capture_assertion_columns(connection)
             connection.execute("PRAGMA user_version=50001")
-        os.chmod(self.path, 0o600)
+        self._secure_database_files()
+
+    def _secure_database_files(self) -> None:
+        """Restore private modes for the runtime directory, database, WAL, and SHM."""
+        if os.name != "posix":
+            return
+        self.path.parent.chmod(0o700)
+        for candidate in (
+            self.path,
+            Path(f"{self.path}-wal"),
+            Path(f"{self.path}-shm"),
+        ):
+            try:
+                candidate.chmod(0o600)
+            except FileNotFoundError:
+                continue
 
     @staticmethod
     def _ensure_capture_assertion_columns(connection: sqlite3.Connection) -> None:
@@ -51,15 +72,21 @@ class RuntimeDatabase:
 
     @contextmanager
     def connect(self) -> Iterator[sqlite3.Connection]:
+        self.path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
         connection = sqlite3.connect(self.path, timeout=30)
         connection.execute("PRAGMA busy_timeout=30000")
         connection.row_factory = sqlite3.Row
         connection.execute("PRAGMA foreign_keys=ON")
+        self._secure_database_files()
         try:
             yield connection
             connection.commit()
+            self._secure_database_files()
         except Exception:
             connection.rollback()
+            self._secure_database_files()
             raise
         finally:
+            self._secure_database_files()
             connection.close()
+            self._secure_database_files()
