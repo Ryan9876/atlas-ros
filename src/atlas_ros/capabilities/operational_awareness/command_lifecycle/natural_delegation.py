@@ -61,7 +61,7 @@ class TaskUpdatePersonIdentityResolver:
             raw_directory = record.extra.get("person_directory", ())
             if raw_directory is None:
                 continue
-            if not isinstance(raw_directory, (list, tuple)):
+            if not isinstance(raw_directory, list | tuple):
                 raise ValueError("person_directory must be a list or tuple")
             for raw_entry in raw_directory:
                 if not isinstance(raw_entry, dict):
@@ -70,7 +70,7 @@ class TaskUpdatePersonIdentityResolver:
                 aliases = raw_entry.get("aliases", ())
                 if aliases is None:
                     aliases = ()
-                if not isinstance(aliases, (list, tuple)) or not all(
+                if not isinstance(aliases, list | tuple) or not all(
                     isinstance(item, str) for item in aliases
                 ):
                     raise ValueError("person_directory aliases must be strings")
