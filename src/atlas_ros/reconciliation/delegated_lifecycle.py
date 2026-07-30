@@ -32,7 +32,13 @@ class DelegatedLifecycleReconciliationAssessment:
             "missing_or_mismatched": missing_or_mismatched,
             "recovery_actions": recovery_actions,
         }
-        return cls(assessment_digest=sha256_digest(payload), **payload)
+        return cls(
+            consistent=consistent,
+            verified_identities=verified_identities,
+            missing_or_mismatched=missing_or_mismatched,
+            recovery_actions=recovery_actions,
+            assessment_digest=sha256_digest(payload),
+        )
 
 
 @dataclass(frozen=True, slots=True)
