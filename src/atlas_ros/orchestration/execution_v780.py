@@ -20,17 +20,12 @@ from atlas_ros.contracts import (
     TransactionJournalEntry,
     TransactionStateV2,
 )
-from atlas_ros.orchestration.execution import (
-    ExecutionEvent,
-    ExecutionOrchestratorV2 as _BaseOrchestrator,
-    GovernedRetryPolicy as _BaseRetryPolicy,
-    InMemoryExecutionStore,
-)
+from atlas_ros.orchestration import execution as base_execution
 from atlas_ros.orchestration.ports import ExecutionProviderPort, ProviderExecutionError
 
 
 @dataclass(frozen=True)
-class GovernedRetryPolicy(_BaseRetryPolicy):
+class GovernedRetryPolicy(base_execution.GovernedRetryPolicy):
     """Bounded retry policy owned exclusively by governed orchestration."""
 
     maximum_delay_seconds: float = 60.0
@@ -60,7 +55,7 @@ class GovernedRetryPolicy(_BaseRetryPolicy):
         return min(self.backoff_seconds[index], self.maximum_delay_seconds), "governed_backoff"
 
 
-class ExecutionOrchestratorV2(_BaseOrchestrator):
+class ExecutionOrchestratorV2(base_execution.ExecutionOrchestratorV2):
     """Execution orchestrator with injectable, journaled, bounded retry delays."""
 
     def __init__(
@@ -68,8 +63,8 @@ class ExecutionOrchestratorV2(_BaseOrchestrator):
         providers: tuple[ExecutionProviderPort, ...],
         *,
         retry_policy: GovernedRetryPolicy | None = None,
-        store: InMemoryExecutionStore | None = None,
-        event_sink: Callable[[ExecutionEvent], None] | None = None,
+        store: base_execution.InMemoryExecutionStore | None = None,
+        event_sink: Callable[[base_execution.ExecutionEvent], None] | None = None,
         sleeper: Callable[[float], None] = time.sleep,
     ) -> None:
         super().__init__(
