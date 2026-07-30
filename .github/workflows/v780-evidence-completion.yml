@@ -107,7 +107,7 @@ jobs:
           assert manifest['source_commit'] == commit
           assert manifest['entries']
           PY
-          (cd evidence && sha256sum -c EVIDENCE_CHECKSUMS.sha256)
+          sha256sum -c evidence/EVIDENCE_CHECKSUMS.sha256
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: atlas-ros-v780-evidence-${{ github.event.pull_request.head.sha }}
