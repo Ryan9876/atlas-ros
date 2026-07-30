@@ -1,5 +1,6 @@
 """Bounded Operational Awareness capability surface."""
 
+from .clarification import ContextAwareClarificationAnalyzer
 from .command_lifecycle import (
     AtlasCommandParser,
     CommandLifecycleService,
@@ -16,10 +17,11 @@ __all__ = [
     "AtlasCommandParser",
     "CommandLifecycleService",
     "CommitmentIntelligence",
+    "ContextAwareClarificationAnalyzer",
     "ExecutionContextService",
     "OperatingBriefService",
-    "TaskUpdateLifecycleNormalizer",
     "OperationalSnapshotBuilder",
+    "TaskUpdateLifecycleNormalizer",
     "WorkGraphHygieneService",
     "WorkStateIntelligence",
 ]
