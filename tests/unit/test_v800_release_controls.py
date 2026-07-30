@@ -25,11 +25,13 @@ def test_v800_migration_is_additive_unapplied_and_rollback_compatible() -> None:
     assert receipt["live_writes"] == 0
     assert receipt["production_apply_authorized"] is False
     assert receipt["additive_fields"] == [
+        "Accountable Identity",
         "Command Digest",
         "Effective State",
         "Idempotency Identity",
         "Latest Reconciliation State",
         "Provenance",
+        "Responsible Identity",
         "Source Update",
         "Todoist Checkpoint ID",
         "Todoist Checkpoint URL",
