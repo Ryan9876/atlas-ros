@@ -1,0 +1,160 @@
+name: v7.8.0 authorized publication controller
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - release/V780_PUBLICATION_TRIGGER.json
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: v780-authorized-publication
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      TAG: v7.8.0
+      TARGET_COMMIT: ${{ github.sha }}
+      CANDIDATE_ARTIFACT_ID: '8748751862'
+      CANDIDATE_ARTIFACT_DIGEST: sha256:839b8b9e4455553dcedcece4527839f05da21e8394d2212e9cbca8c293d71d70
+      EVIDENCE_ARTIFACT_ID: '8748722912'
+      EVIDENCE_ARTIFACT_DIGEST: sha256:d92ece88e779450c28c3e0db7a824b3e689fab25bd63f7c86116996795da518f
+      PACKAGE_SOURCE_COMMIT: b9ce0f2674ec685e7e2f3e2dd86810db84db3e70
+      IMPLEMENTATION_MERGE: d0955c261884668c7e862fc1aa9e65eac410a702
+      SOURCE_SHA256: c9644b9196fd8d5c43b3fa6211ed1901924401b2f3419711a248dcd8f14105ad
+      WHEEL_SHA256: c7c8daf6926160334c3947ca7a86496cad9b86c2894abdc4dbe4a56a6cf6125a
+      SBOM_SHA256: 6e35a81f31ec78d4cbffd58b3e65c675d9c41eafe62fc375cefe8500a389bb88
+      SOURCE_MANIFEST_SHA256: 6e6d0ad22ae9828f5bba17b18c23d2572b043b408479d13f91418cdfa7934ba7
+      SOURCE_TREE_SHA256: 56502e35b843fd9a5f6e5371b74166707af690cde572ca74912fc7c8165eeae0
+      VALIDATION_SHA256: 663d2ea3aac7d3b9715c869f2a4e88abd6116f95943b391378f46a71fe97a861
+      RELEASE_MANIFEST_SHA256: 6942c315d2379555871af017ed816e207176ff57622f3483d2043dee28310687
+      AUTHORIZATION_SHA256: 0651a1a3aeb6badbe0c6885646b5952d978d95551458def2a7ceaf40bc61521a
+      DECISION_ID: V4D-60
+      REVIEW_ID: V4V-108
+    steps:
+      - name: Checkout exact publication transaction
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          ref: ${{ env.TARGET_COMMIT }}
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Verify prepublication authority and exact controls
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$TARGET_COMMIT"
+          test "$(sha256sum release/RELEASE_MANIFEST_V780.md | cut -d' ' -f1)" = "$RELEASE_MANIFEST_SHA256"
+          test "$(sha256sum release/V780_EXACT_PACKAGE_AUTHORIZATION.md | cut -d' ' -f1)" = "$AUTHORIZATION_SHA256"
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          authority = json.loads(Path('governance/AUTHORITY.json').read_text())
+          assert authority['active_release']['version'] == '7.7.0'
+          assert authority['active_release']['immutable_commit'] == '71d849b77a53b8f0ba5a9379ff45b44869756819'
+          assert authority['immediate_rollback']['version'] == '7.6.1'
+          assert authority['immediate_rollback']['immutable_commit'] == '91532b8f6b38ea82ef232d1181ef78418471b66b'
+          trigger = json.loads(Path('release/V780_PUBLICATION_TRIGGER.json').read_text())
+          assert trigger == {
+              'authorization_sha256': os.environ['AUTHORIZATION_SHA256'],
+              'candidate_artifact_id': 8748751862,
+              'candidate_artifact_sha256': os.environ['CANDIDATE_ARTIFACT_DIGEST'].removeprefix('sha256:'),
+              'decision_id': os.environ['DECISION_ID'],
+              'evidence_artifact_id': 8748722912,
+              'evidence_artifact_sha256': os.environ['EVIDENCE_ARTIFACT_DIGEST'].removeprefix('sha256:'),
+              'implementation_merge': os.environ['IMPLEMENTATION_MERGE'],
+              'package_source_commit': os.environ['PACKAGE_SOURCE_COMMIT'],
+              'release_manifest_sha256': os.environ['RELEASE_MANIFEST_SHA256'],
+              'review_id': os.environ['REVIEW_ID'],
+              'schema_version': 'v780-publication-trigger-v1',
+              'tag': 'v7.8.0',
+          }
+          manifest = Path('release/RELEASE_MANIFEST_V780.md').read_text()
+          authorization = Path('release/V780_EXACT_PACKAGE_AUTHORIZATION.md').read_text()
+          required = (
+              os.environ['PACKAGE_SOURCE_COMMIT'], os.environ['IMPLEMENTATION_MERGE'],
+              os.environ['CANDIDATE_ARTIFACT_ID'], os.environ['CANDIDATE_ARTIFACT_DIGEST'].removeprefix('sha256:'),
+              os.environ['EVIDENCE_ARTIFACT_ID'], os.environ['EVIDENCE_ARTIFACT_DIGEST'].removeprefix('sha256:'),
+              os.environ['SOURCE_SHA256'], os.environ['WHEEL_SHA256'], os.environ['SBOM_SHA256'],
+              os.environ['SOURCE_MANIFEST_SHA256'], os.environ['SOURCE_TREE_SHA256'],
+              os.environ['VALIDATION_SHA256'], os.environ['DECISION_ID'], os.environ['REVIEW_ID'],
+          )
+          for value in required:
+              assert value in manifest, value
+              assert value in authorization, value
+          PY
+
+      - name: Download and verify exact retained artifacts
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p publication/candidate publication/evidence
+          test "$(gh api "/repos/${GITHUB_REPOSITORY}/actions/artifacts/${CANDIDATE_ARTIFACT_ID}" --jq .digest)" = "$CANDIDATE_ARTIFACT_DIGEST"
+          test "$(gh api "/repos/${GITHUB_REPOSITORY}/actions/artifacts/${EVIDENCE_ARTIFACT_ID}" --jq .digest)" = "$EVIDENCE_ARTIFACT_DIGEST"
+          gh api "/repos/${GITHUB_REPOSITORY}/actions/artifacts/${CANDIDATE_ARTIFACT_ID}/zip" > publication/candidate.zip
+          gh api "/repos/${GITHUB_REPOSITORY}/actions/artifacts/${EVIDENCE_ARTIFACT_ID}/zip" > publication/evidence.zip
+          test "$(sha256sum publication/candidate.zip | cut -d' ' -f1)" = "${CANDIDATE_ARTIFACT_DIGEST#sha256:}"
+          test "$(sha256sum publication/evidence.zip | cut -d' ' -f1)" = "${EVIDENCE_ARTIFACT_DIGEST#sha256:}"
+          unzip -q publication/candidate.zip -d publication/candidate
+          unzip -q publication/evidence.zip -d publication/evidence
+          test "$(cat publication/candidate/build/SOURCE_COMMIT.txt)" = "$PACKAGE_SOURCE_COMMIT"
+          test "$(cat publication/candidate/build/BUILD_COUNT.txt)" = "1"
+          test "$(sha256sum publication/candidate/dist/atlas_ros-7.8.0.tar.gz | cut -d' ' -f1)" = "$SOURCE_SHA256"
+          test "$(sha256sum publication/candidate/dist/atlas_ros-7.8.0-py3-none-any.whl | cut -d' ' -f1)" = "$WHEEL_SHA256"
+          test "$(sha256sum publication/candidate/build/V780_VALIDATION_RECEIPT.json | cut -d' ' -f1)" = "$VALIDATION_SHA256"
+          test "$(sha256sum publication/evidence/V780_SBOM.spdx.json | cut -d' ' -f1)" = "$SBOM_SHA256"
+          test "$(sha256sum publication/evidence/V780_SOURCE_MANIFEST.json | cut -d' ' -f1)" = "$SOURCE_MANIFEST_SHA256"
+          test "$(sha256sum publication/evidence/SOURCE_TREE.txt | cut -d' ' -f1)" = "$SOURCE_TREE_SHA256"
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          receipt = json.loads(Path('publication/candidate/build/V780_VALIDATION_RECEIPT.json').read_text())
+          assert receipt['candidate_commit'] == os.environ['PACKAGE_SOURCE_COMMIT']
+          assert receipt['build_count'] == 1
+          assert receipt['provider_writes'] == 0
+          assert receipt['todoist_writes'] == 0
+          assert receipt['active_restoration'] == 'passed'
+          assert receipt['rollback_restoration'] == 'passed'
+          sbom = json.loads(Path('publication/evidence/V780_SBOM.spdx.json').read_text())
+          source = json.loads(Path('publication/evidence/V780_SOURCE_MANIFEST.json').read_text())
+          assert sbom['spdxVersion'] == 'SPDX-2.3'
+          assert sbom['documentNamespace'].endswith(os.environ['PACKAGE_SOURCE_COMMIT'])
+          assert source['source_commit'] == os.environ['PACKAGE_SOURCE_COMMIT']
+          PY
+
+      - name: Create immutable tag and GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          git config user.name "Atlas ROS Release Bot"
+          git config user.email "atlas-ros-release@users.noreply.github.com"
+          if git rev-parse "$TAG" >/dev/null 2>&1; then
+            test "$(git rev-list -n 1 "$TAG")" = "$TARGET_COMMIT"
+          else
+            git tag -a "$TAG" "$TARGET_COMMIT" -m "Atlas ROS v7.8.0 immutable corrective hardening release"
+            git push origin "refs/tags/$TAG"
+          fi
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "Release already exists; refusing replacement."
+            exit 1
+          fi
+          cp release/RELEASE_MANIFEST_V780.md publication/RELEASE_MANIFEST_V780.md
+          cp release/V780_EXACT_PACKAGE_AUTHORIZATION.md publication/V780_EXACT_PACKAGE_AUTHORIZATION.md
+          gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --verify-tag --target "$TARGET_COMMIT" \
+            --title "Atlas ROS v7.8.0" --notes-file release/RELEASE_MANIFEST_V780.md \
+            publication/candidate.zip publication/evidence.zip \
+            publication/candidate/dist/atlas_ros-7.8.0.tar.gz \
+            publication/candidate/dist/atlas_ros-7.8.0-py3-none-any.whl \
+            publication/candidate/build/V780_VALIDATION_RECEIPT.json \
+            publication/evidence/V780_SBOM.spdx.json \
+            publication/evidence/V780_SOURCE_MANIFEST.json \
+            publication/evidence/SOURCE_TREE.txt \
+            publication/RELEASE_MANIFEST_V780.md \
+            publication/V780_EXACT_PACKAGE_AUTHORIZATION.md
