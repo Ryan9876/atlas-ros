@@ -37,7 +37,7 @@ jobs:
           git apply /tmp/v820.patch
           rm .github/workflows/v820-materialize-natural-comment-source.yml
           rm release/V820_SOURCE_PATCH.part*
-          rm -f release/V820_MATERIALIZATION_README.md release/V820_MATERIALIZATION_TRIGGER.txt
+          rm -f release/V820_MATERIALIZATION_README.md release/V820_MATERIALIZATION_TRIGGER.txt release/V820_PR_SCOPE.md
           git diff --check
       - name: Commit materialized candidate source
         run: |
