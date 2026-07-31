@@ -1,0 +1,172 @@
+name: v8.2.0 independent publication readback
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  TAG: v8.2.0
+  PACKAGE_SOURCE_COMMIT: 887ac2e58e69bcba9ad4bac8ef4345819f88a70a
+  SOURCE_SHA256: f38c4b71f9d64be8bb76f61f9519209ee02fb0038827bef7f10ec4c03b345bfe
+  WHEEL_SHA256: a227516a3918d666f29abeb7e1ccc4d0c6a4db5f4564305477aaad8bad6aca45
+  SBOM_SHA256: 13e78efabe79e2ca0dc9f6a3243e18bc004adc0942119890ecf455ee5bf0aa40
+  VALIDATION_SHA256: a3f730672bfad61ae7aead57ce08db31787e3d9827589e3c666fa2ec152fdfa6
+  NATURAL_COMMENT_SHA256: fd32950b6c72e3a209423b4d2b05c04bd19e8d6efd2c8c28c0696742cf3843ee
+  NO_MIGRATION_SHA256: 2173ea523da83c1e4f233ce6527a09aa026e72123445fe32bdb23a965558b53f
+  SCHEMA_READBACK_SHA256: 360b31c0b7fe6ce67a86433f924dc048b9b294be16da8a7e5d8c0d3c820590c6
+  PACKAGE_INDEX_SHA256: 8b2deed9355bd268ca396852ceb03acae91de9ce93c9ac52a759a53969949121
+  SOURCE_TREE_SHA256: be0f6f2609476cabec185ae6fcc74b5b5600139be7a7be5fb5877debd76dc42a
+  PACKAGE_CHECKSUMS_SHA256: 5be3da86c84d874644d524ac723d6edbbe48d0b5b995d468e5dfd322ec99cb60
+  EVIDENCE_CHECKSUMS_SHA256: 890600bc52fb7501fc97c72bb7d99ae04bf381af67c383e2f76e7c0c2aaca49f
+  MANIFEST_SHA256: e7f083d16516a12fa1061ebfa59725e9d651f723e294f958adfecbbb0d8ea250
+  AUTHORIZATION_SHA256: 012c69017261fe1db5fe0b8804bf3462e8fe9dd788ab0ac1f1bbf01a7d182993
+  CANDIDATE_ZIP_SHA256: 03ea656ece8e548907ced312c99166376cc7f0c482a9c5ec21cd8b08b2411a72
+
+jobs:
+  readback:
+    if: github.event.release.tag_name == 'v8.2.0'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 75
+    steps:
+      - name: Checkout immutable tag
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          ref: v8.2.0
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.12.10'
+
+      - name: Resolve live preactivation authority and verify tag controls
+        run: |
+          set -euo pipefail
+          test "$(git describe --exact-match --tags HEAD)" = "$TAG"
+          test "$(sha256sum release/RELEASE_MANIFEST_V820.md | cut -d' ' -f1)" = "$MANIFEST_SHA256"
+          test "$(sha256sum release/V820_EXACT_PACKAGE_AUTHORIZATION.md | cut -d' ' -f1)" = "$AUTHORIZATION_SHA256"
+          git fetch origin main:refs/remotes/origin/main --force
+          git show origin/main:governance/AUTHORITY.json > LIVE_AUTHORITY.json
+          python - <<'PY' >> "$GITHUB_ENV"
+          import json
+          from pathlib import Path
+          authority = json.loads(Path('LIVE_AUTHORITY.json').read_text())
+          active = authority['active_release']
+          rollback = authority['immediate_rollback']
+          assert active['version'] == '8.1.0', 'publication readback occurs before v8.2 activation'
+          assert active['immutable_commit'] == 'a46619c4b806a63ea1426f06171b53ee219d9d77'
+          assert rollback['version'] == '8.0.0'
+          assert rollback['immutable_commit'] == '6f05b24fd410ab1f00578019e5336185181ee265'
+          print(f"RESTORE_TAG={active['tag']}")
+          print(f"RESTORE_COMMIT={active['immutable_commit']}")
+          print(f"RESTORE_MANIFEST={active['manifest_path']}")
+          print(f"RESTORE_MANIFEST_SHA256={active['manifest_sha256']}")
+          print(f"RESTORE_SOURCE_SHA256={active['source_sha256']}")
+          print(f"RESTORE_WHEEL_SHA256={active['wheel_sha256']}")
+          print(f"HISTORICAL_TAG={rollback['tag']}")
+          print(f"HISTORICAL_COMMIT={rollback['immutable_commit']}")
+          PY
+
+      - name: Download and verify published v8.2.0 assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p readback/candidate clean-install
+          gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --dir readback
+          test "$(sha256sum readback/atlas-ros-v820-candidate.zip | cut -d' ' -f1)" = "$CANDIDATE_ZIP_SHA256"
+          test "$(sha256sum readback/atlas_ros-8.2.0.tar.gz | cut -d' ' -f1)" = "$SOURCE_SHA256"
+          test "$(sha256sum readback/atlas_ros-8.2.0-py3-none-any.whl | cut -d' ' -f1)" = "$WHEEL_SHA256"
+          test "$(sha256sum readback/V820_SBOM.spdx.json | cut -d' ' -f1)" = "$SBOM_SHA256"
+          test "$(sha256sum readback/V820_VALIDATION_RECEIPT.json | cut -d' ' -f1)" = "$VALIDATION_SHA256"
+          test "$(sha256sum readback/V820_NATURAL_COMMENT_EVIDENCE.json | cut -d' ' -f1)" = "$NATURAL_COMMENT_SHA256"
+          test "$(sha256sum readback/V820_NO_MIGRATION_RECEIPT.json | cut -d' ' -f1)" = "$NO_MIGRATION_SHA256"
+          test "$(sha256sum readback/V820_RECONCILIATION_STATE_SCHEMA_READBACK.json | cut -d' ' -f1)" = "$SCHEMA_READBACK_SHA256"
+          test "$(sha256sum readback/V820_PACKAGE_INDEX.json | cut -d' ' -f1)" = "$PACKAGE_INDEX_SHA256"
+          test "$(sha256sum readback/SOURCE_TREE.txt | cut -d' ' -f1)" = "$SOURCE_TREE_SHA256"
+          test "$(sha256sum readback/PACKAGE_CHECKSUMS.sha256 | cut -d' ' -f1)" = "$PACKAGE_CHECKSUMS_SHA256"
+          test "$(sha256sum readback/EVIDENCE_CHECKSUMS.sha256 | cut -d' ' -f1)" = "$EVIDENCE_CHECKSUMS_SHA256"
+          test "$(sha256sum readback/RELEASE_MANIFEST_V820.md | cut -d' ' -f1)" = "$MANIFEST_SHA256"
+          test "$(sha256sum readback/V820_EXACT_PACKAGE_AUTHORIZATION.md | cut -d' ' -f1)" = "$AUTHORIZATION_SHA256"
+          unzip -q readback/atlas-ros-v820-candidate.zip -d readback/candidate
+          (cd readback/candidate && sha256sum -c build/PACKAGE_CHECKSUMS.sha256)
+          (cd readback/candidate && sha256sum -c build/EVIDENCE_CHECKSUMS.sha256)
+          test "$(jq -r .candidate_commit readback/V820_VALIDATION_RECEIPT.json)" = "$PACKAGE_SOURCE_COMMIT"
+          test "$(jq -r .provider_writes readback/V820_VALIDATION_RECEIPT.json)" = "0"
+          test "$(jq -r .notion_writes readback/V820_VALIDATION_RECEIPT.json)" = "0"
+          test "$(jq -r .todoist_writes readback/V820_VALIDATION_RECEIPT.json)" = "0"
+          test "$(jq -r .production_schema_changes readback/V820_VALIDATION_RECEIPT.json)" = "0"
+          test "$(jq -r .production_notion_migration_required readback/V820_NO_MIGRATION_RECEIPT.json)" = "false"
+
+      - name: Verify clean source and wheel installations
+        run: |
+          set -euo pipefail
+          for kind in sdist wheel; do
+            package=readback/atlas_ros-8.2.0.tar.gz
+            [ "$kind" = wheel ] && package=readback/atlas_ros-8.2.0-py3-none-any.whl
+            python -m venv "clean-install/$kind"
+            "clean-install/$kind/bin/python" -m pip install --disable-pip-version-check "$package"
+            "clean-install/$kind/bin/python" -c "import atlas_ros; assert atlas_ros.__version__ == '8.2.0'"
+            "clean-install/$kind/bin/atlas" status --json
+            "clean-install/$kind/bin/atlas" verify --json
+          done
+
+      - name: Restore and verify v8.1.0 and historical v8.0.0
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-list -n 1 "$RESTORE_TAG")" = "$RESTORE_COMMIT"
+          test "$(git rev-list -n 1 "$HISTORICAL_TAG")" = "$HISTORICAL_COMMIT"
+          git show "$RESTORE_COMMIT:$RESTORE_MANIFEST" > readback/RESTORE_MANIFEST.md
+          test "$(sha256sum readback/RESTORE_MANIFEST.md | cut -d' ' -f1)" = "$RESTORE_MANIFEST_SHA256"
+          mkdir -p readback/rollback-v810 readback/historical-v800
+          gh release download "$RESTORE_TAG" --repo "$GITHUB_REPOSITORY" --dir readback/rollback-v810
+          gh release download "$HISTORICAL_TAG" --repo "$GITHUB_REPOSITORY" --dir readback/historical-v800
+          test "$(sha256sum readback/rollback-v810/atlas_ros-8.1.0.tar.gz | cut -d' ' -f1)" = "$RESTORE_SOURCE_SHA256"
+          test "$(sha256sum readback/rollback-v810/atlas_ros-8.1.0-py3-none-any.whl | cut -d' ' -f1)" = "$RESTORE_WHEEL_SHA256"
+          git show "$HISTORICAL_COMMIT:release/RELEASE_MANIFEST_V800.md" > readback/HISTORICAL_MANIFEST.md
+          historical_source="$(sed -n 's/^- Source distribution SHA-256: `\([0-9a-f]\{64\}\)`.*/\1/p' readback/HISTORICAL_MANIFEST.md)"
+          historical_wheel="$(sed -n 's/^- Wheel SHA-256: `\([0-9a-f]\{64\}\)`.*/\1/p' readback/HISTORICAL_MANIFEST.md)"
+          test -n "$historical_source"
+          test -n "$historical_wheel"
+          test "$(sha256sum readback/historical-v800/atlas_ros-8.0.0.tar.gz | cut -d' ' -f1)" = "$historical_source"
+          test "$(sha256sum readback/historical-v800/atlas_ros-8.0.0-py3-none-any.whl | cut -d' ' -f1)" = "$historical_wheel"
+
+      - name: Emit non-activating readback receipt
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json, os, subprocess
+          from pathlib import Path
+          receipt = {
+              'schema_version': 'v820-publication-readback-v1',
+              'tag': 'v8.2.0',
+              'tag_commit': subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip(),
+              'package_source_commit': os.environ['PACKAGE_SOURCE_COMMIT'],
+              'assets_verified': True,
+              'clean_source_install': 'passed',
+              'clean_wheel_install': 'passed',
+              'rollback_v810_restoration': 'passed',
+              'historical_v800_verification': 'passed',
+              'production_schema_changes': 0,
+              'authority_activated': False,
+              'provider_writes': 0,
+              'notion_writes': 0,
+              'todoist_writes': 0,
+          }
+          Path('readback/V820_PUBLICATION_READBACK.json').write_text(
+              json.dumps(receipt, indent=2, sort_keys=True) + '\n'
+          )
+          PY
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: atlas-ros-v820-independent-publication-readback-${{ github.run_id }}
+          path: readback/V820_PUBLICATION_READBACK.json
+          if-no-files-found: error
+          retention-days: 90
