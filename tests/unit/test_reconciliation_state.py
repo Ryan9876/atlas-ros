@@ -1,5 +1,7 @@
 from datetime import UTC, datetime, timedelta
 
+import pytest
+
 from atlas_ros import cli
 from atlas_ros.adapters.notion import FakeNotionAdapter
 from atlas_ros.reconciliation.state import (
@@ -99,6 +101,16 @@ def test_production_checkpoint_is_required_after_activation():
         assert exc.code is LedgerFailureCode.CHECKPOINT_MISSING
     else:
         raise AssertionError("missing checkpoint was accepted")
+    notion.create_page(
+        "state",
+        {
+            "State Key": {"title": [{"plain_text": "todoist:checkpoint"}]},
+            "Notes": {"rich_text": [{"plain_text": "not a baseline receipt"}]},
+        },
+    )
+    with pytest.raises(LedgerValidationError) as error:
+        store.require_checkpoint()
+    assert error.value.code is LedgerFailureCode.CHECKPOINT_MISSING
 
 
 def test_event_identity_alias_and_metadata_round_trip(tmp_path):
