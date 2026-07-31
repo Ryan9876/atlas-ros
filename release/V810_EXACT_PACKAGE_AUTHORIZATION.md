@@ -1,19 +1,21 @@
 # Atlas ROS v8.1.0 Exact Package Authorization Record
 
-Status: **PENDING RYAN AUTHORIZATION**
+Status: **AUTHORIZED BY RYAN — JULY 30, 2026**
 
-This record identifies the exact validated package that may be considered for controlled promotion. It does not grant authorization by itself.
+This record binds Ryan's explicit authorization to the exact validated package and complete controlled promotion transaction below. It does not permit substitution, rebuilding, digest changes, rollback changes, or sequence changes.
 
 ## Governance checkpoint
 
-- Proposed Governing Decision: `V4D-62`
-- Decision status: `Proposed`
+- Governing Decision: `V4D-62`
+- Decision status: `Active`
 - Decision URL: `https://app.notion.com/p/3aeb8344ad2c812ea859f0f0a06c1528`
+- Approved by: Ryan Smith
+- Authorization date: July 30, 2026
 - Acceptance Review: `V4V-115`
 - Review status: `Passed`
 - Review URL: `https://app.notion.com/p/3aeb8344ad2c81e9a8fdfbceca9f3bd4`
 
-The passed review confirms the validation evidence. The Proposed decision and this repository record remain pending Ryan's explicit authorization.
+Ryan explicitly authorized promotion of Atlas ROS v8.1.0 in the attended operation that produced this record. Authorization is limited to the exact retained package, the identified rollback relationship, and the complete controlled sequence in this document.
 
 ## Exact package
 
@@ -30,7 +32,7 @@ The passed review confirms the validation evidence. The Proposed decision and th
 - Source-tree SHA-256: `6af181fa96e4147241d4c8527124225271f648e1e56d0dd1339a0e920b93fd18`
 - Build count: `1`
 
-## Independent verification
+## Independent candidate verification
 
 - Independent readback workflow run: `30593728650`
 - Independent readback artifact: `8779299052`
@@ -57,28 +59,28 @@ The passed review confirms the validation evidence. The Proposed decision and th
 - Clean wheel installation: passed
 - Active v8.0.0 restoration: passed
 - Immediate rollback v7.8.0 restoration: passed
-- Production schema changes: `0`
-- Provider writes: `0`
+- Production schema changes required: `0`
+- Provider writes during validation: `0`
 - Notion writes during validation: `0`
-- Todoist writes: `0`
+- Todoist writes during validation: `0`
 
-## Proposed complete promotion transaction
+## Authorized complete promotion transaction
 
-Authorization, when explicitly granted, must cover this exact sequence and no substitute package:
+Authorization covers this exact sequence and no substitute package:
 
 1. Merge the validated implementation and evidence-only commits without changing the retained package identity.
 2. Add immutable no-rebuild publication controls bound to the exact retained artifact and checksums.
 3. Publish immutable tag and GitHub Release `v8.1.0` from the retained source and wheel without rebuilding.
 4. Independently verify the published tag target, assets, checksums, clean installations, zero-write evidence, and rollback restoration.
 5. Confirm no production Notion schema migration is required.
-6. Activate canonical GitHub authority with v8.1.0 Active and the then-current Active release as immediate rollback.
+6. Activate canonical GitHub authority with v8.1.0 Active and v8.0.0 as immediate rollback.
 7. Activate matching Notion System State only after GitHub activation readback.
 8. Perform final live cross-authority, integration, rollback, integrity, and preserved-boundary readback.
 
-## Authorization exclusions
+## Preserved exclusions
 
-No authorization is presently granted for merge, publication, tag creation, GitHub Release creation, production authority activation, Notion System State activation, provider records, Todoist tasks, messaging, email, calendar actions, scheduling, credentials, deletion, integration-scope changes, profile activation, intent-memory inference, or live-network execution.
+This authorization does not enable autonomous scheduling, unattended provider writes, messaging, email, calendar actions, credentials, deletion, integration-scope changes, profile activation, governed intent-memory inference, Todoist task creation, or live-network execution. It does not authorize any package rebuild or identity substitution.
 
-## Required authorization statement
+## Invalidating conditions
 
-Ryan must explicitly authorize this exact package, the identified rollback relationship, and the complete controlled promotion transaction. Any change to an identity, digest, artifact, source commit, migration assessment, rollback, or sequence invalidates this record and requires a new validation.
+Any change to the package source commit, candidate artifact, package checksums, source-tree digest, migration assessment, rollback identity, required integrations, or promotion sequence invalidates this authorization and requires a new validation and governing decision.
