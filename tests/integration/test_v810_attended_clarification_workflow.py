@@ -11,16 +11,17 @@ from atlas_ros.capabilities.operational_awareness import (
     ClarificationCompatibilityAdapter,
     ContextAwareClarificationAnalyzer,
 )
+from atlas_ros.contracts.clarification_compatibility import (
+    ClarificationStatusV752,
+    RelationshipClassificationV752,
+)
 from atlas_ros.contracts.operational_awareness import (
     AmbiguityCategory,
     ClarificationBatchDisposition,
     ClarificationContextV1,
     ClarificationReplayDisposition,
 )
-from atlas_ros.intent_learning_v750 import (
-    ClarificationStatus,
-    RelationshipClassification,
-)
+from atlas_ros.intent_learning_v750 import ClarificationDecisionV1
 
 
 def workflow() -> AttendedClarificationWorkflow:
@@ -106,16 +107,20 @@ def test_analysis_binds_to_accepted_v752_clarification_decision() -> None:
         analysis,
         context=context,
     )
+    accepted_v752 = ClarificationDecisionV1.model_validate(
+        decision.model_dump(mode="json")
+    )
 
     assert decision.original_capture == "build phase 1 or lew"
-    assert decision.relationship is RelationshipClassification.NEEDS_CLARIFICATION
-    assert decision.clarification_status is ClarificationStatus.REQUIRED
+    assert decision.relationship is RelationshipClassificationV752.NEEDS_CLARIFICATION
+    assert decision.clarification_status is ClarificationStatusV752.REQUIRED
     assert decision.clarification_question == analysis.clarification_question
     assert decision.preserve_capture is True
     assert decision.todoist_write_allowed is False
     assert decision.provider_writes == 0
+    assert accepted_v752.model_dump(mode="json") == decision.model_dump(mode="json")
     assert binding.analysis_digest == analysis.analysis_digest
-    assert binding.predecessor_status == ClarificationStatus.REQUIRED.value
+    assert binding.predecessor_status == ClarificationStatusV752.REQUIRED.value
     assert binding.provider_write_count == 0
     assert binding.todoist_write_count == 0
     assert binding.verify_digest()
