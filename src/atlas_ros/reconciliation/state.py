@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import json
 from abc import ABC, abstractmethod
-from collections.abc import Mapping
 from dataclasses import dataclass
+from collections.abc import Mapping
 from datetime import UTC, datetime, timedelta
 from enum import StrEnum
 from typing import Any

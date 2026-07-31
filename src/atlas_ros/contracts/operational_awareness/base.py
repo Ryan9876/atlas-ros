@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from enum import StrEnum
-from typing import Any, ClassVar
+from typing import Any, ClassVar, cast
 
 from pydantic import BaseModel, ConfigDict
 
@@ -35,7 +35,7 @@ class DigestBoundModel(StrictModel):
             mode="json",
             exclude={self.digest_field, *self.digest_excluded_fields},
         )
-        return _strip_ephemeral_digest_fields(payload)
+        return cast(dict[str, Any], _strip_ephemeral_digest_fields(payload))
 
     def expected_digest(self) -> str:
         return sha256_digest(self.digest_payload())
