@@ -16,7 +16,7 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
-  contents: write
+  contents: read
   actions: read
 
 env:
@@ -24,48 +24,6 @@ env:
   GH_TOKEN: ${{ github.token }}
 
 jobs:
-  fix-restoration-exports:
-    if: >-
-      github.event_name == 'pull_request' &&
-      github.event.action == 'synchronize' &&
-      github.event.pull_request.head.repo.full_name == github.repository &&
-      github.event.pull_request.head.ref == 'agent/v8.2.0-natural-comment-reconciliation' &&
-      github.actor != 'github-actions[bot]'
-    runs-on: ubuntu-24.04
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
-        with:
-          ref: ${{ github.event.pull_request.head.sha }}
-          fetch-depth: 0
-      - name: Export live restoration variables to receipt subprocesses
-        run: |
-          python - <<'PY'
-          from pathlib import Path
-
-          path = Path('scripts/v820_candidate_validate.sh')
-          text = path.read_text()
-          old_active = 'source build/RESTORATION_ENV\n\ngit merge-base --is-ancestor'
-          new_active = 'set -a\nsource build/RESTORATION_ENV\nset +a\n\ngit merge-base --is-ancestor'
-          old_rollback = 'source build/ROLLBACK_PACKAGE_ENV\n\nactive_dir='
-          new_rollback = 'set -a\nsource build/ROLLBACK_PACKAGE_ENV\nset +a\n\nactive_dir='
-          if text.count(old_active) != 1:
-              raise RuntimeError('active restoration source statement not found exactly once')
-          if text.count(old_rollback) != 1:
-              raise RuntimeError('rollback restoration source statement not found exactly once')
-          text = text.replace(old_active, new_active, 1)
-          text = text.replace(old_rollback, new_rollback, 1)
-          path.write_text(text)
-          PY
-          git diff --check
-      - name: Commit exported restoration variables
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add scripts/v820_candidate_validate.sh
-          git commit -m "Export v8.2.0 restoration receipt variables"
-          git push origin HEAD:agent/v8.2.0-natural-comment-reconciliation
-
   lean:
     if: github.event_name == 'pull_request' && github.event.action != 'ready_for_review'
     runs-on: ubuntu-24.04
