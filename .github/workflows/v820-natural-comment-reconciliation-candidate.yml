@@ -16,7 +16,7 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
-  contents: write
+  contents: read
   actions: read
 
 env:
@@ -24,55 +24,6 @@ env:
   GH_TOKEN: ${{ github.token }}
 
 jobs:
-  fix-junit-receipt:
-    if: >-
-      github.event_name == 'pull_request' &&
-      github.event.action == 'synchronize' &&
-      github.event.pull_request.head.repo.full_name == github.repository &&
-      github.event.pull_request.head.ref == 'agent/v8.2.0-natural-comment-reconciliation' &&
-      github.actor != 'github-actions[bot]'
-    runs-on: ubuntu-24.04
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
-        with:
-          ref: ${{ github.event.pull_request.head.sha }}
-          fetch-depth: 0
-      - name: Aggregate JUnit test suites
-        run: |
-          python - <<'PY'
-          from pathlib import Path
-
-          path = Path('scripts/v820_candidate_validate.sh')
-          text = path.read_text()
-          old = """root = ET.parse('build/V820_TEST_RESULTS.xml').getroot()
-          tests = int(root.attrib.get('tests', 0))
-          failures = int(root.attrib.get('failures', 0))
-          errors = int(root.attrib.get('errors', 0))
-          skipped = int(root.attrib.get('skipped', 0))
-          """
-          new = """root = ET.parse('build/V820_TEST_RESULTS.xml').getroot()
-          suites = [root] if root.tag.endswith('testsuite') else list(root.findall('.//testsuite'))
-          if not suites:
-              raise RuntimeError(f'JUnit receipt contains no test suites: {root.tag!r}')
-          tests = sum(int(suite.attrib.get('tests', 0)) for suite in suites)
-          failures = sum(int(suite.attrib.get('failures', 0)) for suite in suites)
-          errors = sum(int(suite.attrib.get('errors', 0)) for suite in suites)
-          skipped = sum(int(suite.attrib.get('skipped', 0)) for suite in suites)
-          """
-          if text.count(old) != 1:
-              raise RuntimeError('expected JUnit receipt parser not found exactly once')
-          path.write_text(text.replace(old, new, 1))
-          PY
-          git diff --check
-      - name: Commit receipt parser correction
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add scripts/v820_candidate_validate.sh
-          git commit -m "Fix v8.2.0 JUnit receipt aggregation"
-          git push origin HEAD:agent/v8.2.0-natural-comment-reconciliation
-
   lean:
     if: github.event_name == 'pull_request' && github.event.action != 'ready_for_review'
     runs-on: ubuntu-24.04
