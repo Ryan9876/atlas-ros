@@ -28,14 +28,15 @@ jobs:
       - name: Verify and apply exact source patch
         run: |
           set -euo pipefail
-          base64 -d release/V820_SOURCE_PATCH.gz.b64 > /tmp/v820.patch.gz
+          cat release/V820_SOURCE_PATCH.part* > /tmp/v820.patch.gz.b64
+          base64 -d /tmp/v820.patch.gz.b64 > /tmp/v820.patch.gz
           test "$(sha256sum /tmp/v820.patch.gz | cut -d' ' -f1)" = "c66ffe4d5b69ee39c2e19808ae0db912cefce05591e60b23483d510127130a0b"
           gzip -dc /tmp/v820.patch.gz > /tmp/v820.patch
           test "$(sha256sum /tmp/v820.patch | cut -d' ' -f1)" = "40f51878f2be1f9db2cc313f533b3e318c5e5d819a49c620dd8446331bdc5670"
           git apply --check /tmp/v820.patch
           git apply /tmp/v820.patch
           rm .github/workflows/v820-materialize-natural-comment-source.yml
-          rm release/V820_SOURCE_PATCH.gz.b64
+          rm release/V820_SOURCE_PATCH.part*
           git diff --check
       - name: Commit materialized candidate source
         run: |
