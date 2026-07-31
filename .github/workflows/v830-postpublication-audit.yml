@@ -78,7 +78,7 @@ jobs:
       - name: Verify production event controls remain inactive
         run: |
           set -euo pipefail
-          python - <<'PY'
+          wheel-install/bin/python - <<'PY'
           from atlas_ros.reconciliation.event_http import EventReceiverConfig
           from atlas_ros.reconciliation.events import AutonomyMode, AutonomyPolicy
           policy = AutonomyPolicy()
