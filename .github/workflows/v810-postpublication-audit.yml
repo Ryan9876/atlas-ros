@@ -78,7 +78,7 @@ jobs:
             V810_PACKAGE_INDEX.json
             V810_SBOM.spdx.json
             V810_VALIDATION_RECEIPT.json
-            atlas-ros-v810-candidate.zip
+            candidate.zip
             atlas_ros-8.1.0-py3-none-any.whl
             atlas_ros-8.1.0.tar.gz
           )
