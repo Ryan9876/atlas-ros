@@ -1,8 +1,8 @@
 """Attended inbox clarification timing and exact-once resumption."""
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass
-from typing import Mapping
 
 from atlas_ros.capabilities.operational_awareness.clarification import (
     ContextAwareClarificationAnalyzer,
