@@ -40,7 +40,7 @@ The CLI uses this ledger when `ATLAS_RECONCILIATION_STATE_DATA_SOURCE_ID` is con
 
 ## Authority
 
-Todoist owns execution due date, execution priority, completion state, subtask completion, and explicitly prefixed `@atlas` comments. Notion retains management priority, Definition of Done, accountable ownership, portfolio relationships, risk severity, and reporting structure.
+Todoist owns execution due date, execution priority, completion state, and subtask completion. Todoist comments are immutable source evidence: explicit `@atlas` commands remain supported, and ordinary comments may produce reviewable lifecycle proposals. Notion retains management priority, Definition of Done, accountable ownership, portfolio relationships, risk severity, and reporting structure.
 
 ## Safety
 
@@ -53,5 +53,17 @@ No unattended apply, autonomous scheduling, messaging, email, calendar action, o
 - Route parent updates to the Action Record and subtask updates to the linked Execution Step.
 - Parse `@atlas delegate Ryan` and `@atlas delegate to Ryan`; resolve an unambiguous Notion person into Assigned Person while retaining Assigned Resource text.
 - Record Todoist comment IDs in shared reconciliation state before advancing the checkpoint.
-- Preserve ordinary comments without mutation.
+- Record every unseen ordinary comment as actionable, blocked, informational, or ignored-with-reason; do not silently discard it. No provider mutation is allowed without exact attended authorization.
 - Surface missing mappings, ambiguous people, and malformed commands as reviewable conflicts.
+
+## Candidate natural-comment expansion
+
+This section is proposed behavior and is not active until a later release is independently validated, authorized, promoted, migrated, and read back.
+
+- `Reconcile ROS` and `Reconcile ROS inbox` inspect both Universal Inbox and governed Todoist ingress.
+- Every unseen parent or subtask comment receives a stable `todoist-comment:<comment-id>` event identity.
+- Explicit `@atlas` commands remain backward compatible.
+- Ordinary comments enter deterministic natural-language normalization and are reported as Awaiting Approval, Blocked, Informational, Ignored, Applied, or Failed.
+- The dry run reports source counters, event IDs, inferred field origins, confidence, blockers, exact provider operations, and the plan digest.
+- Natural-language provider operations require attended authorization covering the exact plan digest and every actionable event ID.
+- Event identity controls replay. The shared timestamp is only a retrieval optimization with a bounded overlap window.

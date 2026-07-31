@@ -6,7 +6,7 @@ Execution Reconciliation keeps Notion reporting current by reconciling governed 
 
 ## Authority
 
-Todoist owns execution due date, execution priority, completion state, subtask completion, and explicitly prefixed `@atlas` comments. Notion retains authority for management priority, Definition of Done, accountable ownership, portfolio relationships, risk severity, and reporting structure.
+Todoist owns execution due date, execution priority, completion state, and subtask completion. Todoist comments are immutable source evidence: explicit `@atlas` commands remain supported, and ordinary comments may produce reviewable lifecycle proposals. Notion retains authority for management priority, Definition of Done, accountable ownership, portfolio relationships, risk severity, and reporting structure.
 
 ## Supported commands
 
@@ -40,5 +40,9 @@ Conflicts are written to ROS Operations when configured. Reconciliation never ov
 - Route parent updates to the Action Record and subtask updates to the linked Execution Step.
 - Parse `@atlas delegate Ryan` and `@atlas delegate to Ryan`; resolve an unambiguous Notion person into Assigned Person while retaining Assigned Resource text.
 - Record Todoist comment IDs in shared reconciliation state before advancing the checkpoint.
-- Preserve ordinary comments without mutation.
+- Record every unseen ordinary comment as actionable, blocked, informational, or ignored-with-reason; do not silently discard it. No provider mutation is allowed without exact attended authorization.
 - Surface missing mappings, ambiguous people, and malformed commands as reviewable conflicts.
+
+## Candidate ordinary-comment lifecycle
+
+After candidate promotion, unprefixed comments are no longer automatically ignored. They are passed through bounded deterministic normalization after explicit-command parsing. Informational and blocked events are ledger-recorded without provider mutations. Actionable inferred fields are visible in the dry run and cannot be written without exact attended authorization.

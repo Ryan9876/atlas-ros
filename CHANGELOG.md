@@ -1,3 +1,11 @@
+# Unreleased — Natural-Language Todoist Comment Reconciliation
+
+- Add composite ROS ingress planning across Universal Inbox and governed Todoist updates.
+- Route ordinary parent and subtask comments into the existing typed lifecycle after explicit `@atlas` parsing.
+- Add bounded commitment, same-comment pronoun, Ryan follow-up, timezone-aware date, outcome, and completion inference.
+- Add exact plan/event authorization binding, expanded reconciliation evidence, one-active-checkpoint replacement, and replay-safe event identity.
+- Preserve attended execution, provider readback, immutable release controls, and rollback compatibility.
+
 # Changelog
 
 ## 6.1.0rc1 - 2026-07-26

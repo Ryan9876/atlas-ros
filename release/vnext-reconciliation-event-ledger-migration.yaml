@@ -1,0 +1,51 @@
+schema_version: '1.0'
+migration_id: atlas.vnext.reconciliation.comment-event-ledger-fields
+status: draft_unapplied
+target:
+  system: notion
+  database: Execution Reconciliation State
+  data_source_resolution: live System State or approved migration configuration
+preconditions:
+  required_existing_fields:
+    - State Key
+    - State Type
+    - Status
+    - Cursor
+    - Event ID
+    - Processed At
+    - Execution Surface
+  required_absent_fields:
+    - Event Type
+    - Source Provider
+    - Source Task ID
+    - Source Comment ID
+    - Source Posted At
+    - Source Digest
+    - Interpretation Classification
+    - Interpretation Status
+    - Confidence
+    - Blockers
+    - Command Digest
+    - Plan Digest
+    - Authorization Identity
+    - Processing Outcome
+additive_fields:
+  - {name: Event Type, type: SELECT}
+  - {name: Source Provider, type: SELECT}
+  - {name: Source Task ID, type: RICH_TEXT}
+  - {name: Source Comment ID, type: RICH_TEXT}
+  - {name: Source Posted At, type: DATE}
+  - {name: Source Digest, type: RICH_TEXT}
+  - {name: Interpretation Classification, type: SELECT}
+  - {name: Interpretation Status, type: SELECT}
+  - {name: Confidence, type: NUMBER}
+  - {name: Blockers, type: RICH_TEXT}
+  - {name: Command Digest, type: RICH_TEXT}
+  - {name: Plan Digest, type: RICH_TEXT}
+  - {name: Authorization Identity, type: RICH_TEXT}
+  - {name: Processing Outcome, type: SELECT}
+destructive_operations: []
+record_rewrites: 0
+production_apply_authorized: false
+compatibility: Active v8.0.0 and rollback v7.8.0 ignore additive event fields.
+rollback: Leave additive fields unused; no record rewrite, deletion, or reverse migration is required.

@@ -156,3 +156,7 @@ The plan has no execution authority. An exact attended authorization must bind t
 ## No-provider-write examples
 
 No provider write is allowed when ownership is tentative, a person is merely mentioned, the responsible identity is unresolved, the expected outcome is absent, completion criteria are absent, a material date meaning is ambiguous, the parent outcome is unresolved, or attended authorization is absent.
+
+## Candidate expansion beyond v8.0.0
+
+The development candidate adds ordinary Todoist comment ingestion and bounded phrases such as `Kweku is going to document what happened` and `I need to follow up with him on Monday`. Same-comment pronouns require exactly one antecedent. Derived outcomes, completion criteria, and dates are labeled by origin and require attended approval. This section is not v8.0.0 production authority.
