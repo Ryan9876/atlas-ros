@@ -1,0 +1,30 @@
+name: v8.2.1 production-ledger candidate
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install '.[ci]'
+      - run: CANDIDATE_COMMIT="$GITHUB_SHA" bash scripts/v821_candidate_validate.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: atlas-ros-v821-candidate-${{ github.sha }}
+          path: |
+            dist/*
+            build/V821_*
+            release/RELEASE_MANIFEST_V821_DRAFT.md
+            release/V821_*.md

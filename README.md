@@ -72,7 +72,15 @@ Write-capable operations fail closed when authority, scope, constraints, exact-p
 
 ## Implemented CLI surface
 
-`atlas initialize`, `atlas status`, `atlas capture`, `atlas decompose`, `atlas connectivity`, `atlas todoist reconcile`, `atlas release inventory`, `atlas release checksums`, and `atlas release verify`.
+`atlas initialize`, `atlas status`, `atlas capture`, `atlas decompose`, `atlas connectivity`, `atlas todoist reconcile`, `atlas todoist baseline`, `atlas release inventory`, `atlas release checksums`, and `atlas release verify`.
+
+Production reconciliation requires one shared Notion ledger configured through
+`ATLAS_RECONCILIATION_STATE_DATABASE_ID` and
+`ATLAS_RECONCILIATION_STATE_DATA_SOURCE_ID`. The optional ChatGPT surface value
+`ATLAS_CHATGPT_RECONCILIATION_STATE_DATA_SOURCE_ID`, when supplied, must match.
+The historical reconciliation identities are permanently rejected. The initial baseline is
+an attended operation: dry-run first, then provide the exact returned plan digest
+and authorization identity before any ledger records or checkpoint can be written.
 
 Commands not listed above are not part of the current executable surface.
 

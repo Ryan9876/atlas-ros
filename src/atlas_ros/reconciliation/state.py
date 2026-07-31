@@ -2,8 +2,10 @@ from __future__ import annotations
 
 import json
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
-from typing import Any
+from enum import StrEnum
+from typing import Any, Mapping
 
 from atlas_ros.adapters.notion import NotionAdapter, NotionPage
 from atlas_ros.runtime.database import RuntimeDatabase
@@ -23,6 +25,133 @@ def _select(value: str) -> dict[str, Any]:
 
 _TERMINAL_EVENT_STATUSES = {"applied", "blocked", "informational", "ignored"}
 
+HISTORICAL_W04_DATABASE_ID = "ba2518b1-3c97-4a94-8324-414f74ed8830"
+HISTORICAL_W04_DATA_SOURCE_ID = "afbb753c-3112-4784-9165-f786b503d1f7"
+HISTORICAL_W04_TITLE = "HISTORICAL — W04 Reconciliation State"
+
+
+class LedgerFailureCode(StrEnum):
+    TARGET_DELETED = "LEDGER_TARGET_DELETED"
+    TARGET_HISTORICAL = "LEDGER_TARGET_HISTORICAL"
+    SCHEMA_INVALID = "LEDGER_SCHEMA_INVALID"
+    NOT_UNIQUE = "LEDGER_NOT_UNIQUE"
+    CHECKPOINT_MISSING = "LEDGER_CHECKPOINT_MISSING"
+    READBACK_FAILED = "LEDGER_READBACK_FAILED"
+    SURFACE_MISMATCH = "LEDGER_SURFACE_MISMATCH"
+    PRODUCTION_FALLBACK_PROHIBITED = "LEDGER_PRODUCTION_FALLBACK_PROHIBITED"
+    BASELINE_AUTHORIZATION_INVALID = "BASELINE_AUTHORIZATION_INVALID"
+    BASELINE_CONFLICT = "BASELINE_CONFLICT"
+
+
+class LedgerValidationError(ValueError):
+    def __init__(self, code: LedgerFailureCode, detail: str) -> None:
+        super().__init__(f"{code}: {detail}")
+        self.code = code
+        self.detail = detail
+
+
+@dataclass(frozen=True)
+class ProductionLedgerDescriptor:
+    """The only configuration accepted for production reconciliation state."""
+
+    database_id: str
+    data_source_id: str
+    title: str = "Execution Reconciliation State"
+
+
+_REQUIRED_PROPERTIES: dict[str, tuple[str, ...]] = {
+    "State Key": ("title",),
+    "State Type": ("select",),
+    "Status": ("select",),
+    "Cursor": ("date",),
+    "Event ID": ("rich_text", "text"),
+    "Processed At": ("date",),
+    "Execution Surface": ("select",),
+    "Notes": ("rich_text", "text"),
+}
+
+_REQUIRED_ENVELOPE_KEYS = frozenset(
+    {
+        "schema_version", "state_key", "event_id", "event_aliases", "logical_status",
+        "processed_at", "execution_surface", "event_type", "source_provider",
+        "source_object_type", "source_task_id", "parent_task_id", "source_comment_id",
+        "source_posted_at", "source_updated_at", "source_digest",
+        "interpretation_classification", "interpretation_status", "confidence", "blockers",
+        "ambiguity", "inferred_fields", "field_origins", "command_digest", "plan_digest",
+        "authorization_identity", "correlation_id", "causation_id", "processing_outcome",
+        "readback_status", "release_identity",
+    }
+)
+
+
+def validate_production_ledger(
+    notion: NotionAdapter,
+    descriptor: ProductionLedgerDescriptor,
+) -> None:
+    """Fail closed before any plan or apply reads production ledger state."""
+    if not descriptor.database_id or not descriptor.data_source_id:
+        raise LedgerValidationError(
+            LedgerFailureCode.NOT_UNIQUE, "database and data source are required"
+        )
+    if (
+        descriptor.database_id == HISTORICAL_W04_DATABASE_ID
+        or descriptor.data_source_id == HISTORICAL_W04_DATA_SOURCE_ID
+    ):
+        raise LedgerValidationError(
+            LedgerFailureCode.TARGET_HISTORICAL, "W04 identity is prohibited"
+        )
+    try:
+        source = notion.fetch_data_source(descriptor.data_source_id)
+    except Exception as exc:
+        raise LedgerValidationError(
+            LedgerFailureCode.READBACK_FAILED, "data source is inaccessible"
+        ) from exc
+    if bool(source.get("archived") or source.get("in_trash") or source.get("deleted")):
+        raise LedgerValidationError(
+            LedgerFailureCode.TARGET_DELETED, "data source is deleted or trashed"
+        )
+    parent = source.get("parent")
+    if isinstance(parent, Mapping):
+        parent_id = str(parent.get("database_id") or parent.get("id") or "")
+        if parent_id and parent_id != descriptor.database_id:
+            raise LedgerValidationError(
+                LedgerFailureCode.SURFACE_MISMATCH,
+                "configured database does not own the data source",
+            )
+    title = str(source.get("title") or source.get("name") or "")
+    if (
+        not title
+        or title != descriptor.title
+        or "historical" in title.casefold()
+        or "w04" in title.casefold()
+    ):
+        raise LedgerValidationError(
+            LedgerFailureCode.TARGET_HISTORICAL, "data source title is not production"
+        )
+    properties = source.get("properties") or source.get("schema")
+    if not isinstance(properties, dict):
+        raise LedgerValidationError(LedgerFailureCode.SCHEMA_INVALID, "properties are absent")
+    for name, types in _REQUIRED_PROPERTIES.items():
+        property_spec = properties.get(name)
+        actual_type = property_spec.get("type") if isinstance(property_spec, dict) else None
+        if actual_type not in types:
+            raise LedgerValidationError(
+                LedgerFailureCode.SCHEMA_INVALID, f"{name} has invalid type"
+            )
+    for name, expected in {
+        "State Type": {"Checkpoint", "Processed Event"},
+        "Status": {"Applied", "Failed"},
+        "Execution Surface": {"CLI", "ChatGPT", "Automation"},
+    }.items():
+        options = properties[name].get("select", {}).get(
+            "options", properties[name].get("options", [])
+        )
+        values = {str(item.get("name")) for item in options if isinstance(item, dict)}
+        if not expected.issubset(values):
+            raise LedgerValidationError(
+                LedgerFailureCode.SCHEMA_INVALID, f"{name} options are incomplete"
+            )
+
 
 def _event_identity_aliases(event_id: str) -> tuple[str, ...]:
     if event_id.startswith("comment:"):
@@ -32,12 +161,69 @@ def _event_identity_aliases(event_id: str) -> tuple[str, ...]:
     return (event_id,)
 
 
+def event_identity_aliases(event_id: str) -> tuple[str, ...]:
+    """Return canonical and compatibility identities without exposing implementation detail."""
+    return _event_identity_aliases(event_id)
+
+
+def event_envelope(
+    event_id: str,
+    status: str,
+    processed_at: str,
+    metadata: Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Produce a complete, version-neutral evidence envelope for every ledger event."""
+    values = dict(metadata or {})
+    envelope: dict[str, Any] = {
+        "schema_version": "8.2",
+        "state_key": event_id,
+        "event_id": event_id,
+        "event_aliases": list(_event_identity_aliases(event_id)[1:]),
+        "logical_status": status,
+        "processed_at": processed_at,
+        "execution_surface": "ChatGPT",
+        "event_type": "",
+        "source_provider": "",
+        "source_object_type": "",
+        "source_task_id": "",
+        "parent_task_id": "",
+        "source_comment_id": "",
+        "source_posted_at": "",
+        "source_updated_at": "",
+        "source_digest": "",
+        "interpretation_classification": "",
+        "interpretation_status": status,
+        "confidence": None,
+        "blockers": [],
+        "ambiguity": [],
+        "inferred_fields": {},
+        "field_origins": {},
+        "command_digest": "",
+        "plan_digest": "",
+        "authorization_identity": "",
+        "correlation_id": "",
+        "causation_id": "",
+        "processing_outcome": status,
+        "readback_status": "pending",
+        "release_identity": "8.2.1",
+    }
+    envelope.update(values)
+    envelope["state_key"] = event_id
+    envelope["event_id"] = event_id
+    envelope["event_aliases"] = list(_event_identity_aliases(event_id)[1:])
+    return envelope
+
+
+def has_complete_envelope(envelope: Mapping[str, Any]) -> bool:
+    return _REQUIRED_ENVELOPE_KEYS.issubset(envelope)
+
+
 class ReconciliationStateStore(ABC):
     @abstractmethod
     def checkpoint(self) -> datetime: ...
 
     @abstractmethod
-    def set_checkpoint(self, value: datetime) -> None: ...
+    def set_checkpoint(self, value: datetime, metadata: dict[str, Any] | None = None) -> None: ...
 
     @abstractmethod
     def event_processed(self, event_id: str) -> bool: ...
@@ -67,7 +253,8 @@ class SQLiteReconciliationStateStore(ReconciliationStateStore):
             return datetime.now(UTC) - timedelta(days=7)
         return datetime.fromisoformat(str(row[0]))
 
-    def set_checkpoint(self, value: datetime) -> None:
+    def set_checkpoint(self, value: datetime, metadata: dict[str, Any] | None = None) -> None:
+        del metadata
         with self.database.connect() as db:
             db.execute(
                 "INSERT INTO sync_checkpoint(integration, cursor, updated_at) "
@@ -164,6 +351,13 @@ class NotionReconciliationStateStore(ReconciliationStateStore):
         self.notion = notion
         self.data_source_id = data_source_id
 
+    def require_checkpoint(self) -> None:
+        if self._find(self.CHECKPOINT_KEY) is None:
+            raise LedgerValidationError(
+                LedgerFailureCode.CHECKPOINT_MISSING,
+                "production reconciliation is not activated until baseline checkpoint readback",
+            )
+
     def _find(self, key: str) -> NotionPage | None:
         pages = self.notion.query_pages(
             self.data_source_id,
@@ -182,7 +376,7 @@ class NotionReconciliationStateStore(ReconciliationStateStore):
                 return datetime.fromisoformat(str(selected["start"]).replace("Z", "+00:00"))
         return datetime.now(UTC) - timedelta(days=7)
 
-    def set_checkpoint(self, value: datetime) -> None:
+    def set_checkpoint(self, value: datetime, metadata: dict[str, Any] | None = None) -> None:
         now = datetime.now(UTC).isoformat()
         properties = {
             "State Key": {"title": [{"text": {"content": self.CHECKPOINT_KEY}}]},
@@ -191,6 +385,17 @@ class NotionReconciliationStateStore(ReconciliationStateStore):
             "Cursor": _date(value.isoformat()),
             "Processed At": _date(now),
             "Event ID": _rich(""),
+            "Execution Surface": _select("CLI"),
+            "Notes": _rich(json.dumps(event_envelope(
+                self.CHECKPOINT_KEY,
+                "applied",
+                now,
+                {
+                    "execution_surface": "CLI",
+                    "processing_outcome": "checkpoint_created",
+                    **(metadata or {}),
+                },
+            ), sort_keys=True, default=str)),
         }
         existing = self._find(self.CHECKPOINT_KEY)
         if existing:
@@ -257,14 +462,12 @@ class NotionReconciliationStateStore(ReconciliationStateStore):
         execution_surface = (
             requested_surface if requested_surface in {"CLI", "ChatGPT"} else "ChatGPT"
         )
-        envelope = {
-            "schema_version": "1.0",
-            "event_id": event_id,
-            "logical_status": logical_status,
-            "processed_at": now,
-            "execution_surface": requested_surface,
-            **values,
-        }
+        envelope = event_envelope(
+            event_id,
+            logical_status,
+            now,
+            {"execution_surface": requested_surface, **values},
+        )
         properties: dict[str, Any] = {
             "State Key": {"title": [{"text": {"content": event_id}}]},
             "State Type": _select("Processed Event"),

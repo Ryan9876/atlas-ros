@@ -1,11 +1,64 @@
 from datetime import UTC, datetime, timedelta
 
+from atlas_ros import cli
 from atlas_ros.adapters.notion import FakeNotionAdapter
 from atlas_ros.reconciliation.state import (
+    HISTORICAL_W04_DATA_SOURCE_ID,
+    LedgerFailureCode,
+    LedgerValidationError,
     NotionReconciliationStateStore,
+    ProductionLedgerDescriptor,
     SQLiteReconciliationStateStore,
+    validate_production_ledger,
 )
 from atlas_ros.runtime.database import RuntimeDatabase
+
+
+def _production_schema():
+    def select(*options):
+        return {"type": "select", "options": [{"name": option} for option in options]}
+
+    return {
+        "title": "Execution Reconciliation State",
+        "properties": {
+            "State Key": {"type": "title"},
+            "State Type": select("Checkpoint", "Processed Event"),
+            "Status": select("Applied", "Failed"),
+            "Cursor": {"type": "date"},
+            "Event ID": {"type": "rich_text"},
+            "Processed At": {"type": "date"},
+            "Execution Surface": select("CLI", "ChatGPT", "Automation"),
+            "Notes": {"type": "rich_text"},
+        },
+    }
+
+
+def test_production_ledger_validation_rejects_w04_and_invalid_schema():
+    notion = FakeNotionAdapter()
+    notion.schemas["production"] = _production_schema()
+    validate_production_ledger(
+        notion, ProductionLedgerDescriptor(database_id="database", data_source_id="production")
+    )
+    try:
+        validate_production_ledger(
+            notion,
+            ProductionLedgerDescriptor(
+                database_id="database", data_source_id=HISTORICAL_W04_DATA_SOURCE_ID
+            ),
+        )
+    except LedgerValidationError as exc:
+        assert exc.code is LedgerFailureCode.TARGET_HISTORICAL
+    else:
+        raise AssertionError("W04 was accepted")
+    notion.schemas["production"]["properties"].pop("Notes")
+    try:
+        validate_production_ledger(
+            notion, ProductionLedgerDescriptor(database_id="database", data_source_id="production")
+        )
+    except LedgerValidationError as exc:
+        assert exc.code is LedgerFailureCode.SCHEMA_INVALID
+    else:
+        raise AssertionError("incomplete schema was accepted")
 
 
 def test_sqlite_state_store_round_trip(tmp_path):
@@ -35,6 +88,17 @@ def test_notion_state_store_round_trip_and_updates():
     assert store.event_processed("comment:2")
     store.mark_event("comment:2", "failed")
     assert not store.event_processed("comment:2")
+
+
+def test_production_checkpoint_is_required_after_activation():
+    notion = FakeNotionAdapter()
+    store = NotionReconciliationStateStore(notion, "state")
+    try:
+        store.require_checkpoint()
+    except LedgerValidationError as exc:
+        assert exc.code is LedgerFailureCode.CHECKPOINT_MISSING
+    else:
+        raise AssertionError("missing checkpoint was accepted")
 
 
 def test_event_identity_alias_and_metadata_round_trip(tmp_path):
@@ -114,5 +178,28 @@ def test_notion_event_uses_existing_shared_schema_and_notes_envelope():
     assert envelope["logical_status"] == "Informational"
     assert envelope["source_comment_id"] == "abc"
     assert envelope["execution_surface"] == "connector-test"
+    assert envelope["release_identity"] == "8.2.1"
+    assert envelope["source_object_type"] == ""
     assert store.event_status("comment:abc") == "Informational"
     assert store.event_processed("todoist-comment:abc")
+
+
+def test_shared_production_configuration_rejects_multiple_and_mismatched_surfaces(monkeypatch):
+    monkeypatch.setenv("ATLAS_RECONCILIATION_STATE_DATABASE_ID", "database")
+    monkeypatch.setenv("ATLAS_RECONCILIATION_STATE_DATA_SOURCE_ID", "source")
+    assert cli.production_ledger_configuration() == ("database", "source")
+    monkeypatch.setenv("ATLAS_CHATGPT_RECONCILIATION_STATE_DATA_SOURCE_ID", "other")
+    try:
+        cli.production_ledger_configuration()
+    except RuntimeError as exc:
+        assert "LEDGER_SURFACE_MISMATCH" in str(exc)
+    else:
+        raise AssertionError("cross-surface mismatch was accepted")
+    monkeypatch.delenv("ATLAS_CHATGPT_RECONCILIATION_STATE_DATA_SOURCE_ID")
+    monkeypatch.setenv("ATLAS_RECONCILIATION_STATE_DATA_SOURCE_ID", "source,other")
+    try:
+        cli.production_ledger_configuration()
+    except RuntimeError as exc:
+        assert "LEDGER_NOT_UNIQUE" in str(exc)
+    else:
+        raise AssertionError("multiple ledgers were accepted")

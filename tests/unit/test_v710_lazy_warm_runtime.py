@@ -63,7 +63,7 @@ for prefix in (
     )
     assert result.returncode == 0, result.stderr
     payload = json.loads(result.stdout)
-    assert payload["version"] == "8.2.0"
+    assert payload["version"] == "8.2.1"
     assert payload["production_authority_loaded"] is False
     assert payload["production_authority_state"] == "not_loaded"
     assert "active_production_version" not in payload
