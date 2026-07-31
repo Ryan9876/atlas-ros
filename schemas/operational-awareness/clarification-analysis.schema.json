@@ -6,7 +6,7 @@
     "contract_id": {"const": "atlas.clarification-analysis", "default": "atlas.clarification-analysis", "type": "string"},
     "schema_version": {"const": "1.0", "default": "1.0", "type": "string"},
     "original_instruction": {"minLength": 1, "type": "string"},
-    "stable_intent": {"items": {"minLength": 1, "type": "string"}, "type": "array"},
+    "stable_intent": {"items": {"minLength": 1, "type": "string"}, "minItems": 1, "type": "array"},
     "ambiguity_category": {
       "enum": [
         "none",
@@ -29,7 +29,10 @@
       "type": "string"
     },
     "ambiguous_span": {"type": ["string", "null"]},
-    "context_sources_checked": {"items": {"type": "string"}, "type": "array"},
+    "preserved_entities": {"items": {"minLength": 1, "type": "string"}, "type": "array"},
+    "context_sources_checked": {"items": {"minLength": 1, "type": "string"}, "type": "array"},
+    "authoritative_context_digest": {"pattern": "^[0-9a-f]{64}$", "type": ["string", "null"]},
+    "evidence": {"items": {"minLength": 1, "type": "string"}, "type": "array"},
     "candidates": {
       "items": {
         "additionalProperties": false,
@@ -49,9 +52,13 @@
     "clarification_required": {"type": "boolean"},
     "question_mode": {"enum": ["confirmatory", "bounded_choice", "information_seeking", null]},
     "clarification_question": {"type": ["string", "null"]},
+    "question_basis": {"type": ["string", "null"]},
     "continue_unrelated_work": {"default": true, "type": "boolean"},
     "downstream_execution_blocked": {"default": true, "type": "boolean"},
+    "routing_allowed": {"const": false, "default": false, "type": "boolean"},
+    "execution_authorized": {"const": false, "default": false, "type": "boolean"},
     "provider_write_count": {"const": 0, "default": 0, "type": "integer"},
+    "todoist_write_count": {"const": 0, "default": 0, "type": "integer"},
     "confidence": {
       "additionalProperties": false,
       "properties": {
