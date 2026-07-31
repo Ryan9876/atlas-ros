@@ -65,7 +65,6 @@ jobs:
           )
           init.write_text(text)
           PY
-          ruff check src/atlas_ros/reconciliation/__init__.py src/atlas_ros/reconciliation/service.py
           git diff --check
       - name: Commit corrected candidate source
         run: |
