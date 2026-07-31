@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Any
@@ -43,6 +44,12 @@ def _utc(value: str) -> datetime:
 
 def _canonical_json(value: object) -> str:
     return json.dumps(value, sort_keys=True, separators=(",", ":"), default=str)
+
+
+def _is_historical_w04_action(properties: Mapping[str, Any]) -> bool:
+    """Exclude retired W04-labelled Action Records from the production inventory."""
+    title = _plain(properties.get("Action", "")).casefold()
+    return "historical" in title or "w04" in title
 
 
 @dataclass(frozen=True)
@@ -152,6 +159,8 @@ class ProductionBaselineService:
         parent_count = subtask_count = 0
         seen_comments: set[str] = set()
         for action in actions:
+            if _is_historical_w04_action(action.properties):
+                continue
             parent_id = _plain(action.properties.get("Execution Object ID", ""))
             if not parent_id:
                 continue
