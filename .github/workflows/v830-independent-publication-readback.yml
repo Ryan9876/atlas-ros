@@ -1,0 +1,131 @@
+name: v8.3.0 independent publication readback
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+
+jobs:
+  readback:
+    if: github.event.release.tag_name == 'v8.3.0'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 75
+    env:
+      TAG: v8.3.0
+      PACKAGE_SOURCE_COMMIT: ac546f10ee4c1e140d17beaae32f7ea77eb12a51
+      CANDIDATE_ZIP_SHA256: 93c4486dd588890b17fcbce2f8703df5dcb60268a1195a5a5bdb472304679d15
+      SOURCE_SHA256: d180ac3367229b6bdf5ca160acb5221e8800807909bef85b30aa3615347fafbf
+      WHEEL_SHA256: d76a43aa99e629fe8055920f325028a2b64eefa6f10e1d0497419805b622f5fe
+      SBOM_SHA256: 77d3d0bbc6b118703aba007cf3068b9d1c83eedefcae1a58ecaeba28fed4f28d
+      VALIDATION_SHA256: 85c2748c154c48df9a57d68bd2690eafa8dc3e941c4588b2227382dc55d9f0e8
+      PACKAGE_INDEX_SHA256: 6fa7abe238f9e9cf7a26b697a8718b77e1a6b7cfa5e95d13c3cae0f6701c7162
+      SOURCE_TREE_SHA256: 104c468cdcb73c14672bb5558046f38ede12c385d5ad22513c8541666fbbd936
+      PACKAGE_CHECKSUMS_SHA256: f082d42eee941740052281beee987470f0524d3cb0b324eed20105ae65aef9f1
+      EVIDENCE_CHECKSUMS_SHA256: 759e305065c815618b241de2995dca449cf58d532897310d5273e9ec85573eb1
+      MANIFEST_SHA256: e9ec73a996e57224d39122f717c86fa53f62005ede88125664339b88651eb972
+      AUTHORIZATION_SHA256: 35a4582a7fd059be63e67425b89976b090e9b349cbbfc42c1915ced0f014bd7f
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          ref: v8.3.0
+          fetch-depth: 0
+
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.12.10'
+
+      - name: Verify tag controls and preactivation authority
+        run: |
+          set -euo pipefail
+          test "$(git describe --exact-match --tags HEAD)" = "$TAG"
+          test "$(sha256sum release/RELEASE_MANIFEST_V830.md | cut -d' ' -f1)" = "$MANIFEST_SHA256"
+          test "$(sha256sum release/V830_EXACT_PACKAGE_AUTHORIZATION.md | cut -d' ' -f1)" = "$AUTHORIZATION_SHA256"
+          git fetch origin main:refs/remotes/origin/main --force
+          git show origin/main:governance/AUTHORITY.json > LIVE_AUTHORITY.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          a=json.loads(Path('LIVE_AUTHORITY.json').read_text())
+          assert a['active_release']['version']=='8.2.1'
+          assert a['active_release']['immutable_commit']=='38285a988ef0e265ad859474c3bdcb58a1744649'
+          assert a['immediate_rollback']['version']=='8.2.0'
+          assert a['immediate_rollback']['immutable_commit']=='64c38eb4e83f6edf2d6cff28f7c7556a2c84c0c9'
+          PY
+
+      - name: Verify all published assets and clean installations
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p readback source-install wheel-install rollback-v821 rollback-v820 candidate
+          gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --dir readback
+          test "$(find readback -maxdepth 1 -type f | wc -l)" -eq 11
+          test "$(sha256sum readback/atlas-ros-v830-candidate.zip | cut -d' ' -f1)" = "$CANDIDATE_ZIP_SHA256"
+          test "$(sha256sum readback/atlas_ros-8.3.0.tar.gz | cut -d' ' -f1)" = "$SOURCE_SHA256"
+          test "$(sha256sum readback/atlas_ros-8.3.0-py3-none-any.whl | cut -d' ' -f1)" = "$WHEEL_SHA256"
+          test "$(sha256sum readback/V830_SBOM.spdx.json | cut -d' ' -f1)" = "$SBOM_SHA256"
+          test "$(sha256sum readback/V830_VALIDATION_RECEIPT.json | cut -d' ' -f1)" = "$VALIDATION_SHA256"
+          test "$(sha256sum readback/V830_PACKAGE_INDEX.json | cut -d' ' -f1)" = "$PACKAGE_INDEX_SHA256"
+          test "$(sha256sum readback/V830_SOURCE_TREE.txt | cut -d' ' -f1)" = "$SOURCE_TREE_SHA256"
+          test "$(sha256sum readback/V830_PACKAGE_CHECKSUMS.sha256 | cut -d' ' -f1)" = "$PACKAGE_CHECKSUMS_SHA256"
+          test "$(sha256sum readback/V830_EVIDENCE_CHECKSUMS.sha256 | cut -d' ' -f1)" = "$EVIDENCE_CHECKSUMS_SHA256"
+          test "$(sha256sum readback/RELEASE_MANIFEST_V830.md | cut -d' ' -f1)" = "$MANIFEST_SHA256"
+          test "$(sha256sum readback/V830_EXACT_PACKAGE_AUTHORIZATION.md | cut -d' ' -f1)" = "$AUTHORIZATION_SHA256"
+          unzip -q readback/atlas-ros-v830-candidate.zip -d candidate
+          (cd candidate && sha256sum -c build/V830_PACKAGE_CHECKSUMS.sha256)
+          (cd candidate && sha256sum -c build/V830_EVIDENCE_CHECKSUMS.sha256)
+          python -m venv source-install
+          source-install/bin/python -m pip install --disable-pip-version-check readback/atlas_ros-8.3.0.tar.gz
+          source-install/bin/python -c "import atlas_ros; assert atlas_ros.__version__=='8.3.0'"
+          python -m venv wheel-install
+          wheel-install/bin/python -m pip install --disable-pip-version-check readback/atlas_ros-8.3.0-py3-none-any.whl
+          wheel-install/bin/python -c "import atlas_ros; assert atlas_ros.__version__=='8.3.0'"
+          gh release download v8.2.1 --repo "$GITHUB_REPOSITORY" --dir rollback-v821 --pattern 'atlas_ros-8.2.1*'
+          gh release download v8.2.0 --repo "$GITHUB_REPOSITORY" --dir rollback-v820 --pattern 'atlas_ros-8.2.0*'
+          test "$(sha256sum rollback-v821/atlas_ros-8.2.1.tar.gz | cut -d' ' -f1)" = "2ebddbfacf772f40f5bf3514d3f09a691259304775bafe497685a652675961da"
+          test "$(sha256sum rollback-v821/atlas_ros-8.2.1-py3-none-any.whl | cut -d' ' -f1)" = "fe9db86412a88acaf2f9860c5ab4a044f296880e19f787ece601a92bd5f282f0"
+          test "$(sha256sum rollback-v820/atlas_ros-8.2.0.tar.gz | cut -d' ' -f1)" = "f38c4b71f9d64be8bb76f61f9519209ee02fb0038827bef7f10ec4c03b345bfe"
+          test "$(sha256sum rollback-v820/atlas_ros-8.2.0-py3-none-any.whl | cut -d' ' -f1)" = "a227516a3918d666f29abeb7e1ccc4d0c6a4db5f4564305477aaad8bad6aca45"
+
+      - name: Verify runtime and autonomy remain inactive
+        run: |
+          python - <<'PY'
+          import yaml
+          from pathlib import Path
+          c=yaml.safe_load(Path('config/event-reconciliation.yaml').read_text())
+          r=c['runtime']
+          assert r['mode']=='monitor_only' and r['kill_switch'] is True
+          for key in ('ingress_enabled','planning_enabled','auto_apply_enabled','approval_enabled','backstop_enabled','replay_enabled'):
+              assert r[key] is False
+          assert c['policy']['version']=='8.3.0-rc1'
+          PY
+
+      - name: Emit independent readback receipt
+        run: |
+          mkdir -p readback-evidence
+          python - <<'PY'
+          import json, subprocess
+          from pathlib import Path
+          receipt={
+            'schema_version':'v830-publication-readback-v1','status':'passed','tag':'v8.3.0',
+            'tag_commit':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
+            'package_source_commit':'ac546f10ee4c1e140d17beaae32f7ea77eb12a51',
+            'release_assets_verified':11,'package_rebuilt':False,
+            'clean_source_install':'passed','clean_wheel_install':'passed',
+            'rollback_v821_restoration':'passed','historical_v820_verification':'passed',
+            'runtime_mode':'monitor_only','kill_switch':True,'event_controls_enabled':False,
+            'production_webhooks_activated':False,'production_policy_activated':False,
+            'provider_writes':0,'todoist_writes':0,'w04_restored_or_written':False,
+            'authority_activated':False
+          }
+          Path('readback-evidence/V830_PUBLICATION_READBACK.json').write_text(json.dumps(receipt,indent=2,sort_keys=True)+'\n')
+          PY
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: atlas-ros-v830-independent-publication-readback-${{ github.run_id }}
+          path: readback-evidence/V830_PUBLICATION_READBACK.json
+          if-no-files-found: error
+          retention-days: 90

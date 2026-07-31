@@ -1,0 +1,18 @@
+{
+  "authorization_sha256": "35a4582a7fd059be63e67425b89976b090e9b349cbbfc42c1915ced0f014bd7f",
+  "automation_id": "V4M-6",
+  "candidate_artifact_id": 8803236640,
+  "candidate_artifact_sha256": "93c4486dd588890b17fcbce2f8703df5dcb60268a1195a5a5bdb472304679d15",
+  "decision_id": "V4D-65",
+  "implementation_merge": "3e0bf74bf92ab49b6325ab9754a9b258eb23243f",
+  "package_source_commit": "ac546f10ee4c1e140d17beaae32f7ea77eb12a51",
+  "prepublication_active_commit": "38285a988ef0e265ad859474c3bdcb58a1744649",
+  "prepublication_active_version": "8.2.1",
+  "prepublication_rollback_commit": "64c38eb4e83f6edf2d6cff28f7c7556a2c84c0c9",
+  "prepublication_rollback_version": "8.2.0",
+  "release_manifest_sha256": "e9ec73a996e57224d39122f717c86fa53f62005ede88125664339b88651eb972",
+  "review_id": "V4V-122",
+  "runtime_activation": "held",
+  "schema_version": "v830-publication-trigger-v1",
+  "tag": "v8.3.0"
+}
