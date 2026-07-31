@@ -1,0 +1,43 @@
+name: Fix v8.2.0 strict typing defect
+
+on:
+  pull_request:
+    branches: [main]
+    types: [synchronize]
+
+permissions:
+  contents: write
+
+jobs:
+  fix-mypy:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.head.ref == 'agent/v8.2.0-natural-comment-reconciliation' &&
+      github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - name: Narrow optional confidence score
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('src/atlas_ros/capabilities/operational_awareness/command_lifecycle/natural_delegation.py')
+          text = path.read_text()
+          old = '            score=(min(normalization.confidence.score, 1.0) if not unique_blockers else 0.4),\n'
+          new = '            score=(\n                min(normalization.confidence.score or 0.0, 1.0)\n                if not unique_blockers\n                else 0.4\n            ),\n'
+          assert text.count(old) == 1
+          path.write_text(text.replace(old, new, 1))
+          PY
+          git diff --check
+      - name: Commit strict typing correction
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/atlas_ros/capabilities/operational_awareness/command_lifecycle/natural_delegation.py
+          git commit -m "Fix v8.2.0 optional confidence typing"
+          git push origin HEAD:agent/v8.2.0-natural-comment-reconciliation
