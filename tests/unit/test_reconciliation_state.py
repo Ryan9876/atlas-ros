@@ -1,3 +1,4 @@
+import json
 from datetime import UTC, datetime, timedelta
 
 import pytest
@@ -111,6 +112,58 @@ def test_production_checkpoint_is_required_after_activation():
     with pytest.raises(LedgerValidationError) as error:
         store.require_checkpoint()
     assert error.value.code is LedgerFailureCode.CHECKPOINT_MISSING
+
+
+def test_connector_encoded_checkpoint_preserves_exact_cutover():
+    notion = FakeNotionAdapter()
+    store = NotionReconciliationStateStore(notion, "state")
+    processed_at = "2026-07-31T16:53:26.417Z"
+    cutover = "2026-07-31T16:41:46+00:00"
+    envelope = {
+        "schema_version": "8.2",
+        "state_key": store.CHECKPOINT_KEY,
+        "event_id": store.CHECKPOINT_KEY,
+        "event_aliases": [],
+        "logical_status": "applied",
+        "processed_at": processed_at,
+        "execution_surface": "CLI",
+        "event_type": "",
+        "source_provider": "",
+        "source_object_type": "",
+        "source_task_id": "",
+        "parent_task_id": "",
+        "source_comment_id": "",
+        "source_posted_at": "",
+        "source_updated_at": "",
+        "source_digest": "",
+        "interpretation_classification": "",
+        "interpretation_status": "applied",
+        "confidence": None,
+        "blockers": [],
+        "ambiguity": [],
+        "inferred_fields": {},
+        "field_origins": {},
+        "command_digest": "",
+        "plan_digest": "p" * 64,
+        "authorization_identity": "Ryan:v8.2.1",
+        "correlation_id": "",
+        "causation_id": "",
+        "processing_outcome": "baseline_checkpoint_created",
+        "readback_status": "verified",
+        "release_identity": "8.2.1",
+        "baseline_cutover_at": cutover,
+    }
+    notion.create_page(
+        "state",
+        {
+            "State Key": {"title": [{"plain_text": store.CHECKPOINT_KEY}]},
+            "Cursor": {"date": {"start": "2026-07-31T16:41:00+00:00"}},
+            "Notes": {"rich_text": [{"plain_text": json.dumps(json.dumps(envelope))}]},
+        },
+    )
+
+    store.require_checkpoint()
+    assert store.checkpoint() == datetime.fromisoformat(cutover)
 
 
 def test_event_identity_alias_and_metadata_round_trip(tmp_path):
