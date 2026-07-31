@@ -1,18 +1,6 @@
 {
-  "$id": "https://github.com/Ryan9876/atlas-ros/schemas/operational-awareness/clarification-resolution.schema.json",
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "additionalProperties": false,
-  "properties": {
-    "contract_id": {"const": "atlas.clarification-resolution", "default": "atlas.clarification-resolution", "type": "string"},
-    "schema_version": {"const": "1.0", "default": "1.0", "type": "string"},
-    "capture_id": {"minLength": 1, "type": "string"},
-    "correlation_id": {"minLength": 1, "type": "string"},
-    "analysis_digest": {"pattern": "^[0-9a-f]{64}$", "type": "string"},
-    "original_instruction": {"minLength": 1, "type": "string"},
-    "clarification_question": {"minLength": 1, "type": "string"},
-    "user_response": {"minLength": 1, "type": "string"},
-    "normalized_instruction": {"minLength": 1, "type": "string"},
-    "ambiguity_category": {
+  "$defs": {
+    "AmbiguityCategory": {
       "enum": [
         "none",
         "suspected_transcription_error",
@@ -31,15 +19,103 @@
         "ambiguous_action_versus_project",
         "ambiguous_request_versus_informational_note"
       ],
+      "title": "AmbiguityCategory",
+      "type": "string"
+    }
+  },
+  "$id": "https://github.com/Ryan9876/atlas-ros/schemas/operational-awareness/clarification-resolution.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "ambiguity_category": {
+      "$ref": "#/$defs/AmbiguityCategory"
+    },
+    "analysis_digest": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Analysis Digest",
       "type": "string"
     },
-    "resolved_at": {"type": ["string", "null"]},
-    "idempotency_identity": {"minLength": 1, "type": "string"},
-    "routing_allowed": {"const": false, "default": false, "type": "boolean"},
-    "execution_authorized": {"const": false, "default": false, "type": "boolean"},
-    "provider_write_count": {"const": 0, "default": 0, "type": "integer"},
-    "todoist_write_count": {"const": 0, "default": 0, "type": "integer"},
-    "resolution_digest": {"pattern": "^[0-9a-f]{64}$", "type": "string"}
+    "capture_id": {
+      "title": "Capture Id",
+      "type": "string"
+    },
+    "clarification_question": {
+      "title": "Clarification Question",
+      "type": "string"
+    },
+    "contract_id": {
+      "const": "atlas.clarification-resolution",
+      "default": "atlas.clarification-resolution",
+      "title": "Contract Id",
+      "type": "string"
+    },
+    "correlation_id": {
+      "title": "Correlation Id",
+      "type": "string"
+    },
+    "execution_authorized": {
+      "const": false,
+      "default": false,
+      "title": "Execution Authorized",
+      "type": "boolean"
+    },
+    "idempotency_identity": {
+      "title": "Idempotency Identity",
+      "type": "string"
+    },
+    "normalized_instruction": {
+      "title": "Normalized Instruction",
+      "type": "string"
+    },
+    "original_instruction": {
+      "title": "Original Instruction",
+      "type": "string"
+    },
+    "provider_write_count": {
+      "const": 0,
+      "default": 0,
+      "title": "Provider Write Count",
+      "type": "integer"
+    },
+    "resolution_digest": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Resolution Digest",
+      "type": "string"
+    },
+    "resolved_at": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Resolved At"
+    },
+    "routing_allowed": {
+      "const": false,
+      "default": false,
+      "title": "Routing Allowed",
+      "type": "boolean"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "todoist_write_count": {
+      "const": 0,
+      "default": 0,
+      "title": "Todoist Write Count",
+      "type": "integer"
+    },
+    "user_response": {
+      "title": "User Response",
+      "type": "string"
+    }
   },
   "required": [
     "capture_id",
