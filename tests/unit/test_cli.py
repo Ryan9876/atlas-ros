@@ -131,9 +131,17 @@ def test_todoist_reconcile_dry_run_and_apply(
             assert confirmed
             return Result()
 
+    class StateStore:
+        def __init__(self, *_args, **_kwargs):
+            pass
+
+        def require_checkpoint(self) -> None:
+            pass
+
     monkeypatch.setattr(cli, "LiveNotionAdapter", Adapter)
     monkeypatch.setattr(cli, "LiveTodoistAdapter", Adapter)
     monkeypatch.setattr(cli, "TodoistReconciliationService", Service)
+    monkeypatch.setattr(cli, "NotionReconciliationStateStore", StateStore)
     monkeypatch.setattr(cli, "validate_production_ledger", lambda *_args: None)
     monkeypatch.setenv("ATLAS_ACTION_DATA_SOURCE_ID", "actions")
     monkeypatch.setenv("ATLAS_RUNTIME_DIR", str(tmp_path))
