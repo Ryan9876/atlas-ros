@@ -1,0 +1,64 @@
+name: Fix v8.2.0 validation controller
+
+on:
+  pull_request:
+    branches: [main]
+    types: [synchronize]
+
+permissions:
+  contents: write
+
+jobs:
+  fix-controller:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.head.ref == 'agent/v8.2.0-natural-comment-reconciliation' &&
+      github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - name: Remove fixed release assumptions
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('scripts/v820_candidate_validate.sh')
+          text = path.read_text()
+          old = "git ls-tree -r --full-tree HEAD > build/SOURCE_TREE.txt\n"
+          new = old + 'export SOURCE_DATE_EPOCH="$(git show -s --format=%ct "$CANDIDATE_COMMIT")"\n'
+          assert text.count(old) == 1
+          text = text.replace(old, new, 1)
+
+          old = """assert active['status'] == 'Active'\nassert active['version'] == '8.1.0', active\nassert rollback['version'] == '8.0.0', rollback\n"""
+          new = """assert active['status'] == 'Active'\nfor field in ('version', 'tag', 'immutable_commit', 'manifest_path', 'manifest_sha256'):\n    assert active.get(field), (field, active)\nfor field in ('version', 'tag', 'immutable_commit'):\n    assert rollback.get(field), (field, rollback)\nassert active['immutable_commit'] != rollback['immutable_commit']\n"""
+          assert text.count(old) == 1
+          text = text.replace(old, new, 1)
+
+          old = "source build/RESTORATION_ENV\n\n"
+          new = old + 'git merge-base --is-ancestor "$ACTIVE_COMMIT" "$CANDIDATE_COMMIT"\n\n'
+          assert text.count(old) == 1
+          text = text.replace(old, new, 1)
+
+          old = "import xml.etree.ElementTree as ET\n"
+          new = old + "from datetime import UTC, datetime\n"
+          assert text.count(old) == 1
+          text = text.replace(old, new, 1)
+
+          old = "        'created': '2026-07-31T00:00:00Z',\n"
+          new = "        'created': datetime.fromtimestamp(int(os.environ['SOURCE_DATE_EPOCH']), UTC).isoformat().replace('+00:00', 'Z'),\n"
+          assert text.count(old) == 1
+          text = text.replace(old, new, 1)
+          path.write_text(text)
+          PY
+          git diff --check
+      - name: Commit corrected validation controller
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add scripts/v820_candidate_validate.sh
+          git commit -m "Resolve v8.2.0 validation authority dynamically"
+          git push origin HEAD:agent/v8.2.0-natural-comment-reconciliation
