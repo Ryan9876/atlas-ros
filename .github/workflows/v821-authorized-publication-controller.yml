@@ -1,0 +1,132 @@
+name: v8.2.1 authorized publication controller
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - release/V821_PUBLICATION_TRIGGER.json
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: v821-authorized-publication
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    environment: production-release
+    env:
+      TAG: v8.2.1
+      PACKAGE_SOURCE_COMMIT: 5a71c043292faab39df084e9eeeb0d10634d2627
+      IMPLEMENTATION_MERGE: ef6820dce64919248019c6f3ce23dcea2b0f2cd9
+      CANDIDATE_ARTIFACT_ID: '8800800923'
+      CANDIDATE_ARTIFACT_DIGEST: sha256:979f030eaecbc5961bd2c8701a87ce8e752908d87312127b8314fb3a85890843
+      SOURCE_SHA256: 2ebddbfacf772f40f5bf3514d3f09a691259304775bafe497685a652675961da
+      WHEEL_SHA256: fe9db86412a88acaf2f9860c5ab4a044f296880e19f787ece601a92bd5f282f0
+      SBOM_SHA256: f0560023159d28799b897e9fbcd1196edaac3411fd50e47b01acbac565d0a458
+      VALIDATION_SHA256: 8214da5cde9b50e76cac96551764da510ffa37e56a9f2660707c36fd6fc9dc00
+      PACKAGE_INDEX_SHA256: 8d150bc3331fd071f444991e65119004c7e7e201d764f3ce55af3b1a15fbd8b2
+      SOURCE_TREE_SHA256: df700f8fbb8d7dbe6e993d0b55d4bf507bb9818d0f082e16ada284baac25abac
+      PACKAGE_CHECKSUMS_SHA256: f5fcf005a2cb0fc14191cec569326c80daa0834df81d38a115af6f3ac9079d01
+      EVIDENCE_CHECKSUMS_SHA256: 7b783de7cac6043997cddf34cb23bed2617a19db05df35ab0f551b4f21fd4249
+      BASELINE_READBACK_SHA256: 0848a17317a7830eaea41ae5a565c9c3e2300e57d01c5b43f250d1fe7efc6ef1
+      MANIFEST_SHA256: 09dc00c200e5f3f0ab2707b84f886e79e9058f4c490a0a7c6a9151b8fcbf2c04
+      AUTHORIZATION_SHA256: f3c7fc86b8b91a7cbd7d94418f29039fc0d659a6cd9ba08a2e079def27cba3c0
+      PREPUBLICATION_ACTIVE_COMMIT: 64c38eb4e83f6edf2d6cff28f7c7556a2c84c0c9
+      PREPUBLICATION_ROLLBACK_COMMIT: a46619c4b806a63ea1426f06171b53ee219d9d77
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          fetch-depth: 0
+
+      - name: Verify exact authorized controls
+        run: |
+          set -euo pipefail
+          test "$(sha256sum release/RELEASE_MANIFEST_V821.md | cut -d' ' -f1)" = "$MANIFEST_SHA256"
+          test "$(sha256sum release/V821_EXACT_PACKAGE_AUTHORIZATION.md | cut -d' ' -f1)" = "$AUTHORIZATION_SHA256"
+          test "$(sha256sum release/V821_LEDGER_BASELINE_READBACK.json | cut -d' ' -f1)" = "$BASELINE_READBACK_SHA256"
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          authority=json.loads(Path('governance/AUTHORITY.json').read_text())
+          assert authority['active_release']['version']=='8.2.0'
+          assert authority['active_release']['immutable_commit']==os.environ['PREPUBLICATION_ACTIVE_COMMIT']
+          assert authority['immediate_rollback']['version']=='8.1.0'
+          assert authority['immediate_rollback']['immutable_commit']==os.environ['PREPUBLICATION_ROLLBACK_COMMIT']
+          trigger=json.loads(Path('release/V821_PUBLICATION_TRIGGER.json').read_text())
+          assert trigger['candidate_artifact_id']==int(os.environ['CANDIDATE_ARTIFACT_ID'])
+          assert trigger['candidate_artifact_sha256']==os.environ['CANDIDATE_ARTIFACT_DIGEST'].removeprefix('sha256:')
+          assert trigger['package_source_commit']==os.environ['PACKAGE_SOURCE_COMMIT']
+          assert trigger['implementation_merge']==os.environ['IMPLEMENTATION_MERGE']
+          assert trigger['release_manifest_sha256']==os.environ['MANIFEST_SHA256']
+          assert trigger['authorization_sha256']==os.environ['AUTHORIZATION_SHA256']
+          assert trigger['baseline_readback_sha256']==os.environ['BASELINE_READBACK_SHA256']
+          assert trigger['decision_id']=='V4D-64' and trigger['review_id']=='V4V-121'
+          assert trigger['tag']=='v8.2.1'
+          PY
+
+      - name: Download and verify retained package
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p publication/candidate
+          test "$(gh api "/repos/${GITHUB_REPOSITORY}/actions/artifacts/${CANDIDATE_ARTIFACT_ID}" --jq .digest)" = "$CANDIDATE_ARTIFACT_DIGEST"
+          gh api "/repos/${GITHUB_REPOSITORY}/actions/artifacts/${CANDIDATE_ARTIFACT_ID}/zip" > publication/atlas-ros-v821-candidate.zip
+          test "$(sha256sum publication/atlas-ros-v821-candidate.zip | cut -d' ' -f1)" = "${CANDIDATE_ARTIFACT_DIGEST#sha256:}"
+          unzip -q publication/atlas-ros-v821-candidate.zip -d publication/candidate
+          test "$(cat publication/candidate/build/V821_SOURCE_COMMIT.txt)" = "$PACKAGE_SOURCE_COMMIT"
+          test "$(cat publication/candidate/build/V821_BUILD_COUNT.txt)" = "1"
+          test "$(sha256sum publication/candidate/dist/atlas_ros-8.2.1.tar.gz | cut -d' ' -f1)" = "$SOURCE_SHA256"
+          test "$(sha256sum publication/candidate/dist/atlas_ros-8.2.1-py3-none-any.whl | cut -d' ' -f1)" = "$WHEEL_SHA256"
+          test "$(sha256sum publication/candidate/build/V821_SBOM.spdx.json | cut -d' ' -f1)" = "$SBOM_SHA256"
+          test "$(sha256sum publication/candidate/build/V821_VALIDATION_RECEIPT.json | cut -d' ' -f1)" = "$VALIDATION_SHA256"
+          test "$(sha256sum publication/candidate/build/V821_PACKAGE_INDEX.json | cut -d' ' -f1)" = "$PACKAGE_INDEX_SHA256"
+          test "$(sha256sum publication/candidate/build/V821_SOURCE_TREE.txt | cut -d' ' -f1)" = "$SOURCE_TREE_SHA256"
+          test "$(sha256sum publication/candidate/build/V821_PACKAGE_CHECKSUMS.sha256 | cut -d' ' -f1)" = "$PACKAGE_CHECKSUMS_SHA256"
+          test "$(sha256sum publication/candidate/build/V821_EVIDENCE_CHECKSUMS.sha256 | cut -d' ' -f1)" = "$EVIDENCE_CHECKSUMS_SHA256"
+          (cd publication/candidate && sha256sum -c build/V821_PACKAGE_CHECKSUMS.sha256)
+          (cd publication/candidate && sha256sum -c build/V821_EVIDENCE_CHECKSUMS.sha256)
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          receipt=json.loads(Path('publication/candidate/build/V821_VALIDATION_RECEIPT.json').read_text())
+          assert receipt['candidate_commit']==os.environ['PACKAGE_SOURCE_COMMIT']
+          assert receipt['version']=='8.2.1' and receipt['build_count']==1
+          assert receipt['tests']==1074 and receipt['failures']==receipt['errors']==receipt['skipped']==0
+          assert receipt['total_coverage']>=85
+          assert receipt['production_provider_writes']==0
+          assert receipt['w04_restored_or_written'] is False
+          assert receipt['active_restoration_commit']==os.environ['PREPUBLICATION_ACTIVE_COMMIT']
+          assert receipt['rollback_restoration_commit']==os.environ['PREPUBLICATION_ROLLBACK_COMMIT']
+          PY
+
+      - name: Publish immutable release without rebuild
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          ! git rev-parse "$TAG" >/dev/null 2>&1
+          ! gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1
+          git config user.name "Atlas ROS Release Bot"
+          git config user.email "atlas-ros-release@users.noreply.github.com"
+          git tag -a "$TAG" "$GITHUB_SHA" -m "Atlas ROS v8.2.1 production ledger remediation"
+          git push origin "refs/tags/$TAG"
+          gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --verify-tag --target "$GITHUB_SHA" \
+            --title "Atlas ROS v8.2.1" --notes-file release/RELEASE_MANIFEST_V821.md \
+            publication/atlas-ros-v821-candidate.zip \
+            publication/candidate/dist/atlas_ros-8.2.1.tar.gz \
+            publication/candidate/dist/atlas_ros-8.2.1-py3-none-any.whl \
+            publication/candidate/build/V821_VALIDATION_RECEIPT.json \
+            publication/candidate/build/V821_SBOM.spdx.json \
+            publication/candidate/build/V821_PACKAGE_INDEX.json \
+            publication/candidate/build/V821_SOURCE_TREE.txt \
+            publication/candidate/build/V821_PACKAGE_CHECKSUMS.sha256 \
+            publication/candidate/build/V821_EVIDENCE_CHECKSUMS.sha256 \
+            release/V821_LEDGER_BASELINE_READBACK.json \
+            release/RELEASE_MANIFEST_V821.md \
+            release/V821_EXACT_PACKAGE_AUTHORIZATION.md
