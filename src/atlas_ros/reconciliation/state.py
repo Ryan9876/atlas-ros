@@ -219,6 +219,19 @@ def has_complete_envelope(envelope: Mapping[str, Any]) -> bool:
     return _REQUIRED_ENVELOPE_KEYS.issubset(envelope)
 
 
+def decode_event_envelope(value: str) -> dict[str, Any] | None:
+    """Decode direct JSON or the single extra string layer used by connector writes."""
+    decoded: Any = value
+    for _ in range(2):
+        if not isinstance(decoded, str):
+            break
+        try:
+            decoded = json.loads(decoded)
+        except json.JSONDecodeError:
+            return None
+    return decoded if isinstance(decoded, dict) else None
+
+
 class ReconciliationStateStore(ABC):
     @abstractmethod
     def checkpoint(self) -> datetime: ...
@@ -360,13 +373,12 @@ class NotionReconciliationStateStore(ReconciliationStateStore):
                 "production reconciliation is not activated until baseline checkpoint readback",
             )
         notes = self._rich_text_value(checkpoint.properties.get("Notes", {}))
-        try:
-            envelope = json.loads(notes)
-        except json.JSONDecodeError as exc:
+        envelope = decode_event_envelope(notes)
+        if envelope is None:
             raise LedgerValidationError(
                 LedgerFailureCode.CHECKPOINT_MISSING,
                 "production reconciliation checkpoint evidence is invalid",
-            ) from exc
+            )
         if not (
             isinstance(envelope, dict)
             and has_complete_envelope(envelope)
@@ -391,6 +403,12 @@ class NotionReconciliationStateStore(ReconciliationStateStore):
         page = self._find(self.CHECKPOINT_KEY)
         if page is None:
             return datetime.now(UTC) - timedelta(days=7)
+        notes = self._rich_text_value(page.properties.get("Notes", {}))
+        envelope = decode_event_envelope(notes)
+        if envelope is not None:
+            exact_cutover = envelope.get("baseline_cutover_at")
+            if isinstance(exact_cutover, str) and exact_cutover:
+                return datetime.fromisoformat(exact_cutover.replace("Z", "+00:00"))
         value = page.properties.get("Cursor", {})
         if isinstance(value, dict):
             selected = value.get("date")
@@ -448,10 +466,7 @@ class NotionReconciliationStateStore(ReconciliationStateStore):
 
         notes = self._rich_text_value(page.properties.get("Notes", {}))
         if notes:
-            try:
-                envelope = json.loads(notes)
-            except json.JSONDecodeError:
-                envelope = None
+            envelope = decode_event_envelope(notes)
             if isinstance(envelope, dict):
                 logical = envelope.get("logical_status") or envelope.get(
                     "interpretation_status"
