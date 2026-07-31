@@ -150,7 +150,7 @@ capabilities:
   - CommandInterpretationV1
   - TodoistLifecyclePlanV1
 - id: atlas.context-aware-clarification
-  package: capabilities/operational_awareness/clarification
+  package: capabilities/operational_awareness/context_aware_clarification
   owner: Operational Awareness
   writes_providers: false
   inputs:
