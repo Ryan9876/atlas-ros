@@ -1,0 +1,59 @@
+name: v8.3.0 publication controls validation
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - release/RELEASE_MANIFEST_V830.md
+      - release/RELEASE_NOTES_V830.md
+      - release/V830_EXACT_PACKAGE_AUTHORIZATION.md
+      - release/V830_PUBLICATION_TRIGGER.json
+      - .github/workflows/v830-authorized-publication-controller.yml
+      - .github/workflows/v830-independent-publication-readback.yml
+      - .github/workflows/v830-publication-controls-validation.yml
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      PACKAGE_SOURCE_COMMIT: ac546f10ee4c1e140d17beaae32f7ea77eb12a51
+      IMPLEMENTATION_MERGE: 3e0bf74bf92ab49b6325ab9754a9b258eb23243f
+      CANDIDATE_ARTIFACT_ID: '8803236640'
+      CANDIDATE_ARTIFACT_DIGEST: sha256:93c4486dd588890b17fcbce2f8703df5dcb60268a1195a5a5bdb472304679d15
+      MANIFEST_SHA256: e9ec73a996e57224d39122f717c86fa53f62005ede88125664339b88651eb972
+      AUTHORIZATION_SHA256: 35a4582a7fd059be63e67425b89976b090e9b349cbbfc42c1915ced0f014bd7f
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          fetch-depth: 0
+
+      - name: Validate exact no-rebuild controls
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$(sha256sum release/RELEASE_MANIFEST_V830.md | cut -d' ' -f1)" = "$MANIFEST_SHA256"
+          test "$(sha256sum release/V830_EXACT_PACKAGE_AUTHORIZATION.md | cut -d' ' -f1)" = "$AUTHORIZATION_SHA256"
+          test "$(gh api "/repos/${GITHUB_REPOSITORY}/actions/artifacts/${CANDIDATE_ARTIFACT_ID}" --jq .digest)" = "$CANDIDATE_ARTIFACT_DIGEST"
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          trigger=json.loads(Path('release/V830_PUBLICATION_TRIGGER.json').read_text())
+          assert trigger['package_source_commit']==os.environ['PACKAGE_SOURCE_COMMIT']
+          assert trigger['implementation_merge']==os.environ['IMPLEMENTATION_MERGE']
+          assert trigger['candidate_artifact_id']==int(os.environ['CANDIDATE_ARTIFACT_ID'])
+          assert trigger['candidate_artifact_sha256']==os.environ['CANDIDATE_ARTIFACT_DIGEST'].removeprefix('sha256:')
+          assert trigger['release_manifest_sha256']==os.environ['MANIFEST_SHA256']
+          assert trigger['authorization_sha256']==os.environ['AUTHORIZATION_SHA256']
+          assert trigger['decision_id']=='V4D-65'
+          assert trigger['review_id']=='V4V-122'
+          assert trigger['automation_id']=='V4M-6'
+          assert trigger['tag']=='v8.3.0'
+          assert trigger['runtime_activation']=='held'
+          PY
+
