@@ -4,6 +4,17 @@ Status: **PENDING RYAN AUTHORIZATION**
 
 This record identifies the exact validated package that may be considered for controlled promotion. It does not grant authorization by itself.
 
+## Governance checkpoint
+
+- Proposed Governing Decision: `V4D-62`
+- Decision status: `Proposed`
+- Decision URL: `https://app.notion.com/p/3aeb8344ad2c812ea859f0f0a06c1528`
+- Acceptance Review: `V4V-115`
+- Review status: `Passed`
+- Review URL: `https://app.notion.com/p/3aeb8344ad2c81e9a8fdfbceca9f3bd4`
+
+The passed review confirms the validation evidence. The Proposed decision and this repository record remain pending Ryan's explicit authorization.
+
 ## Exact package
 
 - Version: `8.1.0`
@@ -48,7 +59,7 @@ This record identifies the exact validated package that may be considered for co
 - Immediate rollback v7.8.0 restoration: passed
 - Production schema changes: `0`
 - Provider writes: `0`
-- Notion writes: `0`
+- Notion writes during validation: `0`
 - Todoist writes: `0`
 
 ## Proposed complete promotion transaction
