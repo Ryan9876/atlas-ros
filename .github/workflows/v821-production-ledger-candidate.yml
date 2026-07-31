@@ -18,7 +18,7 @@ jobs:
         with:
           python-version: '3.12'
       - run: python -m pip install --upgrade pip
-      - run: python -m pip install '.[ci]'
+      - run: python -m pip install '.[ci]' 'pip-audit==2.9.0'
       - run: CANDIDATE_COMMIT="$GITHUB_SHA" bash scripts/v821_candidate_validate.sh
         env:
           GH_TOKEN: ${{ github.token }}
