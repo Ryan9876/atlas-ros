@@ -1,0 +1,49 @@
+{
+  "authorization_identity": "Ryan:2026-07-31:v8.2.1:all-remaining-changes",
+  "baseline": {
+    "checkpoint_created": true,
+    "checkpoint_id": "3aeb8344ad2c8180bdb0c7c8db42b21f",
+    "checkpoint_readback": "verified",
+    "complete": true,
+    "cutover_at": "2026-07-31T16:41:46+00:00",
+    "eligible_mapped_parents": 31,
+    "eligible_subtasks": 89,
+    "event_count": 0,
+    "inventory_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "plan_digest": "fe89bc0d454b33bb9eb135baa027b1db493f70a0a992911359964d474fe3cbab",
+    "provider_writes": 0,
+    "replay_writes": 0,
+    "run_id": "v821-production-baseline-2026-07-31T1641460000",
+    "todoist_comments_before_cutover": 0
+  },
+  "candidate": {
+    "artifact_id": 8800800923,
+    "artifact_sha256": "979f030eaecbc5961bd2c8701a87ce8e752908d87312127b8314fb3a85890843",
+    "source_commit": "5a71c043292faab39df084e9eeeb0d10634d2627",
+    "validation_run": 30649452649
+  },
+  "ledger": {
+    "database_id": "e72c11168cb54d7e8069c7ac9ecb807b",
+    "data_source_id": "dc486c5d-c5d2-4386-8a50-d18d1dfb7223",
+    "properties": [
+      "Cursor",
+      "Event ID",
+      "Execution Surface",
+      "Notes",
+      "Processed At",
+      "State Key",
+      "State Type",
+      "Status"
+    ],
+    "record_count": 1,
+    "title": "Execution Reconciliation State"
+  },
+  "schema_version": "v821-ledger-baseline-readback-v1",
+  "w04": {
+    "database_id": "ba2518b1-3c97-4a94-8324-414f74ed8830",
+    "data_source_id": "afbb753c-3112-4784-9165-f786b503d1f7",
+    "deleted": true,
+    "restored": false,
+    "written": false
+  }
+}
