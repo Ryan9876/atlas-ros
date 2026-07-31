@@ -1,0 +1,50 @@
+name: v8.3.0 event reconciliation candidate
+
+on:
+  workflow_dispatch:
+    inputs:
+      candidate_commit:
+        description: Exact frozen candidate commit SHA
+        required: true
+        type: string
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, ready_for_review]
+
+concurrency:
+  group: v830-event-reconciliation-${{ github.event.pull_request.number || inputs.candidate_commit || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  CANDIDATE_COMMIT: ${{ inputs.candidate_commit || github.event.pull_request.head.sha }}
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          ref: ${{ env.CANDIDATE_COMMIT }}
+          fetch-depth: 0
+          fetch-tags: true
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.12.10'
+          cache: pip
+      - run: python -m pip install --disable-pip-version-check -e '.[dev]'
+      - run: CANDIDATE_COMMIT="$CANDIDATE_COMMIT" bash scripts/v830_candidate_validate.sh
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: atlas-ros-v830-candidate-${{ env.CANDIDATE_COMMIT }}
+          path: |
+            dist/
+            build/V830_*
+            release/RELEASE_MANIFEST_V830_DRAFT.md
+            release/V830_*.md
+          if-no-files-found: error
+          retention-days: 90

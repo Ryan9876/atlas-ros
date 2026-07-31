@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "atlas-ros"
-version = "8.2.1"
+version = "8.3.0"
 description = "Policy-driven executable core for Atlas Ryan Operating System"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -33,11 +33,16 @@ include = ["src/atlas_ros/data/**/*.yaml", "src/atlas_ros/data/**/*.json"]
 
 [tool.hatch.build.targets.sdist]
 exclude = [
+  "/.hypothesis",
   "/.venv",
+  "/audit",
   "/build",
+  "/clean-install",
   "/clean-wheel",
   "/dist",
   "/extracted",
+  "/restoration",
+  "/secret-scan-root",
   "/source-verification",
   "/test-results",
 ]

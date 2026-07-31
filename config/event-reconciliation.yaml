@@ -1,0 +1,61 @@
+schema_version: "8.3"
+release_state: candidate
+runtime:
+  mode: monitor_only
+  kill_switch: true
+  ingress_enabled: false
+  planning_enabled: false
+  auto_apply_enabled: false
+  approval_enabled: false
+  backstop_enabled: false
+  replay_enabled: false
+  activation_blocked_until:
+    - v8.3.0 promotion and authority activation
+    - approved always-on HTTPS runtime
+    - approved encrypted secret store and rotation
+    - Todoist app-owner OAuth completion and webhook registration
+    - Notion webhook subscription verification
+    - exact production autonomy-policy activation
+policy:
+  version: 8.3.0-rc1
+  approved_destinations: ["#Work", "#Personal"]
+  max_mutations_per_event: 6
+  max_universal_inbox_subtasks: 5
+  max_causal_depth: 4
+  approval_expiration_minutes: 15
+  auto_apply_allowlist:
+    - todoist_due_date_to_notion_execution
+    - todoist_priority_to_notion_execution
+    - todoist_completion_to_notion_execution
+    - todoist_reopen_to_notion_execution
+    - mapped_subtask_to_execution_step
+    - deterministic_status_update
+    - eligible_universal_inbox_task_creation
+    - reconciliation_evidence_write
+  always_require_approval:
+    - delegation_or_reassignment
+    - material_inference
+    - unproven_parent_outcome_closure
+    - free_text_governance_record_creation
+    - destination_outside_approved_scope
+    - mutation_limit_exceeded
+    - cross_project_or_shared_workspace_change
+    - corrective_write_after_partial_failure
+  always_block:
+    - authority_disagreement
+    - historical_w04_identity
+    - ambiguous_canonical_identity
+    - unsupported_field_authority
+    - destructive_or_credential_action
+    - permission_or_integration_scope_expansion
+    - release_activation
+    - messaging_email_calendar_or_live_network_action
+    - invalid_signature_or_snapshot_integrity
+    - self_authorization
+service_levels:
+  acceptance_seconds: 10
+  reconciliation_start_seconds: 60
+backstop:
+  todoist_incremental_sync_minutes: 5
+  notion_bounded_poll_minutes: 5
+  maximum_convergence_minutes: 15

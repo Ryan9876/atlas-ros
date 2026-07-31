@@ -1,2 +1,3 @@
 """Atlas ROS executable core."""
-__version__ = "8.2.1"
+
+__version__ = "8.3.0"

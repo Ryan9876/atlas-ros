@@ -8,6 +8,14 @@
 
 # Changelog
 
+## 8.3.0 - Candidate
+
+- Adds authenticated event-driven Todoist and Notion reconciliation ingress with durable acceptance.
+- Adds bounded-autonomy policy evaluation, monitor-only defaults, a kill switch, exact approval binding, and Universal Inbox task-creation limits.
+- Adds leases, semantic deduplication, retry/dead-letter recovery, backstop convergence, feedback-loop protection, receipts, and operator controls.
+- Preserves the v8.2.1 production ledger/checkpoint and permanently rejects both W04 identities.
+- Production runtime, webhooks, provider writes, policy activation, authority changes, and promotion remain inactive pending exact authorization.
+
 ## 6.1.0rc1 - 2026-07-26
 
 - Added first-class intent partitioning that separates primary business outcomes from current, delegated, conditional, evaluation, audit, provider-control, and reference instructions.
