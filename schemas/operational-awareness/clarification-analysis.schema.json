@@ -1,13 +1,6 @@
 {
-  "$id": "https://github.com/Ryan9876/atlas-ros/schemas/operational-awareness/clarification-analysis.schema.json",
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "additionalProperties": false,
-  "properties": {
-    "contract_id": {"const": "atlas.clarification-analysis", "default": "atlas.clarification-analysis", "type": "string"},
-    "schema_version": {"const": "1.0", "default": "1.0", "type": "string"},
-    "original_instruction": {"minLength": 1, "type": "string"},
-    "stable_intent": {"items": {"minLength": 1, "type": "string"}, "minItems": 1, "type": "array"},
-    "ambiguity_category": {
+  "$defs": {
+    "AmbiguityCategory": {
       "enum": [
         "none",
         "suspected_transcription_error",
@@ -26,51 +19,302 @@
         "ambiguous_action_versus_project",
         "ambiguous_request_versus_informational_note"
       ],
+      "title": "AmbiguityCategory",
       "type": "string"
     },
-    "ambiguous_span": {"type": ["string", "null"]},
-    "preserved_entities": {"items": {"minLength": 1, "type": "string"}, "type": "array"},
-    "context_sources_checked": {"items": {"minLength": 1, "type": "string"}, "type": "array"},
-    "authoritative_context_digest": {"pattern": "^[0-9a-f]{64}$", "type": ["string", "null"]},
-    "evidence": {"items": {"minLength": 1, "type": "string"}, "type": "array"},
-    "candidates": {
-      "items": {
-        "additionalProperties": false,
-        "properties": {
-          "normalized_instruction": {"minLength": 1, "type": "string"},
-          "rationale": {"minLength": 1, "type": "string"},
-          "confidence": {"maximum": 1.0, "minimum": 0.0, "type": "number"},
-          "material": {"default": true, "type": "boolean"},
-          "unsupported_assumptions": {"items": {"type": "string"}, "type": "array"}
-        },
-        "required": ["normalized_instruction", "rationale", "confidence"],
-        "type": "object"
-      },
-      "type": "array"
+    "ClarificationQuestionMode": {
+      "enum": [
+        "confirmatory",
+        "bounded_choice",
+        "information_seeking"
+      ],
+      "title": "ClarificationQuestionMode",
+      "type": "string"
     },
-    "leading_interpretation": {"type": ["string", "null"]},
-    "clarification_required": {"type": "boolean"},
-    "question_mode": {"enum": ["confirmatory", "bounded_choice", "information_seeking", null]},
-    "clarification_question": {"type": ["string", "null"]},
-    "question_basis": {"type": ["string", "null"]},
-    "continue_unrelated_work": {"default": true, "type": "boolean"},
-    "downstream_execution_blocked": {"default": true, "type": "boolean"},
-    "routing_allowed": {"const": false, "default": false, "type": "boolean"},
-    "execution_authorized": {"const": false, "default": false, "type": "boolean"},
-    "provider_write_count": {"const": 0, "default": 0, "type": "integer"},
-    "todoist_write_count": {"const": 0, "default": 0, "type": "integer"},
-    "confidence": {
-      "additionalProperties": false,
+    "ConfidenceAssessment": {
       "properties": {
-        "score": {"type": ["number", "null"]},
-        "rationale": {"minLength": 1, "type": "string"},
-        "missing_data": {"items": {"type": "object"}, "type": "array"}
+        "missing_data": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/MissingDataIndicator"
+          },
+          "title": "Missing Data",
+          "type": "array"
+        },
+        "rationale": {
+          "title": "Rationale",
+          "type": "string"
+        },
+        "score": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Score"
+        }
       },
-      "required": ["score", "rationale"],
+      "required": [
+        "score",
+        "rationale"
+      ],
+      "title": "ConfidenceAssessment",
       "type": "object"
     },
-    "blockers": {"items": {"type": "string"}, "type": "array"},
-    "analysis_digest": {"pattern": "^[0-9a-f]{64}$", "type": "string"}
+    "InterpretationCandidateV1": {
+      "additionalProperties": false,
+      "properties": {
+        "confidence": {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Confidence",
+          "type": "number"
+        },
+        "material": {
+          "default": true,
+          "title": "Material",
+          "type": "boolean"
+        },
+        "normalized_instruction": {
+          "title": "Normalized Instruction",
+          "type": "string"
+        },
+        "rationale": {
+          "title": "Rationale",
+          "type": "string"
+        },
+        "unsupported_assumptions": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Unsupported Assumptions",
+          "type": "array"
+        }
+      },
+      "required": [
+        "normalized_instruction",
+        "rationale",
+        "confidence"
+      ],
+      "title": "InterpretationCandidateV1",
+      "type": "object"
+    },
+    "MissingDataIndicator": {
+      "properties": {
+        "field_name": {
+          "title": "Field Name",
+          "type": "string"
+        },
+        "material": {
+          "default": false,
+          "title": "Material",
+          "type": "boolean"
+        },
+        "reason": {
+          "title": "Reason",
+          "type": "string"
+        }
+      },
+      "required": [
+        "field_name",
+        "reason"
+      ],
+      "title": "MissingDataIndicator",
+      "type": "object"
+    }
+  },
+  "$id": "https://github.com/Ryan9876/atlas-ros/schemas/operational-awareness/clarification-analysis.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "ambiguity_category": {
+      "$ref": "#/$defs/AmbiguityCategory"
+    },
+    "ambiguous_span": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Ambiguous Span"
+    },
+    "analysis_digest": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Analysis Digest",
+      "type": "string"
+    },
+    "authoritative_context_digest": {
+      "anyOf": [
+        {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Authoritative Context Digest"
+    },
+    "blockers": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Blockers",
+      "type": "array"
+    },
+    "candidates": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/InterpretationCandidateV1"
+      },
+      "title": "Candidates",
+      "type": "array"
+    },
+    "clarification_question": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Clarification Question"
+    },
+    "clarification_required": {
+      "title": "Clarification Required",
+      "type": "boolean"
+    },
+    "confidence": {
+      "$ref": "#/$defs/ConfidenceAssessment"
+    },
+    "context_sources_checked": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Context Sources Checked",
+      "type": "array"
+    },
+    "continue_unrelated_work": {
+      "default": true,
+      "title": "Continue Unrelated Work",
+      "type": "boolean"
+    },
+    "contract_id": {
+      "const": "atlas.clarification-analysis",
+      "default": "atlas.clarification-analysis",
+      "title": "Contract Id",
+      "type": "string"
+    },
+    "downstream_execution_blocked": {
+      "default": true,
+      "title": "Downstream Execution Blocked",
+      "type": "boolean"
+    },
+    "evidence": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Evidence",
+      "type": "array"
+    },
+    "execution_authorized": {
+      "const": false,
+      "default": false,
+      "title": "Execution Authorized",
+      "type": "boolean"
+    },
+    "leading_interpretation": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Leading Interpretation"
+    },
+    "original_instruction": {
+      "title": "Original Instruction",
+      "type": "string"
+    },
+    "preserved_entities": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Preserved Entities",
+      "type": "array"
+    },
+    "provider_write_count": {
+      "const": 0,
+      "default": 0,
+      "title": "Provider Write Count",
+      "type": "integer"
+    },
+    "question_basis": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Question Basis"
+    },
+    "question_mode": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ClarificationQuestionMode"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "routing_allowed": {
+      "const": false,
+      "default": false,
+      "title": "Routing Allowed",
+      "type": "boolean"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "stable_intent": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Stable Intent",
+      "type": "array"
+    },
+    "todoist_write_count": {
+      "const": 0,
+      "default": 0,
+      "title": "Todoist Write Count",
+      "type": "integer"
+    }
   },
   "required": [
     "original_instruction",
