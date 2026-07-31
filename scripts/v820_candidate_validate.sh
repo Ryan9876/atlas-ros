@@ -287,10 +287,13 @@ percent = float(coverage['totals']['percent_covered'])
 if percent < 85.0:
     raise RuntimeError(f'coverage {percent} is below 85.0')
 root = ET.parse('build/V820_TEST_RESULTS.xml').getroot()
-tests = int(root.attrib.get('tests', 0))
-failures = int(root.attrib.get('failures', 0))
-errors = int(root.attrib.get('errors', 0))
-skipped = int(root.attrib.get('skipped', 0))
+suites = [root] if root.tag.endswith('testsuite') else list(root.findall('.//testsuite'))
+if not suites:
+    raise RuntimeError(f'JUnit receipt contains no test suites: {root.tag!r}')
+tests = sum(int(suite.attrib.get('tests', 0)) for suite in suites)
+failures = sum(int(suite.attrib.get('failures', 0)) for suite in suites)
+errors = sum(int(suite.attrib.get('errors', 0)) for suite in suites)
+skipped = sum(int(suite.attrib.get('skipped', 0)) for suite in suites)
 if tests <= 0 or failures or errors or skipped:
     raise RuntimeError(
         f'invalid test receipt: tests={tests}, failures={failures}, '
