@@ -74,5 +74,6 @@ jobs:
             release/V820_FULL_VALIDATION_PLAN.md
             release/V820_SCHEMA_AND_MIGRATION_ASSESSMENT.md
             release/V820_EXACT_PACKAGE_AUTHORIZATION_TEMPLATE.md
+            release/V820_RECONCILIATION_STATE_SCHEMA_READBACK.json
           if-no-files-found: error
           retention-days: 90
