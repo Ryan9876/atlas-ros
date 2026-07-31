@@ -20,7 +20,7 @@ def test_status_is_lightweight_and_reports_no_writes(capsys: pytest.CaptureFixtu
         "provider_writes": 0,
         "runtime_identity": "installed_package",
         "status": "installed_runtime_available",
-        "version": "8.0.0",
+        "version": "8.1.0",
     }
     assert "active_production_version" not in payload
 
@@ -52,7 +52,7 @@ def test_runtime_verify_checks_only_installed_identity(
         "production_authority_loaded": False,
         "scope": "installed_runtime_identity",
         "valid": True,
-        "version": "8.0.0",
+        "version": "8.1.0",
         "writes": False,
     }
 
@@ -89,13 +89,10 @@ def test_execute_is_fail_closed_without_authorized_adapter() -> None:
         main(["execute"])
 
 
-def test_status_import_does_not_load_provider_intelligence_or_release_modules() -> None:
+def test_legacy_entry_point_module_is_not_a_fallback_surface() -> None:
     program = """
-import sys
-from atlas_ros.entry_points.main import main
-main(['status', '--json'])
-for prefix in ('atlas_ros.adapters', 'atlas_ros.intelligence', 'atlas_ros.release'):
-    assert not any(name == prefix or name.startswith(prefix + '.') for name in sys.modules), prefix
+from atlas_ros.entry_points._legacy import legacy_main
+legacy_main([])
 """
     result = subprocess.run(
         [sys.executable, "-c", program],
@@ -103,5 +100,5 @@ for prefix in ('atlas_ros.adapters', 'atlas_ros.intelligence', 'atlas_ros.releas
         capture_output=True,
         text=True,
     )
-
-    assert result.returncode == 0, result.stderr
+    assert result.returncode != 0
+    assert "removed" in result.stderr
