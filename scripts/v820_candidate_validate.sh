@@ -205,7 +205,9 @@ if values['ACTIVE_COMMIT'] == values['ROLLBACK_COMMIT']:
 for key, value in values.items():
     print(f'{key}={value}')
 PY
+set -a
 source build/RESTORATION_ENV
+set +a
 
 git merge-base --is-ancestor "$ACTIVE_COMMIT" "$CANDIDATE_COMMIT"
 test "$(git rev-list -n 1 "$ACTIVE_TAG")" = "$ACTIVE_COMMIT"
@@ -241,7 +243,9 @@ for key, label in {
         raise RuntimeError(f'rollback manifest missing {label}')
     print(f'{key}={match.group(1)}')
 PY
+set -a
 source build/ROLLBACK_PACKAGE_ENV
+set +a
 
 active_dir="restoration/active-${ACTIVE_VERSION}"
 rollback_dir="restoration/rollback-${ROLLBACK_VERSION}"
