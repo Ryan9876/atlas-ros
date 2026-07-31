@@ -1,6 +1,6 @@
 """Bounded Operational Awareness capability surface."""
 
-from .clarification import ContextAwareClarificationAnalyzer
+from .clarification_analyzer import ContextAwareClarificationAnalyzer
 from .clarification_compatibility import ClarificationCompatibilityAdapter
 from .command_lifecycle import (
     AtlasCommandParser,
