@@ -25,6 +25,7 @@ from atlas_ros.reconciliation import (
     NotionReconciliationStateStore,
     TodoistReconciliationService,
 )
+from atlas_ros.reconciliation.service import ReconciliationApplyAuthorization
 from atlas_ros.release.authority_migration import (
     build_drive_inventory,
     load_drive_inventory,
@@ -137,7 +138,17 @@ def todoist_apply() -> None:
     )
 
 
-def todoist_reconcile(*, apply: bool, full: bool, task_id: str, keychain: bool) -> None:
+def todoist_reconcile(
+    *,
+    apply: bool,
+    full: bool,
+    task_id: str,
+    keychain: bool,
+    authorization_id: str = "",
+    authorization_actor: str = "",
+    authorization_plan_digest: str = "",
+    authorized_event_ids: tuple[str, ...] = (),
+) -> None:
     account = os.environ.get("USER") or getpass.getuser()
     if keychain:
         notion = LiveNotionAdapter.from_keychain(account)
@@ -178,11 +189,42 @@ def todoist_reconcile(*, apply: bool, full: bool, task_id: str, keychain: bool) 
             }
             for mutation in plan.mutations
         ],
+        "plan_digest": getattr(plan, "plan_digest", ""),
+        "scope_report": getattr(getattr(plan, "scope_report", None), "__dict__", {}),
+        "events": [
+            {
+                **event.metadata(),
+                "event_id": event.event_id,
+                "ambiguity": event.ambiguity,
+                "inferred_fields": event.inferred_fields,
+                "field_origins": event.field_origins,
+                "requires_attended_approval": event.requires_attended_approval,
+            }
+            for event in getattr(plan, "events", ())
+        ],
+        "provider_operations": [
+            operation.model_dump(mode="json")
+            for operation in getattr(plan, "provider_operations", ())
+        ],
         "ignored": list(plan.ignored),
         "conflicts": list(plan.conflicts),
+        "required_approval": bool(getattr(plan, "provider_operations", ())),
     }
     if apply:
-        payload["result"] = service.apply(plan, confirmed=True).__dict__
+        authorization = None
+        if getattr(plan, "provider_operations", ()):
+            authorization = ReconciliationApplyAuthorization(
+                authorization_id=authorization_id,
+                actor=authorization_actor,
+                plan_digest=authorization_plan_digest,
+                authorized_event_ids=authorized_event_ids,
+            )
+        if authorization is None:
+            payload["result"] = service.apply(plan, confirmed=True).__dict__
+        else:
+            payload["result"] = service.apply(
+                plan, confirmed=True, authorization=authorization
+            ).__dict__
     print(json.dumps(payload, default=str))
 
 
@@ -341,6 +383,10 @@ def main() -> None:
     reconcile.add_argument("--full", action="store_true")
     reconcile.add_argument("--task", default="")
     reconcile.add_argument("--keychain", action="store_true")
+    reconcile.add_argument("--authorization-id", default="")
+    reconcile.add_argument("--authorization-actor", default="")
+    reconcile.add_argument("--authorization-plan-digest", default="")
+    reconcile.add_argument("--authorize-event", action="append", default=[])
     connectivity = sub.add_parser("connectivity")
     connectivity.add_argument("--keychain", action="store_true")
     dec = sub.add_parser("decompose")
@@ -398,7 +444,14 @@ def main() -> None:
         )
     elif args.command == "todoist" and args.todoist_command == "reconcile":
         todoist_reconcile(
-            apply=args.apply, full=args.full, task_id=args.task, keychain=args.keychain
+            apply=args.apply,
+            full=args.full,
+            task_id=args.task,
+            keychain=args.keychain,
+            authorization_id=args.authorization_id,
+            authorization_actor=args.authorization_actor,
+            authorization_plan_digest=args.authorization_plan_digest,
+            authorized_event_ids=tuple(args.authorize_event),
         )
     elif args.command == "connectivity":
         connectivity_check(args.keychain)

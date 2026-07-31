@@ -27,12 +27,16 @@ from .state import (
 __all__ = [
     "AtlasCommand",
     "CanonicalReconciliationService",
+    "CompositeIngressPlan",
+    "CompositeIngressReconciler",
     "DelegatedLifecycleReconciler",
     "DelegatedLifecycleReconciliationAssessment",
     "InMemoryReconciliationProvider",
     "InMemoryReconciliationState",
     "MutationType",
     "NotionReconciliationStateStore",
+    "ReconciliationInvocation",
+    "ReconciliationScope",
     "ReconciliationMutation",
     "ReconciliationPlan",
     "ReconciliationProviderPort",
@@ -40,6 +44,17 @@ __all__ = [
     "ReconciliationStateStore",
     "SQLiteReconciliationStateStore",
     "TodoistReconciliationService",
+    "UniversalInboxDryRun",
     "default_field_authority_registry",
     "parse_atlas_command",
+    "parse_reconciliation_invocation",
 ]
+
+from atlas_ros.reconciliation.composite import (
+    CompositeIngressPlan,
+    CompositeIngressReconciler,
+    ReconciliationInvocation,
+    ReconciliationScope,
+    UniversalInboxDryRun,
+    parse_reconciliation_invocation,
+)

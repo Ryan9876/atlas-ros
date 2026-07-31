@@ -31,16 +31,32 @@ class DigestBoundModel(StrictModel):
         return sha256_digest(unsigned.digest_payload())
 
     def digest_payload(self) -> dict[str, Any]:
-        return self.model_dump(
+        payload = self.model_dump(
             mode="json",
             exclude={self.digest_field, *self.digest_excluded_fields},
         )
+        return _strip_ephemeral_digest_fields(payload)
 
     def expected_digest(self) -> str:
         return sha256_digest(self.digest_payload())
 
     def verify_digest(self) -> bool:
         return bool(getattr(self, self.digest_field) == self.expected_digest())
+
+
+def _strip_ephemeral_digest_fields(value: Any) -> Any:
+    """Remove retrieval-only metadata recursively from canonical identities."""
+    if isinstance(value, dict):
+        return {
+            key: _strip_ephemeral_digest_fields(item)
+            for key, item in value.items()
+            if key != "source_retrieved_at"
+        }
+    if isinstance(value, list):
+        return [_strip_ephemeral_digest_fields(item) for item in value]
+    if isinstance(value, tuple):
+        return tuple(_strip_ephemeral_digest_fields(item) for item in value)
+    return value
 
 
 class AuthoritativeSystem(StrEnum):

@@ -14,6 +14,7 @@ from .records import OperationalRecordRefV1
 
 class CommandSourceRefV1(DigestBoundModel):
     digest_field = "source_digest"
+    digest_excluded_fields = frozenset({"source_retrieved_at"})
 
     contract_id: Literal["atlas.command-source-ref"] = "atlas.command-source-ref"
     schema_version: Literal["1.0"] = "1.0"
@@ -22,6 +23,16 @@ class CommandSourceRefV1(DigestBoundModel):
     source_task_revision: str
     source_command_text: str
     parent_task_id: str | None = None
+    source_event_id: str | None = None
+    source_event_type: str | None = None
+    source_comment_id: str | None = None
+    source_author_identity: str | None = None
+    source_posted_at: str | None = None
+    source_retrieved_at: str | None = None
+    source_timezone: str | None = None
+    parent_action_record_id: str | None = None
+    parent_action_record_url: str | None = None
+    parent_outcome_title: str | None = None
     source_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
 
     @classmethod
@@ -130,6 +141,9 @@ class TaskUpdateLifecycleNormalizationV1(DigestBoundModel):
     evidence: tuple[str, ...] = ()
     ambiguity: tuple[str, ...] = ()
     blockers: tuple[str, ...] = ()
+    field_origins: dict[str, str] = Field(default_factory=dict)
+    requires_attended_approval: bool = False
+    resolved_follow_up_date: str | None = None
     normalization_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
 
     @classmethod

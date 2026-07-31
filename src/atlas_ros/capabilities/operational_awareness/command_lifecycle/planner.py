@@ -76,7 +76,7 @@ class CommandLifecycleService:
         next_action = self._next_action(command, responsible, expected_outcome)
         score = 1.0 if not ambiguity and not blockers else max(0.0, 1.0 - 0.2 * len(blockers))
         origin = command.fields.get("intent-origin", "explicit-command")
-        provenance = (
+        provenance_items = [
             ProvenanceRecord(
                 source_ref=(
                     f"{command.source.source_provider.value}:"
@@ -85,8 +85,20 @@ class CommandLifecycleService:
                 ),
                 origin=ValueOrigin.OBSERVED,
                 observed_at=command.source.source_task_revision,
-            ),
-        )
+            )
+        ]
+        for field_name in ("responsible", "outcome", "done-when", "follow-up"):
+            origin_value = command.fields.get(f"field-origin:{field_name}")
+            if not origin_value:
+                continue
+            provenance_items.append(
+                ProvenanceRecord(
+                    source_ref=f"field:{field_name}",
+                    origin=self._value_origin(origin_value),
+                    observed_at=command.source.source_task_revision,
+                )
+            )
+        provenance = tuple(provenance_items)
         return CommandInterpretationV1.create(
             command=command,
             parent_outcome=parent.record_ref if parent is not None else None,
@@ -119,6 +131,14 @@ class CommandLifecycleService:
             blockers=tuple(dict.fromkeys(blockers)),
         )
 
+
+    @staticmethod
+    def _value_origin(value: str) -> ValueOrigin:
+        normalized = value.strip().casefold().replace("_", "-")
+        if normalized in {"inferred", "context-derived", "defaulted-by-policy"}:
+            return ValueOrigin.INFERRED
+        return ValueOrigin.OBSERVED
+
     def plan(
         self,
         interpretation: CommandInterpretationV1,
@@ -138,7 +158,7 @@ class CommandLifecycleService:
         )
         action_title = interpretation.next_ryan_owned_action
         if command.command_type == AtlasCommandType.DELEGATE and interpretation.responsible_party:
-            action_title = (
+            action_title = command.fields.get("checkpoint-title") or (
                 f"Follow up with {interpretation.responsible_party} on {parent.title}"
             )
         state = self._resulting_state(command.command_type)

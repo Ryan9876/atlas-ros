@@ -43,6 +43,7 @@ class TodoistComment(BaseModel):
     task_id: str
     content: str
     posted_at: str = ""
+    posted_uid: str | None = None
 
 
 class TodoistProject(BaseModel):
@@ -67,6 +68,7 @@ class TodoistAdapter(Protocol):
     ) -> TodoistTask: ...
     def get_task(self, task_id: str) -> TodoistTask: ...
     def update_task(self, task_id: str, **changes: Any) -> TodoistTask: ...
+    def complete_task(self, task_id: str) -> TodoistTask: ...
     def list_tasks(self, *, project_id: str = "", parent_id: str = "") -> list[TodoistTask]: ...
     def list_comments(self, task_id: str) -> list[TodoistComment]: ...
     def list_completed_tasks(self, since: datetime) -> list[TodoistTask]: ...
@@ -248,6 +250,19 @@ class LiveTodoistAdapter:
         self._request("POST", f"/tasks/{task_id}", payload)
         return self.get_task(task_id)
 
+    def complete_task(self, task_id: str) -> TodoistTask:
+        self._request("POST", f"/tasks/{task_id}/close")
+        try:
+            return self.get_task(task_id)
+        except AdapterError:
+            return TodoistTask(
+                id=task_id,
+                content="",
+                project_id="",
+                checked=True,
+                completed_at=datetime.now(UTC).isoformat(),
+            )
+
     def list_tasks(self, *, project_id: str = "", parent_id: str = "") -> list[TodoistTask]:
         query: list[str] = []
         if project_id:
@@ -264,6 +279,11 @@ class LiveTodoistAdapter:
                 task_id=str(item.get("task_id", item.get("item_id", task_id))),
                 content=str(item.get("content", "")),
                 posted_at=str(item.get("posted_at", "") or ""),
+                posted_uid=(
+                    str(item.get("posted_uid"))
+                    if item.get("posted_uid") is not None
+                    else None
+                ),
             )
             for item in self._list(f"/comments?task_id={task_id}")
             if "id" in item
@@ -338,6 +358,18 @@ class FakeTodoistAdapter:
         if task_id not in self.tasks:
             raise KeyError(task_id)
         task = self.tasks[task_id].model_copy(update=changes)
+        self.tasks[task_id] = task
+        return task
+
+    def complete_task(self, task_id: str) -> TodoistTask:
+        if task_id not in self.tasks:
+            raise KeyError(task_id)
+        task = self.tasks[task_id].model_copy(
+            update={
+                "checked": True,
+                "completed_at": datetime.now(UTC).isoformat(),
+            }
+        )
         self.tasks[task_id] = task
         return task
 

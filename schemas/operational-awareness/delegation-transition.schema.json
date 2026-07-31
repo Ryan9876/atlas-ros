@@ -266,6 +266,42 @@
           "title": "Contract Id",
           "type": "string"
         },
+        "parent_action_record_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Parent Action Record Id"
+        },
+        "parent_action_record_url": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Parent Action Record Url"
+        },
+        "parent_outcome_title": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Parent Outcome Title"
+        },
         "parent_task_id": {
           "anyOf": [
             {
@@ -284,17 +320,89 @@
           "title": "Schema Version",
           "type": "string"
         },
+        "source_author_identity": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Source Author Identity"
+        },
         "source_command_text": {
           "title": "Source Command Text",
           "type": "string"
+        },
+        "source_comment_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Source Comment Id"
         },
         "source_digest": {
           "pattern": "^[0-9a-f]{64}$",
           "title": "Source Digest",
           "type": "string"
         },
+        "source_event_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Source Event Id"
+        },
+        "source_event_type": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Source Event Type"
+        },
+        "source_posted_at": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Source Posted At"
+        },
         "source_provider": {
           "$ref": "#/$defs/AuthoritativeSystem"
+        },
+        "source_retrieved_at": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Source Retrieved At"
         },
         "source_task_id": {
           "title": "Source Task Id",
@@ -303,6 +411,18 @@
         "source_task_revision": {
           "title": "Source Task Revision",
           "type": "string"
+        },
+        "source_timezone": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Source Timezone"
         }
       },
       "required": [

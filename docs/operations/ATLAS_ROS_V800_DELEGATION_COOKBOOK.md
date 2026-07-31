@@ -2,7 +2,7 @@
 
 ## Version boundary
 
-This section applies only to the Atlas ROS v8.0.0 candidate and later releases that explicitly retain the contract. Atlas ROS v7.8.0 remains the Active authority until v8.0.0 is published, independently verified, and separately activated.
+This section documents the delegation contract introduced by Atlas ROS v8.0.0 and retained by the Active v8.1.0 release. The v8.2.0 candidate extends its ingress and bounded language recognition without changing the attended execution boundary.
 
 ## Safety boundary
 
@@ -119,7 +119,7 @@ Bill may take this.
 
 A qualified delegation plans one authoritative Notion Delegated Work upsert containing the delegate, governed delegate identity, accountable owner, governed accountable-owner identity, expected outcome, completion criteria, delegated date, delegate due date, Ryan follow-up checkpoint, acceptance status, effective state, parent Action Record, source update, provenance, command digest, idempotency identity, Todoist checkpoint identity and URL after readback, and latest reconciliation state. Notion remains the system of record for management state.
 
-The v8.0.0 migration is additive and remains unapplied until the exact release is authorized and activated. Existing v7.8.0 production schemas remain unchanged before activation.
+The v8.0.0 ten-field Delegated Work migration is already applied and remains authoritative under v8.1.0. The v8.2.0 candidate requires no additional production Notion schema migration.
 
 ## Generated Todoist checkpoint
 
@@ -156,3 +156,7 @@ The plan has no execution authority. An exact attended authorization must bind t
 ## No-provider-write examples
 
 No provider write is allowed when ownership is tentative, a person is merely mentioned, the responsible identity is unresolved, the expected outcome is absent, completion criteria are absent, a material date meaning is ambiguous, the parent outcome is unresolved, or attended authorization is absent.
+
+## v8.2.0 candidate expansion
+
+The v8.2.0 candidate adds ordinary Todoist comment ingestion and bounded phrases such as `Kweku is going to document what happened` and `I need to follow up with him on Monday`. Same-comment pronouns require exactly one antecedent. Derived outcomes, completion criteria, and dates are labeled by origin and require attended approval. This candidate section is not production authority until an exact package is independently validated, authorized, published, and activated.

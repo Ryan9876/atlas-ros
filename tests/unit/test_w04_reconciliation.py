@@ -95,7 +95,7 @@ def test_structured_comments_create_governed_mutations(tmp_path) -> None:
     kinds = {mutation.mutation_type for mutation in plan.mutations}
     assert MutationType.DELEGATION_UPSERT in kinds
     assert MutationType.BLOCKER_UPSERT in kinds
-    assert "comment:c3" in plan.ignored
+    assert any(item.startswith("todoist-comment:c3:") for item in plan.ignored)
 
 
 def test_apply_requires_confirmation_and_deduplicates_comments(tmp_path) -> None:
@@ -342,7 +342,7 @@ def test_conflict_mutations_are_aggregated_in_plan(tmp_path) -> None:
     assert "mapped Todoist task was not found" in plan.conflicts[0]
 
 
-def test_shared_checkpoint_suppresses_unledgered_older_comment(tmp_path) -> None:
+def test_unseen_older_comment_is_not_suppressed_by_shared_checkpoint(tmp_path) -> None:
     notion = FakeNotionAdapter()
     action_fixture(notion)
     todoist = FakeTodoistAdapter()
@@ -366,7 +366,7 @@ def test_shared_checkpoint_suppresses_unledgered_older_comment(tmp_path) -> None
 
     plan = reconciler.plan(task_id="task-1")
 
-    assert not any(m.command_id == "old-comment" for m in plan.mutations)
+    assert any(m.command_id == "old-comment" for m in plan.mutations)
 
 
 def test_shared_checkpoint_keeps_newer_unprocessed_comment(tmp_path) -> None:

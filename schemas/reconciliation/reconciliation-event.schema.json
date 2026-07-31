@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas.local/schemas/reconciliation/reconciliation-event.schema.json",
+  "title": "Atlas Reconciliation Event",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "event_id", "event_type", "source_provider", "source_task_id",
+    "source_comment_id", "source_posted_at", "source_digest",
+    "interpretation_classification", "interpretation_status", "processed_at",
+    "execution_surface"
+  ],
+  "properties": {
+    "event_id": {"type": "string", "minLength": 1},
+    "event_type": {"type": "string"},
+    "source_provider": {"enum": ["Todoist"]},
+    "source_task_id": {"type": "string"},
+    "source_comment_id": {"type": "string"},
+    "source_posted_at": {"type": "string", "format": "date-time"},
+    "source_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "interpretation_classification": {
+      "enum": ["delegate", "waiting-on", "blocked", "complete", "update", "informational", "no-action", "clarification-required"]
+    },
+    "interpretation_status": {
+      "enum": ["Proposed", "Awaiting Approval", "Applied", "Blocked", "Informational", "Ignored", "Failed"]
+    },
+    "confidence": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
+    "blockers": {"type": "array", "items": {"type": "string"}},
+    "command_digest": {"type": "string"},
+    "plan_digest": {"type": "string"},
+    "authorization_identity": {"type": "string"},
+    "processing_outcome": {"type": "string"},
+    "processed_at": {"type": "string", "format": "date-time"},
+    "execution_surface": {"type": "string"}
+  }
+}
