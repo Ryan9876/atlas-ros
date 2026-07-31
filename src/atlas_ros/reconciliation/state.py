@@ -3,9 +3,10 @@ from __future__ import annotations
 import json
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
+from collections.abc import Mapping
 from datetime import UTC, datetime, timedelta
 from enum import StrEnum
-from typing import Any, Mapping
+from typing import Any
 
 from atlas_ros.adapters.notion import NotionAdapter, NotionPage
 from atlas_ros.runtime.database import RuntimeDatabase
