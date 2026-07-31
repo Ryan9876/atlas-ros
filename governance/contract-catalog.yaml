@@ -289,6 +289,22 @@ contracts:
   - 1.x
   writer: '1.0'
   compatibility: additive_only_within_major
+- id: atlas.clarification-analysis
+  schema_version: '1.0'
+  owner: command_lifecycle
+  schema: schemas/operational-awareness/clarification-analysis.schema.json
+  readers:
+  - 1.x
+  writer: '1.0'
+  compatibility: additive_only_within_major
+- id: atlas.clarification-resolution
+  schema_version: '1.0'
+  owner: command_lifecycle
+  schema: schemas/operational-awareness/clarification-resolution.schema.json
+  readers:
+  - 1.x
+  writer: '1.0'
+  compatibility: additive_only_within_major
 - id: atlas.provider-operation-spec
   schema_version: '1.0'
   owner: command_lifecycle

@@ -20,7 +20,7 @@ def test_status_is_lightweight_and_reports_no_writes(capsys: pytest.CaptureFixtu
         "provider_writes": 0,
         "runtime_identity": "installed_package",
         "status": "installed_runtime_available",
-        "version": "8.0.0",
+        "version": "8.1.0",
     }
     assert "active_production_version" not in payload
 
@@ -52,7 +52,7 @@ def test_runtime_verify_checks_only_installed_identity(
         "production_authority_loaded": False,
         "scope": "installed_runtime_identity",
         "valid": True,
-        "version": "8.0.0",
+        "version": "8.1.0",
         "writes": False,
     }
 

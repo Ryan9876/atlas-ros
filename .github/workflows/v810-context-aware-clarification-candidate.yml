@@ -1,0 +1,408 @@
+name: v8.1.0 context-aware clarification candidate
+
+on:
+  workflow_dispatch:
+    inputs:
+      candidate_commit:
+        description: Exact frozen candidate commit SHA
+        required: true
+        type: string
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, ready_for_review]
+    paths:
+      - '.github/workflows/v810-*'
+      - 'pyproject.toml'
+      - 'src/atlas_ros/__init__.py'
+      - 'src/atlas_ros/contracts/operational_awareness/clarification.py'
+      - 'src/atlas_ros/contracts/operational_awareness/__init__.py'
+      - 'src/atlas_ros/capabilities/operational_awareness/clarification*.py'
+      - 'src/atlas_ros/capabilities/operational_awareness/__init__.py'
+      - 'src/atlas_ros/application/clarification_workflow.py'
+      - 'src/atlas_ros/application/__init__.py'
+      - 'schemas/operational-awareness/clarification-*.schema.json'
+      - 'governance/contract-catalog.yaml'
+      - 'governance/capability-catalog.yaml'
+      - 'tests/unit/test_v810_*'
+      - 'tests/integration/test_v810_*'
+      - 'docs/**/V810*'
+      - 'docs/adr/ADR-0081-*'
+      - 'docs/operations/CLARIFICATION_*'
+      - 'release/*V810*'
+      - 'scripts/*v810*'
+
+concurrency:
+  group: v810-clarification-${{ github.event.pull_request.number || inputs.candidate_commit || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  CANDIDATE_VERSION: 8.1.0
+
+jobs:
+  lean:
+    if: github.event_name == 'pull_request' && github.event.action != 'ready_for_review'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 1
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.12.10'
+          cache: pip
+      - run: python -m pip install --disable-pip-version-check -e '.[ci]'
+      - name: Targeted static validation
+        run: |
+          ruff check \
+            src/atlas_ros/__init__.py \
+            src/atlas_ros/contracts/operational_awareness/clarification.py \
+            src/atlas_ros/contracts/operational_awareness/__init__.py \
+            src/atlas_ros/capabilities/operational_awareness/clarification.py \
+            src/atlas_ros/capabilities/operational_awareness/clarification_compatibility.py \
+            src/atlas_ros/capabilities/operational_awareness/__init__.py \
+            src/atlas_ros/application/clarification_workflow.py \
+            src/atlas_ros/application/__init__.py \
+            tests/unit/test_v810_context_aware_clarification.py \
+            tests/integration/test_v810_attended_clarification_workflow.py
+          mypy \
+            src/atlas_ros/contracts/operational_awareness/clarification.py \
+            src/atlas_ros/capabilities/operational_awareness/clarification.py \
+            src/atlas_ros/capabilities/operational_awareness/clarification_compatibility.py \
+            src/atlas_ros/application/clarification_workflow.py
+          python scripts/validate_architecture.py
+          python scripts/validate_devtools_boundary.py
+      - name: Targeted clarification tests
+        run: |
+          pytest --no-cov -q \
+            tests/unit/test_v810_context_aware_clarification.py \
+            tests/integration/test_v810_attended_clarification_workflow.py \
+            tests/test_v752_clarification_evaluation.py
+      - name: Catalog and schema smoke validation
+        run: |
+          pytest --no-cov -q tests/unit/test_v700_contract_compiler.py
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from atlas_ros.contracts.operational_awareness import (
+              ClarificationAnalysisV1,
+              ClarificationResolutionV1,
+          )
+          for path in (
+              Path('schemas/operational-awareness/clarification-analysis.schema.json'),
+              Path('schemas/operational-awareness/clarification-resolution.schema.json'),
+          ):
+              payload = json.loads(path.read_text())
+              assert payload['$schema'] == 'https://json-schema.org/draft/2020-12/schema'
+          assert ClarificationAnalysisV1.model_json_schema()
+          assert ClarificationResolutionV1.model_json_schema()
+          PY
+
+  full-candidate:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'pull_request' &&
+       github.event.action == 'ready_for_review' &&
+       github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.head.ref == 'agent/v8.1.0-context-aware-clarification')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    env:
+      CANDIDATE_COMMIT: ${{ inputs.candidate_commit || github.event.pull_request.head.sha }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          ref: ${{ inputs.candidate_commit || github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          fetch-tags: true
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.12.10'
+          cache: pip
+      - run: python -m pip install --disable-pip-version-check -e '.[dev]'
+      - name: Bind exact source and live restoration authority
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$CANDIDATE_COMMIT"
+          mkdir -p build dist clean-install restoration
+          git rev-parse HEAD > build/SOURCE_COMMIT.txt
+          git ls-tree -r --full-tree HEAD > build/SOURCE_TREE.txt
+          git fetch --no-tags origin main:refs/remotes/origin/main
+          git show origin/main:governance/AUTHORITY.json > build/LIVE_AUTHORITY.json
+          python - <<'PY' >> "$GITHUB_ENV"
+          import json
+          from pathlib import Path
+          authority = json.loads(Path('build/LIVE_AUTHORITY.json').read_text())
+          active = authority['active_release']
+          rollback = authority['immediate_rollback']
+          assert active['status'] == 'Active'
+          for key, value in {
+              'ACTIVE_VERSION': active['version'],
+              'ACTIVE_TAG': active['tag'],
+              'ACTIVE_COMMIT': active['immutable_commit'],
+              'ACTIVE_MANIFEST_PATH': active['manifest_path'],
+              'ACTIVE_MANIFEST_SHA256': active['manifest_sha256'],
+              'ACTIVE_SOURCE_SHA256': active['source_sha256'],
+              'ACTIVE_WHEEL_SHA256': active['wheel_sha256'],
+              'ROLLBACK_VERSION': rollback['version'],
+              'ROLLBACK_TAG': rollback['tag'],
+              'ROLLBACK_COMMIT': rollback['immutable_commit'],
+          }.items():
+              print(f'{key}={value}')
+          PY
+      - name: Complete correctness gates
+        run: |
+          ruff check \
+            src/atlas_ros/__init__.py \
+            src/atlas_ros/contracts/operational_awareness/clarification.py \
+            src/atlas_ros/contracts/operational_awareness/__init__.py \
+            src/atlas_ros/capabilities/operational_awareness/clarification.py \
+            src/atlas_ros/capabilities/operational_awareness/clarification_compatibility.py \
+            src/atlas_ros/capabilities/operational_awareness/__init__.py \
+            src/atlas_ros/application/clarification_workflow.py \
+            src/atlas_ros/application/__init__.py \
+            tests/unit/test_v810_context_aware_clarification.py \
+            tests/integration/test_v810_attended_clarification_workflow.py
+          mypy \
+            src/atlas_ros/contracts/operational_awareness/clarification.py \
+            src/atlas_ros/capabilities/operational_awareness/clarification.py \
+            src/atlas_ros/capabilities/operational_awareness/clarification_compatibility.py \
+            src/atlas_ros/application/clarification_workflow.py
+          python scripts/validate_architecture.py
+          python scripts/validate_devtools_boundary.py
+          pytest --junitxml=build/V810_TEST_RESULTS.xml \
+            --cov=atlas_ros \
+            --cov-report=term \
+            --cov-report=json:build/V810_COVERAGE.json
+      - name: Validate clarification evidence and zero-write replay
+        run: |
+          pytest --no-cov -q \
+            tests/unit/test_v810_context_aware_clarification.py \
+            tests/integration/test_v810_attended_clarification_workflow.py \
+            tests/test_v752_clarification_evaluation.py
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from atlas_ros.application.clarification_workflow import (
+              AttendedClarificationWorkflow,
+              AttendedInboxItem,
+          )
+          from atlas_ros.capabilities.operational_awareness import (
+              ContextAwareClarificationAnalyzer,
+          )
+          engine = ContextAwareClarificationAnalyzer()
+          flow = AttendedClarificationWorkflow(engine)
+          item = AttendedInboxItem('cap-lew', 'corr-lew', 'build phase 1 or lew')
+          analysis = engine.analyze(item.instruction)
+          result = flow.resume(
+              item=item,
+              analysis=analysis,
+              user_response='It was supposed to say build phase 1 of lew.',
+              normalized_instruction='Build Phase 1 of LEW.',
+          )
+          evidence = {
+              'analysis_digest': analysis.analysis_digest,
+              'resolution_digest': result.resolution.resolution_digest,
+              'resumption_receipt_digest': result.receipt.receipt_digest,
+              'leading_interpretation': analysis.leading_interpretation,
+              'question': analysis.clarification_question,
+              'follow_up_category': result.follow_up_analysis.ambiguity_category.value,
+              'provider_writes': 0,
+              'todoist_writes': 0,
+              'notion_writes': 0,
+              'execution_authorized': False,
+              'routing_allowed': False,
+          }
+          Path('build/V810_CLARIFICATION_EVIDENCE.json').write_text(
+              json.dumps(evidence, indent=2, sort_keys=True) + '\n'
+          )
+          PY
+      - name: Secret and dependency audits
+        run: |
+          rm -rf secret-scan-root && mkdir secret-scan-root
+          while IFS= read -r -d '' file; do
+            mkdir -p "secret-scan-root/$(dirname "$file")"
+            cp "$file" "secret-scan-root/$file"
+          done < <(git diff --name-only -z --diff-filter=ACMR origin/main...HEAD -- '*.cfg' '*.ini' '*.json' '*.md' '*.py' '*.toml' '*.txt' '*.yaml' '*.yml')
+          python scripts/scan_candidate_secrets.py \
+            --root secret-scan-root \
+            --output build/V810_SECRET_SCAN.json
+          pip-audit --disable-pip --require-hashes --no-deps --timeout 15 \
+            --progress-spinner off --vulnerability-service pypi \
+            --requirement requirements.runtime.lock --format json \
+            --output build/V810_PIP_AUDIT_PYPI.json
+          pip-audit --disable-pip --require-hashes --no-deps --timeout 15 \
+            --progress-spinner off --vulnerability-service osv \
+            --requirement requirements.runtime.lock --format json \
+            --output build/V810_PIP_AUDIT_OSV.json
+          python scripts/evaluate_dependency_audit.py \
+            build/V810_PIP_AUDIT_PYPI.json \
+            build/V810_PIP_AUDIT_OSV.json
+      - name: Build exact package once
+        run: |
+          rm -rf dist
+          python -m build
+          test -f dist/atlas_ros-8.1.0.tar.gz
+          test -f dist/atlas_ros-8.1.0-py3-none-any.whl
+          test "$(find dist -maxdepth 1 -type f | wc -l)" -eq 2
+          printf '1\n' > build/BUILD_COUNT.txt
+          sha256sum dist/* > build/PACKAGE_CHECKSUMS.sha256
+      - name: Clean source and wheel installation
+        run: |
+          for kind in sdist wheel; do
+            package=dist/atlas_ros-8.1.0.tar.gz
+            [ "$kind" = wheel ] && package=dist/atlas_ros-8.1.0-py3-none-any.whl
+            python -m venv "clean-install/$kind"
+            "clean-install/$kind/bin/python" -m pip install \
+              --disable-pip-version-check "$package"
+            "clean-install/$kind/bin/python" -c \
+              "import atlas_ros; assert atlas_ros.__version__ == '8.1.0'"
+            "clean-install/$kind/bin/atlas" status --json \
+              > "build/${kind}-status.json"
+            "clean-install/$kind/bin/atlas" verify --json \
+              > "build/${kind}-verify.json"
+          done
+      - name: Restore current Active release and immediate rollback
+        run: |
+          set -euo pipefail
+          test "$(git rev-list -n 1 "$ACTIVE_TAG")" = "$ACTIVE_COMMIT"
+          test "$(git rev-list -n 1 "$ROLLBACK_TAG")" = "$ROLLBACK_COMMIT"
+          git show "$ACTIVE_COMMIT:$ACTIVE_MANIFEST_PATH" > build/ACTIVE_RELEASE_MANIFEST.md
+          test "$(sha256sum build/ACTIVE_RELEASE_MANIFEST.md | cut -d' ' -f1)" = "$ACTIVE_MANIFEST_SHA256"
+          rollback_manifest="$(
+            git ls-tree -r --name-only "$ROLLBACK_COMMIT" -- release |
+            while IFS= read -r path; do
+              case "$path" in
+                release/RELEASE_MANIFEST_*.md)
+                  if git show "$ROLLBACK_COMMIT:$path" |
+                    grep -Fq "Release version: \`$ROLLBACK_VERSION\`"; then
+                    printf '%s\n' "$path"
+                    break
+                  fi
+                  ;;
+              esac
+            done
+          )"
+          test -n "$rollback_manifest"
+          git show "$ROLLBACK_COMMIT:$rollback_manifest" > build/ROLLBACK_RELEASE_MANIFEST.md
+          rollback_source_sha="$(sed -n 's/^- Source distribution SHA-256: `\([0-9a-f]\{64\}\)`.*/\1/p' build/ROLLBACK_RELEASE_MANIFEST.md)"
+          rollback_wheel_sha="$(sed -n 's/^- Wheel SHA-256: `\([0-9a-f]\{64\}\)`.*/\1/p' build/ROLLBACK_RELEASE_MANIFEST.md)"
+          test -n "$rollback_source_sha"
+          test -n "$rollback_wheel_sha"
+          active_dir="restoration/active-${ACTIVE_VERSION}"
+          rollback_dir="restoration/rollback-${ROLLBACK_VERSION}"
+          mkdir -p "$active_dir" "$rollback_dir"
+          gh release download "$ACTIVE_TAG" --repo "$GITHUB_REPOSITORY" --dir "$active_dir"
+          gh release download "$ROLLBACK_TAG" --repo "$GITHUB_REPOSITORY" --dir "$rollback_dir"
+          active_sdist="$(find "$active_dir" -maxdepth 1 -type f -name "atlas_ros-${ACTIVE_VERSION}.tar.gz" -print -quit)"
+          active_wheel="$(find "$active_dir" -maxdepth 1 -type f -name "atlas_ros-${ACTIVE_VERSION}-py3-none-any.whl" -print -quit)"
+          rollback_sdist="$(find "$rollback_dir" -maxdepth 1 -type f -name "atlas_ros-${ROLLBACK_VERSION}.tar.gz" -print -quit)"
+          rollback_wheel="$(find "$rollback_dir" -maxdepth 1 -type f -name "atlas_ros-${ROLLBACK_VERSION}-py3-none-any.whl" -print -quit)"
+          test "$(sha256sum "$active_sdist" | cut -d' ' -f1)" = "$ACTIVE_SOURCE_SHA256"
+          test "$(sha256sum "$active_wheel" | cut -d' ' -f1)" = "$ACTIVE_WHEEL_SHA256"
+          test "$(sha256sum "$rollback_sdist" | cut -d' ' -f1)" = "$rollback_source_sha"
+          test "$(sha256sum "$rollback_wheel" | cut -d' ' -f1)" = "$rollback_wheel_sha"
+          printf '%s\n' "$ACTIVE_COMMIT" > build/ACTIVE_RESTORATION_COMMIT.txt
+          printf '%s\n' "$ROLLBACK_COMMIT" > build/ROLLBACK_RESTORATION_COMMIT.txt
+          printf '%s\n' "$rollback_manifest" > build/ROLLBACK_MANIFEST_PATH.txt
+      - name: Generate exact candidate evidence
+        run: |
+          python - <<'PY'
+          import hashlib
+          import json
+          import os
+          from pathlib import Path
+
+          def digest(path: str) -> str:
+              return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+
+          source_commit = Path('build/SOURCE_COMMIT.txt').read_text().strip()
+          coverage = json.loads(Path('build/V810_COVERAGE.json').read_text())
+          receipt = {
+              'schema_version': 'v810-candidate-receipt-v1',
+              'candidate_commit': source_commit,
+              'version': '8.1.0',
+              'build_count': 1,
+              'tests': 'passed',
+              'total_coverage': coverage['totals']['percent_covered'],
+              'provider_writes': 0,
+              'todoist_writes': 0,
+              'notion_writes': 0,
+              'production_schema_changes': 0,
+              'active_restoration_version': os.environ['ACTIVE_VERSION'],
+              'active_restoration_commit': os.environ['ACTIVE_COMMIT'],
+              'rollback_restoration_version': os.environ['ROLLBACK_VERSION'],
+              'rollback_restoration_commit': os.environ['ROLLBACK_COMMIT'],
+              'publication_authorized': False,
+              'authority_activation_authorized': False,
+          }
+          Path('build/V810_VALIDATION_RECEIPT.json').write_text(
+              json.dumps(receipt, indent=2, sort_keys=True) + '\n'
+          )
+          sbom = {
+              'spdxVersion': 'SPDX-2.3',
+              'dataLicense': 'CC0-1.0',
+              'SPDXID': 'SPDXRef-DOCUMENT',
+              'name': 'atlas-ros-8.1.0',
+              'documentNamespace': f'https://atlas-ros.local/sbom/{source_commit}',
+              'creationInfo': {
+                  'created': '2026-07-30T00:00:00Z',
+                  'creators': ['Tool: atlas-ros-v810-candidate-workflow'],
+              },
+              'packages': [{
+                  'name': 'atlas-ros',
+                  'SPDXID': 'SPDXRef-Package-atlas-ros',
+                  'versionInfo': '8.1.0',
+                  'downloadLocation': 'NOASSERTION',
+                  'filesAnalyzed': False,
+                  'licenseConcluded': 'NOASSERTION',
+                  'licenseDeclared': 'NOASSERTION',
+              }],
+          }
+          Path('build/V810_SBOM.spdx.json').write_text(
+              json.dumps(sbom, indent=2, sort_keys=True) + '\n'
+          )
+          source_tree = digest('build/SOURCE_TREE.txt')
+          Path('build/SOURCE_TREE_SHA256.txt').write_text(source_tree + '\n')
+          index = {
+              'candidate_commit': source_commit,
+              'source_sha256': digest('dist/atlas_ros-8.1.0.tar.gz'),
+              'wheel_sha256': digest('dist/atlas_ros-8.1.0-py3-none-any.whl'),
+              'sbom_sha256': digest('build/V810_SBOM.spdx.json'),
+              'validation_receipt_sha256': digest('build/V810_VALIDATION_RECEIPT.json'),
+              'clarification_evidence_sha256': digest(
+                  'build/V810_CLARIFICATION_EVIDENCE.json'
+              ),
+              'source_tree_sha256': source_tree,
+              'build_count': 1,
+          }
+          Path('build/V810_PACKAGE_INDEX.json').write_text(
+              json.dumps(index, indent=2, sort_keys=True) + '\n'
+          )
+          PY
+          sha256sum \
+            build/V810_VALIDATION_RECEIPT.json \
+            build/V810_CLARIFICATION_EVIDENCE.json \
+            build/V810_SBOM.spdx.json \
+            build/V810_PACKAGE_INDEX.json \
+            > build/EVIDENCE_CHECKSUMS.sha256
+          sha256sum -c build/PACKAGE_CHECKSUMS.sha256
+          sha256sum -c build/EVIDENCE_CHECKSUMS.sha256
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: atlas-ros-v810-candidate-${{ env.CANDIDATE_COMMIT }}
+          path: |
+            dist/
+            build/
+            release/RELEASE_MANIFEST_V810_DRAFT.md
+            release/V810_FULL_VALIDATION_PLAN.md
+          if-no-files-found: error
+          retention-days: 90

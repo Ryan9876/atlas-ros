@@ -1,0 +1,176 @@
+name: v8.1.0 independent candidate readback
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/v810-independent-candidate-readback.yml'
+      - 'release/V810_INDEPENDENT_CANDIDATE_READBACK.md'
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: v810-independent-candidate-readback
+  cancel-in-progress: false
+
+jobs:
+  readback:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      GH_TOKEN: ${{ github.token }}
+      PACKAGE_SOURCE_COMMIT: 8843a97e58efe46e632335df95487855b7971a75
+      CANDIDATE_RUN_ID: '30593561321'
+      CANDIDATE_ARTIFACT_ID: '8779256493'
+      CANDIDATE_ARTIFACT_SHA256: dc2f5d93f1d3aafe34d680f6c797fd190d0b2570e9e854cc2917057d0591a22a
+      SOURCE_SHA256: f95eb2bcfc7875f6920061d9c5124c5be2cd5dc6dbbbce1cb671f5acdd1bec95
+      WHEEL_SHA256: 97a3da1e1e239f5c8fd5af89b38a5c4c1005459e0fc77f830ba4915c6f81fa31
+      SBOM_SHA256: e60407aea084ad55cd287bfbf4feb0f61ed6c80036e6b91128f33f8ae73a0d0e
+      VALIDATION_RECEIPT_SHA256: 2ef1adc95b3d9e3ec268484fa1ab26c097d52d12f3b6061895ac3501a2f4fafc
+      CLARIFICATION_EVIDENCE_SHA256: df2558d519c4bdc1ee151c0c062b6a25768e5117df6cd1a95a4bdc2f0132a33f
+      SOURCE_TREE_SHA256: 6af181fa96e4147241d4c8527124225271f648e1e56d0dd1339a0e920b93fd18
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.12.10'
+      - name: Download exact retained candidate without rebuilding
+        run: |
+          set -euo pipefail
+          mkdir -p readback/package
+          gh api \
+            -H 'Accept: application/vnd.github+json' \
+            "/repos/$GITHUB_REPOSITORY/actions/artifacts/$CANDIDATE_ARTIFACT_ID/zip" \
+            > readback/candidate.zip
+          test "$(sha256sum readback/candidate.zip | cut -d' ' -f1)" = "$CANDIDATE_ARTIFACT_SHA256"
+          unzip -q readback/candidate.zip -d readback/package
+      - name: Verify exact package and nested evidence
+        run: |
+          set -euo pipefail
+          cd readback/package
+          test "$(cat build/SOURCE_COMMIT.txt)" = "$PACKAGE_SOURCE_COMMIT"
+          test "$(cat build/BUILD_COUNT.txt)" = '1'
+          sha256sum -c build/PACKAGE_CHECKSUMS.sha256
+          sha256sum -c build/EVIDENCE_CHECKSUMS.sha256
+          test "$(sha256sum dist/atlas_ros-8.1.0.tar.gz | cut -d' ' -f1)" = "$SOURCE_SHA256"
+          test "$(sha256sum dist/atlas_ros-8.1.0-py3-none-any.whl | cut -d' ' -f1)" = "$WHEEL_SHA256"
+          test "$(sha256sum build/V810_SBOM.spdx.json | cut -d' ' -f1)" = "$SBOM_SHA256"
+          test "$(sha256sum build/V810_VALIDATION_RECEIPT.json | cut -d' ' -f1)" = "$VALIDATION_RECEIPT_SHA256"
+          test "$(sha256sum build/V810_CLARIFICATION_EVIDENCE.json | cut -d' ' -f1)" = "$CLARIFICATION_EVIDENCE_SHA256"
+          test "$(cat build/SOURCE_TREE_SHA256.txt)" = "$SOURCE_TREE_SHA256"
+          python - <<'PY'
+          import json
+          import xml.etree.ElementTree as ET
+          from pathlib import Path
+          index = json.loads(Path('build/V810_PACKAGE_INDEX.json').read_text())
+          assert index == {
+              'build_count': 1,
+              'candidate_commit': '8843a97e58efe46e632335df95487855b7971a75',
+              'clarification_evidence_sha256': 'df2558d519c4bdc1ee151c0c062b6a25768e5117df6cd1a95a4bdc2f0132a33f',
+              'sbom_sha256': 'e60407aea084ad55cd287bfbf4feb0f61ed6c80036e6b91128f33f8ae73a0d0e',
+              'source_sha256': 'f95eb2bcfc7875f6920061d9c5124c5be2cd5dc6dbbbce1cb671f5acdd1bec95',
+              'source_tree_sha256': '6af181fa96e4147241d4c8527124225271f648e1e56d0dd1339a0e920b93fd18',
+              'validation_receipt_sha256': '2ef1adc95b3d9e3ec268484fa1ab26c097d52d12f3b6061895ac3501a2f4fafc',
+              'wheel_sha256': '97a3da1e1e239f5c8fd5af89b38a5c4c1005459e0fc77f830ba4915c6f81fa31',
+          }
+          receipt = json.loads(Path('build/V810_VALIDATION_RECEIPT.json').read_text())
+          assert receipt['tests'] == 'passed'
+          assert receipt['total_coverage'] >= 85
+          assert receipt['provider_writes'] == 0
+          assert receipt['notion_writes'] == 0
+          assert receipt['todoist_writes'] == 0
+          assert receipt['production_schema_changes'] == 0
+          root = ET.parse('build/V810_TEST_RESULTS.xml').getroot()
+          suites = root.findall('testsuite') if root.tag == 'testsuites' else [root]
+          assert sum(int(s.attrib.get('tests', 0)) for s in suites) == 1042
+          assert sum(int(s.attrib.get('failures', 0)) for s in suites) == 0
+          assert sum(int(s.attrib.get('errors', 0)) for s in suites) == 0
+          assert sum(int(s.attrib.get('skipped', 0)) for s in suites) == 0
+          PY
+      - name: Independently clean-install source and wheel
+        run: |
+          set -euo pipefail
+          for kind in sdist wheel; do
+            package=readback/package/dist/atlas_ros-8.1.0.tar.gz
+            [ "$kind" = wheel ] && package=readback/package/dist/atlas_ros-8.1.0-py3-none-any.whl
+            python -m venv "readback/$kind"
+            "readback/$kind/bin/python" -m pip install --disable-pip-version-check "$package"
+            "readback/$kind/bin/python" -c "import atlas_ros; assert atlas_ros.__version__ == '8.1.0'"
+            "readback/$kind/bin/atlas" verify --json > "readback/${kind}-verify.json"
+            python - "$kind" <<'PY'
+          import json
+          import sys
+          from pathlib import Path
+          payload = json.loads(Path(f'readback/{sys.argv[1]}-verify.json').read_text())
+          assert payload == {
+              'production_authority_loaded': False,
+              'scope': 'installed_runtime_identity',
+              'valid': True,
+              'version': '8.1.0',
+              'writes': False,
+          }
+          PY
+          done
+      - name: Independently verify restoration evidence and live authority remains unchanged
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          authority = json.loads(Path('readback/package/build/LIVE_AUTHORITY.json').read_text())
+          assert authority['active_release']['version'] == '8.0.0'
+          assert authority['active_release']['immutable_commit'] == '6f05b24fd410ab1f00578019e5336185181ee265'
+          assert authority['immediate_rollback']['version'] == '7.8.0'
+          assert authority['immediate_rollback']['immutable_commit'] == '72974d1d7da9f07a4c8a41b73b22c0fae3770268'
+          assert Path('readback/package/build/ACTIVE_RESTORATION_COMMIT.txt').read_text().strip() == authority['active_release']['immutable_commit']
+          assert Path('readback/package/build/ROLLBACK_RESTORATION_COMMIT.txt').read_text().strip() == authority['immediate_rollback']['immutable_commit']
+          PY
+      - name: Create independent readback receipt
+        run: |
+          python - <<'PY'
+          import hashlib
+          import json
+          from pathlib import Path
+          receipt = {
+              'schema_version': 'v810-independent-candidate-readback-v1',
+              'package_source_commit': '8843a97e58efe46e632335df95487855b7971a75',
+              'candidate_run_id': 30593561321,
+              'candidate_artifact_id': 8779256493,
+              'candidate_artifact_sha256': 'dc2f5d93f1d3aafe34d680f6c797fd190d0b2570e9e854cc2917057d0591a22a',
+              'build_count': 1,
+              'tests': 1042,
+              'failures': 0,
+              'coverage': 86.56433978132885,
+              'clean_source_install': True,
+              'clean_wheel_install': True,
+              'active_restoration': '8.0.0@6f05b24fd410ab1f00578019e5336185181ee265',
+              'rollback_restoration': '7.8.0@72974d1d7da9f07a4c8a41b73b22c0fae3770268',
+              'provider_writes': 0,
+              'notion_writes': 0,
+              'todoist_writes': 0,
+              'production_schema_changes': 0,
+              'package_rebuilt': False,
+              'passed': True,
+          }
+          path = Path('readback/V810_INDEPENDENT_READBACK_RECEIPT.json')
+          path.write_text(json.dumps(receipt, indent=2, sort_keys=True) + '\n')
+          Path('readback/V810_INDEPENDENT_READBACK_RECEIPT.sha256').write_text(
+              hashlib.sha256(path.read_bytes()).hexdigest() + '\n'
+          )
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: atlas-ros-v810-independent-readback
+          path: |
+            readback/V810_INDEPENDENT_READBACK_RECEIPT.json
+            readback/V810_INDEPENDENT_READBACK_RECEIPT.sha256
+            readback/sdist-verify.json
+            readback/wheel-verify.json
+          if-no-files-found: error
+          retention-days: 90
