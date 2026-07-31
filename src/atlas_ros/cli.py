@@ -22,8 +22,12 @@ from atlas_ros.intelligence.evaluator import IntelligenceEvaluationRunner
 from atlas_ros.intelligence.io import load_results
 from atlas_ros.planning import DecompositionService
 from atlas_ros.reconciliation import (
+    BaselineAuthorization,
     NotionReconciliationStateStore,
+    ProductionBaselineService,
+    ProductionLedgerDescriptor,
     TodoistReconciliationService,
+    validate_production_ledger,
 )
 from atlas_ros.reconciliation.service import ReconciliationApplyAuthorization
 from atlas_ros.release.authority_migration import (
@@ -160,10 +164,16 @@ def todoist_reconcile(
     if not action_source:
         raise ValueError("ATLAS_ACTION_DATA_SOURCE_ID is required")
     database = runtime()
-    shared_state_id = os.environ.get("ATLAS_RECONCILIATION_STATE_DATA_SOURCE_ID", "")
-    state_store = (
-        NotionReconciliationStateStore(notion, shared_state_id) if shared_state_id else None
+    shared_database_id, shared_state_id = production_ledger_configuration()
+    validate_production_ledger(
+        notion,
+        ProductionLedgerDescriptor(
+            database_id=shared_database_id,
+            data_source_id=shared_state_id,
+        ),
     )
+    state_store = NotionReconciliationStateStore(notion, shared_state_id)
+    state_store.require_checkpoint()
     service = TodoistReconciliationService(
         notion,
         todoist,
@@ -174,6 +184,7 @@ def todoist_reconcile(
         blocker_data_source_id=os.environ.get("ATLAS_BLOCKER_DATA_SOURCE_ID", ""),
         operations_data_source_id=os.environ.get("ATLAS_OPERATIONS_DATA_SOURCE_ID", ""),
         state_store=state_store,
+        production_ledger_required=True,
     )
     plan = service.plan(full=full, task_id=task_id)
     payload: dict[str, object] = {
@@ -225,6 +236,72 @@ def todoist_reconcile(
             payload["result"] = service.apply(
                 plan, confirmed=True, authorization=authorization
             ).__dict__
+    print(json.dumps(payload, default=str))
+
+
+def production_ledger_configuration() -> tuple[str, str]:
+    """Resolve exactly one shared ledger for CLI and ChatGPT surfaces."""
+    database_id = os.environ.get("ATLAS_RECONCILIATION_STATE_DATABASE_ID", "").strip()
+    data_source_id = os.environ.get("ATLAS_RECONCILIATION_STATE_DATA_SOURCE_ID", "").strip()
+    if not database_id or not data_source_id:
+        raise RuntimeError(
+            "LEDGER_PRODUCTION_FALLBACK_PROHIBITED: configure the shared Notion production ledger"
+        )
+    if "," in database_id or "," in data_source_id:
+        raise RuntimeError("LEDGER_NOT_UNIQUE: exactly one production ledger must be configured")
+    chatgpt_source = os.environ.get("ATLAS_CHATGPT_RECONCILIATION_STATE_DATA_SOURCE_ID", "").strip()
+    if chatgpt_source and chatgpt_source != data_source_id:
+        raise RuntimeError("LEDGER_SURFACE_MISMATCH: CLI and ChatGPT ledger targets differ")
+    return database_id, data_source_id
+
+
+def todoist_baseline(
+    *,
+    run_id: str,
+    cutover_at: str,
+    apply: bool,
+    authorization_id: str = "",
+) -> None:
+    """Prepare or apply the inert, exact-attended production baseline."""
+    notion = LiveNotionAdapter.from_environment()
+    todoist = LiveTodoistAdapter.from_environment()
+    action_source = os.environ.get("ATLAS_ACTION_DATA_SOURCE_ID", "")
+    if not action_source:
+        raise ValueError("ATLAS_ACTION_DATA_SOURCE_ID is required")
+    database_id, data_source_id = production_ledger_configuration()
+    validate_production_ledger(
+        notion, ProductionLedgerDescriptor(database_id=database_id, data_source_id=data_source_id)
+    )
+    state = NotionReconciliationStateStore(notion, data_source_id)
+    service = ProductionBaselineService(
+        notion, todoist, state, action_data_source_id=action_source
+    )
+    plan = service.plan(run_id=run_id, cutover_at=cutover_at)
+    payload: dict[str, object] = {
+        "mode": "apply" if apply else "dry-run",
+        "run_id": plan.run_id,
+        "cutover_at": plan.cutover_at,
+        "source_inventory_digest": plan.source_inventory_digest,
+        "plan_digest": plan.plan_digest,
+        "mapped_parent_count": plan.mapped_parent_count,
+        "subtask_count": plan.subtask_count,
+        "baseline_event_count": len(plan.events),
+        "provider_writes": 0,
+    }
+    if apply:
+        if not authorization_id:
+            raise PermissionError("baseline apply requires exact attended authorization")
+        receipt = service.apply(
+            plan,
+            BaselineAuthorization(
+                run_id=plan.run_id,
+                cutover_at=plan.cutover_at,
+                source_inventory_digest=plan.source_inventory_digest,
+                plan_digest=plan.plan_digest,
+                authorization_identity=authorization_id,
+            ),
+        )
+        payload["receipt"] = receipt.__dict__
     print(json.dumps(payload, default=str))
 
 
@@ -387,6 +464,11 @@ def main() -> None:
     reconcile.add_argument("--authorization-actor", default="")
     reconcile.add_argument("--authorization-plan-digest", default="")
     reconcile.add_argument("--authorize-event", action="append", default=[])
+    baseline = todoist_sub.add_parser("baseline")
+    baseline.add_argument("--run-id", required=True)
+    baseline.add_argument("--cutover-at", required=True)
+    baseline.add_argument("--apply", action="store_true")
+    baseline.add_argument("--authorization-id", default="")
     connectivity = sub.add_parser("connectivity")
     connectivity.add_argument("--keychain", action="store_true")
     dec = sub.add_parser("decompose")
@@ -452,6 +534,13 @@ def main() -> None:
             authorization_actor=args.authorization_actor,
             authorization_plan_digest=args.authorization_plan_digest,
             authorized_event_ids=tuple(args.authorize_event),
+        )
+    elif args.command == "todoist" and args.todoist_command == "baseline":
+        todoist_baseline(
+            run_id=args.run_id,
+            cutover_at=args.cutover_at,
+            apply=args.apply,
+            authorization_id=args.authorization_id,
         )
     elif args.command == "connectivity":
         connectivity_check(args.keychain)

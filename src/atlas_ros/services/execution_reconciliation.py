@@ -8,6 +8,7 @@ from atlas_ros.reconciliation import service as reconciliation_service
 ReconciliationPlan = reconciliation_service.ReconciliationPlan
 LegacyReconciliationResult = reconciliation_service.ReconciliationResult
 TodoistReconciliationService = reconciliation_service.TodoistReconciliationService
+ReconciliationApplyAuthorization = reconciliation_service.ReconciliationApplyAuthorization
 CanonicalReconciliationResult = contracts.ReconciliationResult
 
 
@@ -25,9 +26,12 @@ class ExecutionReconciliationService(TodoistReconciliationService):
         plan: ReconciliationPlan,
         *,
         confirmed: bool = False,
+        authorization: ReconciliationApplyAuthorization | None = None,
     ) -> LegacyReconciliationResult:
         checkpoint_before = self.state_store.checkpoint()
-        result = super().apply(plan, confirmed=confirmed)
+        result = super().apply(
+            plan, confirmed=confirmed, authorization=authorization
+        )
         if result.conflicts:
             self.state_store.set_checkpoint(checkpoint_before)
         return result

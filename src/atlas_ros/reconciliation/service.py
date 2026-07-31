@@ -334,6 +334,7 @@ class TodoistReconciliationService:
         blocker_data_source_id: str = "",
         operations_data_source_id: str = "",
         state_store: ReconciliationStateStore | None = None,
+        production_ledger_required: bool = False,
     ) -> None:
         self.notion = notion
         self.todoist = todoist
@@ -343,6 +344,11 @@ class TodoistReconciliationService:
         self.delegated_work_data_source_id = delegated_work_data_source_id
         self.blocker_data_source_id = blocker_data_source_id
         self.operations_data_source_id = operations_data_source_id
+        if production_ledger_required and state_store is None:
+            raise RuntimeError(
+                "LEDGER_PRODUCTION_FALLBACK_PROHIBITED: production reconciliation requires "
+                "the shared Notion ledger"
+            )
         self.state_store = state_store or SQLiteReconciliationStateStore(database)
 
     def plan(self, *, full: bool = False, task_id: str = "") -> ReconciliationPlan:

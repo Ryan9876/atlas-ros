@@ -27,7 +27,16 @@ Allow Atlas in ChatGPT to perform the same attended, review-first reconciliation
 
 ## Shared ledger schema
 
-Data source: configured Execution Reconciliation State source.
+Data source: the single configured `Execution Reconciliation State` source. The
+historical W04 database and data source are prohibited and must never be restored
+or selected.
+
+Before the first production reconciliation, run the attended `atlas todoist baseline`
+dry-run with a recorded UTC cutover. It enumerates mapped parent and child-task
+comments, produces an exact source-inventory and plan digest, and performs no
+provider write. Apply only with a separate authorization bound to those values.
+The checkpoint is written only after every terminal baseline event has passed
+readback. A failed or conflicting baseline leaves the checkpoint absent.
 
 Existing top-level properties:
 
