@@ -1,0 +1,1 @@
+Open the draft pull request to trigger checksum-bound source materialization. This file is removed by the exact source patch.
