@@ -18,6 +18,75 @@ CREATE INDEX IF NOT EXISTS outbox_pending_idx ON outbox_event(status, next_retry
 CREATE TABLE IF NOT EXISTS sync_checkpoint (integration TEXT PRIMARY KEY, cursor TEXT, updated_at TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS processed_event (event_id TEXT PRIMARY KEY, processed_at TEXT NOT NULL, status TEXT NOT NULL, event_type TEXT NOT NULL DEFAULT '', source_provider TEXT NOT NULL DEFAULT '', source_task_id TEXT NOT NULL DEFAULT '', source_comment_id TEXT NOT NULL DEFAULT '', source_posted_at TEXT NOT NULL DEFAULT '', source_digest TEXT NOT NULL DEFAULT '', interpretation_classification TEXT NOT NULL DEFAULT '', interpretation_status TEXT NOT NULL DEFAULT '', confidence REAL, blockers TEXT NOT NULL DEFAULT '', command_digest TEXT NOT NULL DEFAULT '', plan_digest TEXT NOT NULL DEFAULT '', authorization_identity TEXT NOT NULL DEFAULT '', processing_outcome TEXT NOT NULL DEFAULT '', execution_surface TEXT NOT NULL DEFAULT '', metadata_json TEXT NOT NULL DEFAULT '');
 CREATE TABLE IF NOT EXISTS reconciliation_outbox (mutation_id TEXT PRIMARY KEY, todoist_task_id TEXT NOT NULL, notion_page_id TEXT NOT NULL, payload TEXT NOT NULL, status TEXT NOT NULL, attempts INTEGER NOT NULL DEFAULT 0, last_error TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS event_reconciliation_event (
+    event_id TEXT PRIMARY KEY,
+    schema_version TEXT NOT NULL,
+    provider TEXT NOT NULL,
+    event_type TEXT NOT NULL,
+    delivery_id TEXT NOT NULL,
+    canonical_identity TEXT NOT NULL,
+    canonical_object_id TEXT NOT NULL,
+    object_version TEXT NOT NULL DEFAULT '',
+    provider_event_at TEXT NOT NULL,
+    received_at TEXT NOT NULL,
+    initiator_id TEXT NOT NULL DEFAULT '',
+    execution_surface TEXT NOT NULL,
+    raw_payload_digest TEXT NOT NULL,
+    normalized_snapshot_digest TEXT NOT NULL DEFAULT '',
+    correlation_id TEXT NOT NULL,
+    causation_id TEXT NOT NULL DEFAULT '',
+    causal_depth INTEGER NOT NULL DEFAULT 0,
+    source_checkpoint TEXT NOT NULL DEFAULT '',
+    policy_version TEXT NOT NULL,
+    origin_marker TEXT NOT NULL DEFAULT '',
+    state TEXT NOT NULL,
+    attempt_count INTEGER NOT NULL DEFAULT 0,
+    next_attempt_at TEXT,
+    lease_holder TEXT,
+    lease_expires_at TEXT,
+    duplicate_of TEXT,
+    plan_digest TEXT NOT NULL DEFAULT '',
+    decision TEXT NOT NULL DEFAULT '',
+    reason TEXT NOT NULL DEFAULT '',
+    evidence_json TEXT NOT NULL DEFAULT '{}',
+    updated_at TEXT NOT NULL,
+    UNIQUE(provider, delivery_id)
+);
+CREATE INDEX IF NOT EXISTS event_reconciliation_ready_idx
+ON event_reconciliation_event(state, next_attempt_at, lease_expires_at, received_at);
+CREATE INDEX IF NOT EXISTS event_reconciliation_object_idx
+ON event_reconciliation_event(provider, canonical_object_id, received_at);
+CREATE INDEX IF NOT EXISTS event_reconciliation_semantic_idx
+ON event_reconciliation_event(provider, canonical_identity, object_version, normalized_snapshot_digest);
+CREATE TABLE IF NOT EXISTS event_object_lease (
+    provider TEXT NOT NULL,
+    canonical_object_id TEXT NOT NULL,
+    holder TEXT NOT NULL,
+    event_id TEXT NOT NULL,
+    expires_at TEXT NOT NULL,
+    PRIMARY KEY(provider, canonical_object_id)
+);
+CREATE TABLE IF NOT EXISTS event_reconciliation_receipt (
+    receipt_id TEXT PRIMARY KEY,
+    event_id TEXT NOT NULL REFERENCES event_reconciliation_event(event_id),
+    plan_digest TEXT NOT NULL,
+    receipt_json TEXT NOT NULL,
+    created_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS event_outbound_fingerprint (
+    fingerprint TEXT PRIMARY KEY,
+    provider TEXT NOT NULL,
+    canonical_object_id TEXT NOT NULL,
+    correlation_id TEXT NOT NULL,
+    expected_snapshot_digest TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    expires_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS event_runtime_control (
+    control_key TEXT PRIMARY KEY,
+    control_value TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
 """
 
 
@@ -37,7 +106,7 @@ class RuntimeDatabase:
             connection.executescript(SCHEMA)
             self._ensure_capture_assertion_columns(connection)
             self._ensure_reconciliation_event_columns(connection)
-            connection.execute("PRAGMA user_version=50002")
+            connection.execute("PRAGMA user_version=83000")
         self._secure_database_files()
 
     def _secure_database_files(self) -> None:
@@ -58,19 +127,14 @@ class RuntimeDatabase:
 
     @staticmethod
     def _ensure_capture_assertion_columns(connection: sqlite3.Connection) -> None:
-        existing = {
-            row[1] for row in connection.execute("PRAGMA table_info(pending_capture)")
-        }
+        existing = {row[1] for row in connection.execute("PRAGMA table_info(pending_capture)")}
         for column, definition in (
             ("due_date_input", "TEXT NOT NULL DEFAULT ''"),
             ("delegation_input", "TEXT NOT NULL DEFAULT ''"),
             ("additional_context", "TEXT NOT NULL DEFAULT ''"),
         ):
             if column not in existing:
-                connection.execute(
-                    f"ALTER TABLE pending_capture ADD COLUMN {column} {definition}"
-                )
-
+                connection.execute(f"ALTER TABLE pending_capture ADD COLUMN {column} {definition}")
 
     @staticmethod
     def _ensure_reconciliation_event_columns(connection: sqlite3.Connection) -> None:
@@ -95,9 +159,7 @@ class RuntimeDatabase:
         )
         for column, definition in columns:
             if column not in existing:
-                connection.execute(
-                    f"ALTER TABLE processed_event ADD COLUMN {column} {definition}"
-                )
+                connection.execute(f"ALTER TABLE processed_event ADD COLUMN {column} {definition}")
 
     @contextmanager
     def connect(self) -> Iterator[sqlite3.Connection]:
