@@ -1,0 +1,198 @@
+name: v8.2.0 authorized publication controller
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - release/V820_PUBLICATION_TRIGGER.json
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: v820-authorized-publication
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    environment: production-release
+    env:
+      TAG: v8.2.0
+      TARGET_COMMIT: ${{ github.sha }}
+      PACKAGE_SOURCE_COMMIT: 887ac2e58e69bcba9ad4bac8ef4345819f88a70a
+      IMPLEMENTATION_MERGE: b465a98ce0e19e5c2e9f176dfa869c07b376c4ef
+      CANDIDATE_ARTIFACT_ID: '8783124836'
+      CANDIDATE_ARTIFACT_DIGEST: sha256:03ea656ece8e548907ced312c99166376cc7f0c482a9c5ec21cd8b08b2411a72
+      SOURCE_SHA256: f38c4b71f9d64be8bb76f61f9519209ee02fb0038827bef7f10ec4c03b345bfe
+      WHEEL_SHA256: a227516a3918d666f29abeb7e1ccc4d0c6a4db5f4564305477aaad8bad6aca45
+      SBOM_SHA256: 13e78efabe79e2ca0dc9f6a3243e18bc004adc0942119890ecf455ee5bf0aa40
+      VALIDATION_SHA256: a3f730672bfad61ae7aead57ce08db31787e3d9827589e3c666fa2ec152fdfa6
+      NATURAL_COMMENT_SHA256: fd32950b6c72e3a209423b4d2b05c04bd19e8d6efd2c8c28c0696742cf3843ee
+      NO_MIGRATION_SHA256: 2173ea523da83c1e4f233ce6527a09aa026e72123445fe32bdb23a965558b53f
+      SCHEMA_READBACK_SHA256: 360b31c0b7fe6ce67a86433f924dc048b9b294be16da8a7e5d8c0d3c820590c6
+      PACKAGE_INDEX_SHA256: 8b2deed9355bd268ca396852ceb03acae91de9ce93c9ac52a759a53969949121
+      SOURCE_TREE_SHA256: be0f6f2609476cabec185ae6fcc74b5b5600139be7a7be5fb5877debd76dc42a
+      PACKAGE_CHECKSUMS_SHA256: 5be3da86c84d874644d524ac723d6edbbe48d0b5b995d468e5dfd322ec99cb60
+      EVIDENCE_CHECKSUMS_SHA256: 890600bc52fb7501fc97c72bb7d99ae04bf381af67c383e2f76e7c0c2aaca49f
+      RELEASE_MANIFEST_SHA256: e7f083d16516a12fa1061ebfa59725e9d651f723e294f958adfecbbb0d8ea250
+      AUTHORIZATION_SHA256: 012c69017261fe1db5fe0b8804bf3462e8fe9dd788ab0ac1f1bbf01a7d182993
+      DECISION_ID: V4D-63
+      REVIEW_ID: V4V-118
+      PREPUBLICATION_ACTIVE_VERSION: 8.1.0
+      PREPUBLICATION_ACTIVE_COMMIT: a46619c4b806a63ea1426f06171b53ee219d9d77
+      PREPUBLICATION_ROLLBACK_VERSION: 8.0.0
+      PREPUBLICATION_ROLLBACK_COMMIT: 6f05b24fd410ab1f00578019e5336185181ee265
+    steps:
+      - name: Checkout exact publication transaction
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          ref: ${{ env.TARGET_COMMIT }}
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Verify live prepublication authority and exact controls
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$TARGET_COMMIT"
+          test "$(sha256sum release/RELEASE_MANIFEST_V820.md | cut -d' ' -f1)" = "$RELEASE_MANIFEST_SHA256"
+          test "$(sha256sum release/V820_EXACT_PACKAGE_AUTHORIZATION.md | cut -d' ' -f1)" = "$AUTHORIZATION_SHA256"
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          authority = json.loads(Path('governance/AUTHORITY.json').read_text())
+          assert authority['active_release']['version'] == os.environ['PREPUBLICATION_ACTIVE_VERSION']
+          assert authority['active_release']['immutable_commit'] == os.environ['PREPUBLICATION_ACTIVE_COMMIT']
+          assert authority['immediate_rollback']['version'] == os.environ['PREPUBLICATION_ROLLBACK_VERSION']
+          assert authority['immediate_rollback']['immutable_commit'] == os.environ['PREPUBLICATION_ROLLBACK_COMMIT']
+          trigger = json.loads(Path('release/V820_PUBLICATION_TRIGGER.json').read_text())
+          assert trigger == {
+              'authorization_sha256': os.environ['AUTHORIZATION_SHA256'],
+              'candidate_artifact_id': int(os.environ['CANDIDATE_ARTIFACT_ID']),
+              'candidate_artifact_sha256': os.environ['CANDIDATE_ARTIFACT_DIGEST'].removeprefix('sha256:'),
+              'decision_id': os.environ['DECISION_ID'],
+              'implementation_merge': os.environ['IMPLEMENTATION_MERGE'],
+              'package_source_commit': os.environ['PACKAGE_SOURCE_COMMIT'],
+              'prepublication_active_commit': os.environ['PREPUBLICATION_ACTIVE_COMMIT'],
+              'prepublication_active_version': os.environ['PREPUBLICATION_ACTIVE_VERSION'],
+              'prepublication_rollback_commit': os.environ['PREPUBLICATION_ROLLBACK_COMMIT'],
+              'prepublication_rollback_version': os.environ['PREPUBLICATION_ROLLBACK_VERSION'],
+              'release_manifest_sha256': os.environ['RELEASE_MANIFEST_SHA256'],
+              'review_id': os.environ['REVIEW_ID'],
+              'schema_version': 'v820-publication-trigger-v1',
+              'tag': 'v8.2.0',
+          }
+          manifest = Path('release/RELEASE_MANIFEST_V820.md').read_text()
+          authorization = Path('release/V820_EXACT_PACKAGE_AUTHORIZATION.md').read_text()
+          required = (
+              os.environ['PACKAGE_SOURCE_COMMIT'], os.environ['IMPLEMENTATION_MERGE'],
+              os.environ['CANDIDATE_ARTIFACT_ID'], os.environ['CANDIDATE_ARTIFACT_DIGEST'].removeprefix('sha256:'),
+              os.environ['SOURCE_SHA256'], os.environ['WHEEL_SHA256'], os.environ['SBOM_SHA256'],
+              os.environ['VALIDATION_SHA256'], os.environ['NATURAL_COMMENT_SHA256'],
+              os.environ['NO_MIGRATION_SHA256'], os.environ['SCHEMA_READBACK_SHA256'],
+              os.environ['PACKAGE_INDEX_SHA256'], os.environ['SOURCE_TREE_SHA256'],
+              os.environ['PACKAGE_CHECKSUMS_SHA256'], os.environ['EVIDENCE_CHECKSUMS_SHA256'],
+              os.environ['DECISION_ID'], os.environ['REVIEW_ID'],
+              os.environ['PREPUBLICATION_ACTIVE_COMMIT'], os.environ['PREPUBLICATION_ROLLBACK_COMMIT'],
+          )
+          for value in required:
+              assert value in manifest, value
+              assert value in authorization or value in (
+                  os.environ['PACKAGE_INDEX_SHA256'],
+                  os.environ['IMPLEMENTATION_MERGE'],
+              ), value
+          PY
+
+      - name: Download and verify exact retained candidate
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p publication/candidate
+          test "$(gh api "/repos/${GITHUB_REPOSITORY}/actions/artifacts/${CANDIDATE_ARTIFACT_ID}" --jq .digest)" = "$CANDIDATE_ARTIFACT_DIGEST"
+          gh api "/repos/${GITHUB_REPOSITORY}/actions/artifacts/${CANDIDATE_ARTIFACT_ID}/zip" > publication/atlas-ros-v820-candidate.zip
+          test "$(sha256sum publication/atlas-ros-v820-candidate.zip | cut -d' ' -f1)" = "${CANDIDATE_ARTIFACT_DIGEST#sha256:}"
+          unzip -q publication/atlas-ros-v820-candidate.zip -d publication/candidate
+          test "$(cat publication/candidate/build/SOURCE_COMMIT.txt)" = "$PACKAGE_SOURCE_COMMIT"
+          test "$(cat publication/candidate/build/BUILD_COUNT.txt)" = "1"
+          test "$(sha256sum publication/candidate/dist/atlas_ros-8.2.0.tar.gz | cut -d' ' -f1)" = "$SOURCE_SHA256"
+          test "$(sha256sum publication/candidate/dist/atlas_ros-8.2.0-py3-none-any.whl | cut -d' ' -f1)" = "$WHEEL_SHA256"
+          test "$(sha256sum publication/candidate/build/V820_VALIDATION_RECEIPT.json | cut -d' ' -f1)" = "$VALIDATION_SHA256"
+          test "$(sha256sum publication/candidate/build/V820_NATURAL_COMMENT_EVIDENCE.json | cut -d' ' -f1)" = "$NATURAL_COMMENT_SHA256"
+          test "$(sha256sum publication/candidate/build/V820_NO_MIGRATION_RECEIPT.json | cut -d' ' -f1)" = "$NO_MIGRATION_SHA256"
+          test "$(sha256sum publication/candidate/release/V820_RECONCILIATION_STATE_SCHEMA_READBACK.json | cut -d' ' -f1)" = "$SCHEMA_READBACK_SHA256"
+          test "$(sha256sum publication/candidate/build/V820_SBOM.spdx.json | cut -d' ' -f1)" = "$SBOM_SHA256"
+          test "$(sha256sum publication/candidate/build/V820_PACKAGE_INDEX.json | cut -d' ' -f1)" = "$PACKAGE_INDEX_SHA256"
+          test "$(sha256sum publication/candidate/build/SOURCE_TREE.txt | cut -d' ' -f1)" = "$SOURCE_TREE_SHA256"
+          test "$(sha256sum publication/candidate/build/PACKAGE_CHECKSUMS.sha256 | cut -d' ' -f1)" = "$PACKAGE_CHECKSUMS_SHA256"
+          test "$(sha256sum publication/candidate/build/EVIDENCE_CHECKSUMS.sha256 | cut -d' ' -f1)" = "$EVIDENCE_CHECKSUMS_SHA256"
+          (cd publication/candidate && sha256sum -c build/PACKAGE_CHECKSUMS.sha256)
+          (cd publication/candidate && sha256sum -c build/EVIDENCE_CHECKSUMS.sha256)
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          receipt = json.loads(Path('publication/candidate/build/V820_VALIDATION_RECEIPT.json').read_text())
+          assert receipt['candidate_commit'] == os.environ['PACKAGE_SOURCE_COMMIT']
+          assert receipt['version'] == '8.2.0'
+          assert receipt['build_count'] == 1
+          assert receipt['provider_writes'] == 0
+          assert receipt['notion_writes'] == 0
+          assert receipt['todoist_writes'] == 0
+          assert receipt['production_schema_changes'] == 0
+          assert receipt['active_restoration_commit'] == os.environ['PREPUBLICATION_ACTIVE_COMMIT']
+          assert receipt['rollback_restoration_commit'] == os.environ['PREPUBLICATION_ROLLBACK_COMMIT']
+          evidence = json.loads(Path('publication/candidate/build/V820_NATURAL_COMMENT_EVIDENCE.json').read_text())
+          assert evidence['production_provider_writes'] == 0
+          assert evidence['production_notion_writes'] == 0
+          assert evidence['production_todoist_writes'] == 0
+          assert evidence['attended_authorization_required'] is True
+          assert evidence['replay_mutation_count'] == 0
+          migration = json.loads(Path('publication/candidate/build/V820_NO_MIGRATION_RECEIPT.json').read_text())
+          assert migration['production_notion_migration_required'] is False
+          assert migration['production_notion_schema_changes'] == 0
+          assert migration['destructive_operations'] == 0
+          PY
+
+      - name: Confirm immutable release does not exist
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          ! git rev-parse "$TAG" >/dev/null 2>&1
+          ! gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1
+
+      - name: Publish immutable tag and GitHub Release without rebuild
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          git config user.name "Atlas ROS Release Bot"
+          git config user.email "atlas-ros-release@users.noreply.github.com"
+          git tag -a "$TAG" "$TARGET_COMMIT" -m "Atlas ROS v8.2.0 immutable natural comment reconciliation release"
+          git push origin "refs/tags/$TAG"
+          cp release/RELEASE_MANIFEST_V820.md publication/RELEASE_MANIFEST_V820.md
+          cp release/V820_EXACT_PACKAGE_AUTHORIZATION.md publication/V820_EXACT_PACKAGE_AUTHORIZATION.md
+          cp publication/candidate/build/PACKAGE_CHECKSUMS.sha256 publication/PACKAGE_CHECKSUMS.sha256
+          cp publication/candidate/build/EVIDENCE_CHECKSUMS.sha256 publication/EVIDENCE_CHECKSUMS.sha256
+          gh release create "$TAG" \
+            --repo "$GITHUB_REPOSITORY" \
+            --verify-tag \
+            --target "$TARGET_COMMIT" \
+            --title "Atlas ROS v8.2.0" \
+            --notes-file release/RELEASE_MANIFEST_V820.md \
+            publication/atlas-ros-v820-candidate.zip \
+            publication/candidate/dist/atlas_ros-8.2.0.tar.gz \
+            publication/candidate/dist/atlas_ros-8.2.0-py3-none-any.whl \
+            publication/candidate/build/V820_VALIDATION_RECEIPT.json \
+            publication/candidate/build/V820_NATURAL_COMMENT_EVIDENCE.json \
+            publication/candidate/build/V820_NO_MIGRATION_RECEIPT.json \
+            publication/candidate/release/V820_RECONCILIATION_STATE_SCHEMA_READBACK.json \
+            publication/candidate/build/V820_SBOM.spdx.json \
+            publication/candidate/build/V820_PACKAGE_INDEX.json \
+            publication/candidate/build/SOURCE_TREE.txt \
+            publication/RELEASE_MANIFEST_V820.md \
+            publication/V820_EXACT_PACKAGE_AUTHORIZATION.md \
+            publication/PACKAGE_CHECKSUMS.sha256 \
+            publication/EVIDENCE_CHECKSUMS.sha256
