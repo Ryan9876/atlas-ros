@@ -26,6 +26,7 @@ def _service() -> tuple[ProductionBaselineService, FakeNotionAdapter, FakeTodois
     notion.create_page(
         "actions",
         {
+            "Action": _text("Current production action"),
             "Execution System": _select("Todoist"),
             "Execution Object ID": _text("parent"),
         },
@@ -79,6 +80,37 @@ def _authorization(plan) -> BaselineAuthorization:  # type: ignore[no-untyped-de
         plan_digest=plan.plan_digest,
         authorization_identity="baseline-auth",
     )
+
+
+def test_baseline_excludes_historical_w04_action_records() -> None:
+    service, notion, todoist = _service()
+    notion.create_page(
+        "actions",
+        {
+            "Action": _text("HISTORICAL — Validate W04 workflow"),
+            "Execution System": _select("Todoist"),
+            "Execution Object ID": _text("historical-parent"),
+        },
+    )
+    todoist.tasks["historical-parent"] = TodoistTask(
+        id="historical-parent", content="Retired workflow", project_id="work"
+    )
+    todoist.comments["historical-parent"] = [
+        TodoistComment(
+            id="w04-comment",
+            task_id="historical-parent",
+            content="Must not enter the production ledger",
+            posted_at="2026-07-01T00:00:00+00:00",
+        )
+    ]
+
+    plan = service.plan(run_id="baseline-w04", cutover_at="2026-08-01T00:00:00+00:00")
+
+    assert [event.event_id for event in plan.events] == [
+        "todoist-comment:p1",
+        "todoist-comment:s1",
+    ]
+    assert plan.mapped_parent_count == 1
 
 
 def test_baseline_is_inert_complete_and_replay_safe() -> None:
