@@ -1,0 +1,79 @@
+name: v8.2.0 publication controls validation
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - .github/workflows/v820-authorized-publication-controller.yml
+      - .github/workflows/v820-independent-publication-readback.yml
+      - .github/workflows/v820-publication-controls-validation.yml
+      - release/RELEASE_MANIFEST_V820.md
+      - release/V820_EXACT_PACKAGE_AUTHORIZATION.md
+      - release/V820_PUBLICATION_TRIGGER.json
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      PACKAGE_SOURCE_COMMIT: 887ac2e58e69bcba9ad4bac8ef4345819f88a70a
+      IMPLEMENTATION_MERGE: b465a98ce0e19e5c2e9f176dfa869c07b376c4ef
+      CANDIDATE_ARTIFACT_ID: '8783124836'
+      CANDIDATE_ARTIFACT_DIGEST: sha256:03ea656ece8e548907ced312c99166376cc7f0c482a9c5ec21cd8b08b2411a72
+      RELEASE_MANIFEST_SHA256: e7f083d16516a12fa1061ebfa59725e9d651f723e294f958adfecbbb0d8ea250
+      AUTHORIZATION_SHA256: 012c69017261fe1db5fe0b8804bf3462e8fe9dd788ab0ac1f1bbf01a7d182993
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Validate exact identities and authority baseline
+        run: |
+          set -euo pipefail
+          test "$(sha256sum release/RELEASE_MANIFEST_V820.md | cut -d' ' -f1)" = "$RELEASE_MANIFEST_SHA256"
+          test "$(sha256sum release/V820_EXACT_PACKAGE_AUTHORIZATION.md | cut -d' ' -f1)" = "$AUTHORIZATION_SHA256"
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          authority=json.loads(Path('governance/AUTHORITY.json').read_text())
+          assert authority['active_release']['version']=='8.1.0'
+          assert authority['active_release']['immutable_commit']=='a46619c4b806a63ea1426f06171b53ee219d9d77'
+          assert authority['immediate_rollback']['version']=='8.0.0'
+          assert authority['immediate_rollback']['immutable_commit']=='6f05b24fd410ab1f00578019e5336185181ee265'
+          trigger=json.loads(Path('release/V820_PUBLICATION_TRIGGER.json').read_text())
+          assert trigger['package_source_commit']==os.environ['PACKAGE_SOURCE_COMMIT']
+          assert trigger['implementation_merge']==os.environ['IMPLEMENTATION_MERGE']
+          assert trigger['candidate_artifact_id']==int(os.environ['CANDIDATE_ARTIFACT_ID'])
+          assert trigger['candidate_artifact_sha256']==os.environ['CANDIDATE_ARTIFACT_DIGEST'].removeprefix('sha256:')
+          assert trigger['release_manifest_sha256']==os.environ['RELEASE_MANIFEST_SHA256']
+          assert trigger['authorization_sha256']==os.environ['AUTHORIZATION_SHA256']
+          assert trigger['decision_id']=='V4D-63'
+          assert trigger['review_id']=='V4V-118'
+          assert trigger['tag']=='v8.2.0'
+          PY
+          git merge-base --is-ancestor "$IMPLEMENTATION_MERGE" HEAD
+
+      - name: Verify retained candidate without rebuild
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p candidate
+          test "$(gh api "/repos/${GITHUB_REPOSITORY}/actions/artifacts/${CANDIDATE_ARTIFACT_ID}" --jq .digest)" = "$CANDIDATE_ARTIFACT_DIGEST"
+          gh api "/repos/${GITHUB_REPOSITORY}/actions/artifacts/${CANDIDATE_ARTIFACT_ID}/zip" > candidate.zip
+          test "$(sha256sum candidate.zip | cut -d' ' -f1)" = "${CANDIDATE_ARTIFACT_DIGEST#sha256:}"
+          unzip -q candidate.zip -d candidate
+          test "$(cat candidate/build/SOURCE_COMMIT.txt)" = "$PACKAGE_SOURCE_COMMIT"
+          test "$(cat candidate/build/BUILD_COUNT.txt)" = "1"
+          (cd candidate && sha256sum -c build/PACKAGE_CHECKSUMS.sha256)
+          (cd candidate && sha256sum -c build/EVIDENCE_CHECKSUMS.sha256)
+          test "$(jq -r .provider_writes candidate/build/V820_VALIDATION_RECEIPT.json)" = "0"
+          test "$(jq -r .notion_writes candidate/build/V820_VALIDATION_RECEIPT.json)" = "0"
+          test "$(jq -r .todoist_writes candidate/build/V820_VALIDATION_RECEIPT.json)" = "0"
+          test "$(jq -r .production_schema_changes candidate/build/V820_VALIDATION_RECEIPT.json)" = "0"
+          test "$(jq -r .production_notion_migration_required candidate/build/V820_NO_MIGRATION_RECEIPT.json)" = "false"
