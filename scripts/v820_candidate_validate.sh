@@ -7,6 +7,7 @@ mkdir -p build dist clean-install restoration
 test "$(git rev-parse HEAD)" = "${CANDIDATE_COMMIT:?CANDIDATE_COMMIT is required}"
 git rev-parse HEAD > build/SOURCE_COMMIT.txt
 git ls-tree -r --full-tree HEAD > build/SOURCE_TREE.txt
+export SOURCE_DATE_EPOCH="$(git show -s --format=%ct "$CANDIDATE_COMMIT")"
 
 ruff check .
 mypy --strict \
@@ -123,8 +124,11 @@ authority = json.loads(Path('build/LIVE_AUTHORITY.json').read_text())
 active = authority['active_release']
 rollback = authority['immediate_rollback']
 assert active['status'] == 'Active'
-assert active['version'] == '8.1.0', active
-assert rollback['version'] == '8.0.0', rollback
+for field in ('version', 'tag', 'immutable_commit', 'manifest_path', 'manifest_sha256'):
+    assert active.get(field), (field, active)
+for field in ('version', 'tag', 'immutable_commit'):
+    assert rollback.get(field), (field, rollback)
+assert active['immutable_commit'] != rollback['immutable_commit']
 for key, value in {
     'ACTIVE_VERSION': active['version'],
     'ACTIVE_TAG': active['tag'],
@@ -140,6 +144,8 @@ for key, value in {
     print(f'{key}={value}')
 PY
 source build/RESTORATION_ENV
+
+git merge-base --is-ancestor "$ACTIVE_COMMIT" "$CANDIDATE_COMMIT"
 
 test "$(git rev-list -n 1 "$ACTIVE_TAG")" = "$ACTIVE_COMMIT"
 test "$(git rev-list -n 1 "$ROLLBACK_TAG")" = "$ROLLBACK_COMMIT"
@@ -186,6 +192,7 @@ import hashlib
 import json
 import os
 import xml.etree.ElementTree as ET
+from datetime import UTC, datetime
 from pathlib import Path
 
 def digest(path: str) -> str:
@@ -230,7 +237,7 @@ sbom = {
     'name': 'atlas-ros-8.2.0',
     'documentNamespace': f'https://atlas-ros.local/sbom/{source_commit}',
     'creationInfo': {
-        'created': '2026-07-31T00:00:00Z',
+        'created': datetime.fromtimestamp(int(os.environ['SOURCE_DATE_EPOCH']), UTC).isoformat().replace('+00:00', 'Z'),
         'creators': ['Tool: atlas-ros-v820-candidate-workflow'],
     },
     'packages': [{
