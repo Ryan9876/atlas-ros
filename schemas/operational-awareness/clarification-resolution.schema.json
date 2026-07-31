@@ -33,7 +33,12 @@
       ],
       "type": "string"
     },
+    "resolved_at": {"type": ["string", "null"]},
+    "idempotency_identity": {"minLength": 1, "type": "string"},
+    "routing_allowed": {"const": false, "default": false, "type": "boolean"},
+    "execution_authorized": {"const": false, "default": false, "type": "boolean"},
     "provider_write_count": {"const": 0, "default": 0, "type": "integer"},
+    "todoist_write_count": {"const": 0, "default": 0, "type": "integer"},
     "resolution_digest": {"pattern": "^[0-9a-f]{64}$", "type": "string"}
   },
   "required": [
@@ -45,6 +50,7 @@
     "user_response",
     "normalized_instruction",
     "ambiguity_category",
+    "idempotency_identity",
     "resolution_digest"
   ],
   "title": "ClarificationResolutionV1",
