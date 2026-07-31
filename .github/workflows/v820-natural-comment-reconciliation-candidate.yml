@@ -16,7 +16,7 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
-  contents: write
+  contents: read
   actions: read
 
 env:
@@ -24,126 +24,6 @@ env:
   GH_TOKEN: ${{ github.token }}
 
 jobs:
-  fix-restoration-controller:
-    if: >-
-      github.event_name == 'pull_request' &&
-      github.event.action == 'synchronize' &&
-      github.event.pull_request.head.repo.full_name == github.repository &&
-      github.event.pull_request.head.ref == 'agent/v8.2.0-natural-comment-reconciliation' &&
-      github.actor != 'github-actions[bot]'
-    runs-on: ubuntu-24.04
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
-        with:
-          ref: ${{ github.event.pull_request.head.sha }}
-          fetch-depth: 0
-      - name: Replace opaque restoration assertions
-        run: |
-          python - <<'PY'
-          from pathlib import Path
-
-          path = Path('scripts/v820_candidate_validate.sh')
-          text = path.read_text()
-          old = '''  "clean-install/$kind/bin/atlas" status --json > "build/${kind}-status.json"
-  "clean-install/$kind/bin/atlas" verify --json > "build/${kind}-verify.json"
-done
-
-git fetch --no-tags origin main:refs/remotes/origin/main
-git show origin/main:governance/AUTHORITY.json > build/LIVE_AUTHORITY.json
-python - <<'PY'
-import json
-from pathlib import Path
-authority = json.loads(Path('build/LIVE_AUTHORITY.json').read_text())
-active = authority['active_release']
-rollback = authority['immediate_rollback']
-assert active['status'] == 'Active'
-for field in ('version', 'tag', 'immutable_commit', 'manifest_path', 'manifest_sha256'):
-    assert active.get(field), (field, active)
-for field in ('version', 'tag', 'immutable_commit'):
-    assert rollback.get(field), (field, rollback)
-assert active['immutable_commit'] != rollback['immutable_commit']
-for key, value in {
-    'ACTIVE_VERSION': active['version'],
-    'ACTIVE_TAG': active['tag'],
-    'ACTIVE_COMMIT': active['immutable_commit'],
-    'ACTIVE_MANIFEST_PATH': active['manifest_path'],
-    'ACTIVE_MANIFEST_SHA256': active['manifest_sha256'],
-    'ACTIVE_SOURCE_SHA256': active['source_sha256'],
-    'ACTIVE_WHEEL_SHA256': active['wheel_sha256'],
-    'ROLLBACK_VERSION': rollback['version'],
-    'ROLLBACK_TAG': rollback['tag'],
-    'ROLLBACK_COMMIT': rollback['immutable_commit'],
-}.items():
-    print(f'{key}={value}')
-PY
-source build/RESTORATION_ENV
-'''
-          new = '''  echo "v820_stage=${kind}_installed_status"
-  "clean-install/$kind/bin/atlas" status --json > "build/${kind}-status.json"
-  echo "v820_stage=${kind}_installed_verify"
-  "clean-install/$kind/bin/atlas" verify --json > "build/${kind}-verify.json"
-done
-
-echo "v820_stage=clean_install_complete"
-echo "v820_stage=authority_restoration_resolution"
-git fetch --no-tags origin main:refs/remotes/origin/main
-git show origin/main:governance/AUTHORITY.json > build/LIVE_AUTHORITY.json
-python - <<'PY' > build/RESTORATION_ENV
-import json
-from pathlib import Path
-
-
-def require_text(mapping: dict[str, object], field: str, scope: str) -> str:
-    value = mapping.get(field)
-    if not isinstance(value, str) or not value.strip():
-        raise RuntimeError(f'missing or invalid {scope}.{field}: {value!r}')
-    return value
-
-
-authority = json.loads(Path('build/LIVE_AUTHORITY.json').read_text())
-active = authority.get('active_release')
-rollback = authority.get('immediate_rollback')
-if not isinstance(active, dict):
-    raise RuntimeError('live authority active_release is missing or invalid')
-if not isinstance(rollback, dict):
-    raise RuntimeError('live authority immediate_rollback is missing or invalid')
-if active.get('status') != 'Active':
-    raise RuntimeError(f"live active release status is not Active: {active.get('status')!r}")
-values = {
-    'ACTIVE_VERSION': require_text(active, 'version', 'active_release'),
-    'ACTIVE_TAG': require_text(active, 'tag', 'active_release'),
-    'ACTIVE_COMMIT': require_text(active, 'immutable_commit', 'active_release'),
-    'ACTIVE_MANIFEST_PATH': require_text(active, 'manifest_path', 'active_release'),
-    'ACTIVE_MANIFEST_SHA256': require_text(active, 'manifest_sha256', 'active_release'),
-    'ACTIVE_SOURCE_SHA256': require_text(active, 'source_sha256', 'active_release'),
-    'ACTIVE_WHEEL_SHA256': require_text(active, 'wheel_sha256', 'active_release'),
-    'ROLLBACK_VERSION': require_text(rollback, 'version', 'immediate_rollback'),
-    'ROLLBACK_TAG': require_text(rollback, 'tag', 'immediate_rollback'),
-    'ROLLBACK_COMMIT': require_text(rollback, 'immutable_commit', 'immediate_rollback'),
-}
-if values['ACTIVE_COMMIT'] == values['ROLLBACK_COMMIT']:
-    raise RuntimeError('active and immediate rollback commits are identical')
-for key, value in values.items():
-    print(f'{key}={value}')
-PY
-echo "v820_stage=authority_restoration_resolved"
-source build/RESTORATION_ENV
-'''
-          if text.count(old) != 1:
-              raise RuntimeError('expected restoration controller block not found exactly once')
-          path.write_text(text.replace(old, new, 1))
-          Path('release/V820_RESTORATION_CONTROLLER_TRIGGER').unlink(missing_ok=True)
-          PY
-          git diff --check
-      - name: Commit diagnostic restoration controller
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add scripts/v820_candidate_validate.sh release/V820_RESTORATION_CONTROLLER_TRIGGER
-          git commit -m "Make v8.2.0 restoration validation diagnostic"
-          git push origin HEAD:agent/v8.2.0-natural-comment-reconciliation
-
   lean:
     if: github.event_name == 'pull_request' && github.event.action != 'ready_for_review'
     runs-on: ubuntu-24.04
