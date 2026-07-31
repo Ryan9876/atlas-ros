@@ -35,9 +35,10 @@ jobs:
           test "$(sha256sum /tmp/v820.patch | cut -d' ' -f1)" = "40f51878f2be1f9db2cc313f533b3e318c5e5d819a49c620dd8446331bdc5670"
           git apply --check /tmp/v820.patch
           git apply /tmp/v820.patch
-          rm .github/workflows/v820-materialize-natural-comment-source.yml
-          rm release/V820_SOURCE_PATCH.part*
-          rm -f release/V820_MATERIALIZATION_README.md release/V820_MATERIALIZATION_TRIGGER.txt release/V820_PR_SCOPE.md release/.v820-bootstrap-ready release/V820_BOOTSTRAP_FINALIZED
+          rm -f .github/workflows/v820-materialize-natural-comment-source.yml
+          rm -f .github/workflows/v820-natural-comment-reconciliation-candidate.yml
+          rm -f release/V820_SOURCE_PATCH.part*
+          rm -f release/V820_MATERIALIZATION_README.md release/V820_MATERIALIZATION_TRIGGER.txt release/V820_PR_SCOPE.md release/.v820-bootstrap-ready release/V820_BOOTSTRAP_FINALIZED release/V820_READY_FOR_DRAFT_PR release/V820_PR_OPEN_SIGNAL
           git diff --check
       - name: Commit materialized candidate source
         run: |
