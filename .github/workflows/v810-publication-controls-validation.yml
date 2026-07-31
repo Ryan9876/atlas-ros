@@ -1,0 +1,26 @@
+name: v8.1.0 publication controls validation
+
+on:
+  pull_request:
+    paths:
+      - .github/workflows/v810-authorized-publication-controller.yml
+      - .github/workflows/v810-independent-publication-readback.yml
+      - release/RELEASE_MANIFEST_V810.md
+      - release/V810_EXACT_PACKAGE_AUTHORIZATION.md
+      - release/V810_PUBLICATION_TRIGGER.json
+      - tests/unit/test_v810_release_controls.py
+
+permissions:
+  contents: read
+
+jobs:
+  controls:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.12.10'
+      - run: python -m pip install --disable-pip-version-check -e '.[ci]'
+      - run: python -m pytest --no-cov -q tests/unit/test_v810_release_controls.py

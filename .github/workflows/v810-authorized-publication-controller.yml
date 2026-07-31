@@ -1,0 +1,170 @@
+name: v8.1.0 authorized publication controller
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - release/V810_PUBLICATION_TRIGGER.json
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: v810-authorized-publication
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    environment: production-release
+    env:
+      TAG: v8.1.0
+      TARGET_COMMIT: ${{ github.sha }}
+      PACKAGE_SOURCE_COMMIT: 8843a97e58efe46e632335df95487855b7971a75
+      IMPLEMENTATION_MERGE: 32db7aaf307299a98b360bb25271589b0487fe90
+      CANDIDATE_ARTIFACT_ID: '8779256493'
+      CANDIDATE_ARTIFACT_DIGEST: sha256:dc2f5d93f1d3aafe34d680f6c797fd190d0b2570e9e854cc2917057d0591a22a
+      SOURCE_SHA256: f95eb2bcfc7875f6920061d9c5124c5be2cd5dc6dbbbce1cb671f5acdd1bec95
+      WHEEL_SHA256: 97a3da1e1e239f5c8fd5af89b38a5c4c1005459e0fc77f830ba4915c6f81fa31
+      SBOM_SHA256: e60407aea084ad55cd287bfbf4feb0f61ed6c80036e6b91128f33f8ae73a0d0e
+      VALIDATION_SHA256: 2ef1adc95b3d9e3ec268484fa1ab26c097d52d12f3b6061895ac3501a2f4fafc
+      CLARIFICATION_SHA256: df2558d519c4bdc1ee151c0c062b6a25768e5117df6cd1a95a4bdc2f0132a33f
+      PACKAGE_INDEX_SHA256: 6356de75fac2ac3142f6939d10d55ac80afc7485b621a75c7148fc4e3f7da520
+      SOURCE_TREE_SHA256: 6af181fa96e4147241d4c8527124225271f648e1e56d0dd1339a0e920b93fd18
+      PACKAGE_CHECKSUMS_SHA256: 83bc290eeb338be173676521ae91c4097134a61b21d71d9c2523a1129f15edbd
+      EVIDENCE_CHECKSUMS_SHA256: 30b8bc4fb909471f98e8d42f3aeb6a8b56fea4572a095d05e14418a1d2734de1
+      RELEASE_MANIFEST_SHA256: bd1cd4ad0ad64c3a77a562e55ca334abcfedb0382a640e4c961bbd85372cff43
+      AUTHORIZATION_SHA256: 830cc61af8b81097253a07dc4402875fd56f06e2fdc137cee00603e65d675455
+      DECISION_ID: V4D-62
+      REVIEW_ID: V4V-115
+      PREPUBLICATION_ACTIVE_VERSION: 8.0.0
+      PREPUBLICATION_ACTIVE_COMMIT: 6f05b24fd410ab1f00578019e5336185181ee265
+      PREPUBLICATION_ROLLBACK_VERSION: 7.8.0
+      PREPUBLICATION_ROLLBACK_COMMIT: 72974d1d7da9f07a4c8a41b73b22c0fae3770268
+    steps:
+      - name: Checkout exact publication transaction
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          ref: ${{ env.TARGET_COMMIT }}
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Verify live prepublication authority and exact controls
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$TARGET_COMMIT"
+          test "$(sha256sum release/RELEASE_MANIFEST_V810.md | cut -d' ' -f1)" = "$RELEASE_MANIFEST_SHA256"
+          test "$(sha256sum release/V810_EXACT_PACKAGE_AUTHORIZATION.md | cut -d' ' -f1)" = "$AUTHORIZATION_SHA256"
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          authority = json.loads(Path('governance/AUTHORITY.json').read_text())
+          assert authority['active_release']['version'] == os.environ['PREPUBLICATION_ACTIVE_VERSION']
+          assert authority['active_release']['immutable_commit'] == os.environ['PREPUBLICATION_ACTIVE_COMMIT']
+          assert authority['immediate_rollback']['version'] == os.environ['PREPUBLICATION_ROLLBACK_VERSION']
+          assert authority['immediate_rollback']['immutable_commit'] == os.environ['PREPUBLICATION_ROLLBACK_COMMIT']
+          trigger = json.loads(Path('release/V810_PUBLICATION_TRIGGER.json').read_text())
+          assert trigger == {
+              'authorization_sha256': os.environ['AUTHORIZATION_SHA256'],
+              'candidate_artifact_id': int(os.environ['CANDIDATE_ARTIFACT_ID']),
+              'candidate_artifact_sha256': os.environ['CANDIDATE_ARTIFACT_DIGEST'].removeprefix('sha256:'),
+              'decision_id': os.environ['DECISION_ID'],
+              'implementation_merge': os.environ['IMPLEMENTATION_MERGE'],
+              'package_source_commit': os.environ['PACKAGE_SOURCE_COMMIT'],
+              'prepublication_active_commit': os.environ['PREPUBLICATION_ACTIVE_COMMIT'],
+              'prepublication_active_version': os.environ['PREPUBLICATION_ACTIVE_VERSION'],
+              'prepublication_rollback_commit': os.environ['PREPUBLICATION_ROLLBACK_COMMIT'],
+              'prepublication_rollback_version': os.environ['PREPUBLICATION_ROLLBACK_VERSION'],
+              'release_manifest_sha256': os.environ['RELEASE_MANIFEST_SHA256'],
+              'review_id': os.environ['REVIEW_ID'],
+              'schema_version': 'v810-publication-trigger-v1',
+              'tag': 'v8.1.0',
+          }
+          manifest = Path('release/RELEASE_MANIFEST_V810.md').read_text()
+          authorization = Path('release/V810_EXACT_PACKAGE_AUTHORIZATION.md').read_text()
+          required = (
+              os.environ['PACKAGE_SOURCE_COMMIT'], os.environ['IMPLEMENTATION_MERGE'],
+              os.environ['CANDIDATE_ARTIFACT_ID'], os.environ['CANDIDATE_ARTIFACT_DIGEST'].removeprefix('sha256:'),
+              os.environ['SOURCE_SHA256'], os.environ['WHEEL_SHA256'], os.environ['SBOM_SHA256'],
+              os.environ['VALIDATION_SHA256'], os.environ['CLARIFICATION_SHA256'],
+              os.environ['PACKAGE_INDEX_SHA256'], os.environ['SOURCE_TREE_SHA256'],
+              os.environ['DECISION_ID'], os.environ['REVIEW_ID'],
+              os.environ['PREPUBLICATION_ACTIVE_COMMIT'], os.environ['PREPUBLICATION_ROLLBACK_COMMIT'],
+          )
+          for value in required:
+              assert value in manifest, value
+              assert value in authorization or value in (
+                  os.environ['IMPLEMENTATION_MERGE'],
+                  os.environ['PACKAGE_INDEX_SHA256'],
+                  os.environ['PREPUBLICATION_ACTIVE_COMMIT'],
+                  os.environ['PREPUBLICATION_ROLLBACK_COMMIT'],
+              ), value
+          PY
+
+      - name: Download and verify exact retained candidate
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p publication/candidate
+          test "$(gh api "/repos/${GITHUB_REPOSITORY}/actions/artifacts/${CANDIDATE_ARTIFACT_ID}" --jq .digest)" = "$CANDIDATE_ARTIFACT_DIGEST"
+          gh api "/repos/${GITHUB_REPOSITORY}/actions/artifacts/${CANDIDATE_ARTIFACT_ID}/zip" > publication/candidate.zip
+          test "$(sha256sum publication/candidate.zip | cut -d' ' -f1)" = "${CANDIDATE_ARTIFACT_DIGEST#sha256:}"
+          unzip -q publication/candidate.zip -d publication/candidate
+          test "$(cat publication/candidate/build/SOURCE_COMMIT.txt)" = "$PACKAGE_SOURCE_COMMIT"
+          test "$(cat publication/candidate/build/BUILD_COUNT.txt)" = "1"
+          test "$(sha256sum publication/candidate/dist/atlas_ros-8.1.0.tar.gz | cut -d' ' -f1)" = "$SOURCE_SHA256"
+          test "$(sha256sum publication/candidate/dist/atlas_ros-8.1.0-py3-none-any.whl | cut -d' ' -f1)" = "$WHEEL_SHA256"
+          test "$(sha256sum publication/candidate/build/V810_VALIDATION_RECEIPT.json | cut -d' ' -f1)" = "$VALIDATION_SHA256"
+          test "$(sha256sum publication/candidate/build/V810_CLARIFICATION_EVIDENCE.json | cut -d' ' -f1)" = "$CLARIFICATION_SHA256"
+          test "$(sha256sum publication/candidate/build/V810_SBOM.spdx.json | cut -d' ' -f1)" = "$SBOM_SHA256"
+          test "$(sha256sum publication/candidate/build/V810_PACKAGE_INDEX.json | cut -d' ' -f1)" = "$PACKAGE_INDEX_SHA256"
+          test "$(sha256sum publication/candidate/build/SOURCE_TREE.txt | cut -d' ' -f1)" = "$SOURCE_TREE_SHA256"
+          test "$(sha256sum publication/candidate/build/PACKAGE_CHECKSUMS.sha256 | cut -d' ' -f1)" = "$PACKAGE_CHECKSUMS_SHA256"
+          test "$(sha256sum publication/candidate/build/EVIDENCE_CHECKSUMS.sha256 | cut -d' ' -f1)" = "$EVIDENCE_CHECKSUMS_SHA256"
+          (cd publication/candidate && sha256sum -c build/PACKAGE_CHECKSUMS.sha256)
+          (cd publication/candidate && sha256sum -c build/EVIDENCE_CHECKSUMS.sha256)
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          receipt = json.loads(Path('publication/candidate/build/V810_VALIDATION_RECEIPT.json').read_text())
+          assert receipt['candidate_commit'] == os.environ['PACKAGE_SOURCE_COMMIT']
+          assert receipt['version'] == '8.1.0'
+          assert receipt['build_count'] == 1
+          assert receipt['provider_writes'] == 0
+          assert receipt['notion_writes'] == 0
+          assert receipt['todoist_writes'] == 0
+          assert receipt['production_schema_changes'] == 0
+          assert receipt['active_restoration_commit'] == os.environ['PREPUBLICATION_ACTIVE_COMMIT']
+          assert receipt['rollback_restoration_commit'] == os.environ['PREPUBLICATION_ROLLBACK_COMMIT']
+          evidence = json.loads(Path('publication/candidate/build/V810_CLARIFICATION_EVIDENCE.json').read_text())
+          assert evidence['provider_writes'] == 0
+          assert evidence['notion_writes'] == 0
+          assert evidence['todoist_writes'] == 0
+          assert evidence['execution_authorized'] is False
+          assert evidence['routing_allowed'] is False
+          PY
+
+      - name: Confirm immutable release does not exist
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          ! git rev-parse "$TAG" >/dev/null 2>&1
+          ! gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1
+
+      - name: Publish immutable tag and GitHub Release without rebuild
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          git config user.name "Atlas ROS Release Bot"
+          git config user.email "atlas-ros-release@users.noreply.github.com"
+          git tag -a "$TAG" "$TARGET_COMMIT" -m "Atlas ROS v8.1.0 immutable context-aware clarification release"
+          git push origin "refs/tags/$TAG"
+          cp release/RELEASE_MANIFEST_V810.md publication/RELEASE_MANIFEST_V810.md
+          cp release/V810_EXACT_PACKAGE_AUTHORIZATION.md publication/V810_EXACT_PACKAGE_AUTHORIZATION.md
+          cp publication/candidate/build/PACKAGE_CHECKSUMS.sha256 publication/CHECKSUMS.sha256
+          gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --verify-tag --target "$TARGET_COMMIT" --title "Atlas ROS v8.1.0" --notes-file release/RELEASE_MANIFEST_V810.md publication/candidate.zip publication/candidate/dist/atlas_ros-8.1.0.tar.gz publication/candidate/dist/atlas_ros-8.1.0-py3-none-any.whl publication/candidate/build/V810_VALIDATION_RECEIPT.json publication/candidate/build/V810_CLARIFICATION_EVIDENCE.json publication/candidate/build/V810_SBOM.spdx.json publication/candidate/build/V810_PACKAGE_INDEX.json publication/candidate/build/SOURCE_TREE.txt publication/RELEASE_MANIFEST_V810.md publication/V810_EXACT_PACKAGE_AUTHORIZATION.md publication/CHECKSUMS.sha256
