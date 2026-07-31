@@ -13,7 +13,7 @@ Review must bind the candidate commit and retained artifact checksums and confir
 - All tests, coverage, lint, types, security, dependency, packaging, clean-install, and restoration gates pass with no unexplained skips.
 
 Final result: `Passed candidate validation` — 1,114 tests passed with 0 failures,
-0 errors, and 0 skips; total coverage was 86.57%; scoped lint, strict typing,
+0 errors, and 0 skips; total coverage was 86.36%; scoped lint, strict typing,
 architecture, security, dependency-audit, build-once packaging, clean-install,
 artifact-integrity, active-release restoration, and rollback-restoration gates all
 passed. This candidate result does not itself activate production runtime,
