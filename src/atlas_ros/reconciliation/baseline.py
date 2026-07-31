@@ -15,6 +15,7 @@ from atlas_ros.reconciliation.state import (
     LedgerFailureCode,
     LedgerValidationError,
     NotionReconciliationStateStore,
+    decode_event_envelope,
     event_identity_aliases,
     has_complete_envelope,
 )
@@ -316,10 +317,7 @@ class ProductionBaselineService:
 
     def _matches(self, page: NotionPage, event: BaselineEvent, expected: dict[str, Any]) -> bool:
         notes = self.state._rich_text_value(page.properties.get("Notes", {}))
-        try:
-            envelope = json.loads(notes)
-        except json.JSONDecodeError:
-            return False
+        envelope = decode_event_envelope(notes)
         return bool(
             isinstance(envelope, dict)
             and has_complete_envelope(envelope)
@@ -335,10 +333,7 @@ class ProductionBaselineService:
         self, page: NotionPage, plan: BaselinePlan, authorization: BaselineAuthorization
     ) -> bool:
         notes = self.state._rich_text_value(page.properties.get("Notes", {}))
-        try:
-            envelope = json.loads(notes)
-        except json.JSONDecodeError:
-            return False
+        envelope = decode_event_envelope(notes)
         return bool(
             isinstance(envelope, dict)
             and has_complete_envelope(envelope)
