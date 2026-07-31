@@ -23,4 +23,4 @@ jobs:
         with:
           python-version: '3.12.10'
       - run: python -m pip install --disable-pip-version-check -e '.[ci]'
-      - run: python -m pytest -q tests/unit/test_v810_release_controls.py
+      - run: python -m pytest --no-cov -q tests/unit/test_v810_release_controls.py
