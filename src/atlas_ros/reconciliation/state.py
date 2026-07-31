@@ -353,10 +353,31 @@ class NotionReconciliationStateStore(ReconciliationStateStore):
         self.data_source_id = data_source_id
 
     def require_checkpoint(self) -> None:
-        if self._find(self.CHECKPOINT_KEY) is None:
+        checkpoint = self._find(self.CHECKPOINT_KEY)
+        if checkpoint is None:
             raise LedgerValidationError(
                 LedgerFailureCode.CHECKPOINT_MISSING,
                 "production reconciliation is not activated until baseline checkpoint readback",
+            )
+        notes = self._rich_text_value(checkpoint.properties.get("Notes", {}))
+        try:
+            envelope = json.loads(notes)
+        except json.JSONDecodeError as exc:
+            raise LedgerValidationError(
+                LedgerFailureCode.CHECKPOINT_MISSING,
+                "production reconciliation checkpoint evidence is invalid",
+            ) from exc
+        if not (
+            isinstance(envelope, dict)
+            and has_complete_envelope(envelope)
+            and envelope.get("event_id") == self.CHECKPOINT_KEY
+            and envelope.get("logical_status") == "applied"
+            and envelope.get("processing_outcome") == "baseline_checkpoint_created"
+            and envelope.get("readback_status") == "verified"
+        ):
+            raise LedgerValidationError(
+                LedgerFailureCode.CHECKPOINT_MISSING,
+                "production reconciliation checkpoint evidence is incomplete",
             )
 
     def _find(self, key: str) -> NotionPage | None:
