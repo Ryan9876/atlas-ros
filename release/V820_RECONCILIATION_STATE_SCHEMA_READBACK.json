@@ -1,0 +1,20 @@
+{
+  "read_at": "2026-07-30T22:50:00-04:00",
+  "source": "live Notion fetch during scoped Full Validation",
+  "configured_data_source_id": "afbb753c-3112-4784-9165-f786b503d1f7",
+  "observed_title": "HISTORICAL — W04 Reconciliation State",
+  "writable_properties": {
+    "Cursor": "date",
+    "Event ID": "rich_text",
+    "Execution Surface": "select(CLI, ChatGPT)",
+    "Notes": "rich_text",
+    "Processed At": "date",
+    "State Key": "title",
+    "State Type": "select(Checkpoint, Processed Event)",
+    "Status": "select(Applied, Failed)"
+  },
+  "candidate_decision": "No production Notion schema migration. Store the complete versioned event envelope in Notes and retain existing top-level identity/status fields.",
+  "production_writes": 0,
+  "destructive_operations": 0,
+  "warning": "The configured source title contains HISTORICAL even though current reconciliation configuration references its ID. Promotion review should confirm the title is stale metadata rather than a deprecated target; v8.2 does not rename or modify it."
+}

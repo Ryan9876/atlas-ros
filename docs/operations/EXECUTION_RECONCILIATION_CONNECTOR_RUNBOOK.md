@@ -2,56 +2,50 @@
 
 ## Purpose
 
-Allow Atlas in ChatGPT to execute the same attended, review-first reconciliation transaction as the local CLI while sharing replay state with CLI executions.
+Allow Atlas in ChatGPT to perform the same attended, review-first reconciliation transaction as the CLI while sharing replay state and provider boundaries.
 
 ## Invocation
 
-- `Atlas, reconcile Todoist.` — full mapped-task dry run.
-- `Atlas, reconcile <task name or Todoist task ID>.` — scoped dry run.
-- `Atlas, apply the reconciliation.` — apply only the previously presented plan.
+- `Reconcile ROS` or `Reconcile ROS inbox` — composite ingress dry run.
+- `Reconcile Universal Inbox only` — scoped Inbox dry run.
+- `Reconcile Todoist only` — scoped Todoist dry run.
+- `Reconcile <task name or Todoist task ID>` — scoped governed-task dry run.
+- `Apply the reconciliation` — apply only the exact previously presented plan after exact attended authorization.
 
 ## Transaction
 
-1. Read the active Release Index, System State, active manifest, and Integration Inventory.
-2. Read mapped Action Records where Execution System is Todoist and Execution Object ID is present.
-3. Read canonical Todoist parents, completed tasks, subtasks, and comments.
-4. Read the shared Reconciliation State ledger and suppress applied comment IDs.
-5. Build and present a dry-run plan containing mutations, ignored items, and conflicts.
-6. Require Ryan's explicit approval before applying.
-7. Write only Todoist-authoritative execution fields and structured `@atlas` outcomes.
-8. Read back every Notion write.
-9. Record applied comment IDs and advance the shared checkpoint only after all writes verify.
-10. Re-run the same scope to prove zero-mutation replay idempotency.
+1. Read live authority in the required order.
+2. Read mapped Action Records and current Universal Inbox records for the selected scope.
+3. Read governed Todoist parents, linked subtasks, task state, and comments.
+4. Read the shared reconciliation ledger and use stable event identity as the authoritative deduplication key.
+5. Parse explicit `@atlas` commands first; otherwise use the bounded v8.2 natural-comment lifecycle.
+6. Present source counters, new event IDs, classifications, inferred field origins, confidence, blockers, ignored reasons, conflicts, mutations, provider operations, and plan digest.
+7. Require Ryan's exact attended approval covering the plan digest and actionable event IDs.
+8. Execute only the authorized provider operations and read back each write.
+9. Record every event outcome and advance the checkpoint only after verified completion.
+10. Replay the same scope and prove zero duplicates.
 
 ## Shared ledger schema
 
-Data source: `Execution Reconciliation State`
+Data source: configured Execution Reconciliation State source.
 
-- State Key (title; unique logical key)
-- State Type (Checkpoint, Processed Event)
-- Status (Applied, Failed)
-- Cursor (date/time)
-- Event ID (text)
-- Processed At (date/time)
-- Execution Surface (CLI, ChatGPT)
-- Notes (text)
+Existing top-level properties:
 
-The CLI uses this ledger when `ATLAS_RECONCILIATION_STATE_DATA_SOURCE_ID` is configured. Without it, v4.4 retains the local SQLite fallback for recovery only.
+- State Key
+- State Type
+- Status
+- Cursor
+- Event ID
+- Processed At
+- Execution Surface
+- Notes
+
+No v8.2 production Notion property additions are required. The complete versioned event envelope is JSON in `Notes`. The physical Status remains Applied/Failed; the envelope carries the logical reconciliation state.
 
 ## Authority
 
-Todoist owns execution due date, execution priority, completion state, subtask completion, and explicitly prefixed `@atlas` comments. Notion retains management priority, Definition of Done, accountable ownership, portfolio relationships, risk severity, and reporting structure.
+Todoist owns execution due date, execution priority, completion state, and subtask completion. Comments are immutable source evidence. Notion remains authoritative for management priority, Definition of Done, accountable ownership, portfolio relationships, risk severity, and reporting structure.
 
 ## Safety
 
-No unattended apply, autonomous scheduling, messaging, email, calendar action, or deletion is activated.
-## Comment-command ingestion requirements (v4.4.2)
-
-- Read comments from the governed parent task and every linked subtask.
-- Process only comments beginning with `@atlas`.
-- Accept `@atlas update text` and `@atlas update: text`.
-- Route parent updates to the Action Record and subtask updates to the linked Execution Step.
-- Parse `@atlas delegate Ryan` and `@atlas delegate to Ryan`; resolve an unambiguous Notion person into Assigned Person while retaining Assigned Resource text.
-- Record Todoist comment IDs in shared reconciliation state before advancing the checkpoint.
-- Preserve ordinary comments without mutation.
-- Surface missing mappings, ambiguous people, and malformed commands as reviewable conflicts.
+Interpretation does not authorize planning; planning does not authorize execution. Adapters cannot create execution intent. No unattended apply, autonomous scheduling, messaging, email, calendar action, deletion, credential action, or integration-scope expansion is enabled.

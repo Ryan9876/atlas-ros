@@ -200,7 +200,7 @@ def bind_natural_delegation_identities(
         delegate_due=normalization.delegate_due,
         follow_up_checkpoint=normalization.follow_up_checkpoint,
         confidence=ConfidenceAssessment(
-            score=1.0 if not unique_blockers else 0.4,
+            score=(min(normalization.confidence.score, 1.0) if not unique_blockers else 0.4),
             rationale=(
                 "natural delegation fields and person identities resolved deterministically"
                 if not unique_blockers
@@ -211,6 +211,9 @@ def bind_natural_delegation_identities(
         evidence=tuple(dict.fromkeys(evidence)),
         ambiguity=unique_ambiguity,
         blockers=unique_blockers,
+        field_origins=dict(normalization.field_origins),
+        requires_attended_approval=normalization.requires_attended_approval,
+        resolved_follow_up_date=normalization.resolved_follow_up_date,
     )
 
 

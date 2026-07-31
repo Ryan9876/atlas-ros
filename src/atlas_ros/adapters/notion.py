@@ -164,6 +164,10 @@ class FakeNotionAdapter:
         self.pages: dict[str, NotionPage] = {}
         self.schemas: dict[str, dict[str, Any]] = {}
         self.page_sources: dict[str, str] = {}
+        self.users: list[dict[str, Any]] = [
+            {"object": "user", "id": "notion-test-user", "name": "Ryan Smith"},
+            {"object": "user", "id": "bill-user", "name": "Bill"},
+        ]
 
     def fetch_data_source(self, data_source_id: str) -> dict[str, Any]:
         return self.schemas[data_source_id]
@@ -172,10 +176,7 @@ class FakeNotionAdapter:
         return {"object": "user", "id": "notion-test-user", "name": "Ryan Smith"}
 
     def list_users(self) -> list[dict[str, Any]]:
-        return [
-            {"object": "user", "id": "notion-test-user", "name": "Ryan Smith"},
-            {"object": "user", "id": "bill-user", "name": "Bill"},
-        ]
+        return list(self.users)
 
     def create_page(self, data_source_id: str, properties: dict[str, Any]) -> NotionPage:
         page = NotionPage(

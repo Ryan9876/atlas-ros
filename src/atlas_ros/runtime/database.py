@@ -16,7 +16,7 @@ CREATE TABLE IF NOT EXISTS outbox_event (event_id TEXT PRIMARY KEY, correlation_
 CREATE TABLE IF NOT EXISTS runtime_lock (name TEXT PRIMARY KEY, holder TEXT NOT NULL, expires_at TEXT NOT NULL);
 CREATE INDEX IF NOT EXISTS outbox_pending_idx ON outbox_event(status, next_retry);
 CREATE TABLE IF NOT EXISTS sync_checkpoint (integration TEXT PRIMARY KEY, cursor TEXT, updated_at TEXT NOT NULL);
-CREATE TABLE IF NOT EXISTS processed_event (event_id TEXT PRIMARY KEY, processed_at TEXT NOT NULL, status TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS processed_event (event_id TEXT PRIMARY KEY, processed_at TEXT NOT NULL, status TEXT NOT NULL, event_type TEXT NOT NULL DEFAULT '', source_provider TEXT NOT NULL DEFAULT '', source_task_id TEXT NOT NULL DEFAULT '', source_comment_id TEXT NOT NULL DEFAULT '', source_posted_at TEXT NOT NULL DEFAULT '', source_digest TEXT NOT NULL DEFAULT '', interpretation_classification TEXT NOT NULL DEFAULT '', interpretation_status TEXT NOT NULL DEFAULT '', confidence REAL, blockers TEXT NOT NULL DEFAULT '', command_digest TEXT NOT NULL DEFAULT '', plan_digest TEXT NOT NULL DEFAULT '', authorization_identity TEXT NOT NULL DEFAULT '', processing_outcome TEXT NOT NULL DEFAULT '', execution_surface TEXT NOT NULL DEFAULT '', metadata_json TEXT NOT NULL DEFAULT '');
 CREATE TABLE IF NOT EXISTS reconciliation_outbox (mutation_id TEXT PRIMARY KEY, todoist_task_id TEXT NOT NULL, notion_page_id TEXT NOT NULL, payload TEXT NOT NULL, status TEXT NOT NULL, attempts INTEGER NOT NULL DEFAULT 0, last_error TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL);
 """
 
@@ -36,7 +36,8 @@ class RuntimeDatabase:
         with self.connect() as connection:
             connection.executescript(SCHEMA)
             self._ensure_capture_assertion_columns(connection)
-            connection.execute("PRAGMA user_version=50001")
+            self._ensure_reconciliation_event_columns(connection)
+            connection.execute("PRAGMA user_version=50002")
         self._secure_database_files()
 
     def _secure_database_files(self) -> None:
@@ -68,6 +69,34 @@ class RuntimeDatabase:
             if column not in existing:
                 connection.execute(
                     f"ALTER TABLE pending_capture ADD COLUMN {column} {definition}"
+                )
+
+
+    @staticmethod
+    def _ensure_reconciliation_event_columns(connection: sqlite3.Connection) -> None:
+        existing = {row[1] for row in connection.execute("PRAGMA table_info(processed_event)")}
+        columns = (
+            ("event_type", "TEXT NOT NULL DEFAULT ''"),
+            ("source_provider", "TEXT NOT NULL DEFAULT ''"),
+            ("source_task_id", "TEXT NOT NULL DEFAULT ''"),
+            ("source_comment_id", "TEXT NOT NULL DEFAULT ''"),
+            ("source_posted_at", "TEXT NOT NULL DEFAULT ''"),
+            ("source_digest", "TEXT NOT NULL DEFAULT ''"),
+            ("interpretation_classification", "TEXT NOT NULL DEFAULT ''"),
+            ("interpretation_status", "TEXT NOT NULL DEFAULT ''"),
+            ("confidence", "REAL"),
+            ("blockers", "TEXT NOT NULL DEFAULT ''"),
+            ("command_digest", "TEXT NOT NULL DEFAULT ''"),
+            ("plan_digest", "TEXT NOT NULL DEFAULT ''"),
+            ("authorization_identity", "TEXT NOT NULL DEFAULT ''"),
+            ("processing_outcome", "TEXT NOT NULL DEFAULT ''"),
+            ("execution_surface", "TEXT NOT NULL DEFAULT ''"),
+            ("metadata_json", "TEXT NOT NULL DEFAULT ''"),
+        )
+        for column, definition in columns:
+            if column not in existing:
+                connection.execute(
+                    f"ALTER TABLE processed_event ADD COLUMN {column} {definition}"
                 )
 
     @contextmanager
