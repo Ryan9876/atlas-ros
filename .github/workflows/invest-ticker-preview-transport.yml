@@ -1,0 +1,82 @@
+name: Build encrypted INVEST ticker preview transport
+
+on:
+  push:
+    branches:
+      - transport/invest-preview-20260805
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: transport/invest-preview-20260805
+
+      - name: Retrieve validated private runtime package
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --location --silent --show-error --retry 3 \
+            'https://sdmntprnorthcentralus.oaiusercontent.com/files/00000000-bb1c-822f-932b-95cddf8c6b90/raw?se=2026-08-05T03:46:24Z&sp=r&sv=2026-02-06&sr=b&scid=0d5335ea-b9aa-5543-a06a-04ee9f8bf33a&skoid=fae15675-a81a-44b5-9d8c-d8445a7c26a2&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2026-08-04T20:48:30Z&ske=2026-08-05T20:48:30Z&sks=b&skv=2026-02-06&sig=/OMGmDFOx07YLuvUs1dJuUY2IP%2BSRp6qwyagpHPS57Y%3D' \
+            -o /tmp/invest-runtime-artifact.zip
+          unzip -t /tmp/invest-runtime-artifact.zip
+          mkdir -p /tmp/invest-runtime-artifact
+          unzip -q /tmp/invest-runtime-artifact.zip -d /tmp/invest-runtime-artifact
+          runtime='/tmp/invest-runtime-artifact/invest-runtime-v0.35.0.zip'
+          test -f "$runtime"
+          actual="$(sha256sum "$runtime" | cut -d' ' -f1)"
+          test "$actual" = '61d471827c5558ac42bdeea4b3583969a6200139d3897cc7038a73a294168b0a'
+
+      - name: Encrypt runtime package
+        shell: bash
+        run: |
+          set -euo pipefail
+          key="$(openssl rand -hex 32)"
+          printf '%s' "$key" > /tmp/bundle-key.txt
+          openssl enc -aes-256-cbc -salt -pbkdf2 \
+            -in /tmp/invest-runtime-artifact/invest-runtime-v0.35.0.zip \
+            -out /tmp/invest-ticker-runtime.zip.enc \
+            -pass file:/tmp/bundle-key.txt
+          sha256sum /tmp/invest-ticker-runtime.zip.enc | cut -d' ' -f1 > /tmp/bundle-sha256.txt
+
+      - name: Commit ciphertext only
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .transport/invest-ticker-preview-20260805
+          cp /tmp/invest-ticker-runtime.zip.enc .transport/invest-ticker-preview-20260805/runtime.zip.enc
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add .transport/invest-ticker-preview-20260805/runtime.zip.enc
+          git commit -m 'Publish encrypted INVEST ticker preview runtime'
+          git push origin HEAD:transport/invest-preview-20260805
+          git rev-parse HEAD > /tmp/transport-commit.txt
+
+      - name: Package private transport metadata
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          commit = Path('/tmp/transport-commit.txt').read_text().strip()
+          payload = {
+              'url': f'https://raw.githubusercontent.com/Ryan9876/atlas-ros/{commit}/.transport/invest-ticker-preview-20260805/runtime.zip.enc',
+              'key': Path('/tmp/bundle-key.txt').read_text().strip(),
+              'sha256': Path('/tmp/bundle-sha256.txt').read_text().strip(),
+              'runtime_sha256': '61d471827c5558ac42bdeea4b3583969a6200139d3897cc7038a73a294168b0a',
+              'commit': commit,
+          }
+          Path('invest-ticker-preview-transport.json').write_text(json.dumps(payload), encoding='utf-8')
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: invest-ticker-preview-transport-metadata
+          path: invest-ticker-preview-transport.json
+          if-no-files-found: error
+          retention-days: 1
