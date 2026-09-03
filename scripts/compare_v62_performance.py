@@ -10,7 +10,6 @@ import time
 from pathlib import Path
 from typing import Any
 
-
 INPUTS = (
     "Task = arista cloud vision code upgrade automation pilot.",
     "CloudVision code upgrade automation pilot with no downtime",

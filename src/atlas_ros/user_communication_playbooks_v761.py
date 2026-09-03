@@ -22,6 +22,7 @@ from atlas_ros.user_communication_contracts_v761 import (
     WorkloadResultV1,
 )
 
+
 def decision_support_playbook(value: DecisionSupportInputV1) -> DecisionSupportResultV1:
     consequential = value.consequence is DecisionConsequence.HIGH or not value.reversible
     reasons: list[str] = []

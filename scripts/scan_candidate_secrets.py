@@ -6,7 +6,6 @@ import re
 from pathlib import Path
 from typing import Any
 
-
 PATTERNS = {
     "private-key": re.compile(r"-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----"),
     "aws-access-key": re.compile(r"\bAKIA[0-9A-Z]{16}\b"),

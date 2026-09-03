@@ -11,6 +11,7 @@ from atlas_ros.user_communication_contracts_v761 import (
     PreferenceConfirmationState,
 )
 
+
 def build_user_model_projection(
     *,
     projection_id: str,
